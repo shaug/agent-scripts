@@ -126,24 +126,24 @@ Each changeset branch name must:
 - append a suffix of the form:
 
 ```
--<x>-of-<y>
+-<x>
 ```
 
 Where:
 
-- `x` is the 1-based index of the changeset,
-- `y` is the total number of changesets.
+- `x` is the 1-based index of the changeset.
 
 Example:
 
 ```
-feature/cloud-host-migration-1-of-4
-feature/cloud-host-migration-2-of-4
-feature/cloud-host-migration-3-of-4
-feature/cloud-host-migration-4-of-4
+feature/cloud-host-migration-1
+feature/cloud-host-migration-2
+feature/cloud-host-migration-3
+feature/cloud-host-migration-4
 ```
 
-This naming is mandatory and exists to make ordering explicit and human-legible.
+This naming is mandatory and append-only. Do not renumber existing changesets
+after they have been validated or reviewed.
 
 ______________________________________________________________________
 
@@ -167,7 +167,10 @@ Example:
 Cloud host migration (2 of 4)
 ```
 
-This reinforces that each PR is part of a unified whole.
+This reinforces that each PR is part of a unified whole. The total (`y`) is
+derived from the current plan length at PR creation time. If additional
+changesets are appended later, update PR titles to reflect the new total when
+appropriate.
 
 ______________________________________________________________________
 
@@ -304,6 +307,41 @@ early.
 
 ______________________________________________________________________
 
+## Squashed Reference Workflow (Local-Only)
+
+The source branch must remain immutable. To make comparisons easier, the skill
+may create a **local-only squashed reference branch**:
+
+- branch name: `<source-branch>-squashed`
+- purpose: represent the source tree as a single commit reference target
+- policy: never push this branch
+
+If the squashed branch already exists:
+
+- ask whether to reuse it,
+- stop the process if the user declines reuse.
+
+### Squash-Check Strategy
+
+Use Git itself to measure how much of the source is captured by the current
+changeset chain:
+
+1. Create a temporary branch from `<source-branch>-squashed`.
+2. Rebase it onto the chain tip (for example, `pcs-temp-squash-check-*`).
+3. Compare the temporary branch against the chain tip.
+
+Interpretation:
+
+- clean rebase with minimal diff indicates the chain closely matches the source
+  tree,
+- rebase conflicts or large diffs indicate gaps or boundary mistakes in the
+  current changesets.
+
+This workflow is especially useful for large or messy source branches with
+merges and long histories.
+
+______________________________________________________________________
+
 ## Pull Request Management Subskills
 
 The skill should include (or delegate to) subskills for:
@@ -318,36 +356,36 @@ This choreography must be handled mechanically and deterministically.
 
 ______________________________________________________________________
 
-## Three-Phase Execution Model
+## Two-Phase Incremental Execution Model
 
-The skill operates in **three strict phases**:
+The skill operates in **two phases**, with Phase 1 designed to be incremental
+and append-only.
 
-### Phase 1: Analyze and Recommend
+### Phase 1: Incremental Decompose and Validate
 
-- Analyze the source branch.
-- Recommend an ordered changeset decomposition.
-- Describe each changeset’s intent, scope, and dependencies.
-- No branches or PRs are created.
+In this phase, it is valid to "chip away" at a large source branch:
+
+- propose the next changeset,
+- justify why it is the next safe building block,
+- create that changeset branch,
+- run tests and comparison checks (including squash-check),
+- append the changeset to the plan,
+- and repeat.
+
+Rules:
+
+- the source branch remains immutable,
+- changesets are append-only,
+- once a changeset is validated and accepted, do not renumber or reorder it,
+- do not silently revise earlier validated changesets.
 
 ______________________________________________________________________
 
-### Phase 2: Create and Compare
-
-- Create changeset branches.
-- Create corresponding pull requests.
-- Apply flags and scaffolding as needed.
-- Validate incremental mergeability.
-- Compare merged changesets against the source branch.
-
-______________________________________________________________________
-
-### Phase 3: Merge and Propagate
+### Phase 2: Merge and Propagate
 
 - Merge changesets in order as they are approved.
 - Propagate changes into downstream changesets.
 - Update PR bases and content accordingly.
-
-**Once a phase is completed, the skill must not revisit previous phases.**
 
 ______________________________________________________________________
 
@@ -355,11 +393,13 @@ ______________________________________________________________________
 
 This skill does **not**:
 
-- plan new work from scratch,
-- reorder, remove, or merge changesets after Phase 1,
-- add new changesets mid-execution,
+- plan brand-new work unrelated to the source branch,
+- rewrite or mutate the source branch,
+- renumber validated changesets,
+- reorder or merge validated changesets without explicit user direction,
+- push local-only scratch references like `<source>-squashed`,
 - support inverted merge strategies,
-- optimize for minimal number of changesets.
+- optimize for the minimal number of changesets.
 
 The focus is **trust, reviewability, and correctness**, not cleverness.
 

@@ -4,6 +4,9 @@ Use a single JSON plan file to define the ordered changeset chain and make the
 mechanical steps deterministic. Store it under `.prepare-changesets/plan.json`
 and keep it out of PRs.
 
+The plan is append-only. You can add new changesets at the end as you learn
+more, but do not renumber or reorder validated changesets.
+
 ## Minimal Example
 
 ```json
@@ -66,7 +69,7 @@ Changeset fields:
   against the `base_branch..source_branch` file list.
 - `exclude_paths` (array of strings, optional): Patterns removed from the
   included set.
-- `commit_message` (string, optional): Defaults to `"changeset N of M: <slug>"`.
+- `commit_message` (string, optional): Defaults to `"changeset N: <slug>"`.
 - `pr_notes` (array of strings, optional): Bullets describing scaffolding,
   flags, and intentional incompleteness for the PR body.
 
@@ -75,6 +78,7 @@ Changeset fields:
 - Keep changesets cohesive by intent, not by line count.
 - Prefer additive-first changesets and defer user-visible changes.
 - Separate renames from behavioral changes when possible.
-- Treat the plan as Phase 1 output. Do not reorder changesets after creation.
+- Treat the plan as append-only output. Do not renumber or reorder validated
+  changesets after creation.
 
 See `references/SPEC.md` for the full behavioral rules and invariants.

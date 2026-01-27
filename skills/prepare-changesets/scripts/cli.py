@@ -119,7 +119,7 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(f"Changesets: {total}")
 
     for i in range(1, total + 1):
-        name = branch_name_for(source, i, total)
+        name = branch_name_for(source, i)
         exists = branch_exists(name)
         marker = "[OK]" if exists else "[  ]"
         print(f"{marker} {name}")
@@ -191,7 +191,7 @@ def cmd_merge_propagate(args: argparse.Namespace) -> None:
     if index < 1 or index > total:
         raise CommandError(f"--index must be between 1 and {total}.")
 
-    head_branch = branch_name_for(source, index, total)
+    head_branch = branch_name_for(source, index)
     pr_merge(head_branch, method=args.method, dry_run=args.dry_run)
 
     propagate_downstream(

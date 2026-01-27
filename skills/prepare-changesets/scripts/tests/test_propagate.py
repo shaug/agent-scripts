@@ -12,17 +12,14 @@ class PropagateTests(unittest.TestCase):
     def test_downstream_base_after_merge_matrix(self) -> None:
         base = "main"
         source = "feature/test"
-        total = 3
 
-        self.assertEqual(downstream_base_after_merge(base, source, total, 0, 1), "main")
+        self.assertEqual(downstream_base_after_merge(base, source, 0, 1), "main")
         self.assertEqual(
-            downstream_base_after_merge(base, source, total, 0, 2),
-            "feature/test-1-of-3",
+            downstream_base_after_merge(base, source, 0, 2), "feature/test-1"
         )
-        self.assertEqual(downstream_base_after_merge(base, source, total, 1, 2), "main")
+        self.assertEqual(downstream_base_after_merge(base, source, 1, 2), "main")
         self.assertEqual(
-            downstream_base_after_merge(base, source, total, 2, 3),
-            "feature/test-1-of-3",
+            downstream_base_after_merge(base, source, 2, 3), "feature/test-1"
         )
 
     def test_propagate_dry_run_updates_expected_pr_bases(self) -> None:
@@ -70,7 +67,7 @@ class PropagateTests(unittest.TestCase):
                 create_chain(plan)
                 push_chain(plan, remote="origin", dry_run=False)
 
-                cs1 = f"{plan['source_branch']}-1-of-2"
+                cs1 = f"{plan['source_branch']}-1"
                 run(["git", "checkout", cs1], cwd=repo_dir)
                 (repo_dir / "a.txt").write_text("feature-a-updated\n")
                 run(["git", "add", "a.txt"], cwd=repo_dir)
@@ -86,7 +83,7 @@ class PropagateTests(unittest.TestCase):
                     remote="origin",
                 )
 
-            cs2 = f"{plan['source_branch']}-2-of-2"
+            cs2 = f"{plan['source_branch']}-2"
             local_cs2 = run(["git", "rev-parse", cs2], cwd=repo_dir).stdout.strip()
             remote_cs2 = run(
                 ["git", "ls-remote", "origin", cs2], cwd=repo_dir

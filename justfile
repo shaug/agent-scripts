@@ -42,7 +42,13 @@ fmt-py:
 
 fmt-md:
   @if command -v mdformat >/dev/null 2>&1; then \
-    mdformat --wrap 80 --exclude '.venv/**' --exclude '.git/**' --exclude '.tools/**' {{md_targets}}; \
+    md_files="$(find {{md_targets}} -type f -name '*.md' \
+      -not -path '*/.venv/*' \
+      -not -path '*/.git/*' \
+      -not -path '*/.tools/*')"; \
+    if [ -n "$md_files" ]; then \
+      mdformat --wrap 80 $md_files; \
+    fi; \
   else \
     echo "mdformat not found on PATH; skipping Markdown formatting"; \
   fi
@@ -56,7 +62,13 @@ lint-py:
 
 lint-md:
   @if command -v mdformat >/dev/null 2>&1; then \
-    mdformat --check --wrap 80 --exclude '.venv/**' --exclude '.git/**' --exclude '.tools/**' {{md_targets}}; \
+    md_files="$(find {{md_targets}} -type f -name '*.md' \
+      -not -path '*/.venv/*' \
+      -not -path '*/.git/*' \
+      -not -path '*/.tools/*')"; \
+    if [ -n "$md_files" ]; then \
+      mdformat --check --wrap 80 $md_files; \
+    fi; \
   else \
     echo "mdformat not found on PATH; skipping Markdown lint"; \
   fi

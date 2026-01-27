@@ -25,8 +25,8 @@ from common import (  # noqa: E402
 )
 
 
-def branch_name_for(source_branch: str, index: int, total: int) -> str:
-    return f"{source_branch}-{index}-of-{total}"
+def branch_name_for(source_branch: str, index: int) -> str:
+    return f"{source_branch}-{index}"
 
 
 @dataclass
@@ -67,7 +67,7 @@ def _check_chain_exists(plan: Dict, checks: List[str], failures: List[str]) -> N
     total = len(plan["changesets"])
     missing: List[str] = []
     for i in range(1, total + 1):
-        name = branch_name_for(source, i, total)
+        name = branch_name_for(source, i)
         if git("rev-parse", "--verify", name, check=False).returncode != 0:
             missing.append(name)
     if missing:

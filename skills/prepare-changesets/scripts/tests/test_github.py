@@ -26,9 +26,9 @@ class GithubTests(unittest.TestCase):
                 self.assertEqual(len(captured), 2)
                 self.assertIn("gh", captured[0][0])
                 self.assertEqual(captured[0][3:5], ("--base", "main"))
-                self.assertEqual(captured[0][5:7], ("--head", "feature/test-1-of-2"))
-                self.assertEqual(captured[1][3:5], ("--base", "feature/test-1-of-2"))
-                self.assertEqual(captured[1][5:7], ("--head", "feature/test-2-of-2"))
+                self.assertEqual(captured[0][5:7], ("--head", "feature/test-1"))
+                self.assertEqual(captured[1][3:5], ("--base", "feature/test-1"))
+                self.assertEqual(captured[1][5:7], ("--head", "feature/test-2"))
         finally:
             shutil.rmtree(repo_dir)
 
@@ -39,7 +39,7 @@ class GithubTests(unittest.TestCase):
             captured.append(cmd)
 
         with mock.patch.object(github_mod, "_print_cmd", side_effect=capture):
-            github_mod.pr_merge("feature/test-1-of-2", method="merge", dry_run=True)
+            github_mod.pr_merge("feature/test-1", method="merge", dry_run=True)
 
         self.assertEqual(len(captured), 1)
         self.assertEqual(captured[0][:3], ("gh", "pr", "merge"))

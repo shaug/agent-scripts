@@ -51,9 +51,20 @@ class ScriptIntegrationTests(unittest.TestCase):
                 ],
                 cwd=repo_dir,
             )
+            run(
+                [
+                    str(scripts / "squash_ref.py"),
+                    "--base",
+                    plan["base_branch"],
+                    "--source",
+                    plan["source_branch"],
+                ],
+                cwd=repo_dir,
+            )
             run([str(scripts / "validate.py")], cwd=repo_dir)
             run([str(scripts / "status.py")], cwd=repo_dir)
             run([str(scripts / "create_chain.py")], cwd=repo_dir)
+            run([str(scripts / "squash_check.py")], cwd=repo_dir)
             run(
                 [
                     str(scripts / "validate_chain.py"),

@@ -39,7 +39,7 @@ def db_compare(plan: Dict, *, source_cmd: str, chain_cmd: str, out_dir: Path) ->
     base = plan["base_branch"]
     source = plan["source_branch"]
     total = len(plan["changesets"])
-    chain = [branch_name_for(source, i, total) for i in range(1, total + 1)]
+    chain = [branch_name_for(source, i) for i in range(1, total + 1)]
     ensure_branches_exist([base, source, *chain])
 
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -16,14 +16,16 @@ metadata:
   vcs: git
   pr_cli: gh
   workflow: stacked-prs
-  phase_model: three-phase
+  phase_model: two-phase-incremental
   plan_file: .prepare-changesets/plan.json
   dry_run_default: 'true'
 ---
 
 # Prepare Changesets
 
-Follow the spec and keep planning separate from mechanical execution.
+Follow the spec and keep the source branch immutable. Use an incremental,
+append-only planning approach: propose the next changeset, validate it, then
+append the plan.
 
 Always load:
 
@@ -33,11 +35,13 @@ Always load:
 Use deterministic helpers:
 
 - `scripts/preflight.py`
+- `scripts/squash_ref.py`
 - `scripts/init_plan.py`
 - `scripts/validate.py`
 - `scripts/status.py`
 - `scripts/create_chain.py`
 - `scripts/compare.py`
+- `scripts/squash_check.py`
 - `scripts/validate_chain.py`
 - `scripts/pr_create.py`
 - `scripts/merge_propagate.py`
@@ -74,10 +78,24 @@ skills/prepare-changesets/scripts/preflight.py \
 If a specific test command is known or provided by the user, pass it with
 `--test-cmd "<repo-specific test command>"`.
 
-## Phase 1: Analyze And Recommend (Plan Only)
+Create a local squashed reference for cleaner comparisons:
 
-Do not create branches or PRs in this phase. Do not interleave planning and
-execution phases.
+```bash
+skills/prepare-changesets/scripts/squash_ref.py \
+  --base main \
+  --source feature/my-large-branch
+```
+
+This creates `<source-branch>-squashed`. Never push it.
+
+If the squashed branch already exists, ask whether to reuse it. If the user
+declines reuse, stop. If reuse is approved, re-run with `--reuse-existing`. If
+it must be rebuilt, re-run with `--recreate`.
+
+## Phase 1: Incremental Decompose And Validate
+
+Phase 1 is incremental and append-only. It is valid to propose the next
+changeset, create it, validate it, and append the plan in cycles.
 
 1. Inspect the change surface.
 
@@ -98,10 +116,11 @@ Honor the decomposition preferences in `references/SPEC.md`, especially:
 - separate renames from behavioral changes
 - prefer additive-first changesets
 - defer user-visible or API-exposed changes
-- keep intent cohesive Do not propose changesets that require future changesets
-  to be partially present in order to be understandable or reviewable.
+- keep intent cohesive
+- do not propose changesets that require future changesets to be partially
+  present in order to be understandable or reviewable
 
-3. Initialize and edit the plan.
+3. Initialize the plan.
 
 Create a plan template:
 
@@ -113,12 +132,14 @@ skills/prepare-changesets/scripts/init_plan.py \
   --changesets 4
 ```
 
-Then edit `.prepare-changesets/plan.json` to reflect the Phase 1 plan:
+Then edit `.prepare-changesets/plan.json`. The plan is append-only:
 
 - define cohesive `slug` and `description` per changeset
 - use `include_paths` to pull in only the relevant files
 - use `exclude_paths` to prevent accidental overlap
 - document scaffolding, flags, and intentional incompleteness in `pr_notes`
+- append new changesets at the end as you learn more
+- do not renumber or reorder validated changesets
 
 Validate:
 
@@ -126,30 +147,38 @@ Validate:
 skills/prepare-changesets/scripts/validate.py
 ```
 
-After Phase 1 validation, the plan is immutable. Do not revise, reinterpret, or
-extend it in later phases.
+After a changeset is validated and accepted, treat it as locked. Do not revise,
+reinterpret, or reorder earlier validated changesets without explicit user
+approval.
 
-## Phase 2: Create And Compare
-
-Use the plan to create the ordered branch chain, then verify equivalence. Do not
-revisit Phase 1 planning or reinterpret the validated plan.
-
-1. Create the branch chain.
+4. Create or extend the branch chain.
 
 ```bash
 skills/prepare-changesets/scripts/create_chain.py
 ```
 
-This creates mandatory branch names:
+Branch names are append-only:
 
-- `<source-branch>-1-of-N`
-- `<source-branch>-2-of-N`
+- `<source-branch>-1`
+- `<source-branch>-2`
 - ...
 
-The script uses path-based inclusion rules. Expect to refine each branch
-manually.
+`create_chain.py` is append-only. It reuses an existing prefix of changeset
+branches and creates only the missing suffix. Delete a branch explicitly if it
+must be recreated.
 
-2. Review each changeset branch.
+5. Validate equivalence and progress.
+
+```bash
+skills/prepare-changesets/scripts/compare.py
+skills/prepare-changesets/scripts/squash_check.py
+```
+
+`compare.py` checks equivalence by merging the chain. `squash_check.py` rebases
+the squashed reference onto the chain tip using a temporary branch
+`pcs-temp-squash-check-*` to show what remains.
+
+6. Review each changeset branch.
 
 For each changeset branch:
 
@@ -157,7 +186,15 @@ For each changeset branch:
 - run repo-specific tests when practical
 - adjust commits to keep the changeset cohesive
 
-3. Open stacked PRs with correct bases.
+7. Validate incremental mergeability.
+
+Run tests after each changeset merge:
+
+```bash
+skills/prepare-changesets/scripts/validate_chain.py --test-cmd "<repo-specific test command>"
+```
+
+8. Open stacked PRs with correct bases.
 
 Base rules:
 
@@ -167,14 +204,15 @@ Base rules:
 Title rule:
 
 - `<feature_title> (i of N)`
+- `N` is derived from the current plan length at PR creation time
 
 Body requirements:
 
 - summarize the overall feature first
 - explain what this changeset provides
-- call out temporary scaffolding, flags, and intentional incompleteness PR
-  bodies should document intent, scope, and temporary compromises only. Do not
-  use them for marketing, justification, or speculative discussion.
+- call out temporary scaffolding, flags, and intentional incompleteness
+- document intent, scope, and temporary compromises only
+- do not use PR bodies for marketing, justification, or speculative discussion
 
 Use the helper to generate `gh` commands and PR bodies:
 
@@ -191,27 +229,10 @@ skills/prepare-changesets/scripts/pr_create.py --no-dry-run
 
 If `gh` is not authenticated, run `gh auth login` once, then retry.
 
-4. Compare the fully merged chain to the source branch. This comparison
-   validates that the fully merged changeset chain is functionally equivalent to
-   the source branch, not merely that diffs apply cleanly.
+## Phase 2: Merge And Propagate
 
-```bash
-skills/prepare-changesets/scripts/compare.py
-```
-
-If differences appear, fix the chain and re-run the comparison.
-
-Validate incremental mergeability by running tests after each changeset merge:
-
-```bash
-skills/prepare-changesets/scripts/validate_chain.py --test-cmd "<repo-specific test command>"
-```
-
-## Phase 3: Merge And Propagate
-
-Do not revisit planning. Only merge in order and propagate forward. Do not
-interleave planning and execution phases, and do not reinterpret the validated
-plan.
+Merge in order and propagate forward. Do not renumber or reorder validated
+changesets.
 
 Use one of these explicit workflows.
 

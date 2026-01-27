@@ -81,8 +81,8 @@ def pr_create(plan: Dict, *, indices: List[int], dry_run: bool) -> None:
         if index < 1 or index > total:
             raise CommandError(f"--index must be between 1 and {total}.")
 
-        head_branch = branch_name_for(source, index, total)
-        base_branch = base_for_changeset(base, source, total, index)
+        head_branch = branch_name_for(source, index)
+        base_branch = base_for_changeset(base, source, index)
         title = pr_title_for(plan["feature_title"], index, total)
         body = pr_body_for(plan, index, total, changesets[index - 1])
 

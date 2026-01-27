@@ -22,30 +22,25 @@ from github import ensure_gh_ready, pr_edit_base
 def downstream_base_after_merge(
     base_branch: str,
     source_branch: str,
-    total: int,
     merged_index: int,
     index: int,
 ) -> str:
     """Return the correct base for a downstream changeset after a merge."""
     if merged_index == 0:
-        return (
-            base_branch
-            if index == 1
-            else branch_name_for(source_branch, index - 1, total)
-        )
+        return base_branch if index == 1 else branch_name_for(source_branch, index - 1)
 
     if index == merged_index + 1:
         return (
             base_branch
             if merged_index == 1
-            else branch_name_for(source_branch, merged_index - 1, total)
+            else branch_name_for(source_branch, merged_index - 1)
         )
 
-    return branch_name_for(source_branch, index - 1, total)
+    return branch_name_for(source_branch, index - 1)
 
 
 def _ensure_chain_exists(source: str, total: int) -> List[str]:
-    chain = [branch_name_for(source, i, total) for i in range(1, total + 1)]
+    chain = [branch_name_for(source, i) for i in range(1, total + 1)]
     missing = [b for b in chain if not branch_exists(b)]
     if missing:
         raise CommandError("Missing changeset branches:\n" + "\n".join(missing))
@@ -120,13 +115,9 @@ def propagate_downstream(
     if update_pr_bases and not dry_run:
         ensure_gh_ready()
 
-    merged_head = (
-        branch_name_for(source, merged_index, total) if merged_index >= 1 else ""
-    )
+    merged_head = branch_name_for(source, merged_index) if merged_index >= 1 else ""
     merged_base = (
-        base_for_changeset(base, source, total, merged_index)
-        if merged_index >= 1
-        else base
+        base_for_changeset(base, source, merged_index) if merged_index >= 1 else base
     )
 
     print(f"[INFO] Propagating forward from merged index: {merged_index}")
@@ -158,9 +149,7 @@ def propagate_downstream(
             if idx <= merged_index:
                 continue
             name = chain[idx - 1]
-            new_base = downstream_base_after_merge(
-                base, source, total, merged_index, idx
-            )
+            new_base = downstream_base_after_merge(base, source, merged_index, idx)
 
             print(f"\n[STEP] Rebasing {name} onto {new_base}")
             if dry_run:

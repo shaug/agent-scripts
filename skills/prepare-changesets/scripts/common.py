@@ -114,16 +114,18 @@ def ensure_branches_exist(branches: Iterable[str]) -> None:
         raise CommandError("Missing branch(es):\n" + "\n".join(missing))
 
 
-def branch_name_for(source_branch: str, index: int, total: int) -> str:
-    return f"{source_branch}-{index}-of-{total}"
+def branch_name_for(source_branch: str, index: int) -> str:
+    return f"{source_branch}-{index}"
 
 
-def base_for_changeset(
-    base_branch: str, source_branch: str, total: int, index: int
-) -> str:
+def base_for_changeset(base_branch: str, source_branch: str, index: int) -> str:
     if index <= 1:
         return base_branch
-    return branch_name_for(source_branch, index - 1, total)
+    return branch_name_for(source_branch, index - 1)
+
+
+def squashed_branch_name(source_branch: str) -> str:
+    return f"{source_branch}-squashed"
 
 
 @contextmanager

@@ -10,6 +10,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from common import (
     CommandError,
+    branch_exists,
     branch_name_for,
     checkout_restore,
     delete_branch,
@@ -123,7 +124,7 @@ def apply_changeset(
     commit_message = changeset.get("commit_message")
     if not isinstance(commit_message, str) or not commit_message.strip():
         slug = str(changeset.get("slug", f"cs-{index}")).strip() or f"cs-{index}"
-        commit_message = f"changeset {index} of {total}: {slug}"
+        commit_message = f"changeset {index}: {slug}"
 
     git("commit", "-m", commit_message)
     return len(checkout_paths), len(delete_paths)
@@ -138,13 +139,35 @@ def create_chain(plan: Dict) -> List[str]:
     changesets = plan["changesets"]
     total = len(changesets)
 
-    chain = [branch_name_for(source, i, total) for i in range(1, total + 1)]
+    chain = [branch_name_for(source, i) for i in range(1, total + 1)]
     ensure_branches_exist([base, source])
+
+    existing_prefix = 0
+    for idx, name in enumerate(chain, start=1):
+        exists = branch_exists(name)
+        if exists and idx == existing_prefix + 1:
+            existing_prefix = idx
+            continue
+        if exists and idx > existing_prefix + 1:
+            missing = branch_name_for(source, existing_prefix + 1)
+            raise CommandError(
+                f"Found existing branch {name} but missing earlier branch {missing}."
+            )
+
+    start_index = existing_prefix + 1
+    if existing_prefix > 0:
+        print(
+            f"[INFO] Reusing existing changeset branches through index {existing_prefix}."
+        )
+        print(
+            "[INFO] create-chain is append-only; delete a branch explicitly if it must be recreated."
+        )
 
     with checkout_restore() as original:
         print(f"[INFO] Starting from current branch: {original}")
-        prev_branch = base
-        for idx, cs in enumerate(changesets, start=1):
+        prev_branch = base if existing_prefix == 0 else chain[existing_prefix - 1]
+        for idx in range(start_index, total + 1):
+            cs = changesets[idx - 1]
             name = chain[idx - 1]
             print(f"\n[STEP] Creating {name} from {prev_branch}")
             git("checkout", "-B", name, prev_branch)
@@ -173,7 +196,7 @@ def compare_chain(plan: Dict) -> Tuple[str, str]:
     source = plan["source_branch"]
     total = len(plan["changesets"])
 
-    chain = [branch_name_for(source, i, total) for i in range(1, total + 1)]
+    chain = [branch_name_for(source, i) for i in range(1, total + 1)]
     ensure_branches_exist([base, source, *chain])
 
     temp_branch = unique_temp_branch("pcs-temp-compare")
@@ -233,7 +256,7 @@ def validate_chain(plan: Dict, *, test_cmd: str) -> None:
     base = plan["base_branch"]
     source = plan["source_branch"]
     total = len(plan["changesets"])
-    chain = [branch_name_for(source, i, total) for i in range(1, total + 1)]
+    chain = [branch_name_for(source, i) for i in range(1, total + 1)]
     ensure_branches_exist([base, source, *chain])
 
     temp_branch = unique_temp_branch("pcs-temp-validate")

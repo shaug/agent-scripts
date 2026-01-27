@@ -70,6 +70,43 @@ class ChainTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
+    def test_create_chain_is_append_only_for_existing_prefix(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            from helpers import run
+
+            with chdir(repo_dir):
+                create_chain(plan)
+                cs1 = f"{plan['source_branch']}-1"
+                cs2 = f"{plan['source_branch']}-2"
+                cs1_before = run(["git", "rev-parse", cs1], cwd=repo_dir).stdout.strip()
+                cs2_before = run(["git", "rev-parse", cs2], cwd=repo_dir).stdout.strip()
+
+                plan["changesets"].append(
+                    {
+                        "slug": "noop-3",
+                        "description": "Placeholder changeset to test append-only behavior.",
+                        "include_paths": ["does-not-exist.txt"],
+                        "exclude_paths": [],
+                        "commit_message": "cs3",
+                        "pr_notes": [],
+                    }
+                )
+
+                create_chain(plan)
+                cs1_after = run(["git", "rev-parse", cs1], cwd=repo_dir).stdout.strip()
+                cs2_after = run(["git", "rev-parse", cs2], cwd=repo_dir).stdout.strip()
+                cs3 = f"{plan['source_branch']}-3"
+                cs3_rc = run(
+                    ["git", "rev-parse", "--verify", cs3], cwd=repo_dir, check=False
+                ).returncode
+
+            self.assertEqual(cs1_before, cs1_after)
+            self.assertEqual(cs2_before, cs2_after)
+            self.assertEqual(cs3_rc, 0)
+        finally:
+            shutil.rmtree(repo_dir)
+
 
 if __name__ == "__main__":
     unittest.main()
