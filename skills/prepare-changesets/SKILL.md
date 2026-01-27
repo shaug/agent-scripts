@@ -322,6 +322,9 @@ Execute for real:
 skills/prepare-changesets/scripts/merge_propagate.py --index i --no-dry-run
 ```
 
+By default, the merge uses the repository's default method. Pass
+`--method merge|squash|rebase` to override.
+
 2. If the PR was merged separately, propagate and clean up downstream PRs.
 
 If you have already synced the local base branch to include the merged

@@ -151,11 +151,19 @@ def pr_edit_base(new_base: str, *, dry_run: bool) -> None:
 
 
 def pr_merge(head_branch: str, *, method: str, dry_run: bool) -> None:
-    method_flag = {"merge": "--merge", "squash": "--squash", "rebase": "--rebase"}[
-        method
-    ]
-    cmd = ("gh", "pr", "merge", head_branch, method_flag)
-    print(f"[STEP] Merging PR for {head_branch} with method={method}")
+    method = (method or "default").strip().lower()
+    method_flags = {"merge": "--merge", "squash": "--squash", "rebase": "--rebase"}
+    if method not in (*method_flags.keys(), "default"):
+        raise CommandError(
+            "Invalid merge method. Use 'default', 'merge', 'squash', or 'rebase'."
+        )
+    cmd: tuple[str, ...]
+    if method == "default":
+        cmd = ("gh", "pr", "merge", head_branch)
+        print(f"[STEP] Merging PR for {head_branch} with method=default")
+    else:
+        cmd = ("gh", "pr", "merge", head_branch, method_flags[method])
+        print(f"[STEP] Merging PR for {head_branch} with method={method}")
     if dry_run:
         print("[DRY-RUN] Would run:")
         _print_cmd(cmd)

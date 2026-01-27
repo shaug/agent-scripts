@@ -32,7 +32,20 @@ class GithubTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
-    def test_pr_merge_dry_run(self) -> None:
+    def test_pr_merge_dry_run_default(self) -> None:
+        captured: list[tuple[str, ...]] = []
+
+        def capture(cmd: tuple[str, ...]) -> None:
+            captured.append(cmd)
+
+        with mock.patch.object(github_mod, "_print_cmd", side_effect=capture):
+            github_mod.pr_merge("feature/test-1", method="default", dry_run=True)
+
+        self.assertEqual(len(captured), 1)
+        self.assertEqual(captured[0][:3], ("gh", "pr", "merge"))
+        self.assertEqual(captured[0], ("gh", "pr", "merge", "feature/test-1"))
+
+    def test_pr_merge_dry_run_merge_flag(self) -> None:
         captured: list[tuple[str, ...]] = []
 
         def capture(cmd: tuple[str, ...]) -> None:
@@ -43,6 +56,7 @@ class GithubTests(unittest.TestCase):
 
         self.assertEqual(len(captured), 1)
         self.assertEqual(captured[0][:3], ("gh", "pr", "merge"))
+        self.assertIn("--merge", captured[0])
 
 
 if __name__ == "__main__":

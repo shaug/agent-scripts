@@ -456,9 +456,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_merge.add_argument(
         "--method",
-        choices=("merge", "squash", "rebase"),
-        default="merge",
-        help="gh pr merge strategy (default: merge)",
+        choices=("default", "merge", "squash", "rebase"),
+        default="default",
+        help="gh pr merge strategy (default: repo default)",
     )
     p_merge.add_argument(
         "--update-pr-bases",
