@@ -11,6 +11,7 @@ from common import (
     branch_exists,
     checkout_restore,
     delete_branch,
+    discover_test_command,
     ensure_clean_tree,
     ensure_git_repo,
     git,
@@ -47,6 +48,31 @@ def run_tests_on_branch(branch: str, test_cmd: str) -> None:
         ensure_clean_tree()
 
 
+def _print_test_command_help(discovery: dict) -> None:
+    reason = str(discovery.get("reason", "unknown"))
+    candidates = list(discovery.get("candidates", []))
+    suggestions = list(discovery.get("suggestions", []))
+
+    if reason == "agents-missing":
+        print("[WARN] No AGENTS.md found at repo root.")
+    elif reason == "agents-no-test-command":
+        print("[WARN] AGENTS.md found but no clear test command was detected.")
+    elif reason == "agents-ambiguous":
+        print("[WARN] Multiple test commands were detected in AGENTS.md:")
+        for cmd in candidates:
+            print(f"  - {cmd}")
+
+    if suggestions:
+        print("[HINT] Likely test commands to consider:")
+        for cmd in suggestions:
+            print(f"  - {cmd}")
+
+    print("[NEXT] Ask once for the desired test command, then re-run with --test-cmd.")
+    print(
+        "[NEXT] If still unknown, re-run with --skip-tests and record this in the plan."
+    )
+
+
 def preflight(
     *, base: str, source: str, test_cmd: str, skip_tests: bool, skip_merge_check: bool
 ) -> None:
@@ -67,10 +93,21 @@ def preflight(
     else:
         print("[WARN] Skipping mergeability check by request.")
 
-    if test_cmd and not skip_tests:
-        run_tests_on_branch(source, test_cmd)
+    effective_test_cmd = test_cmd.strip()
+    if not effective_test_cmd and not skip_tests:
+        discovery = discover_test_command("")
+        discovered = str(discovery.get("command") or "").strip()
+        if discovered:
+            effective_test_cmd = discovered
+            print(f"[INFO] Using test command from AGENTS.md: {effective_test_cmd}")
+        else:
+            _print_test_command_help(discovery)
+            raise CommandError("Test command is required unless --skip-tests is set.")
+
+    if effective_test_cmd and not skip_tests:
+        run_tests_on_branch(source, effective_test_cmd)
         print("[OK] Test command succeeded on source branch.")
-    elif test_cmd and skip_tests:
+    elif effective_test_cmd and skip_tests:
         print("[WARN] Test command provided but skipped by request.")
     else:
         print("[WARN] No test command provided.")

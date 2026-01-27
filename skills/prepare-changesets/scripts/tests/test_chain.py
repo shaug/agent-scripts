@@ -54,6 +54,22 @@ class ChainTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
+    def test_validate_chain_discovers_command_from_agents(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            (repo_dir / "AGENTS.md").write_text(
+                "```bash\npython3 -c \"print('test ok')\"\n```\n"
+            )
+            from helpers import run
+
+            run(["git", "add", "AGENTS.md"], cwd=repo_dir)
+            run(["git", "commit", "-m", "add agents"], cwd=repo_dir)
+            with chdir(repo_dir):
+                create_chain(plan)
+                validate_chain(plan, test_cmd="")
+        finally:
+            shutil.rmtree(repo_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

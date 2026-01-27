@@ -13,6 +13,7 @@ from common import (
     CommandError,
     branch_exists,
     branch_name_for,
+    discover_test_command,
     ensure_clean_tree,
     init_plan,
     load_plan,
@@ -46,13 +47,40 @@ def cmd_preflight(args: argparse.Namespace) -> None:
 
 def cmd_init_plan(args: argparse.Namespace) -> None:
     plan_path = Path(args.plan)
+    test_cmd = str(args.test_cmd or "").strip()
+    if not test_cmd:
+        discovery = discover_test_command("")
+        discovered = str(discovery.get("command") or "").strip()
+        if discovered:
+            test_cmd = discovered
+            print(f"[INFO] Using test command from AGENTS.md: {test_cmd}")
+        else:
+            reason = str(discovery.get("reason", "unknown"))
+            if reason == "agents-missing":
+                print("[WARN] No AGENTS.md found at repo root.")
+            elif reason == "agents-no-test-command":
+                print("[WARN] AGENTS.md found but no clear test command was detected.")
+            elif reason == "agents-ambiguous":
+                candidates = list(discovery.get("candidates", []))
+                if candidates:
+                    print("[WARN] Multiple test commands were detected in AGENTS.md:")
+                    for cmd in candidates:
+                        print(f"  - {cmd}")
+
+            suggestions = list(discovery.get("suggestions", []))
+            if suggestions:
+                print("[HINT] Likely test commands to consider:")
+                for cmd in suggestions:
+                    print(f"  - {cmd}")
+            print("[NEXT] Ask once for the desired test command and update the plan.")
+
     init_plan(
         plan_path=plan_path,
         base=args.base,
         source=args.source,
         title=args.title,
         changesets=args.changesets,
-        test_cmd=args.test_cmd,
+        test_cmd=test_cmd,
         force=args.force,
     )
     print(f"[OK] Wrote plan template: {plan_path}")

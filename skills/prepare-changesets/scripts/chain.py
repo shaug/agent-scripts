@@ -15,6 +15,7 @@ from common import (
     delete_branch,
     diff_name_status,
     diff_stat,
+    discover_test_command,
     ensure_branches_exist,
     ensure_clean_tree,
     ensure_git_repo,
@@ -197,8 +198,34 @@ def compare_chain(plan: Dict) -> Tuple[str, str]:
 
 def validate_chain(plan: Dict, *, test_cmd: str) -> None:
     """Merge changesets in order into a temp branch and run tests after each merge."""
-    if not test_cmd.strip():
-        raise CommandError("validate-chain requires a non-empty --test-cmd.")
+    effective_test_cmd = test_cmd.strip()
+    if not effective_test_cmd:
+        discovery = discover_test_command("")
+        discovered = str(discovery.get("command") or "").strip()
+        if discovered:
+            effective_test_cmd = discovered
+            print(f"[INFO] Using test command from AGENTS.md: {effective_test_cmd}")
+        else:
+            reason = str(discovery.get("reason", "unknown"))
+            if reason == "agents-missing":
+                print("[WARN] No AGENTS.md found at repo root.")
+            elif reason == "agents-no-test-command":
+                print("[WARN] AGENTS.md found but no clear test command was detected.")
+            elif reason == "agents-ambiguous":
+                candidates = list(discovery.get("candidates", []))
+                if candidates:
+                    print("[WARN] Multiple test commands were detected in AGENTS.md:")
+                    for cmd in candidates:
+                        print(f"  - {cmd}")
+
+            suggestions = list(discovery.get("suggestions", []))
+            if suggestions:
+                print("[HINT] Likely test commands to consider:")
+                for cmd in suggestions:
+                    print(f"  - {cmd}")
+            raise CommandError(
+                "validate-chain requires a non-empty --test-cmd or plan.test_command."
+            )
 
     ensure_git_repo()
     ensure_clean_tree()
@@ -218,12 +245,14 @@ def validate_chain(plan: Dict, *, test_cmd: str) -> None:
             for idx, name in enumerate(chain, start=1):
                 print(f"\n[STEP] Merging {name} ({idx} of {total})")
                 git("merge", "--no-ff", "--no-edit", name)
-                print(f"[STEP] Running tests after changeset {idx}: {test_cmd}")
+                print(
+                    f"[STEP] Running tests after changeset {idx}: {effective_test_cmd}"
+                )
                 if git("diff", "--quiet", check=False).returncode != 0:
                     raise CommandError(
                         "Working tree became dirty during validate-chain."
                     )
-                result = subprocess.run(test_cmd, shell=True)
+                result = subprocess.run(effective_test_cmd, shell=True)
                 if result.returncode != 0:
                     raise CommandError(f"Test command failed after changeset {idx}.")
         finally:

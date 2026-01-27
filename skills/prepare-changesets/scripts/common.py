@@ -4,16 +4,33 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import re
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 DEFAULT_PLAN_PATH = Path(".prepare-changesets/plan.json")
 
 
 class CommandError(RuntimeError):
     """Raised when a subprocess or git command fails."""
+
+
+TEST_COMMAND_HINTS: Tuple[str, ...] = (
+    "just test",
+    "make test",
+    "pytest",
+    "python -m pytest",
+    "npm test",
+    "pnpm test",
+    "yarn test",
+    "bun test",
+    "go test",
+    "cargo test",
+    "tox",
+    "nox",
+)
 
 
 def run(
@@ -47,6 +64,10 @@ def git(
 
 def ensure_git_repo() -> None:
     git("rev-parse", "--is-inside-work-tree")
+
+
+def repo_root() -> Path:
+    return Path(git("rev-parse", "--show-toplevel").stdout.strip())
 
 
 def ensure_clean_tree() -> None:
@@ -231,3 +252,249 @@ def init_plan(
     }
 
     plan_path.write_text(json.dumps(plan, indent=2) + "\n")
+
+
+def _is_test_command(cmd: str) -> bool:
+    lower = cmd.lower()
+    if any(hint in lower for hint in TEST_COMMAND_HINTS):
+        return True
+    # Catch generic patterns like "just test-foo" or "make test-all".
+    return bool(re.search(r"\b(test|pytest)\b", lower))
+
+
+def _extract_code_blocks(text: str) -> List[str]:
+    # Keep this permissive; we are mining for likely commands, not parsing Markdown.
+    pattern = re.compile(r"```[a-zA-Z0-9_-]*\n(.*?)```", re.DOTALL)
+    return [m.group(1) for m in pattern.finditer(text)]
+
+
+def _commands_from_block(block: str) -> List[str]:
+    commands: List[str] = []
+    for raw_line in block.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # Treat each non-empty line as a potential command.
+        commands.append(line)
+    return commands
+
+
+def parse_agents_test_commands(path: Path) -> List[str]:
+    try:
+        text = path.read_text()
+    except FileNotFoundError:
+        return []
+
+    candidates: List[str] = []
+    seen: Set[str] = set()
+    for block in _extract_code_blocks(text):
+        for cmd in _commands_from_block(block):
+            if not _is_test_command(cmd):
+                continue
+            if cmd not in seen:
+                seen.add(cmd)
+                candidates.append(cmd)
+    return candidates
+
+
+def _add_suggestion(cmd: str, suggestions: List[str], seen: Set[str]) -> None:
+    clean = cmd.strip()
+    if not clean or clean in seen:
+        return
+    seen.add(clean)
+    suggestions.append(clean)
+
+
+def _suggest_from_justfile(root: Path, suggestions: List[str], seen: Set[str]) -> None:
+    for name in ("justfile", "Justfile"):
+        path = root / name
+        if not path.exists():
+            continue
+        text = path.read_text()
+        if re.search(r"(?m)^test\s*:", text):
+            _add_suggestion("just test", suggestions, seen)
+
+
+def _suggest_from_makefile(root: Path, suggestions: List[str], seen: Set[str]) -> None:
+    for name in ("Makefile", "makefile"):
+        path = root / name
+        if not path.exists():
+            continue
+        text = path.read_text()
+        if re.search(r"(?m)^test\s*:", text):
+            _add_suggestion("make test", suggestions, seen)
+
+
+def _suggest_from_package_json(
+    root: Path, suggestions: List[str], seen: Set[str]
+) -> None:
+    path = root / "package.json"
+    if not path.exists():
+        return
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return
+
+    scripts = data.get("scripts") if isinstance(data, dict) else None
+    test_script = scripts.get("test") if isinstance(scripts, dict) else None
+    if not isinstance(test_script, str) or not test_script.strip():
+        return
+
+    if (root / "pnpm-lock.yaml").exists():
+        tool_cmd = "pnpm test"
+    elif (root / "yarn.lock").exists():
+        tool_cmd = "yarn test"
+    elif (root / "bun.lockb").exists():
+        tool_cmd = "bun test"
+    else:
+        tool_cmd = "npm test"
+
+    _add_suggestion(tool_cmd, suggestions, seen)
+    # The project's declared test script is authoritative even if it does not
+    # contain the word "test" (for example, "vitest run").
+    _add_suggestion(test_script, suggestions, seen)
+
+
+def _suggest_from_python_project(
+    root: Path, suggestions: List[str], seen: Set[str]
+) -> None:
+    pyproject = root / "pyproject.toml"
+    setup_cfg = root / "setup.cfg"
+    tests_dir = root / "tests"
+
+    pyproject_text = pyproject.read_text() if pyproject.exists() else ""
+    setup_cfg_text = setup_cfg.read_text() if setup_cfg.exists() else ""
+
+    if "[tool.pytest" in pyproject_text or "pytest" in pyproject_text:
+        _add_suggestion("python -m pytest", suggestions, seen)
+        return
+    if "[tool:pytest]" in setup_cfg_text or "pytest" in setup_cfg_text:
+        _add_suggestion("python -m pytest", suggestions, seen)
+        return
+
+    if tests_dir.exists() and any(p.suffix == ".py" for p in tests_dir.rglob("*.py")):
+        _add_suggestion("python -m pytest", suggestions, seen)
+
+
+def _suggest_from_other_roots(
+    root: Path, suggestions: List[str], seen: Set[str]
+) -> None:
+    if (root / "tox.ini").exists():
+        _add_suggestion("tox", suggestions, seen)
+    if (root / "noxfile.py").exists():
+        _add_suggestion("nox", suggestions, seen)
+    if (root / "go.mod").exists():
+        _add_suggestion("go test ./...", suggestions, seen)
+    if (root / "Cargo.toml").exists():
+        _add_suggestion("cargo test", suggestions, seen)
+
+
+def _suggest_from_workflows(root: Path, suggestions: List[str], seen: Set[str]) -> None:
+    workflows_dir = root / ".github" / "workflows"
+    if not workflows_dir.exists():
+        return
+
+    workflow_paths = sorted(
+        [
+            *workflows_dir.glob("*.yml"),
+            *workflows_dir.glob("*.yaml"),
+        ]
+    )
+    run_line = re.compile(r"^\s*run:\s*(.*)$")
+
+    for path in workflow_paths:
+        lines = path.read_text().splitlines()
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            m = run_line.match(line)
+            if not m:
+                i += 1
+                continue
+
+            rest = m.group(1).strip()
+            if rest and rest not in ("|", ">"):
+                if _is_test_command(rest):
+                    _add_suggestion(rest, suggestions, seen)
+                i += 1
+                continue
+
+            # Handle multi-line run blocks.
+            base_indent = len(line) - len(line.lstrip(" "))
+            i += 1
+            while i < len(lines):
+                block_line = lines[i]
+                indent = len(block_line) - len(block_line.lstrip(" "))
+                if indent <= base_indent:
+                    break
+                cmd = block_line.strip()
+                if cmd and _is_test_command(cmd):
+                    _add_suggestion(cmd, suggestions, seen)
+                i += 1
+
+
+def suggest_test_commands(root: Path, *, prior: Sequence[str] = ()) -> List[str]:
+    suggestions: List[str] = []
+    seen: Set[str] = set()
+
+    for cmd in prior:
+        _add_suggestion(cmd, suggestions, seen)
+
+    _suggest_from_justfile(root, suggestions, seen)
+    _suggest_from_makefile(root, suggestions, seen)
+    _suggest_from_package_json(root, suggestions, seen)
+    _suggest_from_python_project(root, suggestions, seen)
+    _suggest_from_other_roots(root, suggestions, seen)
+    _suggest_from_workflows(root, suggestions, seen)
+
+    return suggestions
+
+
+def discover_test_command(preferred: str = "") -> Dict[str, object]:
+    """Discover a repo-specific test command and return diagnostics.
+
+    The return object always includes:
+    - command: Optional[str]
+    - source: str
+    - reason: str
+    - candidates: List[str]
+    - suggestions: List[str]
+    """
+    if preferred.strip():
+        return {
+            "command": preferred.strip(),
+            "source": "cli",
+            "reason": "provided",
+            "candidates": [],
+            "suggestions": [],
+        }
+
+    root = repo_root()
+    agents_path = root / "AGENTS.md"
+    agents_candidates = parse_agents_test_commands(agents_path)
+
+    if agents_candidates and len(agents_candidates) == 1:
+        return {
+            "command": agents_candidates[0],
+            "source": "agents",
+            "reason": "agents-single",
+            "candidates": agents_candidates,
+            "suggestions": agents_candidates,
+        }
+
+    if not agents_path.exists():
+        reason = "agents-missing"
+    elif not agents_candidates:
+        reason = "agents-no-test-command"
+    else:
+        reason = "agents-ambiguous"
+
+    suggestions = suggest_test_commands(root, prior=agents_candidates)
+    return {
+        "command": None,
+        "source": "none",
+        "reason": reason,
+        "candidates": agents_candidates,
+        "suggestions": suggestions,
+    }

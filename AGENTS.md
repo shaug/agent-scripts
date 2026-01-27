@@ -43,6 +43,16 @@ if missing (network required).
 - Use Conventional Commits for commit messages (e.g., `feat: ...`, `fix: ...`,
   `chore: ...`).
 
+- **Changelog**
+
+  - Maintain `CHANGELOG.md` in a daily format.
+  - Create or update a section for today near the top:
+    `## YYYY-MM-DD — <day summary>`.
+  - Summarize the day in that heading.
+  - Add one bullet per commit under the day section.
+  - Format each entry as `<commit title> (<full SHA>)`.
+  - Order entries with newest days first and newest commits first within a day.
+
 - Avoid shell interpolation in commit and PR messages. Always write the full
   message to a temporary file and use file-based flags instead of inline `-m`
   strings.

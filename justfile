@@ -42,7 +42,7 @@ fmt-py:
 
 fmt-md:
   @if command -v mdformat >/dev/null 2>&1; then \
-    mdformat --wrap 80 --exclude '.venv/**' --exclude '.git/**' {{md_targets}}; \
+    mdformat --wrap 80 --exclude '.venv/**' --exclude '.git/**' --exclude '.tools/**' {{md_targets}}; \
   else \
     echo "mdformat not found on PATH; skipping Markdown formatting"; \
   fi
@@ -56,28 +56,40 @@ lint-py:
 
 lint-md:
   @if command -v mdformat >/dev/null 2>&1; then \
-    mdformat --check --wrap 80 --exclude '.venv/**' --exclude '.git/**' {{md_targets}}; \
+    mdformat --check --wrap 80 --exclude '.venv/**' --exclude '.git/**' --exclude '.tools/**' {{md_targets}}; \
   else \
     echo "mdformat not found on PATH; skipping Markdown lint"; \
   fi
 
 lint-skills:
   @set -euo pipefail; \
-  SKILLS_REF_BIN=""; \
   AGENTSKILLS_DIR=".tools/agentskills"; \
+  SKILLS_REF_BIN=""; \
+  install_skills_ref() { \
+    echo "Installing skills-ref into .venv from local cache..."; \
+    rm -rf .venv; \
+    python -m venv .venv; \
+    mkdir -p .tools; \
+    rm -rf "$AGENTSKILLS_DIR"; \
+    git clone https://github.com/agentskills/agentskills.git "$AGENTSKILLS_DIR"; \
+    .venv/bin/pip install --upgrade pip; \
+    .venv/bin/pip install -e "$AGENTSKILLS_DIR/skills-ref"; \
+    SKILLS_REF_BIN=".venv/bin/skills-ref"; \
+  }; \
   if command -v skills-ref >/dev/null 2>&1; then \
     SKILLS_REF_BIN="$(command -v skills-ref)"; \
-  else \
-    echo "skills-ref not found on PATH; installing into .venv from local cache..."; \
-    python -m venv .venv; \
-    if [ ! -x .venv/bin/skills-ref ]; then \
-      mkdir -p .tools; \
-      rm -rf "$AGENTSKILLS_DIR"; \
-      git clone https://github.com/agentskills/agentskills.git "$AGENTSKILLS_DIR"; \
-      .venv/bin/pip install --upgrade pip; \
-      .venv/bin/pip install -e "$AGENTSKILLS_DIR/skills-ref"; \
+    if ! "$SKILLS_REF_BIN" --help >/dev/null 2>&1; then \
+      SKILLS_REF_BIN=""; \
     fi; \
+  fi; \
+  if [ -z "$SKILLS_REF_BIN" ] && [ -x .venv/bin/skills-ref ]; then \
     SKILLS_REF_BIN=".venv/bin/skills-ref"; \
+    if ! "$SKILLS_REF_BIN" --help >/dev/null 2>&1; then \
+      SKILLS_REF_BIN=""; \
+    fi; \
+  fi; \
+  if [ -z "$SKILLS_REF_BIN" ]; then \
+    install_skills_ref; \
   fi; \
   "$SKILLS_REF_BIN" --help >/dev/null; \
   for skill in {{skills_dir}}/*; do \

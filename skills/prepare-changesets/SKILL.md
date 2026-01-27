@@ -52,17 +52,27 @@ branch as immutable reference state. Never modify, rebase, or rewrite it as part
 of this process. Preflight simulates merging the source into the base on a
 temporary branch and runs the test command on the source branch.
 
+Resolve the test command in this order:
+
+- Prefer the repository’s root `AGENTS.md` if it specifies a test command.
+- If missing, unclear, or ambiguous, ask once.
+- If still unknown, proceed with `--skip-tests` and record that explicitly in
+  the plan.
+
+When discovery is unclear, suggest likely commands by inspecting `.github`
+workflows, `pyproject.toml`, `package.json` scripts, `justfile`, `Makefile`, and
+other standard project entrypoints.
+
 Run:
 
 ```bash
 skills/prepare-changesets/scripts/preflight.py \
   --base main \
-  --source feature/my-large-branch \
-  --test-cmd "<repo-specific test command>"
+  --source feature/my-large-branch
 ```
 
-If you do not know the test command, ask once. If still unknown, proceed with
-`--skip-tests` and explicitly record this in the plan.
+If a specific test command is known or provided by the user, pass it with
+`--test-cmd "<repo-specific test command>"`.
 
 ## Phase 1: Analyze And Recommend (Plan Only)
 
