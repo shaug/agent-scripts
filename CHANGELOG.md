@@ -4,7 +4,10 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-01-27 — Initialize monorepo and improve test command discovery
+## 2026-01-27 — Initialize monorepo, discovery, and CI/changelog fixes
 
+- fix: CI agentskills install path and clarify changelog rules
+- feat: AGENTS-aware test command discovery for prepare-changesets
+  (1730fb654885f4ea1a5448e18bab1f558b5063ad)
 - chore: initialize agent-scripts monorepo
   (420d1cdacb2855d3d9c494e57447954995043c42)
