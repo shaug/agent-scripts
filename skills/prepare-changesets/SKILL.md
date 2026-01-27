@@ -150,6 +150,7 @@ Then edit `.prepare-changesets/plan.json`. The plan is append-only:
 - choose a `mode` per changeset: `paths`, `patch`, or `hunks`
 - for `paths`, use `include_paths` to pull in relevant files
 - for `hunks`, use `hunk_selectors` with `file` + `contains`/`range`
+- use `all: true` in a selector to include all hunks in a file
 - set `allow_partial_files=false` when a file must be fully included
 - for `patch`, set `patch_file` under `.prepare-changesets/patches/`
 - use `exclude_paths` as a coarse filter to prevent accidental overlap
@@ -170,7 +171,8 @@ skills/prepare-changesets/scripts/validate.py --strict
 ```
 
 `--strict` also warns if `.prepare-changesets/state.json` indicates prior
-changeset branch heads have drifted.
+changeset branch heads have drifted. It runs patch/hunk apply checks on a
+temporary branch, so the working tree must be clean.
 
 After a changeset is validated and accepted, treat it as locked. Do not revise,
 reinterpret, or reorder earlier validated changesets without explicit user

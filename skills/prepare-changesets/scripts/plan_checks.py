@@ -10,12 +10,24 @@ from typing import Dict, List, Sequence, Tuple
 from common import (
     CommandError,
     branch_exists,
+    checkout_restore,
+    delete_branch,
     diff_name_status,
+    ensure_branches_exist,
+    ensure_clean_tree,
+    ensure_git_repo,
     git,
     load_state,
     repo_root,
+    unique_temp_branch,
 )
-from patch_apply import build_diff, parse_hunk_selectors, select_hunks_for_changeset
+from patch_apply import (
+    build_diff,
+    check_patch_file,
+    check_patch_text,
+    parse_hunk_selectors,
+    select_hunks_for_changeset,
+)
 
 
 def _changed_paths(base: str, source: str) -> List[str]:
@@ -251,3 +263,62 @@ def validate_plan_strict(plan: Dict) -> Tuple[bool, List[str], List[str]]:
     _warn_state_drift(plan, warnings)
 
     return (not errors), errors, warnings
+
+
+def strict_apply_check(plan: Dict) -> None:
+    """Apply changesets on a temporary branch to ensure patch viability."""
+    ensure_git_repo()
+    ensure_clean_tree()
+
+    base = str(plan.get("base_branch", "")).strip()
+    source = str(plan.get("source_branch", "")).strip()
+    changesets = plan.get("changesets")
+    if not base or not source or not isinstance(changesets, list):
+        raise CommandError(
+            "strict apply check requires valid base/source and changesets."
+        )
+
+    ensure_branches_exist([base, source])
+
+    from chain import apply_changeset  # local import to avoid cycles
+
+    temp_branch = unique_temp_branch("pcs-temp-strict-check")
+    print(f"[INFO] Creating temporary strict-check branch: {temp_branch}")
+
+    diff_files = build_diff(base, source)
+
+    with checkout_restore() as original:
+        try:
+            git("checkout", "-B", temp_branch, base)
+            total = len(changesets)
+            for idx, cs in enumerate(changesets, start=1):
+                print(f"[STEP] Strict-apply changeset {idx}")
+                mode = str(cs.get("mode", "paths")).strip() or "paths"
+                if mode == "patch":
+                    patch_file = cs.get("patch_file", "")
+                    check_patch_file(str(patch_file), label=f"Changeset {idx}")
+                elif mode == "hunks":
+                    selectors = cs.get("hunk_selectors", [])
+                    parsed = parse_hunk_selectors(
+                        selectors, changeset_label=f"Changeset {idx}"
+                    )
+                    selected = select_hunks_for_changeset(
+                        diff_files,
+                        parsed,
+                        include_paths=cs.get("include_paths", []),
+                        exclude_paths=cs.get("exclude_paths", []),
+                        allow_partial_files=bool(cs.get("allow_partial_files", True)),
+                        changeset_label=f"Changeset {idx}",
+                    )
+                    check_patch_text(selected.text, label=f"Changeset {idx}")
+                apply_changeset(
+                    base_branch=base,
+                    source_branch=source,
+                    index=idx,
+                    total=total,
+                    changeset=cs,
+                )
+        finally:
+            git("checkout", original)
+            delete_branch(temp_branch)
+            print(f"\n[INFO] Restored original branch: {original}")

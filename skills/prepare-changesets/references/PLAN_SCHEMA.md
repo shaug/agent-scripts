@@ -88,8 +88,14 @@ Changeset fields:
     the hunk body.
   - `occurrence` (integer, optional): Pick the Nth matching hunk when multiple
     matches exist (1-based).
+  - `all` (boolean, optional): When true, select all hunks for the file and
+    ignore other selector fields.
 - `allow_partial_files` (boolean, optional): Defaults to `true`. When `false`,
   all hunks in a selected file must be included.
+
+Note: `mode="hunks"` requires textual hunks. Pure rename-only diffs should use
+`mode="paths"` or `mode="patch"` instead.
+
 - `commit_message` (string, optional): Defaults to `"changeset N: <slug>"`.
 - `pr_notes` (array of strings, optional): Bullets describing scaffolding,
   flags, and intentional incompleteness for the PR body.

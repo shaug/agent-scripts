@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-01-27 — Initialize monorepo and adopt incremental changeset workflows
 
+- feat: all-hunks selectors and strict apply checks for hunk mode
 - feat: rename-aware hunk selection and rename-first guidance
+  (998000f86f607740b242d042fc7d77793753725a)
 - feat: hunk-based changesets with strict validation and patch support
   (7fb3d61890767a4085132a69dd2020ea5e1b8810)
 - feat: incremental changesets with squash-check and mdformat 1.0 tooling

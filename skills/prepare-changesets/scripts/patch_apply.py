@@ -19,6 +19,8 @@ class HunkSelector:
     contains: Tuple[str, ...]
     excludes: Tuple[str, ...]
     occurrence: Optional[int]
+    all_hunks: bool
+    has_filters: bool
 
 
 @dataclass
@@ -104,6 +106,12 @@ def parse_hunk_selectors(
             raise CommandError(
                 f"{changeset_label}: hunk selector {idx} 'excludes' must be a string array."
             )
+        all_hunks = raw.get("all", False)
+        if all_hunks is not False and not isinstance(all_hunks, bool):
+            raise CommandError(
+                f"{changeset_label}: hunk selector {idx} 'all' must be a boolean."
+            )
+
         occurrence = raw.get("occurrence")
         if occurrence is not None and (
             not isinstance(occurrence, int) or occurrence < 1
@@ -112,6 +120,10 @@ def parse_hunk_selectors(
                 f"{changeset_label}: hunk selector {idx} 'occurrence' must be a positive integer."
             )
 
+        has_filters = bool(
+            all_hunks or range_header or contains or excludes or occurrence is not None
+        )
+
         parsed.append(
             HunkSelector(
                 file=file_path,
@@ -119,6 +131,8 @@ def parse_hunk_selectors(
                 contains=tuple(str(c) for c in contains),
                 excludes=tuple(str(c) for c in excludes),
                 occurrence=occurrence,
+                all_hunks=bool(all_hunks),
+                has_filters=has_filters,
             )
         )
     return parsed
@@ -241,57 +255,80 @@ def select_hunks_for_changeset(
                 f"{changeset_label}: {label} has no hunks available to select."
             )
 
+        select_all = any(sel.all_hunks for sel in file_selectors) or (
+            not allow_partial_files
+            and any(not sel.has_filters for sel in file_selectors)
+        )
         chosen: List[Hunk] = []
-        for selector in file_selectors:
-            seen_selectors[id(selector)] = True
-            if include_paths and not any(
-                _matches_any(path, include_paths) for path in labels
-            ):
-                raise CommandError(
-                    f"{changeset_label}: selector file {selector.file} does not match include_paths."
-                )
-            if exclude_paths and any(
-                _matches_any(path, exclude_paths) for path in labels
-            ):
-                raise CommandError(
-                    f"{changeset_label}: selector file {selector.file} is excluded by exclude_paths."
-                )
-            candidates: List[Hunk] = []
-            for hunk in df.hunks:
-                if (
-                    selector.range_header
-                    and selector.range_header.strip() != hunk.header.strip()
+        if select_all:
+            for selector in file_selectors:
+                seen_selectors[id(selector)] = True
+                if include_paths and not any(
+                    _matches_any(path, include_paths) for path in labels
                 ):
-                    continue
-                body = hunk.body_text
-                if selector.contains and not all(c in body for c in selector.contains):
-                    continue
-                if selector.excludes and any(c in body for c in selector.excludes):
-                    continue
-                candidates.append(hunk)
-
-            if not candidates:
-                raise CommandError(
-                    f"{changeset_label}: selector for {label} matched no hunks."
-                )
-
-            if selector.occurrence is not None:
-                if selector.occurrence > len(candidates):
                     raise CommandError(
-                        f"{changeset_label}: selector for {label} occurrence {selector.occurrence}"
-                        f" exceeds {len(candidates)} matches."
+                        f"{changeset_label}: selector file {selector.file} does not match include_paths."
                     )
-                chosen_hunk = candidates[selector.occurrence - 1]
-                if chosen_hunk not in chosen:
-                    chosen.append(chosen_hunk)
-            else:
-                if len(candidates) > 1:
+                if exclude_paths and any(
+                    _matches_any(path, exclude_paths) for path in labels
+                ):
                     raise CommandError(
-                        f"{changeset_label}: selector for {label} matched multiple hunks; "
-                        "add 'occurrence' to disambiguate."
+                        f"{changeset_label}: selector file {selector.file} is excluded by exclude_paths."
                     )
-                if candidates[0] not in chosen:
-                    chosen.append(candidates[0])
+            chosen = list(df.hunks)
+        else:
+            for selector in file_selectors:
+                seen_selectors[id(selector)] = True
+                if include_paths and not any(
+                    _matches_any(path, include_paths) for path in labels
+                ):
+                    raise CommandError(
+                        f"{changeset_label}: selector file {selector.file} does not match include_paths."
+                    )
+                if exclude_paths and any(
+                    _matches_any(path, exclude_paths) for path in labels
+                ):
+                    raise CommandError(
+                        f"{changeset_label}: selector file {selector.file} is excluded by exclude_paths."
+                    )
+                candidates: List[Hunk] = []
+                for hunk in df.hunks:
+                    if (
+                        selector.range_header
+                        and selector.range_header.strip() != hunk.header.strip()
+                    ):
+                        continue
+                    body = hunk.body_text
+                    if selector.contains and not all(
+                        c in body for c in selector.contains
+                    ):
+                        continue
+                    if selector.excludes and any(c in body for c in selector.excludes):
+                        continue
+                    candidates.append(hunk)
+
+                if not candidates:
+                    raise CommandError(
+                        f"{changeset_label}: selector for {label} matched no hunks."
+                    )
+
+                if selector.occurrence is not None:
+                    if selector.occurrence > len(candidates):
+                        raise CommandError(
+                            f"{changeset_label}: selector for {label} occurrence {selector.occurrence}"
+                            f" exceeds {len(candidates)} matches."
+                        )
+                    chosen_hunk = candidates[selector.occurrence - 1]
+                    if chosen_hunk not in chosen:
+                        chosen.append(chosen_hunk)
+                else:
+                    if len(candidates) > 1:
+                        raise CommandError(
+                            f"{changeset_label}: selector for {label} matched multiple hunks; "
+                            "add 'occurrence' to disambiguate."
+                        )
+                    if candidates[0] not in chosen:
+                        chosen.append(candidates[0])
 
         if not allow_partial_files and len(chosen) != len(df.hunks):
             raise CommandError(
@@ -350,6 +387,33 @@ def apply_patch_text(patch_text: str, *, label: str) -> None:
         patch_path.unlink(missing_ok=True)
 
 
+def check_patch_text(patch_text: str, *, label: str) -> None:
+    if not patch_text.strip():
+        raise CommandError(f"{label}: patch is empty.")
+
+    with tempfile.NamedTemporaryFile("w", delete=False, prefix="pcs-patch-") as handle:
+        handle.write(patch_text)
+        patch_path = Path(handle.name)
+
+    try:
+        result = git(
+            "apply",
+            "--check",
+            "--3way",
+            "--whitespace=nowarn",
+            str(patch_path),
+            check=False,
+        )
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            raise CommandError(
+                f"{label}: git apply --check failed.\n"
+                f"{detail or 'Patch did not apply cleanly.'}"
+            )
+    finally:
+        patch_path.unlink(missing_ok=True)
+
+
 def resolve_patch_path(patch_file: str) -> Path:
     raw = Path(patch_file)
     return raw if raw.is_absolute() else repo_root() / raw
@@ -361,3 +425,11 @@ def apply_patch_file(patch_file: str, *, label: str) -> None:
         raise CommandError(f"{label}: patch file not found: {patch_path}")
     patch_text = patch_path.read_text()
     apply_patch_text(patch_text, label=label)
+
+
+def check_patch_file(patch_file: str, *, label: str) -> None:
+    patch_path = resolve_patch_path(patch_file)
+    if not patch_path.exists():
+        raise CommandError(f"{label}: patch file not found: {patch_path}")
+    patch_text = patch_path.read_text()
+    check_patch_text(patch_text, label=label)

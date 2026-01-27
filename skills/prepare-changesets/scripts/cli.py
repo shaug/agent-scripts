@@ -15,6 +15,7 @@ from common import (
     branch_name_for,
     discover_test_command,
     ensure_clean_tree,
+    ensure_git_repo,
     init_plan,
     load_plan,
     validate_plan,
@@ -22,7 +23,7 @@ from common import (
 from dbcompare import db_compare
 from github import pr_create, pr_merge
 from patch_apply import build_diff
-from plan_checks import validate_plan_strict
+from plan_checks import strict_apply_check, validate_plan_strict
 from preflight import preflight
 from propagate import propagate_downstream, push_chain
 
@@ -110,6 +111,9 @@ def cmd_validate(args: argparse.Namespace) -> None:
             for err in strict_errors:
                 print(f"  - {err}")
             raise CommandError("Plan is invalid under --strict.")
+        ensure_git_repo()
+        ensure_clean_tree()
+        strict_apply_check(plan)
         print("[OK] Strict validation passed.")
         return
     print("[OK] Plan validation passed.")

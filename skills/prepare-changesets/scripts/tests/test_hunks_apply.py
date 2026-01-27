@@ -7,7 +7,8 @@ from pathlib import Path
 
 import helpers
 from chain import compare_chain, create_chain
-from plan_checks import validate_plan_strict
+from common import CommandError
+from plan_checks import strict_apply_check, validate_plan_strict
 
 
 def _write_lines(path: Path, lines: list[str]) -> None:
@@ -214,6 +215,52 @@ def _init_rename_repo() -> tuple[Path, dict]:
     return repo_dir, plan
 
 
+def _init_bad_patch_repo() -> tuple[Path, dict]:
+    repo_dir = Path(tempfile.mkdtemp(prefix="pcs-test-bad-patch-"))
+    helpers.run(["git", "init", "-b", "main"], cwd=repo_dir)
+    helpers.run(["git", "config", "user.name", "PCS Test"], cwd=repo_dir)
+    helpers.run(["git", "config", "user.email", "pcs-test@example.com"], cwd=repo_dir)
+    (repo_dir / ".gitignore").write_text(".prepare-changesets/\n")
+
+    (repo_dir / "base.txt").write_text("base\n")
+    helpers.run(["git", "add", "-A"], cwd=repo_dir)
+    helpers.run(["git", "commit", "-m", "base"], cwd=repo_dir)
+
+    helpers.run(["git", "checkout", "-b", "feature/bad-patch"], cwd=repo_dir)
+    helpers.run(["git", "commit", "--allow-empty", "-m", "feature"], cwd=repo_dir)
+
+    patch_dir = repo_dir / ".prepare-changesets" / "patches"
+    patch_dir.mkdir(parents=True, exist_ok=True)
+    (patch_dir / "bad.patch").write_text(
+        "diff --git a/base.txt b/base.txt\n"
+        "index 0000000..1111111 100644\n"
+        "--- a/base.txt\n"
+        "+++ b/base.txt\n"
+        "@@ -1 +1 @@\n"
+        "-missing\n"
+        "+bad\n"
+    )
+
+    plan = {
+        "feature_title": "Bad patch",
+        "base_branch": "main",
+        "source_branch": "feature/bad-patch",
+        "test_command": "",
+        "changesets": [
+            {
+                "slug": "bad-patch",
+                "description": "Patch that will not apply.",
+                "mode": "patch",
+                "patch_file": ".prepare-changesets/patches/bad.patch",
+                "commit_message": "cs1",
+                "pr_notes": [],
+            }
+        ],
+    }
+
+    return repo_dir, plan
+
+
 class HunkApplyTests(unittest.TestCase):
     def test_hunks_apply_simple(self) -> None:
         repo_dir, plan = _init_hunk_repo()
@@ -261,6 +308,54 @@ class HunkApplyTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
+    def test_hunks_all_selector(self) -> None:
+        repo_dir, plan = _init_hunk_repo()
+        try:
+            plan["changesets"] = [
+                {
+                    "slug": "all-hunks",
+                    "description": "Select all hunks explicitly.",
+                    "mode": "hunks",
+                    "include_paths": ["notes.txt"],
+                    "exclude_paths": [],
+                    "allow_partial_files": True,
+                    "hunk_selectors": [{"file": "notes.txt", "all": True}],
+                    "commit_message": "cs1",
+                    "pr_notes": [],
+                }
+            ]
+            with helpers.chdir(repo_dir):
+                create_chain(plan)
+                diffstat, namestatus = compare_chain(plan)
+                self.assertEqual(diffstat, "")
+                self.assertEqual(namestatus, "")
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_hunks_all_with_allow_partial_false(self) -> None:
+        repo_dir, plan = _init_hunk_repo()
+        try:
+            plan["changesets"] = [
+                {
+                    "slug": "all-hunks",
+                    "description": "Select all hunks implicitly.",
+                    "mode": "hunks",
+                    "include_paths": ["notes.txt"],
+                    "exclude_paths": [],
+                    "allow_partial_files": False,
+                    "hunk_selectors": [{"file": "notes.txt"}],
+                    "commit_message": "cs1",
+                    "pr_notes": [],
+                }
+            ]
+            with helpers.chdir(repo_dir):
+                create_chain(plan)
+                diffstat, namestatus = compare_chain(plan)
+                self.assertEqual(diffstat, "")
+                self.assertEqual(namestatus, "")
+        finally:
+            shutil.rmtree(repo_dir)
+
     def test_hunks_with_rename_scope_include_new_path(self) -> None:
         repo_dir, plan = _init_rename_repo()
         try:
@@ -283,6 +378,15 @@ class HunkApplyTests(unittest.TestCase):
                 ok, errors, _warnings = validate_plan_strict(plan)
                 self.assertFalse(ok)
                 self.assertTrue(errors)
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_strict_apply_check_fails(self) -> None:
+        repo_dir, plan = _init_bad_patch_repo()
+        try:
+            with helpers.chdir(repo_dir):
+                with self.assertRaises(CommandError):
+                    strict_apply_check(plan)
         finally:
             shutil.rmtree(repo_dir)
 

@@ -74,7 +74,11 @@ The skill supports three deterministic extraction modes:
 
 Hunk selection must be driven by explicit selectors (file + range/contains) that
 can be validated for ambiguity. When `allow_partial_files` is false, a changeset
-must include all hunks for any selected file.
+must include all hunks for any selected file. Use `all: true` in a selector to
+include every hunk in a file.
+
+Hunk mode requires textual hunks. Pure rename-only diffs should be handled via
+`paths` or `patch` mode.
 
 ______________________________________________________________________
 
