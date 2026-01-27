@@ -282,6 +282,7 @@ def cmd_propagate(args: argparse.Namespace) -> None:
         skip_local_merge=args.skip_local_merge,
         push=args.push,
         remote=args.remote,
+        strategy=args.strategy,
     )
 
 
@@ -305,6 +306,7 @@ def cmd_merge_propagate(args: argparse.Namespace) -> None:
         skip_local_merge=args.skip_local_merge,
         push=args.push,
         remote=args.remote,
+        strategy=args.strategy,
     )
 
 
@@ -476,6 +478,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip local base-branch merge simulation.",
     )
     p_merge.add_argument(
+        "--strategy",
+        choices=("rebase", "cherry-pick"),
+        default="rebase",
+        help="Propagate via rebase (default) or cherry-picking the merged changeset commits.",
+    )
+    p_merge.add_argument(
         "--push",
         action="store_true",
         help="Push updated branches to the remote with --force-with-lease.",
@@ -498,7 +506,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_merge.set_defaults(func=cmd_merge_propagate, dry_run=True, update_pr_bases=True)
 
     p_propagate = sub.add_parser(
-        "propagate", help="Rebase downstream changesets after a merge."
+        "propagate", help="Propagate downstream changesets after a merge."
     )
     p_propagate.add_argument("--plan", default=str(DEFAULT_PLAN_PATH), help="Plan path")
     p_propagate.add_argument(
@@ -523,6 +531,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-local-merge",
         action="store_true",
         help="Skip local base-branch merge simulation.",
+    )
+    p_propagate.add_argument(
+        "--strategy",
+        choices=("rebase", "cherry-pick"),
+        default="rebase",
+        help="Propagate via rebase (default) or cherry-picking the merged changeset commits.",
     )
     p_propagate.add_argument(
         "--push",

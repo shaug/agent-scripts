@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-01-27 — Incremental changesets and workflow reliability fixes
 
+- feat: add cherry-pick propagation strategy
 - docs: require pushing changeset branches before PR creation
+  (47a92e5e418f75dcf773c54ab8c8e7bb7e29a30f)
 - fix: require recordkeeping directories to be ignored in preflight
   (efe0a3c676bd168a2b3a8b93c20adcd7541cf40b)
 - fix: avoid staging plan artifacts and ignore AGENTS metadata

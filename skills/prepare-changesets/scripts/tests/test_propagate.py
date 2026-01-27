@@ -44,6 +44,7 @@ class PropagateTests(unittest.TestCase):
                         skip_local_merge=True,
                         push=False,
                         remote="origin",
+                        strategy="rebase",
                     )
 
                 self.assertEqual(bases, ["main"])
@@ -81,6 +82,7 @@ class PropagateTests(unittest.TestCase):
                     skip_local_merge=False,
                     push=True,
                     remote="origin",
+                    strategy="rebase",
                 )
 
             cs2 = f"{plan['source_branch']}-2"
@@ -93,6 +95,38 @@ class PropagateTests(unittest.TestCase):
             shutil.rmtree(repo_dir)
             if remote_dir is not None:
                 shutil.rmtree(remote_dir.parent)
+
+    def test_propagate_cherry_picks_changes_from_merged_branch(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            from chain import create_chain
+
+            with chdir(repo_dir):
+                create_chain(plan)
+                cs1 = f"{plan['source_branch']}-1"
+                cs2 = f"{plan['source_branch']}-2"
+
+                run(["git", "checkout", cs1], cwd=repo_dir)
+                (repo_dir / "a.txt").write_text("feature-a-reviewed\n")
+                run(["git", "add", "a.txt"], cwd=repo_dir)
+                run(["git", "commit", "-m", "review fix"], cwd=repo_dir)
+
+                propagate_downstream(
+                    plan=plan,
+                    merged_index=1,
+                    dry_run=False,
+                    update_pr_bases=False,
+                    skip_local_merge=True,
+                    push=False,
+                    remote="origin",
+                    strategy="cherry-pick",
+                )
+
+                run(["git", "checkout", cs2], cwd=repo_dir)
+                content = (repo_dir / "a.txt").read_text()
+                self.assertEqual(content, "feature-a-reviewed\n")
+        finally:
+            shutil.rmtree(repo_dir)
 
 
 if __name__ == "__main__":

@@ -96,6 +96,7 @@ def propagate_downstream(
     skip_local_merge: bool,
     push: bool,
     remote: str,
+    strategy: str = "rebase",
 ) -> None:
     ensure_git_repo()
     ensure_clean_tree()
@@ -106,6 +107,12 @@ def propagate_downstream(
 
     if merged_index < 0 or merged_index > total:
         raise CommandError(f"--merged-index must be between 0 and {total}.")
+
+    if strategy not in ("rebase", "cherry-pick"):
+        raise CommandError("--strategy must be 'rebase' or 'cherry-pick'.")
+
+    if strategy == "cherry-pick" and merged_index == 0:
+        raise CommandError("--strategy=cherry-pick requires --merged-index to be >= 1.")
 
     if push and not remote_exists(remote):
         raise CommandError(f"Remote does not exist: {remote}")
@@ -151,14 +158,40 @@ def propagate_downstream(
             name = chain[idx - 1]
             new_base = downstream_base_after_merge(base, source, merged_index, idx)
 
-            print(f"\n[STEP] Rebasing {name} onto {new_base}")
-            if dry_run:
-                print("[DRY-RUN] Would run:")
-                print(f"git checkout {name}")
-                print(f"git rebase {new_base}")
+            if strategy == "rebase":
+                print(f"\n[STEP] Rebasing {name} onto {new_base}")
+                if dry_run:
+                    print("[DRY-RUN] Would run:")
+                    print(f"git checkout {name}")
+                    print(f"git rebase {new_base}")
+                else:
+                    git("checkout", name)
+                    git("rebase", new_base)
             else:
-                git("checkout", name)
-                git("rebase", new_base)
+                merge_base = git("merge-base", merged_head, name).stdout.strip()
+                commits = (
+                    git("rev-list", "--reverse", f"{merge_base}..{merged_head}")
+                    .stdout.strip()
+                    .splitlines()
+                )
+                commits = [c for c in commits if c]
+                if not commits:
+                    print(
+                        f"\n[WARN] No new commits to cherry-pick from {merged_head} onto {name}."
+                    )
+                else:
+                    print(
+                        f"\n[STEP] Cherry-picking {len(commits)} commit(s) from {merged_head} onto {name}"
+                    )
+                    if dry_run:
+                        print("[DRY-RUN] Would run:")
+                        print(f"git checkout {name}")
+                        for commit in commits:
+                            print(f"git cherry-pick {commit}")
+                    else:
+                        git("checkout", name)
+                        for commit in commits:
+                            git("cherry-pick", commit)
 
             if push:
                 push_branch(name, remote=remote, dry_run=dry_run)
@@ -192,6 +225,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-update-pr-bases", dest="update_pr_bases", action="store_false"
     )
     parser.add_argument("--skip-local-merge", action="store_true")
+    parser.add_argument(
+        "--strategy",
+        choices=("rebase", "cherry-pick"),
+        default="rebase",
+        help="Propagate via rebase (default) or cherry-picking the merged changeset commits.",
+    )
     parser.add_argument("--push", action="store_true")
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")

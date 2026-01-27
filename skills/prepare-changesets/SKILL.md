@@ -338,6 +338,15 @@ By default, propagation updates downstream PR bases with `gh pr edit --base`.
 Disable that with `--no-update-pr-bases`. Add `--push` to push updated branches
 with `--force-with-lease` (remote defaults to `origin`).
 
+Propagation strategy:
+
+- `--strategy rebase` (default) rewrites downstream history by rebasing onto the
+  new base.
+- `--strategy cherry-pick` preserves downstream history and applies the merged
+  changeset commits onto each downstream branch. Each downstream branch
+  cherry-picks from the original merged changeset branch (not from another
+  downstream branch), so conflict resolutions do not cascade.
+
 ## Operational Notes
 
 - Prefer explicit plan edits over clever automation.
