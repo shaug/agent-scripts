@@ -119,6 +119,11 @@ Wide refactors should either:
 - be isolated into an early changeset, or
 - be deferred entirely.
 
+Renames may be mixed with behavioral changes when splitting would increase
+cognitive load or create an awkward intermediate state. When renames dominate or
+meaningfully reduce diff noise, prefer a **rename-first** changeset that
+stabilizes file paths before behavior changes.
+
 ______________________________________________________________________
 
 ## Branch Creation and Naming Strategy
@@ -211,6 +216,15 @@ The PR body must make it clear:
 - and how later changesets will complete or clean up the work.
 
 This documentation is critical for reviewer trust.
+
+If a changeset is primarily renames, state explicitly:
+
+- rename-only / mechanical; no behavior change intended
+
+If a changeset mixes renames and behavior, state explicitly:
+
+- includes rename(s) X → Y plus the minimal behavior changes needed to keep the
+  code coherent
 
 ______________________________________________________________________
 

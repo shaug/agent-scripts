@@ -101,13 +101,34 @@ def _validate_patch_mode(*, changeset: Dict, index: int, errors: List[str]) -> N
         errors.append(f"Changeset {index}: patch_file is empty: {path}")
 
 
+def _warn_old_path_selectors(
+    *,
+    diff_files: Sequence,
+    selectors: Sequence,
+    index: int,
+    warnings: List[str],
+) -> None:
+    renames: Dict[str, str] = {}
+    for df in diff_files:
+        if df.old_path and df.new_path and df.old_path != df.new_path:
+            renames[df.old_path] = df.new_path
+
+    for selector in selectors:
+        new_path = renames.get(selector.file)
+        if new_path:
+            warnings.append(
+                f"Changeset {index}: selector references old path {selector.file}; "
+                f"prefer new path {new_path} for stability."
+            )
+
+
 def _validate_hunks_mode(
     *,
-    base: str,
-    source: str,
+    diff_files: Sequence,
     changeset: Dict,
     index: int,
     errors: List[str],
+    warnings: List[str],
 ) -> None:
     selectors = changeset.get("hunk_selectors", [])
     try:
@@ -119,7 +140,6 @@ def _validate_hunks_mode(
     include = changeset.get("include_paths", [])
     exclude = changeset.get("exclude_paths", [])
     allow_partial = bool(changeset.get("allow_partial_files", True))
-    diff_files = build_diff(base, source)
     try:
         select_hunks_for_changeset(
             diff_files,
@@ -131,6 +151,14 @@ def _validate_hunks_mode(
         )
     except CommandError as exc:
         errors.append(str(exc))
+        return
+
+    _warn_old_path_selectors(
+        diff_files=diff_files,
+        selectors=parsed,
+        index=index,
+        warnings=warnings,
+    )
 
 
 def _warn_state_drift(plan: Dict, warnings: List[str]) -> None:
@@ -188,6 +216,8 @@ def validate_plan_strict(plan: Dict) -> Tuple[bool, List[str], List[str]]:
         errors.append("Plan missing changesets array.")
         return False, errors, warnings
 
+    diff_files = build_diff(base, source)
+
     for idx, cs in enumerate(changesets, start=1):
         if not isinstance(cs, dict):
             errors.append(f"Changeset {idx} must be an object.")
@@ -201,7 +231,11 @@ def validate_plan_strict(plan: Dict) -> Tuple[bool, List[str], List[str]]:
             _validate_patch_mode(changeset=cs, index=idx, errors=errors)
         elif mode == "hunks":
             _validate_hunks_mode(
-                base=base, source=source, changeset=cs, index=idx, errors=errors
+                diff_files=diff_files,
+                changeset=cs,
+                index=idx,
+                errors=errors,
+                warnings=warnings,
             )
         else:
             errors.append(

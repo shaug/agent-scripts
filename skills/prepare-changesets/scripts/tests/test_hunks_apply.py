@@ -174,6 +174,46 @@ def _init_patch_repo() -> tuple[Path, dict]:
     return repo_dir, plan
 
 
+def _init_rename_repo() -> tuple[Path, dict]:
+    repo_dir = Path(tempfile.mkdtemp(prefix="pcs-test-rename-"))
+    helpers.run(["git", "init", "-b", "main"], cwd=repo_dir)
+    helpers.run(["git", "config", "user.name", "PCS Test"], cwd=repo_dir)
+    helpers.run(["git", "config", "user.email", "pcs-test@example.com"], cwd=repo_dir)
+    (repo_dir / ".gitignore").write_text(".prepare-changesets/\n")
+
+    (repo_dir / "old.txt").write_text("alpha\nbeta\ngamma\n")
+    helpers.run(["git", "add", "-A"], cwd=repo_dir)
+    helpers.run(["git", "commit", "-m", "base"], cwd=repo_dir)
+
+    helpers.run(["git", "checkout", "-b", "feature/rename"], cwd=repo_dir)
+    helpers.run(["git", "mv", "old.txt", "new.txt"], cwd=repo_dir)
+    (repo_dir / "new.txt").write_text("alpha\nbeta changed\ngamma\n")
+    helpers.run(["git", "add", "-A"], cwd=repo_dir)
+    helpers.run(["git", "commit", "-m", "rename"], cwd=repo_dir)
+
+    plan = {
+        "feature_title": "Rename feature",
+        "base_branch": "main",
+        "source_branch": "feature/rename",
+        "test_command": "",
+        "changesets": [
+            {
+                "slug": "rename-hunk",
+                "description": "Rename plus hunk.",
+                "mode": "hunks",
+                "include_paths": ["new.txt"],
+                "exclude_paths": [],
+                "allow_partial_files": True,
+                "hunk_selectors": [{"file": "old.txt", "contains": ["beta changed"]}],
+                "commit_message": "cs1",
+                "pr_notes": [],
+            }
+        ],
+    }
+
+    return repo_dir, plan
+
+
 class HunkApplyTests(unittest.TestCase):
     def test_hunks_apply_simple(self) -> None:
         repo_dir, plan = _init_hunk_repo()
@@ -218,6 +258,31 @@ class HunkApplyTests(unittest.TestCase):
                 diffstat, namestatus = compare_chain(plan)
                 self.assertEqual(diffstat, "")
                 self.assertEqual(namestatus, "")
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_hunks_with_rename_scope_include_new_path(self) -> None:
+        repo_dir, plan = _init_rename_repo()
+        try:
+            with helpers.chdir(repo_dir):
+                ok, errors, warnings = validate_plan_strict(plan)
+                self.assertTrue(ok, f"expected strict validation to pass: {errors}")
+                self.assertTrue(warnings, "expected a warning for old path usage")
+                create_chain(plan)
+                diffstat, namestatus = compare_chain(plan)
+                self.assertEqual(diffstat, "")
+                self.assertEqual(namestatus, "")
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_hunks_with_rename_scope_exclude_either_path(self) -> None:
+        repo_dir, plan = _init_rename_repo()
+        try:
+            plan["changesets"][0]["exclude_paths"] = ["old.txt"]
+            with helpers.chdir(repo_dir):
+                ok, errors, _warnings = validate_plan_strict(plan)
+                self.assertFalse(ok)
+                self.assertTrue(errors)
         finally:
             shutil.rmtree(repo_dir)
 

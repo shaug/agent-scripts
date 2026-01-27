@@ -136,7 +136,10 @@ def cmd_hunk_preview(args: argparse.Namespace) -> None:
     excludes = args.excludes or []
 
     for df in matched:
-        label = df.new_path or df.old_path or "<unknown>"
+        if df.old_path and df.new_path and df.old_path != df.new_path:
+            label = f"{df.old_path} -> {df.new_path}"
+        else:
+            label = df.new_path or df.old_path or "<unknown>"
         print(f"[FILE] {label}")
         if df.is_binary:
             print("  [BIN] Binary file; no textual hunks available.")

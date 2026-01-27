@@ -130,6 +130,7 @@ Honor the decomposition preferences in `references/SPEC.md`, especially:
 - keep intent cohesive
 - do not propose changesets that require future changesets to be partially
   present in order to be understandable or reviewable
+- prefer rename-first changesets when they reduce diff noise or stabilize paths
 
 3. Initialize the plan.
 
@@ -252,6 +253,15 @@ Body requirements:
 - call out temporary scaffolding, flags, and intentional incompleteness
 - document intent, scope, and temporary compromises only
 - do not use PR bodies for marketing, justification, or speculative discussion
+
+If a changeset is primarily renames, add a PR note:
+
+- rename-only / mechanical; no behavior change intended
+
+If a changeset mixes renames and behavior, add a PR note:
+
+- includes rename(s) X → Y plus minimal behavior changes needed to keep the code
+  coherent
 
 Use the helper to generate `gh` commands and PR bodies:
 

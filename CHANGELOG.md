@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-01-27 — Initialize monorepo and adopt incremental changeset workflows
 
+- feat: rename-aware hunk selection and rename-first guidance
 - feat: hunk-based changesets with strict validation and patch support
+  (7fb3d61890767a4085132a69dd2020ea5e1b8810)
 - feat: incremental changesets with squash-check and mdformat 1.0 tooling
   (797e56fcb2bc41fd8e84491866c86a2af1dd31f9)
 - fix: CI agentskills install and changelog workflow rules

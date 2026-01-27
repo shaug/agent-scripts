@@ -77,7 +77,9 @@ Changeset fields:
   file (recommended under `.prepare-changesets/patches/`).
 - `hunk_selectors` (array, optional): Required for `mode="hunks"`. Each selector
   is an object with:
-  - `file` (string, required): Repo-relative path for the diff file.
+  - `file` (string, required): Repo-relative path for the diff file. When a file
+    is renamed, this may refer to either the old or new path. Prefer the new
+    path for stability.
   - `range` (string, optional): Exact hunk header to match (e.g.,
     `"@@ -120,7 +120,18 @@"`).
   - `contains` (array of strings, optional): All strings must appear in the hunk

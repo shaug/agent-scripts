@@ -181,7 +181,13 @@ def parse_unified_diff(diff_text: str) -> List[DiffFile]:
 
 
 def build_diff(base: str, source: str) -> List[DiffFile]:
-    diff = git("diff", "--binary", "--full-index", f"{base}..{source}").stdout
+    diff = git(
+        "diff",
+        "--binary",
+        "--full-index",
+        "--find-renames=20%",
+        f"{base}..{source}",
+    ).stdout
     return parse_unified_diff(diff)
 
 
@@ -202,23 +208,6 @@ def _selectors_for_file(
     return matched
 
 
-def _validate_selector_file_scope(
-    selector: HunkSelector,
-    include_paths: Sequence[str],
-    exclude_paths: Sequence[str],
-    *,
-    changeset_label: str,
-) -> None:
-    if include_paths and not _matches_any(selector.file, include_paths):
-        raise CommandError(
-            f"{changeset_label}: selector file {selector.file} does not match include_paths."
-        )
-    if exclude_paths and _matches_any(selector.file, exclude_paths):
-        raise CommandError(
-            f"{changeset_label}: selector file {selector.file} is excluded by exclude_paths."
-        )
-
-
 def select_hunks_for_changeset(
     diff_files: Sequence[DiffFile],
     selectors: Sequence[HunkSelector],
@@ -236,20 +225,13 @@ def select_hunks_for_changeset(
     selected_hunks = 0
     seen_selectors = {id(selector): False for selector in selectors}
 
-    for selector in selectors:
-        _validate_selector_file_scope(
-            selector,
-            include_paths=include_paths,
-            exclude_paths=exclude_paths,
-            changeset_label=changeset_label,
-        )
-
     for df in diff_files:
         file_selectors = _selectors_for_file(selectors, df)
         if not file_selectors:
             continue
 
         label = _file_label(df)
+        labels = {p for p in (df.old_path, df.new_path) if p}
         if df.is_binary:
             raise CommandError(
                 f"{changeset_label}: {label} is binary; use mode=patch for binary files."
@@ -262,6 +244,18 @@ def select_hunks_for_changeset(
         chosen: List[Hunk] = []
         for selector in file_selectors:
             seen_selectors[id(selector)] = True
+            if include_paths and not any(
+                _matches_any(path, include_paths) for path in labels
+            ):
+                raise CommandError(
+                    f"{changeset_label}: selector file {selector.file} does not match include_paths."
+                )
+            if exclude_paths and any(
+                _matches_any(path, exclude_paths) for path in labels
+            ):
+                raise CommandError(
+                    f"{changeset_label}: selector file {selector.file} is excluded by exclude_paths."
+                )
             candidates: List[Hunk] = []
             for hunk in df.hunks:
                 if (
