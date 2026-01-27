@@ -331,6 +331,9 @@ with `--force-with-lease` (remote defaults to `origin`).
 ## Operational Notes
 
 - Prefer explicit plan edits over clever automation.
+- Keep `.prepare-changesets/` ignored in the repo (add it to `.gitignore` or
+  `.git/info/exclude`); preflight stops unless you override with
+  `--allow-recordkeeping-tracked`.
 - Keep `.prepare-changesets/plan.json` out of PRs.
 - Use the script for mechanical steps and Git for judgment calls.
 - For database migrations, follow the validation guidance in

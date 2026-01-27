@@ -83,6 +83,42 @@ class PreflightTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
+    def test_preflight_requires_recordkeeping_ignored(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            (repo_dir / ".gitignore").write_text("")
+            run(["git", "add", ".gitignore"], cwd=repo_dir)
+            run(["git", "commit", "-m", "update ignore"], cwd=repo_dir)
+            with chdir(repo_dir):
+                with self.assertRaises(CommandError):
+                    preflight_mod.preflight(
+                        base=plan["base_branch"],
+                        source=plan["source_branch"],
+                        test_cmd="",
+                        skip_tests=True,
+                        skip_merge_check=True,
+                    )
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_preflight_allows_recordkeeping_tracked_with_override(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            (repo_dir / ".gitignore").write_text("")
+            run(["git", "add", ".gitignore"], cwd=repo_dir)
+            run(["git", "commit", "-m", "update ignore"], cwd=repo_dir)
+            with chdir(repo_dir):
+                preflight_mod.preflight(
+                    base=plan["base_branch"],
+                    source=plan["source_branch"],
+                    test_cmd="",
+                    skip_tests=True,
+                    skip_merge_check=True,
+                    allow_recordkeeping_tracked=True,
+                )
+        finally:
+            shutil.rmtree(repo_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

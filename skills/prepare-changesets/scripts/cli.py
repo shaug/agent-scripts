@@ -47,6 +47,7 @@ def cmd_preflight(args: argparse.Namespace) -> None:
         skip_merge_check=args.skip_merge_check,
         allow_source_behind_base=args.allow_source_behind_base,
         confirm_source_behind_base=args.confirm_source_behind_base,
+        allow_recordkeeping_tracked=args.allow_recordkeeping_tracked,
     )
 
 
@@ -176,6 +177,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         skip_merge_check=args.skip_merge_check,
         allow_source_behind_base=args.allow_source_behind_base,
         confirm_source_behind_base=args.confirm_source_behind_base,
+        allow_recordkeeping_tracked=args.allow_recordkeeping_tracked,
     )
 
     if not plan_exists or args.force_init:
@@ -352,6 +354,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--confirm-source-behind-base",
         action="store_true",
         help="Prompt for confirmation when source is behind base.",
+    )
+    p_preflight.add_argument(
+        "--allow-recordkeeping-tracked",
+        action="store_true",
+        help="Allow preflight to continue when .prepare-changesets/ is not ignored.",
     )
     p_preflight.set_defaults(func=cmd_preflight)
 
@@ -636,6 +643,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--confirm-source-behind-base",
         action="store_true",
         help="Prompt for confirmation when source is behind base.",
+    )
+    p_run.add_argument(
+        "--allow-recordkeeping-tracked",
+        action="store_true",
+        help="Allow preflight to continue when .prepare-changesets/ is not ignored.",
     )
     p_run.add_argument(
         "--create-chain",

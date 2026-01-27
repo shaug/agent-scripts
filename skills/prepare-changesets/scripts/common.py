@@ -85,6 +85,25 @@ def ensure_clean_tree() -> None:
         )
 
 
+def is_path_ignored(path: Path | str) -> bool:
+    raw = path.as_posix() if isinstance(path, Path) else str(path)
+    candidates = {raw, raw.rstrip("/")}
+    for candidate in sorted(candidates):
+        if not candidate:
+            continue
+        result = git(
+            "check-ignore",
+            "-q",
+            "--",
+            candidate,
+            capture=False,
+            check=False,
+        )
+        if result.returncode == 0:
+            return True
+    return False
+
+
 def branch_exists(name: str) -> bool:
     result = git("rev-parse", "--verify", name, capture=True, check=False)
     return result.returncode == 0

@@ -16,6 +16,7 @@ from common import (
     ensure_clean_tree,
     ensure_git_repo,
     git,
+    is_path_ignored,
     record_preflight_state,
     unique_temp_branch,
 )
@@ -83,6 +84,7 @@ def preflight(
     skip_merge_check: bool,
     allow_source_behind_base: bool = False,
     confirm_source_behind_base: bool = False,
+    allow_recordkeeping_tracked: bool = False,
 ) -> None:
     ensure_git_repo()
     ensure_clean_tree()
@@ -91,6 +93,20 @@ def preflight(
         raise CommandError(f"Base branch does not exist: {base}")
     if not branch_exists(source):
         raise CommandError(f"Source branch does not exist: {source}")
+
+    recordkeeping_path = ".prepare-changesets/"
+    if not is_path_ignored(recordkeeping_path):
+        message = (
+            "[ERROR] .prepare-changesets/ is not ignored. Add it to .gitignore or "
+            ".git/info/exclude to keep plan/state files out of PRs.\n"
+            "Override (not recommended): re-run with --allow-recordkeeping-tracked."
+        )
+        if allow_recordkeeping_tracked:
+            print(
+                "[WARN] .prepare-changesets/ is not ignored; proceeding by explicit override."
+            )
+        else:
+            raise CommandError(message)
 
     freshness = compute_freshness(base, source)
     mb = str(freshness["merge_base"])
@@ -185,6 +201,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Prompt for confirmation when source is behind base.",
     )
+    parser.add_argument(
+        "--allow-recordkeeping-tracked",
+        action="store_true",
+        help="Allow preflight to continue when .prepare-changesets/ is not ignored.",
+    )
     return parser
 
 
@@ -201,6 +222,7 @@ def main(argv: list[str] | None = None) -> int:
             skip_merge_check=args.skip_merge_check,
             allow_source_behind_base=args.allow_source_behind_base,
             confirm_source_behind_base=args.confirm_source_behind_base,
+            allow_recordkeeping_tracked=args.allow_recordkeeping_tracked,
         )
         return 0
     except CommandError as exc:

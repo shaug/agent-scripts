@@ -304,6 +304,8 @@ The skill may introduce **recordkeeping files** to manage decomposition and
 tracking, provided that:
 
 - they are clearly documented,
+- `.prepare-changesets/` is ignored (add it to `.gitignore` or
+  `.git/info/exclude`); preflight stops unless explicitly overridden,
 - either live under `.gitignore` *or* are explicitly marked as temporary,
 - and are removed by the final changeset.
 
