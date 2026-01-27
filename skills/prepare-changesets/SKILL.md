@@ -249,6 +249,16 @@ python3 -m unittest discover -s skills/prepare-changesets/scripts/tests -p 'test
 
 8. Open stacked PRs with correct bases.
 
+Before opening PRs, ensure the changeset branches are pushed to the remote. If
+the branches are not pushed, `gh pr create` fails with “Head sha can’t be blank”
+or “Head ref must be a branch.”
+
+Push the chain (defaults to `origin`):
+
+```bash
+skills/prepare-changesets/scripts/push_chain.py
+```
+
 Base rules:
 
 - changeset 1 base: `base_branch`

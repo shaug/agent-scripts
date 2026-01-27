@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-01-27 — Incremental changesets and workflow reliability fixes
 
+- docs: require pushing changeset branches before PR creation
 - fix: require recordkeeping directories to be ignored in preflight
+  (efe0a3c676bd168a2b3a8b93c20adcd7541cf40b)
 - fix: avoid staging plan artifacts and ignore AGENTS metadata
   (a7b9c29aa312f9432368fbd66994fe69389ba056)
 - feat: enforce source branch freshness before preflight
