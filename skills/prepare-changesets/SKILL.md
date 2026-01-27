@@ -56,7 +56,9 @@ Use deterministic helpers:
 Require a clean working tree and valid base/source branches. Treat the source
 branch as immutable reference state. Never modify, rebase, or rewrite it as part
 of this process. Preflight simulates merging the source into the base on a
-temporary branch and runs the test command on the source branch.
+temporary branch and runs the test command on the source branch. The source
+branch must include the current base HEAD; if it is behind, stop unless the user
+explicitly approves proceeding.
 
 Resolve the test command in this order:
 
@@ -75,6 +77,15 @@ Run:
 skills/prepare-changesets/scripts/preflight.py \
   --base main \
   --source feature/my-large-branch
+```
+
+To override the source-behind-base gate (not recommended):
+
+```bash
+skills/prepare-changesets/scripts/preflight.py \
+  --base main \
+  --source feature/my-large-branch \
+  --allow-source-behind-base
 ```
 
 If a specific test command is known or provided by the user, pass it with

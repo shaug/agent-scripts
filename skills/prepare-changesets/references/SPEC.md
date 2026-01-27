@@ -37,6 +37,7 @@ The skill operates on:
 Preconditions:
 
 - The source branch must be rebased or mergeable onto the base branch.
+- The source branch must include the current base HEAD (not be behind mainline).
 - The source branch must build and pass tests (to the extent applicable).
 - The working tree must be clean before starting.
 

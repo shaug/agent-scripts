@@ -45,6 +45,8 @@ def cmd_preflight(args: argparse.Namespace) -> None:
         test_cmd=args.test_cmd,
         skip_tests=args.skip_tests,
         skip_merge_check=args.skip_merge_check,
+        allow_source_behind_base=args.allow_source_behind_base,
+        confirm_source_behind_base=args.confirm_source_behind_base,
     )
 
 
@@ -172,6 +174,8 @@ def cmd_run(args: argparse.Namespace) -> None:
         test_cmd=args.test_cmd,
         skip_tests=args.skip_tests,
         skip_merge_check=args.skip_merge_check,
+        allow_source_behind_base=args.allow_source_behind_base,
+        confirm_source_behind_base=args.confirm_source_behind_base,
     )
 
     if not plan_exists or args.force_init:
@@ -338,6 +342,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_preflight.add_argument(
         "--skip-merge-check", action="store_true", help="Skip mergeability simulation"
+    )
+    p_preflight.add_argument(
+        "--allow-source-behind-base",
+        action="store_true",
+        help="Allow preflight to continue when source is behind base.",
+    )
+    p_preflight.add_argument(
+        "--confirm-source-behind-base",
+        action="store_true",
+        help="Prompt for confirmation when source is behind base.",
     )
     p_preflight.set_defaults(func=cmd_preflight)
 
@@ -612,6 +626,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_run.add_argument(
         "--skip-merge-check", action="store_true", help="Skip mergeability simulation"
+    )
+    p_run.add_argument(
+        "--allow-source-behind-base",
+        action="store_true",
+        help="Allow preflight to continue when source is behind base.",
+    )
+    p_run.add_argument(
+        "--confirm-source-behind-base",
+        action="store_true",
+        help="Prompt for confirmation when source is behind base.",
     )
     p_run.add_argument(
         "--create-chain",

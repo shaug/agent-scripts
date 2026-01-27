@@ -10,12 +10,13 @@ from common import (
     CommandError,
     branch_exists,
     checkout_restore,
+    compute_freshness,
     delete_branch,
     discover_test_command,
     ensure_clean_tree,
     ensure_git_repo,
     git,
-    merge_base,
+    record_preflight_state,
     unique_temp_branch,
 )
 
@@ -74,7 +75,14 @@ def _print_test_command_help(discovery: dict) -> None:
 
 
 def preflight(
-    *, base: str, source: str, test_cmd: str, skip_tests: bool, skip_merge_check: bool
+    *,
+    base: str,
+    source: str,
+    test_cmd: str,
+    skip_tests: bool,
+    skip_merge_check: bool,
+    allow_source_behind_base: bool = False,
+    confirm_source_behind_base: bool = False,
 ) -> None:
     ensure_git_repo()
     ensure_clean_tree()
@@ -84,8 +92,42 @@ def preflight(
     if not branch_exists(source):
         raise CommandError(f"Source branch does not exist: {source}")
 
-    mb = merge_base(base, source)
+    freshness = compute_freshness(base, source)
+    mb = str(freshness["merge_base"])
+    base_head = str(freshness["base_head"])
     print(f"[OK] merge-base({base}, {source}) = {mb}")
+
+    user_confirmed = False
+    if freshness["source_behind_base"]:
+        message = (
+            "[ERROR] Source branch is behind base branch.\n"
+            f"Base:   {base} @ {base_head}\n"
+            f"Source: {source} (merge-base={mb})\n\n"
+            "This workflow assumes the source includes the current base HEAD to avoid churn\n"
+            "while carving changesets.\n\n"
+            f"Fix: merge or rebase {source} onto {base}, then re-run preflight.\n"
+            "Override (not recommended): re-run with --allow-source-behind-base and record why in the plan."
+        )
+        if allow_source_behind_base:
+            print(
+                "[WARN] Source branch is behind base branch; proceeding by explicit override."
+            )
+            user_confirmed = True
+        elif confirm_source_behind_base:
+            response = input("Source is behind base. Proceed anyway? [y/N] ").strip()
+            if response.lower() not in ("y", "yes"):
+                raise CommandError(message)
+            print(
+                "[WARN] Source branch is behind base branch; proceeding by explicit confirmation."
+            )
+            user_confirmed = True
+        else:
+            raise CommandError(message)
+    record_preflight_state(
+        base,
+        source,
+        user_confirmed_source_behind_base=user_confirmed,
+    )
 
     if not skip_merge_check:
         check_mergeability(base, source)
@@ -133,6 +175,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-merge-check", action="store_true", help="Skip mergeability simulation"
     )
+    parser.add_argument(
+        "--allow-source-behind-base",
+        action="store_true",
+        help="Allow preflight to continue when source is behind base.",
+    )
+    parser.add_argument(
+        "--confirm-source-behind-base",
+        action="store_true",
+        help="Prompt for confirmation when source is behind base.",
+    )
     return parser
 
 
@@ -147,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
             test_cmd=args.test_cmd,
             skip_tests=args.skip_tests,
             skip_merge_check=args.skip_merge_check,
+            allow_source_behind_base=args.allow_source_behind_base,
+            confirm_source_behind_base=args.confirm_source_behind_base,
         )
         return 0
     except CommandError as exc:

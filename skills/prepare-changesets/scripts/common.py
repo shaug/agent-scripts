@@ -98,6 +98,18 @@ def merge_base(base: str, source: str) -> str:
     return git("merge-base", base, source).stdout.strip()
 
 
+def compute_freshness(base: str, source: str) -> Dict[str, object]:
+    base_head = git("rev-parse", base).stdout.strip()
+    source_head = git("rev-parse", source).stdout.strip()
+    mb = merge_base(base, source)
+    return {
+        "base_head": base_head,
+        "source_head": source_head,
+        "merge_base": mb,
+        "source_behind_base": mb != base_head,
+    }
+
+
 def diff_name_status(base: str, source: str) -> str:
     return git("diff", "--name-status", f"{base}..{source}").stdout.strip()
 
@@ -171,11 +183,27 @@ def write_state(data: Dict, path: Path = STATE_PATH) -> None:
     path.write_text(json.dumps(data, indent=2) + "\n")
 
 
-def record_state(plan: Dict, chain: Sequence[str], path: Path = STATE_PATH) -> None:
+def record_state(
+    plan: Dict,
+    chain: Sequence[str],
+    *,
+    user_confirmed_source_behind_base: Optional[bool] = None,
+    path: Path = STATE_PATH,
+) -> None:
+    base = plan.get("base_branch", "")
     source = plan.get("source_branch", "")
     if not isinstance(source, str) or not source.strip():
         raise CommandError("Cannot record state without source_branch.")
-    source_head = git("rev-parse", source).stdout.strip()
+    if not isinstance(base, str) or not base.strip():
+        raise CommandError("Cannot record state without base_branch.")
+
+    freshness = compute_freshness(base, source)
+    existing = load_state(path) or {}
+    confirmed = (
+        bool(user_confirmed_source_behind_base)
+        if user_confirmed_source_behind_base is not None
+        else bool(existing.get("user_confirmed_source_behind_base", False))
+    )
 
     changesets = plan.get("changesets", [])
     entries: List[Dict[str, str]] = []
@@ -197,12 +225,41 @@ def record_state(plan: Dict, chain: Sequence[str], path: Path = STATE_PATH) -> N
 
     write_state(
         {
+            "base_branch": base,
+            "base_head": freshness["base_head"],
             "source_branch": source,
-            "source_head": source_head,
+            "source_head": freshness["source_head"],
+            "source_behind_base": freshness["source_behind_base"],
+            "user_confirmed_source_behind_base": confirmed,
             "changesets": entries,
         },
         path=path,
     )
+
+
+def record_preflight_state(
+    base: str,
+    source: str,
+    *,
+    user_confirmed_source_behind_base: bool,
+    path: Path = STATE_PATH,
+) -> None:
+    freshness = compute_freshness(base, source)
+    existing = load_state(path) or {}
+    state = dict(existing)
+    state.update(
+        {
+            "base_branch": base,
+            "base_head": freshness["base_head"],
+            "source_branch": source,
+            "source_head": freshness["source_head"],
+            "source_behind_base": freshness["source_behind_base"],
+            "user_confirmed_source_behind_base": bool(
+                user_confirmed_source_behind_base
+            ),
+        }
+    )
+    write_state(state, path=path)
 
 
 def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:

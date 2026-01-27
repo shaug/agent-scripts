@@ -11,6 +11,7 @@ from common import (
     CommandError,
     branch_exists,
     checkout_restore,
+    compute_freshness,
     delete_branch,
     diff_name_status,
     ensure_branches_exist,
@@ -261,6 +262,16 @@ def validate_plan_strict(plan: Dict) -> Tuple[bool, List[str], List[str]]:
         warnings.append("Plan test_command is empty; set it or pass --test-cmd.")
 
     _warn_state_drift(plan, warnings)
+
+    try:
+        freshness = compute_freshness(base, source)
+        if freshness.get("source_behind_base"):
+            warnings.append(
+                "Source branch does not include the current base HEAD. "
+                "Consider updating source before proceeding."
+            )
+    except CommandError:
+        warnings.append("Unable to verify whether source is behind base.")
 
     return (not errors), errors, warnings
 
