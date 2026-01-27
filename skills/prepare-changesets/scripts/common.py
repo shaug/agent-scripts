@@ -424,6 +424,12 @@ def _commands_from_block(block: str) -> List[str]:
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
+        if re.match(r"^[A-Za-z_][A-Za-z0-9_-]*:", line):
+            continue
+        if re.match(r"^\"[A-Za-z0-9_-]+\":", line):
+            continue
+        if re.match(r"^'[A-Za-z0-9_-]+':", line):
+            continue
         # Treat each non-empty line as a potential command.
         commands.append(line)
     return commands

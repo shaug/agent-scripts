@@ -35,6 +35,19 @@ class TestCommandDiscoveryTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
+    def test_agents_ignores_key_value_metadata_lines(self) -> None:
+        repo_dir, _plan = init_repo()
+        try:
+            (repo_dir / "AGENTS.md").write_text(
+                "```yaml\ncontextKey: 'test-context'\nmoon :test\n```\n"
+            )
+            with chdir(repo_dir):
+                discovery = discover_test_command("")
+            self.assertEqual(discovery["command"], "moon :test")
+            self.assertEqual(discovery["source"], "agents")
+        finally:
+            shutil.rmtree(repo_dir)
+
     def test_missing_agents_suggests_just_test(self) -> None:
         repo_dir, _plan = init_repo()
         try:

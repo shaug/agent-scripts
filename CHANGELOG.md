@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-01-27 — Initialize monorepo and adopt incremental changeset workflows
+## 2026-01-27 — Incremental changesets and workflow reliability fixes
 
+- fix: avoid staging plan artifacts and ignore AGENTS metadata
 - feat: enforce source branch freshness before preflight
+  (76602f9233d8faff52437a58fb29a6a13f1f0b14)
 - feat: all-hunks selectors and strict apply checks for hunk mode
   (e743c706bd5d7b1429f4967b794a1b5cc4ce54c5)
 - feat: rename-aware hunk selection and rename-first guidance

@@ -129,6 +129,7 @@ def _apply_changeset_paths(
         git("rm", "-f", "--ignore-unmatch", path)
 
     git("add", "-A")
+    git("reset", "-q", "--", ".prepare-changesets")
 
     diff_cached = git("diff", "--cached", "--quiet", check=False)
     if diff_cached.returncode == 0:
