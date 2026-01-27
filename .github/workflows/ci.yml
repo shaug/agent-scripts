@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install lint and format tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            ruff \
+            mdformat \
+            mdformat-gfm \
+            mdformat-frontmatter \
+            mdformat-tables \
+            mdformat-gfm-alerts \
+            mdformat-footnote
+
+      - name: Install agentskills validator
+        run: |
+          git clone https://github.com/agentskills/agentskills.git /tmp/agentskills
+          python -m pip install -e /tmp/agentskills
+          skills-ref --help >/dev/null
+
+      - name: Lint Python
+        run: ruff check .
+
+      - name: Lint Markdown
+        run: mdformat --check --wrap 80 .
+
+      - name: Validate skills (agentskills)
+        run: |
+          for skill in skills/*; do
+            if [ -d "$skill" ]; then
+              echo "Validating $skill"
+              skills-ref validate "$skill"
+            fi
+          done
+
+      - name: Run unit tests
+        run: |
+          found=0
+          for tests in skills/*/scripts/tests; do
+            if [ -d "$tests" ]; then
+              found=1
+              echo "Running tests in $tests"
+              python -m unittest discover -s "$tests" -p 'test_*.py'
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No skill tests found under skills/*/scripts/tests"
+          fi
