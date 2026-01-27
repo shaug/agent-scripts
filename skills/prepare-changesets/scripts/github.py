@@ -106,8 +106,34 @@ def pr_create(plan: Dict, *, indices: List[int], dry_run: bool) -> None:
             _print_cmd(cmd)
             continue
 
-        run(cmd, capture=True, check=True)
-        print("[OK] PR created.")
+        result = run(cmd, capture=True, check=True)
+        output = (result.stdout or "") + (result.stderr or "")
+        url = ""
+        for token in output.split():
+            if token.startswith("http://") or token.startswith("https://"):
+                url = token.strip()
+                break
+        if not url:
+            view = run(
+                (
+                    "gh",
+                    "pr",
+                    "view",
+                    "--head",
+                    head_branch,
+                    "--json",
+                    "url",
+                    "--jq",
+                    ".url",
+                ),
+                capture=True,
+                check=False,
+            )
+            url = (view.stdout or "").strip()
+        if url:
+            print(f"[OK] PR created: {url}")
+        else:
+            print("[OK] PR created.")
 
     if dry_run:
         print("[OK] Dry-run complete. Re-run with --no-dry-run to execute.")

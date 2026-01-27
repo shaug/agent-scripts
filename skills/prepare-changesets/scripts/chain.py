@@ -21,7 +21,15 @@ from common import (
     ensure_clean_tree,
     ensure_git_repo,
     git,
+    record_state,
     unique_temp_branch,
+)
+from patch_apply import (
+    apply_patch_file,
+    apply_patch_text,
+    build_diff,
+    parse_hunk_selectors,
+    select_hunks_for_changeset,
 )
 
 
@@ -80,9 +88,15 @@ def select_entries(
     return filtered
 
 
-def apply_changeset(
-    *, base_branch: str, source_branch: str, index: int, total: int, changeset: Dict
-) -> Tuple[int, int]:
+@dataclass
+class ApplySummary:
+    mode: str
+    message: str
+
+
+def _apply_changeset_paths(
+    *, base_branch: str, source_branch: str, index: int, changeset: Dict
+) -> ApplySummary:
     include = changeset.get("include_paths", [])
     exclude = changeset.get("exclude_paths", [])
 
@@ -91,7 +105,7 @@ def apply_changeset(
 
     if not selected:
         print(f"[WARN] Changeset {index}: no files matched include/exclude rules.")
-        return 0, 0
+        return ApplySummary(mode="paths", message="no paths matched")
 
     checkout_paths: List[str] = []
     delete_paths: List[str] = []
@@ -119,7 +133,12 @@ def apply_changeset(
     diff_cached = git("diff", "--cached", "--quiet", check=False)
     if diff_cached.returncode == 0:
         print(f"[WARN] Changeset {index}: no staged changes after apply.")
-        return len(checkout_paths), len(delete_paths)
+        return ApplySummary(
+            mode="paths",
+            message=(
+                f"{len(checkout_paths)} paths checked out, {len(delete_paths)} paths removed"
+            ),
+        )
 
     commit_message = changeset.get("commit_message")
     if not isinstance(commit_message, str) or not commit_message.strip():
@@ -127,7 +146,101 @@ def apply_changeset(
         commit_message = f"changeset {index}: {slug}"
 
     git("commit", "-m", commit_message)
-    return len(checkout_paths), len(delete_paths)
+    return ApplySummary(
+        mode="paths",
+        message=(
+            f"{len(checkout_paths)} paths checked out, {len(delete_paths)} paths removed"
+        ),
+    )
+
+
+def _apply_changeset_patch(*, index: int, changeset: Dict, label: str) -> ApplySummary:
+    patch_file = changeset.get("patch_file")
+    if not isinstance(patch_file, str) or not patch_file.strip():
+        raise CommandError(f"{label}: patch_file must be a non-empty string.")
+    apply_patch_file(patch_file, label=label)
+
+    diff_cached = git("diff", "--cached", "--quiet", check=False)
+    if diff_cached.returncode == 0:
+        print(f"[WARN] Changeset {index}: no staged changes after apply.")
+        return ApplySummary(
+            mode="patch", message="patch applied with no staged changes"
+        )
+
+    commit_message = changeset.get("commit_message")
+    if not isinstance(commit_message, str) or not commit_message.strip():
+        slug = str(changeset.get("slug", f"cs-{index}")).strip() or f"cs-{index}"
+        commit_message = f"changeset {index}: {slug}"
+
+    git("commit", "-m", commit_message)
+    return ApplySummary(mode="patch", message="patch applied and committed")
+
+
+def _apply_changeset_hunks(
+    *, base_branch: str, source_branch: str, index: int, changeset: Dict, label: str
+) -> ApplySummary:
+    selectors = changeset.get("hunk_selectors", [])
+    include = changeset.get("include_paths", [])
+    exclude = changeset.get("exclude_paths", [])
+    allow_partial = changeset.get("allow_partial_files", True)
+
+    parsed = parse_hunk_selectors(selectors, changeset_label=label)
+    diff_files = build_diff(base_branch, source_branch)
+    selected = select_hunks_for_changeset(
+        diff_files,
+        parsed,
+        include_paths=include,
+        exclude_paths=exclude,
+        allow_partial_files=bool(allow_partial),
+        changeset_label=label,
+    )
+    apply_patch_text(selected.text, label=label)
+
+    diff_cached = git("diff", "--cached", "--quiet", check=False)
+    if diff_cached.returncode == 0:
+        print(f"[WARN] Changeset {index}: no staged changes after apply.")
+        return ApplySummary(
+            mode="hunks",
+            message=f"{selected.hunks} hunks selected in {selected.files} files",
+        )
+
+    commit_message = changeset.get("commit_message")
+    if not isinstance(commit_message, str) or not commit_message.strip():
+        slug = str(changeset.get("slug", f"cs-{index}")).strip() or f"cs-{index}"
+        commit_message = f"changeset {index}: {slug}"
+
+    git("commit", "-m", commit_message)
+    return ApplySummary(
+        mode="hunks",
+        message=f"{selected.hunks} hunks selected in {selected.files} files",
+    )
+
+
+def apply_changeset(
+    *, base_branch: str, source_branch: str, index: int, total: int, changeset: Dict
+) -> ApplySummary:
+    mode = str(changeset.get("mode", "paths")).strip() or "paths"
+    label = f"Changeset {index}"
+    if mode == "paths":
+        return _apply_changeset_paths(
+            base_branch=base_branch,
+            source_branch=source_branch,
+            index=index,
+            changeset=changeset,
+        )
+    if mode == "patch":
+        return _apply_changeset_patch(index=index, changeset=changeset, label=label)
+    if mode == "hunks":
+        return _apply_changeset_hunks(
+            base_branch=base_branch,
+            source_branch=source_branch,
+            index=index,
+            changeset=changeset,
+            label=label,
+        )
+    raise CommandError(
+        f"{label}: unsupported mode '{mode}'. Use 'paths', 'patch', or 'hunks'."
+    )
 
 
 def create_chain(plan: Dict) -> List[str]:
@@ -172,18 +285,17 @@ def create_chain(plan: Dict) -> List[str]:
             print(f"\n[STEP] Creating {name} from {prev_branch}")
             git("checkout", "-B", name, prev_branch)
 
-            applied, deleted = apply_changeset(
+            summary = apply_changeset(
                 base_branch=base,
                 source_branch=source,
                 index=idx,
                 total=total,
                 changeset=cs,
             )
-            print(
-                f"[OK] Applied changeset {idx}: {applied} paths checked out, {deleted} paths removed"
-            )
+            print(f"[OK] Applied changeset {idx} ({summary.mode}): {summary.message}")
             prev_branch = name
 
+    record_state(plan, chain)
     print("[OK] Changeset branch chain created.")
     return chain
 

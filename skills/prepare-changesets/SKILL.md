@@ -43,6 +43,8 @@ Use deterministic helpers:
 - `scripts/compare.py`
 - `scripts/squash_check.py`
 - `scripts/validate_chain.py`
+- `scripts/hunk_preview.py`
+- `scripts/run.py`
 - `scripts/pr_create.py`
 - `scripts/merge_propagate.py`
 - `scripts/propagate.py`
@@ -92,6 +94,15 @@ If the squashed branch already exists, ask whether to reuse it. If the user
 declines reuse, stop. If reuse is approved, re-run with `--reuse-existing`. If
 it must be rebuilt, re-run with `--recreate`.
 
+For a guided end-to-end starter:
+
+```bash
+skills/prepare-changesets/scripts/run.py \
+  --base main \
+  --source feature/my-large-branch \
+  --title "My feature title"
+```
+
 ## Phase 1: Incremental Decompose And Validate
 
 Phase 1 is incremental and append-only. It is valid to propose the next
@@ -135,8 +146,12 @@ skills/prepare-changesets/scripts/init_plan.py \
 Then edit `.prepare-changesets/plan.json`. The plan is append-only:
 
 - define cohesive `slug` and `description` per changeset
-- use `include_paths` to pull in only the relevant files
-- use `exclude_paths` to prevent accidental overlap
+- choose a `mode` per changeset: `paths`, `patch`, or `hunks`
+- for `paths`, use `include_paths` to pull in relevant files
+- for `hunks`, use `hunk_selectors` with `file` + `contains`/`range`
+- set `allow_partial_files=false` when a file must be fully included
+- for `patch`, set `patch_file` under `.prepare-changesets/patches/`
+- use `exclude_paths` as a coarse filter to prevent accidental overlap
 - document scaffolding, flags, and intentional incompleteness in `pr_notes`
 - append new changesets at the end as you learn more
 - do not renumber or reorder validated changesets
@@ -146,6 +161,15 @@ Validate:
 ```bash
 skills/prepare-changesets/scripts/validate.py
 ```
+
+For stricter checks (ambiguous selectors, missing patch files, placeholders):
+
+```bash
+skills/prepare-changesets/scripts/validate.py --strict
+```
+
+`--strict` also warns if `.prepare-changesets/state.json` indicates prior
+changeset branch heads have drifted.
 
 After a changeset is validated and accepted, treat it as locked. Do not revise,
 reinterpret, or reorder earlier validated changesets without explicit user
@@ -167,6 +191,9 @@ Branch names are append-only:
 branches and creates only the missing suffix. Delete a branch explicitly if it
 must be recreated.
 
+`create_chain.py` also records `.prepare-changesets/state.json` with source and
+changeset branch heads for drift detection.
+
 5. Validate equivalence and progress.
 
 ```bash
@@ -177,6 +204,12 @@ skills/prepare-changesets/scripts/squash_check.py
 `compare.py` checks equivalence by merging the chain. `squash_check.py` rebases
 the squashed reference onto the chain tip using a temporary branch
 `pcs-temp-squash-check-*` to show what remains.
+
+To preview candidate hunks for selectors:
+
+```bash
+skills/prepare-changesets/scripts/hunk_preview.py --file path/to/file.ts
+```
 
 6. Review each changeset branch.
 
@@ -192,6 +225,12 @@ Run tests after each changeset merge:
 
 ```bash
 skills/prepare-changesets/scripts/validate_chain.py --test-cmd "<repo-specific test command>"
+```
+
+To run skill unit tests locally:
+
+```bash
+python3 -m unittest discover -s skills/prepare-changesets/scripts/tests -p 'test_*.py'
 ```
 
 8. Open stacked PRs with correct bases.

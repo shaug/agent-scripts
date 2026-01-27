@@ -57,6 +57,25 @@ Each changeset corresponds to:
 - one pull request,
 - one reviewable deliverable.
 
+Changesets may be assembled from **paths**, **patches**, or **hunks**. This
+allows multiple changesets to touch the same file without forcing file-level
+exclusivity, as long as each changeset remains independently reviewable.
+
+______________________________________________________________________
+
+## Changeset Extraction Modes
+
+The skill supports three deterministic extraction modes:
+
+- **Paths**: check out whole file paths from the source branch (legacy mode).
+- **Patch**: apply a precomputed patch file onto the changeset branch.
+- **Hunks**: compute `base..source` diffs, select specific hunks, and apply them
+  using `git apply --index --3way` for resilience to context shifts.
+
+Hunk selection must be driven by explicit selectors (file + range/contains) that
+can be validated for ambiguity. When `allow_partial_files` is false, a changeset
+must include all hunks for any selected file.
+
 ______________________________________________________________________
 
 ## Rule-of-Thumb for Changeset Size
@@ -369,6 +388,7 @@ In this phase, it is valid to "chip away" at a large source branch:
 - justify why it is the next safe building block,
 - create that changeset branch,
 - run tests and comparison checks (including squash-check),
+- validate hunk selectors or patch files before applying them,
 - append the changeset to the plan,
 - and repeat.
 
@@ -378,6 +398,9 @@ Rules:
 - changesets are append-only,
 - once a changeset is validated and accepted, do not renumber or reorder it,
 - do not silently revise earlier validated changesets.
+
+Record state under `.prepare-changesets/state.json` to detect drift in the
+source branch or earlier changeset branch heads.
 
 ______________________________________________________________________
 

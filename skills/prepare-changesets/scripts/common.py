@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 DEFAULT_PLAN_PATH = Path(".prepare-changesets/plan.json")
+STATE_PATH = Path(".prepare-changesets/state.json")
 
 
 class CommandError(RuntimeError):
@@ -71,7 +72,13 @@ def repo_root() -> Path:
 
 
 def ensure_clean_tree() -> None:
-    status = git("status", "--porcelain").stdout.strip()
+    status = git(
+        "status",
+        "--porcelain",
+        "--",
+        ".",
+        ":(exclude).prepare-changesets",
+    ).stdout.strip()
     if status:
         raise CommandError(
             "Working tree is not clean. Commit, stash, or discard changes first."
@@ -150,6 +157,54 @@ def load_plan(path: Path) -> Dict:
         raise CommandError(f"Invalid JSON in plan file {path}: {exc}") from exc
 
 
+def load_state(path: Path = STATE_PATH) -> Optional[Dict]:
+    try:
+        return json.loads(path.read_text())
+    except FileNotFoundError:
+        return None
+    except json.JSONDecodeError as exc:
+        raise CommandError(f"Invalid JSON in state file {path}: {exc}") from exc
+
+
+def write_state(data: Dict, path: Path = STATE_PATH) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def record_state(plan: Dict, chain: Sequence[str], path: Path = STATE_PATH) -> None:
+    source = plan.get("source_branch", "")
+    if not isinstance(source, str) or not source.strip():
+        raise CommandError("Cannot record state without source_branch.")
+    source_head = git("rev-parse", source).stdout.strip()
+
+    changesets = plan.get("changesets", [])
+    entries: List[Dict[str, str]] = []
+    for idx, branch in enumerate(chain, start=1):
+        slug = ""
+        if isinstance(changesets, list) and idx <= len(changesets):
+            slug_val = changesets[idx - 1].get("slug")
+            if isinstance(slug_val, str):
+                slug = slug_val
+        head = git("rev-parse", branch).stdout.strip()
+        entries.append(
+            {
+                "index": idx,
+                "slug": slug,
+                "branch": branch,
+                "head": head,
+            }
+        )
+
+    write_state(
+        {
+            "source_branch": source,
+            "source_head": source_head,
+            "changesets": entries,
+        },
+        path=path,
+    )
+
+
 def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
     errors: List[str] = []
 
@@ -175,7 +230,7 @@ def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
             errors.append(f"Changeset {idx} must be an object.")
             continue
 
-        for key in ("slug", "description", "include_paths"):
+        for key in ("slug", "description"):
             if key not in cs:
                 errors.append(f"Changeset {idx} missing required field: {key}")
 
@@ -186,15 +241,43 @@ def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
         ):
             errors.append(f"Changeset {idx} has invalid description.")
 
-        include = cs.get("include_paths")
-        if (
+        mode = str(cs.get("mode", "paths")).strip() or "paths"
+        if mode not in ("paths", "patch", "hunks"):
+            errors.append(
+                f"Changeset {idx} has invalid mode '{mode}'. Use 'paths', 'patch', or 'hunks'."
+            )
+
+        include = cs.get("include_paths", [])
+        if include and (
             not isinstance(include, list)
-            or not include
             or not all(isinstance(p, str) for p in include)
         ):
             errors.append(
-                f"Changeset {idx} include_paths must be a non-empty string array."
+                f"Changeset {idx} include_paths must be a string array when provided."
             )
+        if mode == "paths":
+            if not isinstance(include, list) or not include:
+                errors.append(
+                    f"Changeset {idx} include_paths must be a non-empty string array for mode=paths."
+                )
+
+        if mode == "patch":
+            patch_file = cs.get("patch_file")
+            if not isinstance(patch_file, str) or not patch_file.strip():
+                errors.append(
+                    f"Changeset {idx} patch_file must be a non-empty string for mode=patch."
+                )
+
+        if mode == "hunks":
+            selectors = cs.get("hunk_selectors")
+            if (
+                not isinstance(selectors, list)
+                or not selectors
+                or not all(isinstance(s, dict) for s in selectors)
+            ):
+                errors.append(
+                    f"Changeset {idx} hunk_selectors must be a non-empty array for mode=hunks."
+                )
 
         exclude = cs.get("exclude_paths", [])
         if exclude and (
@@ -203,6 +286,12 @@ def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
         ):
             errors.append(
                 f"Changeset {idx} exclude_paths must be a string array when provided."
+            )
+
+        allow_partial = cs.get("allow_partial_files")
+        if allow_partial is not None and not isinstance(allow_partial, bool):
+            errors.append(
+                f"Changeset {idx} allow_partial_files must be a boolean when provided."
             )
 
         pr_notes = cs.get("pr_notes", [])
@@ -219,10 +308,12 @@ def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
 
 def default_changeset(index: int) -> Dict:
     return {
+        "mode": "paths",
         "slug": f"changeset-{index}",
         "description": f"Describe the intent for changeset {index}.",
         "include_paths": ["src/**"],
         "exclude_paths": [],
+        "allow_partial_files": True,
         "commit_message": f"changeset: placeholder {index}",
         "pr_notes": ["Replace with PR notes for this changeset."],
     }

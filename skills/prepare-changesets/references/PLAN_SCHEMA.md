@@ -19,6 +19,7 @@ more, but do not renumber or reorder validated changesets.
     {
       "slug": "rename-config-types",
       "description": "Rename config types without behavior changes.",
+      "mode": "paths",
       "include_paths": [
         "src/config/**",
         "src/types/**"
@@ -33,6 +34,7 @@ more, but do not renumber or reorder validated changesets.
     {
       "slug": "add-dual-write-path",
       "description": "Add additive dual-write path guarded by a flag.",
+      "mode": "paths",
       "include_paths": [
         "src/migration/**",
         "src/flags/**"
@@ -64,11 +66,28 @@ Changeset fields:
 
 - `slug` (string, required): Short identifier used in logs and plan review.
 - `description` (string, required): Intent and scope of the changeset.
-- `include_paths` (array of strings, required): Glob-like patterns used to pull
-  file changes from `source_branch` into this changeset. Patterns are matched
-  against the `base_branch..source_branch` file list.
+- `mode` (string, optional): One of `"paths"` (default), `"patch"`, or
+  `"hunks"`.
+- `include_paths` (array of strings, optional): Glob patterns matched with
+  Python `fnmatch` against repo-relative paths. Required for `mode="paths"`.
+  When `mode="hunks"`, they act as a coarse filter for selectors.
 - `exclude_paths` (array of strings, optional): Patterns removed from the
-  included set.
+  include set (also matched with `fnmatch`).
+- `patch_file` (string, optional): Required for `mode="patch"`. Path to a patch
+  file (recommended under `.prepare-changesets/patches/`).
+- `hunk_selectors` (array, optional): Required for `mode="hunks"`. Each selector
+  is an object with:
+  - `file` (string, required): Repo-relative path for the diff file.
+  - `range` (string, optional): Exact hunk header to match (e.g.,
+    `"@@ -120,7 +120,18 @@"`).
+  - `contains` (array of strings, optional): All strings must appear in the hunk
+    body.
+  - `excludes` (array of strings, optional): None of the strings may appear in
+    the hunk body.
+  - `occurrence` (integer, optional): Pick the Nth matching hunk when multiple
+    matches exist (1-based).
+- `allow_partial_files` (boolean, optional): Defaults to `true`. When `false`,
+  all hunks in a selected file must be included.
 - `commit_message` (string, optional): Defaults to `"changeset N: <slug>"`.
 - `pr_notes` (array of strings, optional): Bullets describing scaffolding,
   flags, and intentional incompleteness for the PR body.

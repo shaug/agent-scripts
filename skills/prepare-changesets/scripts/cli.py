@@ -21,6 +21,8 @@ from common import (
 )
 from dbcompare import db_compare
 from github import pr_create, pr_merge
+from patch_apply import build_diff
+from plan_checks import validate_plan_strict
 from preflight import preflight
 from propagate import propagate_downstream, push_chain
 
@@ -97,7 +99,95 @@ def cmd_validate(args: argparse.Namespace) -> None:
         for err in errors:
             print(f"  - {err}")
         raise CommandError("Plan is invalid.")
+    if args.strict:
+        strict_ok, strict_errors, strict_warnings = validate_plan_strict(plan)
+        if strict_warnings:
+            print("[WARN] Strict validation warnings:")
+            for warn in strict_warnings:
+                print(f"  - {warn}")
+        if not strict_ok:
+            print("[ERROR] Strict validation failed:")
+            for err in strict_errors:
+                print(f"  - {err}")
+            raise CommandError("Plan is invalid under --strict.")
+        print("[OK] Strict validation passed.")
+        return
     print("[OK] Plan validation passed.")
+
+
+def cmd_hunk_preview(args: argparse.Namespace) -> None:
+    plan_path = Path(args.plan)
+    base = args.base
+    source = args.source
+    if plan_path.exists() and (not base or not source):
+        plan = load_plan(plan_path)
+        base = base or plan.get("base_branch", "")
+        source = source or plan.get("source_branch", "")
+    if not base or not source:
+        raise CommandError("hunk-preview requires --base and --source or a plan file.")
+
+    diff_files = build_diff(base, source)
+    target = args.file
+    matched = [df for df in diff_files if target in (df.new_path, df.old_path)]
+    if not matched:
+        raise CommandError(f"No diff hunks found for file: {target}")
+
+    contains = args.contains or []
+    excludes = args.excludes or []
+
+    for df in matched:
+        label = df.new_path or df.old_path or "<unknown>"
+        print(f"[FILE] {label}")
+        if df.is_binary:
+            print("  [BIN] Binary file; no textual hunks available.")
+            continue
+        if not df.hunks:
+            print("  [INFO] No hunks in diff.")
+            continue
+        for idx, hunk in enumerate(df.hunks, start=1):
+            body = hunk.body_text
+            if contains and not all(c in body for c in contains):
+                continue
+            if excludes and any(c in body for c in excludes):
+                continue
+            print(f"\n  [HUNK {idx}] {hunk.header}")
+            for line in hunk.lines[1:]:
+                print(f"  {line}")
+
+
+def cmd_run(args: argparse.Namespace) -> None:
+    plan_path = Path(args.plan)
+    plan_exists = plan_path.exists()
+
+    preflight(
+        base=args.base,
+        source=args.source,
+        test_cmd=args.test_cmd,
+        skip_tests=args.skip_tests,
+        skip_merge_check=args.skip_merge_check,
+    )
+
+    if not plan_exists or args.force_init:
+        init_plan(
+            plan_path=plan_path,
+            base=args.base,
+            source=args.source,
+            title=args.title,
+            changesets=args.changesets,
+            test_cmd=str(args.test_cmd or "").strip(),
+            force=args.force_init,
+        )
+        print(f"[OK] Wrote plan template: {plan_path}")
+        print("[NEXT] Edit the plan to define changesets and selectors.")
+    else:
+        print(f"[INFO] Plan already exists: {plan_path}")
+
+    if args.create_chain:
+        plan = load_and_validate(plan_path)
+        create_chain(plan)
+        print("[NEXT] Review each changeset branch before creating PRs.")
+    else:
+        print("[NEXT] Run 'create-chain' after updating the plan.")
 
 
 def cmd_status(args: argparse.Namespace) -> None:
@@ -266,6 +356,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_validate = sub.add_parser("validate", help="Validate a plan file.")
     p_validate.add_argument("--plan", default=str(DEFAULT_PLAN_PATH), help="Plan path")
+    p_validate.add_argument(
+        "--strict",
+        action="store_true",
+        help="Run strict validation (hunk matching, patch checks, placeholders).",
+    )
     p_validate.set_defaults(func=cmd_validate)
 
     p_status = sub.add_parser("status", help="Show plan and branch-chain status.")
@@ -466,6 +561,62 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory for captured outputs (default: .prepare-changesets/db-compare)",
     )
     p_db.set_defaults(func=cmd_db_compare)
+
+    p_hunk = sub.add_parser(
+        "hunk-preview",
+        help="List candidate hunks for a file from base..source diff.",
+    )
+    p_hunk.add_argument("--plan", default=str(DEFAULT_PLAN_PATH), help="Plan path")
+    p_hunk.add_argument("--base", default="", help="Base branch (optional)")
+    p_hunk.add_argument("--source", default="", help="Source branch (optional)")
+    p_hunk.add_argument("--file", required=True, help="Repo-relative file path")
+    p_hunk.add_argument(
+        "--contains",
+        action="append",
+        default=[],
+        help="Only show hunks containing this string (repeatable)",
+    )
+    p_hunk.add_argument(
+        "--excludes",
+        action="append",
+        default=[],
+        help="Hide hunks containing this string (repeatable)",
+    )
+    p_hunk.set_defaults(func=cmd_hunk_preview)
+
+    p_run = sub.add_parser(
+        "run",
+        help="Guided runner: preflight, create a plan if missing, optionally create chain.",
+    )
+    p_run.add_argument("--plan", default=str(DEFAULT_PLAN_PATH), help="Plan path")
+    p_run.add_argument("--base", required=True, help="Base branch")
+    p_run.add_argument("--source", required=True, help="Source branch")
+    p_run.add_argument("--title", required=True, help="Shared PR title base")
+    p_run.add_argument(
+        "--changesets", type=int, default=3, help="Number of placeholder changesets"
+    )
+    p_run.add_argument(
+        "--test-cmd",
+        default="",
+        help="Optional test/build command to run and store in the plan",
+    )
+    p_run.add_argument(
+        "--skip-tests", action="store_true", help="Skip running the test command"
+    )
+    p_run.add_argument(
+        "--skip-merge-check", action="store_true", help="Skip mergeability simulation"
+    )
+    p_run.add_argument(
+        "--create-chain",
+        action="store_true",
+        help="Create changeset branches after writing/validating the plan",
+    )
+    p_run.add_argument(
+        "--force-init",
+        action="store_true",
+        help="Overwrite an existing plan file when running init",
+    )
+    p_run.set_defaults(func=cmd_run)
 
     return parser
 
