@@ -38,12 +38,19 @@ class GithubTests(unittest.TestCase):
         def capture(cmd: tuple[str, ...]) -> None:
             captured.append(cmd)
 
-        with mock.patch.object(github_mod, "_print_cmd", side_effect=capture):
+        with (
+            mock.patch.object(github_mod, "_print_cmd", side_effect=capture),
+            mock.patch.object(
+                github_mod, "get_default_merge_method", return_value="merge"
+            ),
+        ):
             github_mod.pr_merge("feature/test-1", method="default", dry_run=True)
 
         self.assertEqual(len(captured), 1)
         self.assertEqual(captured[0][:3], ("gh", "pr", "merge"))
-        self.assertEqual(captured[0], ("gh", "pr", "merge", "feature/test-1"))
+        self.assertEqual(
+            captured[0], ("gh", "pr", "merge", "feature/test-1", "--merge")
+        )
 
     def test_pr_merge_dry_run_merge_flag(self) -> None:
         captured: list[tuple[str, ...]] = []

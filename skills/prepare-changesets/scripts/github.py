@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import subprocess
 from typing import Dict, Iterable, List
@@ -32,6 +33,65 @@ def ensure_gh_ready() -> None:
         raise CommandError(
             f"GitHub CLI is not authenticated. Run 'gh auth login' and retry.\n{detail}"
         )
+
+
+def get_default_merge_method() -> str:
+    ensure_gh_ready()
+    repo_result = run(
+        (
+            "gh",
+            "repo",
+            "view",
+            "--json",
+            "nameWithOwner",
+            "--jq",
+            ".nameWithOwner",
+        ),
+        capture=True,
+        check=True,
+    )
+    name_with_owner = repo_result.stdout.strip()
+    if "/" not in name_with_owner:
+        raise CommandError(
+            "Unable to determine repo name from gh. Pass --method explicitly."
+        )
+    owner, name = name_with_owner.split("/", 1)
+
+    query = (
+        "query($owner:String!, $name:String!) {"
+        " repository(owner:$owner, name:$name) {"
+        " defaultMergeMethod"
+        " }"
+        "}"
+    )
+    result = run(
+        (
+            "gh",
+            "api",
+            "graphql",
+            "-f",
+            f"query={query}",
+            "-f",
+            f"owner={owner}",
+            "-f",
+            f"name={name}",
+        ),
+        capture=True,
+        check=True,
+    )
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise CommandError(
+            "Unable to parse gh api response for default merge method."
+        ) from exc
+
+    method = payload.get("data", {}).get("repository", {}).get("defaultMergeMethod", "")
+    if not isinstance(method, str) or not method.strip():
+        raise CommandError(
+            "Unable to determine repo default merge method. Pass --method explicitly."
+        )
+    return method.strip().lower()
 
 
 def pr_title_for(feature_title: str, index: int, total: int) -> str:
@@ -159,8 +219,13 @@ def pr_merge(head_branch: str, *, method: str, dry_run: bool) -> None:
         )
     cmd: tuple[str, ...]
     if method == "default":
-        cmd = ("gh", "pr", "merge", head_branch)
-        print(f"[STEP] Merging PR for {head_branch} with method=default")
+        resolved = get_default_merge_method()
+        if resolved not in method_flags:
+            raise CommandError(
+                "Unable to resolve repo default merge method. Pass --method explicitly."
+            )
+        cmd = ("gh", "pr", "merge", head_branch, method_flags[resolved])
+        print(f"[STEP] Merging PR for {head_branch} with method=default ({resolved})")
     else:
         cmd = ("gh", "pr", "merge", head_branch, method_flags[method])
         print(f"[STEP] Merging PR for {head_branch} with method={method}")
