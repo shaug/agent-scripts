@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-01-27 — Incremental changesets and workflow reliability fixes
 
+- docs: clarify cognitive load guardrails and mechanical exception
 - fix: resolve repo default merge method for non-interactive merges
+  (148c88bc437d6bbdc9a3fe232e37199b9e3b7878)
 - fix: default merge-propagate to repo merge method
   (1322dd79d2201c16b03e8459582898d35edd990f)
 - feat: add cherry-pick propagation strategy

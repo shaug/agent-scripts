@@ -143,6 +143,28 @@ Honor the decomposition preferences in `references/SPEC.md`, especially:
   present in order to be understandable or reviewable
 - prefer rename-first changesets when they reduce diff noise or stabilize paths
 
+Optimize for reviewer cognitive load (explicit guardrails). These are
+rules-of-thumb; ask the user up front whether to accept them or adjust the
+thresholds (or replace them with a different litmus, such as strict subsystem
+separation).
+
+- Target size: ~200–400 lines of *actual code changes* is the sweet spot for a
+  30-minute review. If a changeset exceeds ~800 lines total (including tests and
+  docs), split it unless the user explicitly approves the size.
+- If a changeset spans multiple subsystems (for example: activities + workflows
+  - worker wiring), split by subsystem even if the theme is coherent.
+- Keep tests with their closest production changeset, but still split by
+  subsystem so each PR has matching tests.
+- If a reviewer could not reasonably review the diff in ~30 minutes, it is too
+  large; split it.
+- When a changeset violates any guardrail, stop and ask the user whether to
+  exceed it, then record the approval.
+- Exception: allow very large *purely mechanical* changesets (for example, a
+  function rename applied uniformly or a global reformat), but only when the
+  changeset is exclusively mechanical and clearly documented with guidance for
+  spot checks or verification. Do not mix mechanical changes with behavioral
+  changes in the same PR.
+
 3. Initialize the plan.
 
 Create a plan template:
