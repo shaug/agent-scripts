@@ -9,6 +9,8 @@ A personal monorepo for agent skills and supporting scripts.
 
 Current skills:
 
+- `skills/modular-code-review-contract` — canonical, modular, atelier-agnostic
+  contract for deterministic principal-level code review outputs
 - `skills/prepare-changesets` — decompose a large, review-ready branch into a
   deterministic chain of smaller, reviewable changesets and GitHub PRs
 
