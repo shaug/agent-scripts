@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-19 — Remove incomplete modular review contract
+## 2026-07-19 — Epic workflow and review contract cleanup
 
+- feat: add epic sequence implementation skill
 - revert: remove modular code review contract
+  (b889fe4dc313dc50320dcb20f98980b993062c9a)
 
 ## 2026-02-24 — Modular code review contract specification
 
