@@ -1,0 +1,9 @@
+[
+  {"name": "behavior-bug", "packet_valid": true},
+  {"name": "duplicated-policy", "packet_valid": true},
+  {"name": "imagined-machinery", "packet_valid": true},
+  {"name": "necessary-complexity", "packet_valid": true},
+  {"name": "clean-change", "packet_valid": true},
+  {"name": "missing-evidence", "packet_valid": false},
+  {"name": "unrelated-base-drift", "packet_valid": true}
+]

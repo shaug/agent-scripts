@@ -19,7 +19,14 @@ test:
   done; \
   if [ "$found" -eq 0 ]; then \
     echo "No skill tests found under {{skills_dir}}/*/scripts/tests"; \
+  fi; \
+  if [ -d review-suite/scripts/tests ]; then \
+    echo "Running tests in review-suite/scripts/tests"; \
+    python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'; \
   fi
+
+test-review-suite:
+  python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'
 
 test-prepare-changesets:
   python3 -m unittest discover -s {{skills_dir}}/prepare-changesets/scripts/tests -p 'test_*.py'

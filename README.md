@@ -5,6 +5,8 @@ A personal monorepo for agent skills and supporting scripts.
 ## Repository Layout
 
 - `skills/` — skill folders, each containing a `SKILL.md` and bundled resources
+- `review-suite/` — canonical code-review contracts, validators, and raw
+  evaluation fixtures shared by repository-owned review skills
 - `justfile` — common tasks for testing, validation, and formatting
 
 Current skills:
@@ -26,6 +28,13 @@ Run skill-specific tests:
 
 ```bash
 just test-prepare-changesets
+just test-review-suite
+```
+
+Validate a review packet and result together:
+
+```bash
+python3 review-suite/scripts/validate.py pair packet.json result.json
 ```
 
 Run deterministic local evals (no Codex required):

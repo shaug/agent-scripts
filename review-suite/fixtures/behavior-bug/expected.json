@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "correctness",
+  "candidate": {"head_sha": "1111111111111111111111111111111111111111", "comparison_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "correctness.equal-balance",
+    "lens": "correctness",
+    "severity": "blocking",
+    "confidence": "high",
+    "rule": "A charge equal to the available balance succeeds.",
+    "evidence": [{"location": "limits.py:2", "detail": "The strict comparison rejects amount equal to balance."}],
+    "concern": "The new boundary condition contradicts the acceptance criterion.",
+    "impact": "Customers cannot spend their full available balance.",
+    "proposed_change": "Use a less-than-or-equal balance comparison and add the equality regression test.",
+    "expected_effect": "Restore the required boundary behavior without changing overdraft policy.",
+    "location": "limits.py:2"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Correct the comparison and add the missed boundary test."
+}

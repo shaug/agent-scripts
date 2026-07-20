@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/exporter", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "3333333333333333333333333333333333333333",
+    "comparison_base_sha": "cccccccccccccccccccccccccccccccccccccccc",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/export.py b/export.py\nnew file mode 100644\n--- /dev/null\n+++ b/export.py\n@@ -0,0 +1,24 @@\n+from pathlib import Path\n+\n+class ExportProviderRegistry:\n+    def __init__(self):\n+        self.providers = {}\n+\n+    def register(self, name, factory):\n+        self.providers[name] = factory\n+\n+    def create(self, name):\n+        return self.providers[name]()\n+\n+class LocalFileProvider:\n+    def write(self, path, value):\n+        Path(path).write_text(value)\n+\n+def build_registry():\n+    registry = ExportProviderRegistry()\n+    registry.register('local', LocalFileProvider)\n+    return registry\n+\n+def export(path, value, provider='local'):\n+    registry = build_registry()\n+    registry.create(provider).write(path, value)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Write the generated report to a caller-provided local path.",
+    "acceptance_criteria": ["The report is written to the requested local file."],
+    "non_goals": ["Support remote storage providers.", "Create a provider extension API."],
+    "preserved_behaviors": ["Report generation remains unchanged."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": []},
+  "validation": [
+    {"name": "export tests", "command": "pytest tests/test_export.py", "scope": "focused", "status": "passed", "result": "3 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "8 passed"}
+  ]
+}

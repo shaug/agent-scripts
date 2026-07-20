@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/payments", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "1111111111111111111111111111111111111111",
+    "comparison_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/limits.py b/limits.py\n--- a/limits.py\n+++ b/limits.py\n@@ -1,2 +1,2 @@\n def can_charge(balance, amount):\n-    return amount <= balance\n+    return amount < balance\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Allow a charge whenever sufficient balance is available.",
+    "acceptance_criteria": ["A charge equal to the available balance succeeds."],
+    "non_goals": ["Change overdraft policy."],
+    "preserved_behaviors": ["Charges above the available balance fail."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [],
+    "nearby_patterns": [{"label": "Limit boundary tests", "location": "tests/test_limits.py"}]
+  },
+  "validation": [
+    {"name": "limit tests", "command": "pytest tests/test_limits.py", "scope": "focused", "status": "passed", "result": "4 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "12 passed"}
+  ],
+  "context": {"data": ["Balances and charge amounts use exact integer cents."]}
+}

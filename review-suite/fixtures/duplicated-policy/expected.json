@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {"head_sha": "2222222222222222222222222222222222222222", "comparison_base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "code-simplicity.reuse-auth-policy",
+    "lens": "code_simplicity",
+    "severity": "strong_recommendation",
+    "confidence": "high",
+    "rule": "Use the repository's existing active-administrator policy helper.",
+    "evidence": [{"location": "actions.py:2", "detail": "Both actions repeat the same policy."}, {"location": "auth.py:require_active_admin", "detail": "The repository already centralizes this exact rule."}],
+    "concern": "The change creates three independently editable definitions of one authorization policy.",
+    "impact": "Future policy changes can leave these actions inconsistent and increase reviewer cognitive load.",
+    "proposed_change": "Call require_active_admin from both actions.",
+    "expected_effect": "Remove duplicated policy while preserving behavior.",
+    "location": "actions.py:2"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Reuse the existing authorization helper and rerun focused tests."
+}
