@@ -25,6 +25,10 @@ class ImplementEpicContractTests(unittest.TestCase):
         cls.linear = read(SKILL_ROOT / "references" / "linear.md")
         cls.closeout = read(SKILL_ROOT / "references" / "closeout.md")
         cls.contract = compact(cls.skill + cls.github + cls.linear + cls.closeout)
+        cls.eval_contract = compact(
+            read(SKILL_ROOT / "evals" / "cases.json")
+            + read(SKILL_ROOT / "evals" / "results.json")
+        )
         cls.cases = {
             item["id"]: item
             for item in json.loads(read(SKILL_ROOT / "evals" / "cases.json"))
@@ -42,6 +46,28 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertIn('display_name: "Implement Epic"', metadata)
         self.assertIn("$implement-epic", metadata)
         self.assertNotIn("$implement-epic-sequence", metadata)
+
+    def test_product_neutral_runtime_contract(self):
+        self.assertNotIn("Codex", self.contract)
+        self.assertNotIn("OpenAI", self.contract)
+        self.assertNotIn("Codex", self.eval_contract)
+        self.assertNotIn("OpenAI", self.eval_contract)
+        self.assertIn("compatible agentic runtime", self.contract)
+        self.assertIn(
+            "`implement-epic` and repository-owned `implement-ticket` by stable skill name",
+            self.contract,
+        )
+        self.assertIn(
+            "`implement-epic` → `implement-ticket` → `review-code-change`",
+            self.contract,
+        )
+        self.assertIn("retain task state", self.contract)
+        self.assertIn("poll or wait for asynchronous", self.contract)
+        self.assertIn(
+            "worker and subagent describe possible isolated execution roles",
+            self.contract,
+        )
+        self.assertIn("does not constrain the operating contract", self.contract)
 
     def test_implement_ticket_is_required_and_owns_one_ticket(self):
         self.assertIn("verify that `implement-ticket` is available", self.contract)
@@ -138,6 +164,10 @@ class ImplementEpicContractTests(unittest.TestCase):
             "umbrella-closeout-separately",
             "unexpected-requires-epic-child-result",
             "parallel-nonoverlap-required",
+            "equivalent-isolated-context-profile",
+            "missing-review-dependency-through-ticket",
+            "missing-isolation-capability",
+            "missing-asynchronous-wait",
         }
         self.assertEqual(required, set(self.cases))
         self.assertEqual(required, set(self.results))
@@ -158,6 +188,16 @@ class ImplementEpicContractTests(unittest.TestCase):
             "blocked",
             self.results["unexpected-requires-epic-child-result"]["workflow_state"],
         )
+        self.assertEqual(
+            "epic_children_merged",
+            self.results["equivalent-isolated-context-profile"]["workflow_state"],
+        )
+        for case_id in (
+            "missing-review-dependency-through-ticket",
+            "missing-isolation-capability",
+            "missing-asynchronous-wait",
+        ):
+            self.assertEqual("blocked", self.results[case_id]["workflow_state"])
 
 
 if __name__ == "__main__":

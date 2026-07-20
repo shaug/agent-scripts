@@ -78,5 +78,25 @@
     "case_id": "repeated-epic-handoff",
     "terminal_state": "blocked",
     "required_actions": ["report routing cycle detected", "perform no mutation", "do not emit another requires_epic"]
+  },
+  {
+    "case_id": "equivalent-isolated-context-profile",
+    "terminal_state": "ready_pr",
+    "required_actions": ["accept equivalent isolated context terminology", "verify exclusive mutating ownership", "invoke fresh read-only review", "publish one PR"]
+  },
+  {
+    "case_id": "missing-review-code-change",
+    "terminal_state": "blocked",
+    "required_actions": ["name review-code-change as unavailable", "perform no implementation mutation", "do not substitute generic or third-party review"]
+  },
+  {
+    "case_id": "missing-isolation-capability",
+    "terminal_state": "blocked",
+    "required_actions": ["name exclusive implementation isolation as unavailable", "perform no implementation mutation", "preserve existing worktrees"]
+  },
+  {
+    "case_id": "missing-asynchronous-wait",
+    "terminal_state": "blocked",
+    "required_actions": ["name asynchronous wait as unavailable", "perform no implementation mutation", "do not pretend CI or review gates passed"]
   }
 ]

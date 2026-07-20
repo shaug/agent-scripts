@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-20 — Composed ticket and epic execution
+## 2026-07-20 — Portable ticket and epic execution
 
+- feat: make ticket and epic execution runtime agnostic
 - feat: compose epic execution through implement-ticket
+  (7c4e500a35d48b5dba311094b4d34d8ca97f25a1)
 
 ## 2026-07-19 — Epic workflow and review contract cleanup
 

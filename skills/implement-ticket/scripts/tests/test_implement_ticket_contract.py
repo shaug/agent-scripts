@@ -30,6 +30,10 @@ class ImplementTicketContractTests(unittest.TestCase):
         cls.linear_compact = compact(cls.linear)
         cls.gates_compact = compact(cls.gates)
         cls.result_compact = compact(cls.result)
+        cls.eval_contract = compact(
+            read(SKILL_ROOT / "evals" / "cases.json")
+            + read(SKILL_ROOT / "evals" / "results.json")
+        )
         cls.all_contract = compact(
             cls.skill + cls.github + cls.linear + cls.gates + cls.result
         )
@@ -45,8 +49,23 @@ class ImplementTicketContractTests(unittest.TestCase):
     def test_frontmatter_and_product_neutral_contract(self):
         self.assertTrue(self.skill.startswith("---\nname: implement-ticket\n"))
         self.assertNotIn("Codex", self.all_contract)
+        self.assertNotIn("OpenAI", self.all_contract)
+        self.assertNotIn("Codex", self.eval_contract)
+        self.assertNotIn("OpenAI", self.eval_contract)
         self.assertNotIn("code-review-pro", self.all_contract)
         self.assertIn("compatible agentic runtime", self.skill)
+        self.assertIn(
+            "`implement-ticket` and repository-owned `review-code-change` by stable skill name",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "worker and subagent describe possible isolated execution roles",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "does not constrain the operating contract",
+            self.skill_compact,
+        )
 
     def test_scope_is_exactly_one_ticket(self):
         self.assertIn("one ticket per branch, worktree, and PR", self.skill_compact)
@@ -106,6 +125,7 @@ class ImplementTicketContractTests(unittest.TestCase):
 
     def test_review_dependency_and_integrity_are_preserved(self):
         self.assertIn("only local adversarial-review dependency", self.all_contract)
+        self.assertIn("Return `blocked` before mutation", self.skill_compact)
         self.assertIn("Do not substitute another skill", self.gates_compact)
         self.assertIn(
             "fresh or minimally inherited read-only context", self.gates_compact
@@ -162,6 +182,10 @@ class ImplementTicketContractTests(unittest.TestCase):
             "explicit-child-not-redirected",
             "missing-implement-epic",
             "repeated-epic-handoff",
+            "equivalent-isolated-context-profile",
+            "missing-review-code-change",
+            "missing-isolation-capability",
+            "missing-asynchronous-wait",
         }
         self.assertEqual(required, set(self.cases))
         self.assertEqual(required, set(self.results))
@@ -184,6 +208,16 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertEqual(
             "blocked", self.results["repeated-epic-handoff"]["terminal_state"]
         )
+        self.assertEqual(
+            "ready_pr",
+            self.results["equivalent-isolated-context-profile"]["terminal_state"],
+        )
+        for case_id in (
+            "missing-review-code-change",
+            "missing-isolation-capability",
+            "missing-asynchronous-wait",
+        ):
+            self.assertEqual("blocked", self.results[case_id]["terminal_state"])
         self.assertIn(
             "do not merge",
             self.results["clean-local-review-remote-pending"]["required_actions"],

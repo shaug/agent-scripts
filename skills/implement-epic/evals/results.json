@@ -63,5 +63,25 @@
     "case_id": "parallel-nonoverlap-required",
     "workflow_state": "serial_execution_required",
     "required_actions": ["reject parallel mutation", "sequence shared-contract work", "recompute readiness after each result"]
+  },
+  {
+    "case_id": "equivalent-isolated-context-profile",
+    "workflow_state": "epic_children_merged",
+    "required_actions": ["accept equivalent isolated context terminology", "verify G-231 merged evidence", "refresh the complete graph", "preserve review ownership inside implement-ticket"]
+  },
+  {
+    "case_id": "missing-review-dependency-through-ticket",
+    "workflow_state": "blocked",
+    "required_actions": ["preserve the G-241 blocked result", "name review-code-change as unavailable", "do not invoke review directly", "do not count G-241 complete"]
+  },
+  {
+    "case_id": "missing-isolation-capability",
+    "workflow_state": "blocked",
+    "required_actions": ["name exclusive mutating context isolation as unavailable", "perform no child mutation", "do not weaken ownership checks"]
+  },
+  {
+    "case_id": "missing-asynchronous-wait",
+    "workflow_state": "blocked",
+    "required_actions": ["name asynchronous wait as unavailable", "perform no child mutation", "do not pretend ticket or remote gates passed"]
   }
 ]
