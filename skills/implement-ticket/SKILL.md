@@ -11,9 +11,9 @@ as execution state; use old plans or summaries only for orientation.
 
 Treat this skill as the canonical owner of generic single-ticket readiness,
 implementation, review, PR, merge, base-drift, feedback, tracker-transition,
-cleanup, and terminal-reporting rules. Duplication in `implement-epic-sequence`
-is temporary until the dependent epic-orchestrator refactor removes it. Do not
-create a third shared workflow abstraction merely to eliminate that transition.
+cleanup, and terminal-reporting rules. `implement-epic` consumes this contract
+for each selected child. Do not copy these rules back into epic orchestration or
+create a third shared workflow abstraction.
 
 ## Load the applicable references
 

@@ -1,0 +1,78 @@
+[
+  {
+    "id": "two-child-refresh-chain",
+    "request": "Implement epic G-100 through authorized child merges.",
+    "graph": "G-101 is open and ready; G-102 is open and natively blocked by G-101.",
+    "ticket_results": ["G-101 merged with verified transition", "after refresh G-102 has no open blocker", "G-102 merged"]
+  },
+  {
+    "id": "named-child-boundary",
+    "request": "Implement and merge G-111 only from epic G-110.",
+    "graph": "G-111 and G-112 are independently ready.",
+    "authority": "merge G-111; no parent-close or sibling authority"
+  },
+  {
+    "id": "ready-pr-does-not-unblock",
+    "request": "Implement epic G-120 to ready PRs only.",
+    "graph": "G-122 depends on G-121 merging.",
+    "ticket_results": ["G-121 ready_pr with merge pending"]
+  },
+  {
+    "id": "blocked-missing-sibling-outcome",
+    "request": "Implement epic G-130.",
+    "graph": "G-131 appears ready but requires an unimplemented contract owned by sibling G-132.",
+    "ticket_results": ["G-131 blocked with missing G-132 outcome"]
+  },
+  {
+    "id": "blocked-then-independent-ready",
+    "request": "Implement all currently possible work in epic G-140.",
+    "graph": "G-141 and G-142 are independently ready.",
+    "ticket_results": ["G-141 blocked by a missing product decision", "G-142 merged"]
+  },
+  {
+    "id": "missing-implement-ticket",
+    "request": "Implement epic G-150.",
+    "graph": "One child is ready.",
+    "capabilities": []
+  },
+  {
+    "id": "exclusive-delegated-worktree",
+    "request": "Delegate ready child G-161 from epic G-160.",
+    "graph": "G-161 is the only ready child.",
+    "delegation": "Worker returns a candidate from a named exclusive branch/worktree plus terminal evidence."
+  },
+  {
+    "id": "ticket-evidence-pass-through",
+    "request": "Continue epic G-170 after child G-171.",
+    "ticket_results": ["G-171 merged with validation, review, CI, human, connector, comment, and thread evidence"]
+  },
+  {
+    "id": "late-feedback-blocks-closeout",
+    "request": "Close epic G-180 after all children merged.",
+    "graph": "Every required child is closed.",
+    "closeout": "A merged child PR has an undispositioned late blocking correctness finding."
+  },
+  {
+    "id": "authorized-full-epic-closeout",
+    "request": "Implement and close epic G-190.",
+    "authority": "child merge and parent closeout explicitly granted",
+    "closeout": "All children merged and closed; graph, base representation, acceptance, clean-main, rollout, and late-feedback gates pass."
+  },
+  {
+    "id": "umbrella-closeout-separately",
+    "request": "Close umbrella G-200 after epics G-201 and G-202.",
+    "authority": "parent and umbrella closeout granted",
+    "closeout": "G-201 passes all gates; G-202 still has a required open child."
+  },
+  {
+    "id": "unexpected-requires-epic-child-result",
+    "request": "Continue epic G-210 after selecting child G-211.",
+    "ticket_results": ["G-211 returns requires_epic for G-211"]
+  },
+  {
+    "id": "parallel-nonoverlap-required",
+    "request": "Implement ready children G-221 and G-222 in parallel.",
+    "graph": "Both are graph-independent, but both edit the same shared contract and have ordered rollout semantics.",
+    "authority": "parallel execution requested"
+  }
+]
