@@ -1,5 +1,8 @@
 [
   {"name": "behavior-bug", "packet_valid": true},
+  {"name": "auth-regression", "packet_valid": true},
+  {"name": "missing-test", "packet_valid": true},
+  {"name": "repository-convention-clean", "packet_valid": true},
   {"name": "duplicated-policy", "packet_valid": true},
   {"name": "imagined-machinery", "packet_valid": true},
   {"name": "necessary-complexity", "packet_valid": true},

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/catalog", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8383838383838383838383838383838383838383",
+    "comparison_base_sha": "9393939393939393939393939393939393939393",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/catalog.py b/catalog.py\n--- a/catalog.py\n+++ b/catalog.py\n@@ -1,2 +1,5 @@\n def optional_product(store, product_id):\n-    return store.get(product_id)\n+    try:\n+        return store.get(product_id)\n+    except ProductNotFound:\n+        return None\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Return None when the optional catalog lookup has no product.",
+    "acceptance_criteria": ["Missing products return None.", "Present products are returned unchanged."],
+    "non_goals": ["Suppress storage or transport failures."],
+    "preserved_behaviors": ["Only ProductNotFound represents an absent optional value."]
+  },
+  "sources": {
+    "repository_instructions": [{"label": "Optional lookup convention", "location": "CONTRIBUTING.md", "summary": "Optional repository readers translate the domain not-found exception to None at the reader boundary."}],
+    "named_documents": [],
+    "nearby_patterns": [{"label": "Optional customer lookup", "location": "customers.py:optional_customer", "summary": "Catches only CustomerNotFound and returns None."}]
+  },
+  "validation": [
+    {"name": "catalog tests", "command": "pytest tests/test_catalog.py", "scope": "focused", "status": "passed", "result": "3 passed including present, missing, and transport failure"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "25 passed"}
+  ]
+}

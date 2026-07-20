@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/admin", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8181818181818181818181818181818181818181",
+    "comparison_base_sha": "9191919191919191919191919191919191919191",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/export.py b/export.py\n--- a/export.py\n+++ b/export.py\n@@ -1,4 +1,4 @@\n def export_customer_data(actor, customer):\n-    if actor.role != 'admin':\n+    if actor is None:\n         raise Forbidden()\n     return serialize(customer)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Allow administrators to export customer records.",
+    "acceptance_criteria": ["Administrators may export records.", "Non-administrators remain forbidden."],
+    "non_goals": ["Expand export access to ordinary users."],
+    "preserved_behaviors": ["The admin role check remains the export authorization boundary."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [{"label": "Export authorization policy", "location": "SECURITY.md", "summary": "Only administrators may export customer records."}],
+    "nearby_patterns": []
+  },
+  "validation": [
+    {"name": "export tests", "command": "pytest tests/test_export.py", "scope": "focused", "status": "passed", "result": "2 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "30 passed"}
+  ],
+  "context": {"authorization": ["Customer exports contain tenant-private data."]}
+}

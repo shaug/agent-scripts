@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-19 — Epic workflow and review contract cleanup
 
+- feat: add goal-first correctness review
 - feat: define shared code review contracts
+  (5600132585c502b21434a938e0319ba58521ee67)
 - feat: add epic sequence implementation skill
   (06bd81f4293a24e12cde1f0e466596b41095e8f4)
 - revert: remove modular code review contract

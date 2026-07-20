@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "correctness",
+  "candidate": {"head_sha": "8282828282828282828282828282828282828282", "comparison_base_sha": "9292929292929292929292929292929292929292"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "correctness.invalid-count-test",
+    "lens": "correctness",
+    "severity": "blocking",
+    "confidence": "high",
+    "rule": "Non-numeric input raises InvalidCount.",
+    "evidence": [{"location": "test_parser.py:1", "detail": "Both tests cover numeric success; neither executes the ticket's required failure behavior."}],
+    "concern": "The only new acceptance behavior is not exercised by validation.",
+    "impact": "The domain-error contract can regress while all supplied tests remain green.",
+    "proposed_change": "Replace the redundant larger-count test with a non-numeric input assertion for InvalidCount and its input.",
+    "expected_effect": "Make the required error conversion executable and regression-protected.",
+    "location": "test_parser.py:4"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Add the acceptance-path failure test and rerun focused and full validation."
+}

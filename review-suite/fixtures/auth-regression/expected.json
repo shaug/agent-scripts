@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "correctness",
+  "candidate": {"head_sha": "8181818181818181818181818181818181818181", "comparison_base_sha": "9191919191919191919191919191919191919191"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "correctness.export-authorization",
+    "lens": "correctness",
+    "severity": "blocking",
+    "confidence": "high",
+    "rule": "Non-administrators remain forbidden from exporting customer records.",
+    "evidence": [{"location": "export.py:2", "detail": "The candidate checks only that an actor exists, so any authenticated role can export the record."}],
+    "concern": "The change removes the role check at the data-export trust boundary.",
+    "impact": "Ordinary users can access tenant-private customer exports.",
+    "proposed_change": "Restore the administrator role check and cover a non-administrator denial.",
+    "expected_effect": "Preserve the required export authorization boundary.",
+    "location": "export.py:2"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Restore role-based authorization and add the missing denial test."
+}
