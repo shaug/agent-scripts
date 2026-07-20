@@ -1,0 +1,97 @@
+[
+  {
+    "id": "standalone-ready-pr",
+    "request": "Implement GitHub issue G-21.",
+    "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
+    "authority": "ready_pr_only",
+    "capabilities": ["review-code-change", "isolated_worktree", "github_pr"]
+  },
+  {
+    "id": "authorized-merge-cleanup",
+    "request": "Implement and merge GitHub issue G-22.",
+    "tracker_state": "Open ready standalone ticket with no competing implementation.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Focused and full validation, local review, CI, and required remote review are clean for the current head; cleanup preconditions pass."
+  },
+  {
+    "id": "named-epic-child-only",
+    "request": "Implement child G-23 only.",
+    "tracker_state": "G-23 is a native child of G-20, has no blockers, and can ship independently; siblings are also ready.",
+    "authority": "ready_pr_only"
+  },
+  {
+    "id": "open-native-blocker",
+    "request": "Implement GitHub issue G-24.",
+    "tracker_state": "G-24 is open and natively blocked by open G-19; G-19's outcome is required."
+  },
+  {
+    "id": "closed-prerequisite-outcome-missing",
+    "request": "Implement GitHub issue G-25.",
+    "tracker_state": "Blocker G-18 is closed as not planned, but its required API contract is absent from the authoritative main branch."
+  },
+  {
+    "id": "sibling-outcome-missing",
+    "request": "Implement epic child G-36 only.",
+    "tracker_state": "G-36 belongs to epic G-33 and has no open native blocker, but it cannot ship independently because required shared-contract work owned by sibling G-37 is not implemented."
+  },
+  {
+    "id": "canonical-pr-owned-elsewhere",
+    "request": "Implement GitHub issue G-26.",
+    "tracker_state": "An open canonical PR already implements G-26 and is owned by another active worker; no ownership transfer occurred."
+  },
+  {
+    "id": "correctness-fix-and-rereview",
+    "request": "Implement and merge GitHub issue G-27.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Validation passes; review-code-change returns one blocking correctness finding, then returns clean on the committed fixed head; CI passes and no other remote review is required."
+  },
+  {
+    "id": "clean-local-review-remote-pending",
+    "request": "Implement GitHub issue G-28 to a ready PR.",
+    "authority": "ready_pr_only",
+    "candidate_state": "Local validation and review are clean; required current-head human and connector approvals remain pending; zero threads are unresolved."
+  },
+  {
+    "id": "unrelated-base-drift-retained",
+    "request": "Merge the reviewed PR for G-29.",
+    "authority": "merge_after_gates",
+    "candidate_state": "The base advanced only in unrelated documentation; effective diff and resulting candidate tree are unchanged, no conflict or relevant overlap exists, and repository policy permits retention."
+  },
+  {
+    "id": "linear-ticket-github-pr",
+    "request": "Implement Linear ticket LIN-30.",
+    "tracker_state": "Linear owns LIN-30, its parent, dependencies, and status; GitHub hosts code and PRs; unrelated GitHub issue 30 exists.",
+    "authority": "ready_pr_only"
+  },
+  {
+    "id": "epic-with-children",
+    "request": "Implement GitHub epic G-31.",
+    "tracker_state": "G-31 has native epic type and three native subissues; the request means whole-epic delivery.",
+    "capabilities": ["implement-epic"]
+  },
+  {
+    "id": "undecomposed-epic",
+    "request": "Implement GitHub epic G-32.",
+    "tracker_state": "G-32 has native epic type but no children yet; the request means whole-epic delivery.",
+    "capabilities": ["implement-epic"]
+  },
+  {
+    "id": "explicit-child-not-redirected",
+    "request": "Implement G-34 only.",
+    "tracker_state": "G-34 is a native child of G-33, independently shippable, and explicitly selected without siblings.",
+    "authority": "ready_pr_only"
+  },
+  {
+    "id": "missing-implement-epic",
+    "request": "Implement GitHub epic G-35.",
+    "tracker_state": "G-35 has children and requires whole-epic delivery.",
+    "capabilities": []
+  },
+  {
+    "id": "repeated-epic-handoff",
+    "request": "Implement GitHub epic G-35.",
+    "tracker_state": "G-35 has children and requires whole-epic delivery.",
+    "incoming_handoff": "implement-ticket:requires-epic:github:G-35",
+    "capabilities": []
+  }
+]
