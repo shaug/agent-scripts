@@ -1,0 +1,9 @@
+diff --git a/profile.py b/profile.py
+--- a/profile.py
++++ b/profile.py
+@@ -1,2 +1,4 @@
+ def display_name(user):
+-    return user.name
++    if user.preferred_name:
++        return user.preferred_name
++    return user.name

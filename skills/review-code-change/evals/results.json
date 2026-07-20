@@ -1,0 +1,177 @@
+[
+  {
+    "case_id": "ordered-clean",
+    "observed_sequence": ["solution_simplicity", "correctness", "code_simplicity"],
+    "stopped_reason": "all_required_lenses_clean",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "1010101010101010101010101010101010101010", "comparison_base_sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"},
+      "verdict": "clean", "findings": [], "blocking_reasons": [],
+      "next_action": "No further review action is required."
+    }
+  },
+  {
+    "case_id": "early-solution-redesign",
+    "observed_sequence": ["solution_simplicity"],
+    "stopped_reason": "solution_strategy_replacement_required",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "2020202020202020202020202020202020202020", "comparison_base_sha": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "solution-simplicity.remove-provider-platform", "lens": "solution_simplicity", "severity": "blocking", "confidence": "high",
+        "rule": "Remote providers are out of scope.",
+        "evidence": [{"location": "candidate diff", "detail": "A registry, provider API, configuration, and dispatch exist for one local write."}],
+        "concern": "The implementation introduces a provider platform even though the scoped behavior requires only one local write.",
+        "impact": "The unnecessary strategy adds configuration, dispatch, and provider failure modes outside the change contract.",
+        "proposed_change": "Replace the provider platform with one direct local write.",
+        "expected_effect": "Remove the platform, configuration, and provider failure modes."
+      }],
+      "blocking_reasons": [],
+      "next_action": "Redesign the implementation, capture a new head-bound evidence packet, and restart the full review sequence."
+    }
+  },
+  {
+    "case_id": "correctness-overrides-simplification",
+    "observed_sequence": ["solution_simplicity", "correctness", "code_simplicity"],
+    "stopped_reason": "unsafe_simplification_rejected_and_remaining_lenses_clean",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "3030303030303030303030303030303030303030", "comparison_base_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"},
+      "verdict": "clean", "findings": [],
+      "blocking_reasons": [],
+      "proposal_dispositions": [{
+        "finding_id": "solution-simplicity.remove-conditional-write",
+        "source_lens": "solution_simplicity", "disposition": "unsafe",
+        "reason": "The proposed removal would discard the required atomic claim fence; the current candidate already preserves it.",
+        "evidence": [{"location": "candidate conditional update", "detail": "The claim-token and running-state predicates prevent an expired worker from completing another worker's claim."}]
+      }],
+      "next_action": "Keep the existing claim fencing; no candidate change or further review action is required."
+    }
+  },
+  {
+    "case_id": "deduplicate-overlap",
+    "observed_sequence": ["solution_simplicity", "correctness", "code_simplicity"],
+    "stopped_reason": "code_simplicity_gating_finding",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "4040404040404040404040404040404040404040", "comparison_base_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "solution-simplicity.remove-local-policy-service", "lens": "solution_simplicity", "severity": "strong_recommendation", "confidence": "high",
+        "rule": "Use the existing authorization boundary.",
+        "evidence": [
+          {"location": "solution_simplicity result", "detail": "A new service duplicates the active-admin rule."},
+          {"location": "code_simplicity result", "detail": "Two new actions repeat the same active-admin condition."}
+        ],
+        "concern": "The new service and actions duplicate the existing active-admin authorization policy.",
+        "impact": "The candidate maintains three policy definitions and adds an unnecessary service.",
+        "proposed_change": "Call require_active_admin directly and remove the duplicate local policy service and conditions.",
+        "expected_effect": "Reduce three policy definitions to one and remove the duplicate service.",
+        "related_finding_ids": ["code-simplicity.reuse-active-admin"]
+      }],
+      "blocking_reasons": [],
+      "proposal_dispositions": [{
+        "finding_id": "solution-simplicity.remove-local-policy-service",
+        "source_lens": "solution_simplicity", "disposition": "compatible",
+        "reason": "Reusing the existing active-admin helper preserves the repository's authorization boundary.",
+        "evidence": [{"location": "repository policy helper", "detail": "require_active_admin implements the same required authorization check."}]
+      }],
+      "next_action": "Apply the deduplicated policy reuse change, build a new packet, rerun code simplicity, and then run targeted correctness."
+    }
+  },
+  {
+    "case_id": "targeted-correctness-recheck",
+    "observed_sequence": ["code_simplicity", "correctness"],
+    "stopped_reason": "all_required_results_clean",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "5050505050505050505050505050505050505050", "comparison_base_sha": "e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"},
+      "verdict": "clean", "findings": [], "blocking_reasons": [],
+      "next_action": "No further review action is required."
+    }
+  },
+  {
+    "case_id": "missing-dependency",
+    "observed_sequence": [],
+    "stopped_reason": "missing_required_dependency",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "6060606060606060606060606060606060606060", "comparison_base_sha": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"},
+      "verdict": "blocked", "findings": [],
+      "blocking_reasons": ["Required review skill review-code-simplicity is unavailable."],
+      "next_action": "Make review-code-simplicity available and readable, then restart the full review."
+    }
+  },
+  {
+    "case_id": "missing-evidence",
+    "observed_sequence": [],
+    "stopped_reason": "evidence_packet_incomplete",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "7070707070707070707070707070707070707070", "comparison_base_sha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"},
+      "verdict": "blocked", "findings": [],
+      "blocking_reasons": ["Acceptance criteria are missing.", "Full validation has no result or unavailable reason."],
+      "validation_limitations": ["Full validation has no result or unavailable reason."],
+      "next_action": "Recover the missing acceptance criteria and full-validation result or unavailable reason, rebuild and validate the evidence packet, then restart the full review sequence."
+    }
+  },
+  {
+    "case_id": "deferred-only-clean",
+    "observed_sequence": ["solution_simplicity", "correctness", "code_simplicity"],
+    "stopped_reason": "all_required_lenses_clean_with_deferred_finding",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "8080808080808080808080808080808080808080", "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"},
+      "verdict": "clean",
+      "findings": [{
+        "id": "solution-simplicity.future-cleanup", "lens": "solution_simplicity", "severity": "defer", "confidence": "high",
+        "rule": "A real legacy path remains outside this ticket.",
+        "evidence": [{"location": "ticket", "detail": "The ticket explicitly defers migration cleanup to issue #90."}],
+        "concern": "A legacy compatibility path remains, but its removal is explicitly outside the active ticket.",
+        "impact": "The compatibility branch remains until its callers migrate.",
+        "proposed_change": "Remove the legacy path in issue #90.",
+        "expected_effect": "Retire one compatibility branch after its callers migrate."
+      }],
+      "blocking_reasons": [],
+      "next_action": "No candidate change is required; track the deferred legacy-path cleanup in issue #90."
+    }
+  },
+  {
+    "case_id": "cycle-budget-exhausted",
+    "observed_sequence": ["solution_simplicity", "correctness"],
+    "stopped_reason": "cycle_budget_exhausted_with_correctness_finding",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "9090909090909090909090909090909090909090", "comparison_base_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "correctness.retry-still-unbounded", "lens": "correctness", "severity": "blocking", "confidence": "high",
+        "rule": "Retries must stop at the configured maximum.",
+        "evidence": [{"location": "candidate diff", "detail": "The third candidate still increments and schedules after the maximum."}],
+        "concern": "The retry path continues scheduling work after reaching the configured maximum.",
+        "impact": "Repeated work remains unbounded and violates the required retry limit.",
+        "proposed_change": "Stop scheduling when retry_count reaches max_retries.",
+        "expected_effect": "Bound repeated work at the required limit."
+      }],
+      "blocking_reasons": [],
+      "next_action": "The caller must correct the retry bound before merge; the three-cycle automatic review budget is exhausted, so do not request another automatic cycle."
+    }
+  },
+  {
+    "case_id": "mismatched-lens-result",
+    "observed_sequence": ["solution_simplicity"],
+    "stopped_reason": "untrustworthy_lens_result",
+    "result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"},
+      "verdict": "blocked", "findings": [],
+      "blocking_reasons": [
+        "The invoked solution-simplicity lens returned lens correctness instead of solution_simplicity.",
+        "The invoked solution-simplicity lens returned head deadbeefdeadbeefdeadbeefdeadbeefdeadbeef instead of the packet head a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2."
+      ],
+      "validation_limitations": [],
+      "next_action": "Rerun review-solution-simplicity with the validated packet for the exact captured candidate before continuing."
+    }
+  }
+]

@@ -181,6 +181,22 @@ def validate_result(result: dict[str, Any]) -> list[str]:
         ]
         if foreign:
             errors.append("$.findings: lens mismatch for " + ", ".join(foreign))
+
+    dispositions = result.get("proposal_dispositions", [])
+    if dispositions and result.get("lens") not in {"correctness", "aggregate"}:
+        errors.append(
+            "$.proposal_dispositions: only correctness or aggregate results may "
+            "disposition simplification proposals"
+        )
+    disposition_ids = [item.get("finding_id") for item in dispositions]
+    duplicate_dispositions = sorted(
+        {item for item in disposition_ids if disposition_ids.count(item) > 1}
+    )
+    if duplicate_dispositions:
+        errors.append(
+            "$.proposal_dispositions: duplicate finding id(s): "
+            + ", ".join(duplicate_dispositions)
+        )
     return errors
 
 

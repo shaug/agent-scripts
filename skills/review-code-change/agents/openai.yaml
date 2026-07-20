@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Code Change"
+  short_description: "Run the repository-owned code review suite"
+  default_prompt: "Use $review-code-change to build one evidence packet and run the complete repository-owned review sequence for this change."

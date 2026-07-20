@@ -11,6 +11,8 @@ A personal monorepo for agent skills and supporting scripts.
 
 Current skills:
 
+- `skills/review-code-change` — orchestrate the repository-owned review lenses
+  into one evidence-bound, deduplicated verdict
 - `skills/implement-epic-sequence` — execute GitHub or Linear epics through
   dependency-aware implementation, review, merge, cleanup, and closeout
 - `skills/prepare-changesets` — decompose a large, review-ready branch into a

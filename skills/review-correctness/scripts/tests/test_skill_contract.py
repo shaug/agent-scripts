@@ -25,6 +25,8 @@ class SkillContractTests(unittest.TestCase):
         skill = (SKILL_ROOT / "SKILL.md").read_text()
         self.assertIn("../../review-suite/CONTRACT.md", skill)
         self.assertIn("Preserve read-only integrity", skill)
+        self.assertIn("proposal_dispositions", skill)
+        self.assertIn("Do not turn a rejected hypothetical edit", skill)
         self.assertNotIn("code-review-pro", skill)
 
     def test_correctness_fixture_results_conform(self):
