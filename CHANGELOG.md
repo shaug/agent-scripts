@@ -4,9 +4,14 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-19 — Remove incomplete modular review contract
+
+- revert: remove modular code review contract
+
 ## 2026-02-24 — Modular code review contract specification
 
 - feat: specify modular atelier-agnostic code-review skill contract
+  (062a1a328e6a1b2e0835d16be742fc2c36dbd9dd)
 
 ## 2026-01-27 — Incremental changesets and workflow reliability fixes
 
