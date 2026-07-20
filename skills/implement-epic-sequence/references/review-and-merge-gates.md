@@ -13,13 +13,15 @@ stricter requirements but must not silently weaken them.
 
 ## Bounded review loop
 
-After implementation and required local validation, require one fresh, read-only
-adversarial review using `code-review-pro` in a separate review-only subagent or
-equivalent isolated context unless the user explicitly waives independent review
-or independent review tooling is unavailable. Use a fresh or minimally inherited
-context containing only raw task artifacts. Exclude the implementation
-transcript, intended answer, prior conclusions, and suspected findings. Do not
-silently treat unavailability as a passed independent-review gate.
+Before a merge-inclusive run, require the repository-owned `review-code-change`
+skill. Fail closed with an explicit missing-dependency result when it is not
+available or readable. Do not substitute another review skill, generic
+self-review, or an unreviewed merge path.
+
+After implementation and required local validation, invoke the suite in a fresh
+or minimally inherited read-only context containing only raw task artifacts.
+Exclude the implementation transcript, intended solution, prior conclusions, and
+suspected findings.
 
 Before review, require every intended ticket change to be committed and the
 implementation worktree to be clean. If unrelated user artifacts prevent a clean
@@ -31,42 +33,28 @@ ignored worktree state. After the reviewer returns, verify that all remain
 unchanged. Treat any mutation as an integrity failure, inspect it, and preserve
 user work rather than resetting or deleting it.
 
-Give the reviewer:
+Give the suite:
 
 - the live ticket and acceptance criteria;
 - every named architecture, design, contract, migration, and rollout document;
-- the exact captured head and base SHAs and their complete `base...HEAD` diff,
-  not only the latest commit; and
+- the exact captured head and comparison-base SHAs and their complete
+  `base...HEAD` diff, not only the latest commit; and
 - exact focused and full validation evidence, including unavailable checks.
 
-Require the reviewer to inspect correctness, acceptance coverage, regressions,
-failure paths, security, authorization boundaries, architecture, public surface
-area, tests, documentation, and scope. Classify each finding as:
+Validate and consume the aggregate result according to the suite's shared
+contract. Do not restate or override lens ordering, severity semantics,
+deduplication, or correctness-versus-simplicity rules here. Apply only blocking
+and strong-recommendation findings that are material, tractable, and
+ticket-scoped. Preserve deferred findings without expanding the current PR.
+Reply with evidence for findings that no longer apply. When authorized, create a
+focused follow-up only for a real, evidenced gap outside active scope.
 
-- must fix now: correctness, security, acceptance, architecture, or validation
-  failure;
-- obvious low-cost correctness or safety improvement: addresses demonstrated
-  current risk without widening scope;
-- already satisfied or incorrect;
-- valid but outside the ticket;
-- blocked by a missing product decision.
-
-Apply only the first two categories. Reply with evidence for rejected findings.
-When authorized, create a focused follow-up only for a real, evidenced gap.
-Apply cognitive-load refactoring only when the user explicitly requests it or
-when it is necessary to make the ticket's correctness evident. Do not use
-reviewer convenience alone to expand the active PR.
-
-Run a fresh pass after material fixes so the review covers the resulting diff.
-Use at most three adversarial passes by default. A clean pass ends the loop. If
-the third pass still reports a material finding, do not merge; report the
-remaining issue and request direction. Do not spend passes on style, polish,
-hypothetical hardening, or future compatibility.
-
-When independent review tooling is unavailable, record why, perform a fresh
-adversarial self-review using the same inputs and coverage, and proceed only if
-repository policy does not require independence and the user has accepted or
-already authorized this fallback.
+After a material fix, run affected and required validation, commit and push the
+new head, rebuild the packet, and invoke the suite according to its returned
+re-review instructions. Use at most three full fix/re-review cycles by default.
+A clean aggregate ends the local loop. If the final cycle still reports a
+material finding, keep the PR open and report the unresolved evidence. Do not
+spend cycles on deferred findings.
 
 ## Revalidation
 
@@ -77,27 +65,27 @@ After every fix cycle:
 - commit every intended ticket change and confirm that no uncommitted ticket
   work is absent from `base...HEAD`;
 - push the updated head;
-- capture the current head and base SHAs;
+- capture the current head and comparison-base SHAs;
 - re-read current-candidate review and check state.
 
-Do not carry an older clean review signal across any head change, including a
-push, rebase, conflict resolution, or update-branch operation, or across a base
-advance that changes the merge candidate.
+Do not carry older head-bound evidence across an edit, push, rebase, conflict
+resolution, or update-branch operation that changes the head. A base advance
+uses the separate drift gate below.
 
 ## Base-drift gate
 
-Bind validation, CI, adversarial review, required human approval, connector
-review, and feedback disposition evidence to the captured head and base SHA
-pair. Immediately before merge, re-read both SHAs.
+Bind local review evidence to the captured head. Immediately before merge,
+re-read the head and base and inspect the effective merge candidate when the
+base advanced.
 
-When the base changed, build an up-to-date merge candidate and rerun applicable
-local validation, CI, adversarial review, human review, connector review, and
-feedback disposition. For required human approval, require proof that it was
-submitted for the captured pair or request fresh approval after capturing the
-new pair. When rebasing, merging, conflict resolution, or update-branch changes
-the head, restart every current-head gate. When a review system cannot bind a
-fresh verdict to an unchanged head plus a new base, update the branch so the
-candidate receives a new reviewable head SHA.
+Retain head-bound evidence across base-only drift only when the effective diff
+and resulting tree are unchanged, no conflict exists, no relevant base code
+overlaps the candidate, repository policy permits retention, and the reason is
+recorded. Otherwise invalidate and rerun each affected local-validation, CI,
+local-review, human-review, connector-review, and feedback-disposition gate.
+Repository policy may require a complete reset even for unrelated drift. Any
+rebase, merge, conflict resolution, or update that changes the head restarts
+every head-bound gate.
 
 ## Merge gate
 
@@ -110,9 +98,10 @@ Require all applicable conditions:
 - required remote checks passed;
 - no undispositioned actionable conversation comment, formal review, connector
   feedback, or review thread remains;
-- every applicable required adversarial, human, and connector review has a clean
-  or approving verdict explicitly tied to the exact current head and base SHA
-  pair;
+- the repository-owned local review has a clean aggregate bound to the current
+  head, with any later base drift explicitly retained or re-reviewed;
+- every applicable required human and connector review is current under
+  repository policy;
 - no merge conflict or superseding PR exists;
 - the diff still satisfies one ticket and its non-goals;
 - rollout or migration prerequisites required before merge are complete.

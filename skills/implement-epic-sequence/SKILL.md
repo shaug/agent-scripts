@@ -42,6 +42,12 @@ Before changing code, resolve:
   deletion, and deployment;
 - named architecture, design, contract, or rollout documents.
 
+For a merge-inclusive run, verify before implementation that
+`review-code-change` is available and readable. It is the single local
+adversarial-review dependency. If it is unavailable, stop with an explicit
+missing-dependency result; do not substitute a third-party skill, a generic
+reviewer, or an unreviewed merge path.
+
 Unless the user or repository contract states otherwise, apply this authority
 matrix:
 
@@ -188,39 +194,27 @@ same files.
 
 Follow `references/review-and-merge-gates.md`.
 
-- Implement directly in the primary execution context.
-- After local validation, require one fresh, read-only adversarial
-  `code-review-pro` pass in a separate review-only subagent or equivalent
-  isolated context unless the user explicitly waives it or independent review
-  tooling is unavailable.
-- Use a fresh or minimally inherited context. Give the reviewer only raw task
-  artifacts: repository instructions, the live ticket, named specifications, the
-  complete `base...HEAD` diff for the captured head/base SHA pair, and
-  validation evidence. Do not provide the implementation transcript, intended
-  answer, prior conclusions, or suspected findings.
-- Before review, require every intended ticket change to be committed and the
-  implementation worktree to be clean. If unrelated user artifacts prevent a
-  clean state, classify and preserve them and prove they are irrelevant to the
-  candidate.
-- Before delegation, capture HEAD, commit history, and tracked, untracked, and
-  ignored worktree state. After review, verify that all remain unchanged. Treat
-  any reviewer mutation as an integrity failure and inspect it without
-  discarding user work.
-- Review correctness, acceptance criteria, regressions, failure paths, security,
-  authorization, architecture, public surface area, tests, documentation, and
-  scope.
-- Apply only material, tractable, in-scope findings.
-- Re-run affected and required validation after fixes.
-- Run a fresh pass after material fixes and invalidate prior remote review
-  signals after every head or base change.
-- Use at most three adversarial passes by default. If the final pass still has a
-  material finding, do not merge; report the unresolved finding and request
-  direction.
+- Implement and apply fixes only in the primary execution context.
+- Commit and validate a clean candidate, then invoke `review-code-change` in a
+  fresh or minimally inherited read-only context with raw ticket, repository,
+  diff, validation, and worktree artifacts.
+- Exclude the implementation transcript, intended solution, prior conclusions,
+  and suspected findings.
+- Consume the suite's validated aggregate verdict, findings, dispositions,
+  limitations, and next action without reproducing its lens rubrics or ordering.
+- Apply only blocking and strong-recommendation findings that are material,
+  tractable, and ticket-scoped. Preserve deferred findings without expanding the
+  PR.
+- After fixes, run affected and required validation, commit, push, build a new
+  head-bound evidence packet, and invoke the suite according to its re-review
+  instructions.
+- Use at most three full fix/re-review cycles by default. Keep the PR open and
+  report unresolved material findings after the final cycle.
 
-Do not silently count an unavailable independent reviewer as a passed gate.
-Record the limitation, perform a fresh adversarial self-review, and proceed only
-when repository policy does not require independence and the user has accepted
-or already authorized the unavailable-tool fallback.
+Treat a missing dependency, malformed result, `blocked` verdict, reviewer
+mutation, or unavailable required evidence as a failed local review gate. The
+review suite remains read-only; this workflow owns every code and GitHub
+mutation.
 
 Create a follow-up ticket only when ticket management is authorized and the gap
 is real, evidenced, and intentionally outside the current PR. Otherwise report a
@@ -235,18 +229,21 @@ Follow both bundled gate references. Merge only when:
   irrelevant;
 - required local validation passed;
 - required CI passed or the repository explicitly has no such checks;
-- every applicable required adversarial, human, and connector review has a clean
-  or approving verdict explicitly tied to the exact current head and base SHA
-  pair;
+- the repository-owned local review has a clean result bound to the current head
+  and an explicit disposition for any later base drift;
+- every applicable required human and connector review has a current approving
+  or clean verdict under repository policy;
 - no undispositioned actionable conversation comment, formal review, connector
   feedback, or review thread remains;
 - the PR still matches its ticket and base;
 - no other PR superseded it.
 
-Treat every head change, including a push, rebase, conflict resolution, or
-update-branch operation, and every base-branch advance as invalidating older
-merge-candidate evidence. Rebuild and revalidate the current head/base candidate
-before merge.
+Treat every head-changing edit, push, rebase, conflict resolution, or
+update-branch operation as invalidating head-bound evidence. When only the base
+advances, inspect the current merge candidate and record why each gate was
+retained or invalidated. Retain evidence only when the effective diff and
+resulting tree are unchanged, no conflict or relevant overlap exists, and
+repository policy permits retention. Otherwise rerun every affected gate.
 
 After merge, verify the remote state and base-branch result before cleanup.
 
