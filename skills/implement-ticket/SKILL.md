@@ -34,7 +34,8 @@ same-numbered issue from the PR host for the real tracker ticket.
 
 A compatible agentic runtime must be able to:
 
-- load this skill and repository-owned skill dependencies;
+- load `implement-ticket` and repository-owned `review-code-change` by stable
+  skill name or an equivalent repository-owned dependency mechanism;
 - read repository instructions, tracker state, and structured relationships;
 - inspect and create isolated branch/worktree state;
 - edit files, run commands, commit, push, and manage PRs when authorized;
@@ -46,7 +47,8 @@ A compatible agentic runtime must be able to:
 Stop with an explicit missing-capability result when an applicable capability is
 unavailable. Product-specific discovery metadata such as `agents/openai.yaml`
 may exist, but it does not constrain the operating contract or require a
-particular agent product.
+particular agent product. Terms such as worker and subagent describe possible
+isolated execution roles, not required product APIs.
 
 ## Resolve the operating contract
 
@@ -93,10 +95,11 @@ manual transition. State that consequence before publication or merge. Do not
 use automatic closing syntax when its effect conflicts with the resolved
 completion policy.
 
-For a merge-inclusive run, verify before implementation that
-`review-code-change` is available and readable. It is the only local
-adversarial-review dependency. Return `blocked` when it is unavailable; do not
-substitute a third-party skill, generic self-review, or unreviewed merge path.
+Before implementation can produce a reviewed PR, verify that
+`review-code-change` is available and readable by stable name or an equivalent
+repository-owned dependency mechanism. It is the only local adversarial-review
+dependency. Return `blocked` before mutation when it is unavailable; do not
+substitute a third-party skill, generic self-review, or unreviewed path.
 
 ## Establish source-of-truth precedence
 

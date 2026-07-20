@@ -21,6 +21,33 @@ inline a copy of the ticket workflow, or weaken any gate.
 cleanup, and terminal evidence. Do not invoke individual review lenses or
 `review-code-change` directly from this skill.
 
+## Require compatible runtime capabilities
+
+A compatible agentic runtime must be able to:
+
+- load `implement-epic` and repository-owned `implement-ticket` by stable skill
+  name or an equivalent repository-owned dependency mechanism;
+- read repository instructions plus structured GitHub or Linear relationships;
+- retain task state while repeating the dependency-driven graph loop;
+- invoke one mutating ticket execution in an exclusively owned branch/worktree
+  context and wait for its terminal result;
+- inspect and verify returned candidate, PR, tracker, and base evidence;
+- poll or wait for asynchronous ticket, CI, review, and graph-transition gates;
+  and
+- preserve a fresh read-only reviewer context through the ticket result without
+  taking ownership of local review.
+
+The portable dependency chain is `implement-epic` → `implement-ticket` →
+`review-code-change`. Verify `implement-ticket` directly and require its result
+to prove that its own review dependency and applicable capabilities were
+available. Do not make this skill invoke `review-code-change` itself.
+
+Stop before child mutation with an explicit limitation when an applicable
+capability or dependency is unavailable. Product-specific discovery metadata
+such as `agents/openai.yaml` may exist, but it does not constrain the operating
+contract or require a particular agent product. Terms such as worker and
+subagent describe possible isolated execution roles, not required product APIs.
+
 ## Load graph and closeout references
 
 - Read [the GitHub graph adapter](references/github.md) whenever GitHub owns

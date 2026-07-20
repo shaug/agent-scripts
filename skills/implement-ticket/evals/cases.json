@@ -4,7 +4,8 @@
     "request": "Implement GitHub issue G-21.",
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
-    "capabilities": ["review-code-change", "isolated_worktree", "github_pr"]
+    "runtime_profile": "Repository-owned skills and named subagents are available.",
+    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -93,5 +94,31 @@
     "tracker_state": "G-35 has children and requires whole-epic delivery.",
     "incoming_handoff": "implement-ticket:requires-epic:github:G-35",
     "capabilities": []
+  },
+  {
+    "id": "equivalent-isolated-context-profile",
+    "request": "Implement GitHub issue G-38 to a ready PR.",
+    "tracker_state": "G-38 is a ready standalone ticket with no competing implementation.",
+    "runtime_profile": "The runtime calls isolated units jobs rather than subagents, but provides an exclusive mutating job and a fresh read-only audit job with equivalent permissions and integrity checks.",
+    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "equivalent_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+  },
+  {
+    "id": "missing-review-code-change",
+    "request": "Implement GitHub issue G-39.",
+    "tracker_state": "G-39 is otherwise ready and independently shippable.",
+    "runtime_profile": "The runtime cannot load repository-owned review-code-change by stable name or an equivalent dependency mechanism."
+  },
+  {
+    "id": "missing-isolation-capability",
+    "request": "Implement GitHub issue G-40.",
+    "tracker_state": "G-40 is otherwise ready and independently shippable.",
+    "runtime_profile": "The runtime cannot create or verify an exclusively owned implementation branch/worktree context."
+  },
+  {
+    "id": "missing-asynchronous-wait",
+    "request": "Implement and merge GitHub issue G-41.",
+    "tracker_state": "G-41 is otherwise ready and requires asynchronous CI and review gates.",
+    "authority": "merge_after_gates",
+    "runtime_profile": "The runtime cannot poll, wait, or resume after asynchronous gates."
   }
 ]

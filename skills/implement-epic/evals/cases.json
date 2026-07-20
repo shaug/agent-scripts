@@ -39,6 +39,7 @@
     "id": "exclusive-delegated-worktree",
     "request": "Delegate ready child G-161 from epic G-160.",
     "graph": "G-161 is the only ready child.",
+    "runtime_profile": "Repository-owned skills and named subagents are available.",
     "delegation": "Worker returns a candidate from a named exclusive branch/worktree plus terminal evidence."
   },
   {
@@ -74,5 +75,31 @@
     "request": "Implement ready children G-221 and G-222 in parallel.",
     "graph": "Both are graph-independent, but both edit the same shared contract and have ordered rollout semantics.",
     "authority": "parallel execution requested"
+  },
+  {
+    "id": "equivalent-isolated-context-profile",
+    "request": "Implement epic G-230 through authorized child merges.",
+    "graph": "G-231 is the only open ready child.",
+    "runtime_profile": "The runtime calls isolated units jobs rather than subagents, but provides one exclusive mutating job, a fresh read-only audit job inside implement-ticket, retained loop state, and asynchronous waiting.",
+    "ticket_results": ["G-231 merged with internally consistent evidence"]
+  },
+  {
+    "id": "missing-review-dependency-through-ticket",
+    "request": "Implement epic G-240.",
+    "graph": "G-241 is the only open ready child.",
+    "runtime_profile": "implement-ticket is available, but repository-owned review-code-change cannot be loaded.",
+    "ticket_results": ["G-241 blocked before mutation because review-code-change is unavailable"]
+  },
+  {
+    "id": "missing-isolation-capability",
+    "request": "Implement epic G-250.",
+    "graph": "G-251 is the only open ready child.",
+    "runtime_profile": "The runtime cannot create or verify an exclusively owned mutating ticket context."
+  },
+  {
+    "id": "missing-asynchronous-wait",
+    "request": "Implement epic G-260 through child merges.",
+    "graph": "G-261 is open and ready, with asynchronous CI and review gates required by its ticket workflow.",
+    "runtime_profile": "The runtime cannot poll, wait, or resume after asynchronous child gates."
   }
 ]

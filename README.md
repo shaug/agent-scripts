@@ -9,7 +9,7 @@ A personal monorepo for agent skills and supporting scripts.
   evaluation fixtures shared by repository-owned review skills
 - `justfile` — common tasks for testing, validation, and formatting
 
-Current skills:
+Current reusable agent skills:
 
 - `skills/implement-ticket` — implement exactly one standalone ticket or named
   epic child through isolated execution, repository-owned review, PR gates, and
@@ -28,6 +28,18 @@ Current skills:
   is not justified by real requirements or repository constraints
 - `skills/review-code-simplicity` — reduce local cognitive load through
   behavior-preserving reuse, DRY, control-flow, and test simplification
+
+The composed implementation dependency chain is:
+
+```text
+implement-epic
+└── implement-ticket
+    └── review-code-change
+```
+
+Compatible runtimes may provide named subagents or equivalent isolated
+implementation and review contexts. OpenAI-facing files under `agents/` are
+optional discovery metadata, not part of the skills' portable contracts.
 
 ## Quick Start
 
@@ -52,7 +64,7 @@ Validate a review packet and result together:
 python3 review-suite/scripts/validate.py pair packet.json result.json
 ```
 
-Run deterministic local evals (no Codex required):
+Run deterministic local evals without an agent runtime:
 
 ```bash
 just eval-prepare-changesets
