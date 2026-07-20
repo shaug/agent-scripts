@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Epic Sequence"
+  short_description: "Execute epics safely from ticket to merge"
+  default_prompt: "Use $implement-epic-sequence to implement the remaining ready children of this epic through review, merge, cleanup, and closeout."

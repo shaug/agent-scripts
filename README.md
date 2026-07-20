@@ -9,6 +9,8 @@ A personal monorepo for agent skills and supporting scripts.
 
 Current skills:
 
+- `skills/implement-epic-sequence` — execute GitHub or Linear epics through
+  dependency-aware implementation, review, merge, cleanup, and closeout
 - `skills/prepare-changesets` — decompose a large, review-ready branch into a
   deterministic chain of smaller, reviewable changesets and GitHub PRs
 
