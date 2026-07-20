@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "solution_simplicity",
+  "candidate": {"head_sha": "3333333333333333333333333333333333333333", "comparison_base_sha": "cccccccccccccccccccccccccccccccccccccccc"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "solution-simplicity.remove-provider-framework",
+    "lens": "solution_simplicity",
+    "severity": "strong_recommendation",
+    "confidence": "high",
+    "rule": "Remote providers and an extension API are explicit non-goals.",
+    "evidence": [{"location": "export.py:1", "detail": "A registry, factory, provider interface, and selection parameter exist only for unspecified providers."}],
+    "concern": "The overall design solves imagined provider requirements rather than the requested local-file outcome.",
+    "impact": "The ticket carries avoidable concepts, configuration, and failure modes.",
+    "proposed_change": "Replace the provider framework with one direct local-file write at the existing export boundary.",
+    "expected_effect": "Meet the complete requirement with fewer concepts and no lost capability.",
+    "location": "export.py:1"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Redesign around the required local-file operation before detailed review continues."
+}

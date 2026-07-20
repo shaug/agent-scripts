@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/profile", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "7777777777777777777777777777777777777777",
+    "comparison_base_sha": "1212121212121212121212121212121212121212",
+    "diff": {"format": "unified_diff", "complete": true, "content": "diff --git a/profile.py b/profile.py\n--- a/profile.py\n+++ b/profile.py\n@@ -1 +1 @@\n-return user.name\n+return user.preferred_name or user.name\n"}
+  },
+  "change_contract": {
+    "goal": "Display a preferred name when one is present.",
+    "acceptance_criteria": ["Preferred names take precedence and existing names remain the fallback."],
+    "non_goals": [],
+    "preserved_behaviors": ["Existing names remain the fallback."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": []},
+  "validation": [
+    {"name": "profile tests", "command": "pytest tests/test_profile.py", "scope": "focused", "status": "passed", "result": "4 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "20 passed"}
+  ],
+  "base_drift": {
+    "captured_base_sha": "3434343434343434343434343434343434343434",
+    "current_base_sha": "1212121212121212121212121212121212121212",
+    "effective_diff_changed": false,
+    "resulting_tree_changed": false,
+    "conflict": false,
+    "relevant_overlap": false,
+    "repository_requires_reset": false,
+    "decision": "retain",
+    "reason": "The base changed only in unrelated documentation; the effective diff and resulting tree are unchanged."
+  }
+}

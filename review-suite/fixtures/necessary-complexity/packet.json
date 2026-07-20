@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/worker", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "4444444444444444444444444444444444444444",
+    "comparison_base_sha": "dddddddddddddddddddddddddddddddddddddddd",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/claims.py b/claims.py\nnew file mode 100644\n--- /dev/null\n+++ b/claims.py\n@@ -0,0 +1,7 @@\n+def complete(job_id, claim_token):\n+    updated = db.update_where(\n+        id=job_id, claim_token=claim_token, status='running',\n+        values={'status': 'complete', 'claim_token': None},\n+    )\n+    if updated != 1:\n+        raise LostClaim(job_id)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Prevent an expired worker from completing a job claimed by another worker.",
+    "acceptance_criteria": ["Completion succeeds only for the current claim token.", "Lost claims fail without changing the job."],
+    "non_goals": ["Replace the database claim protocol."],
+    "preserved_behaviors": ["Completion is atomic with claim verification.", "Concurrent workers cannot both complete one job."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [{"label": "Claim protocol", "location": "DESIGN.md", "summary": "Requires one conditional write to preserve fencing."}],
+    "nearby_patterns": []
+  },
+  "validation": [
+    {"name": "concurrency tests", "command": "pytest tests/test_claims.py", "scope": "focused", "status": "passed", "result": "6 passed including stale-token race"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "18 passed"}
+  ],
+  "context": {"data": ["The database conditional update is the concurrency boundary."]}
+}

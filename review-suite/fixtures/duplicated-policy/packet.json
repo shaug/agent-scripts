@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/admin", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "2222222222222222222222222222222222222222",
+    "comparison_base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/actions.py b/actions.py\nnew file mode 100644\n--- /dev/null\n+++ b/actions.py\n@@ -0,0 +1,8 @@\n+def delete_user(actor, user):\n+    if actor.role != 'admin' or actor.suspended:\n+        raise Forbidden()\n+    store.delete(user)\n+def restore_user(actor, user):\n+    if actor.role != 'admin' or actor.suspended:\n+        raise Forbidden()\n+    store.restore(user)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Add administrator delete and restore actions.",
+    "acceptance_criteria": ["Active administrators may delete and restore users.", "Other actors are rejected."],
+    "non_goals": ["Redesign role storage."],
+    "preserved_behaviors": ["Suspended administrators remain unauthorized."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [],
+    "nearby_patterns": [{"label": "Shared authorization helper", "location": "auth.py:require_active_admin", "summary": "Existing helper implements the same policy."}]
+  },
+  "validation": [
+    {"name": "action tests", "command": "pytest tests/test_actions.py", "scope": "focused", "status": "passed", "result": "6 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "24 passed"}
+  ]
+}

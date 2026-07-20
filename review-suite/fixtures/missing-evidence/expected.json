@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "lens": "aggregate",
+  "candidate": {"head_sha": "6666666666666666666666666666666666666666", "comparison_base_sha": "ffffffffffffffffffffffffffffffffffffffff"},
+  "verdict": "blocked",
+  "findings": [],
+  "blocking_reasons": ["Acceptance criteria are missing.", "Required validation is unavailable without a reason."],
+  "validation_limitations": ["The required test result cannot be evaluated."],
+  "next_action": "Supply acceptance criteria and the validation result or unavailable reason."
+}

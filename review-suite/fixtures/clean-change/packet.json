@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/profile", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "5555555555555555555555555555555555555555",
+    "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/profile.py b/profile.py\n--- a/profile.py\n+++ b/profile.py\n@@ -1,2 +1,4 @@\n def display_name(user):\n-    return user.name\n+    if user.preferred_name:\n+        return user.preferred_name\n+    return user.name\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Display a preferred name when one is present.",
+    "acceptance_criteria": ["Preferred names take precedence.", "The existing name remains the fallback."],
+    "non_goals": ["Change name storage or validation."],
+    "preserved_behaviors": ["Users without a preferred name display their existing name."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": [{"label": "Simple fallback convention", "location": "contact.py"}]},
+  "validation": [
+    {"name": "profile tests", "command": "pytest tests/test_profile.py", "scope": "focused", "status": "passed", "result": "4 passed including preferred and fallback names"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "20 passed"}
+  ]
+}

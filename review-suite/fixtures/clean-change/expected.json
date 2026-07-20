@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "lens": "aggregate",
+  "candidate": {"head_sha": "5555555555555555555555555555555555555555", "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},
+  "verdict": "clean",
+  "findings": [],
+  "blocking_reasons": [],
+  "next_action": "No material review action is required."
+}
