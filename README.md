@@ -17,6 +17,8 @@ Current skills:
   deterministic chain of smaller, reviewable changesets and GitHub PRs
 - `skills/review-correctness` — find material behavioral, security,
   compatibility, data-integrity, and validation failures in a code change
+- `skills/review-solution-simplicity` — challenge whole-solution machinery that
+  is not justified by real requirements or repository constraints
 
 ## Quick Start
 

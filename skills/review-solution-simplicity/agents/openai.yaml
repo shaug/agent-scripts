@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Solution Simplicity"
+  short_description: "Find requirement-free solution complexity"
+  default_prompt: "Use $review-solution-simplicity to find a materially smaller requirement-complete design for this change."

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/artifacts", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8686868686868686868686868686868686868686",
+    "comparison_base_sha": "9696969696969696969696969696969696969696",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/storage.py b/storage.py\nnew file mode 100644\n--- /dev/null\n+++ b/storage.py\n@@ -0,0 +1,13 @@\n+class ArtifactStore:\n+    def __init__(self, backend):\n+        self.backend = backend\n+\n+    def put(self, key, value):\n+        return self.backend.put(key, value)\n+\n+def build_store(config):\n+    if config.backend == 'filesystem':\n+        return ArtifactStore(FileBackend(config.path))\n+    if config.backend == 'bucket':\n+        return ArtifactStore(BucketBackend(config.bucket))\n+    raise UnknownBackend(config.backend)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Keep generated artifacts after the worker process exits.",
+    "acceptance_criteria": ["A generated artifact can be retrieved by key after its creating worker exits."],
+    "non_goals": [],
+    "preserved_behaviors": ["Artifact bytes remain unchanged."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [{"label": "Deployment decision", "location": "DESIGN.md", "summary": "The deployment topology and durable storage service are undecided."}],
+    "nearby_patterns": []
+  },
+  "validation": [
+    {"name": "storage tests", "command": "pytest tests/test_storage.py", "scope": "focused", "status": "passed", "result": "6 passed with fake backends"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "19 passed"}
+  ],
+  "context": {"operational": ["It is unknown whether workers share a filesystem, which storage service is available, and what retention or availability is required."]}
+}
