@@ -1,0 +1,150 @@
+[
+  {
+    "id": "correctness-fix-and-rereview",
+    "request": "Implement and merge the ready child after all required gates pass.",
+    "ticket": {
+      "goal": "Stop retry scheduling at the configured maximum.",
+      "acceptance_criteria": ["No retry is scheduled when retry_count equals max_retries."],
+      "non_goals": ["Redesign the queue."],
+      "preserved_behaviors": ["Retries below the maximum still schedule normally."]
+    },
+    "candidate": {
+      "head_sha": "1111111111111111111111111111111111111111",
+      "comparison_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "diff_summary": "The retry branch still schedules when retry_count equals max_retries.",
+      "validation": ["focused passed", "full passed"]
+    },
+    "review_dependency_available": true,
+    "suite_result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "1111111111111111111111111111111111111111", "comparison_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "correctness.retry-bound", "lens": "correctness", "severity": "blocking", "confidence": "high",
+        "rule": "Retries must stop at max_retries.",
+        "evidence": [{"location": "worker retry branch", "detail": "Equality still reaches schedule_retry."}],
+        "concern": "The maximum does not stop retry scheduling.", "impact": "Work can exceed the configured retry budget.",
+        "proposed_change": "Return before scheduling when retry_count is at least max_retries.", "expected_effect": "Bound retries at the configured maximum."
+      }],
+      "blocking_reasons": [],
+      "next_action": "Apply the correctness fix, validate, commit and push a new head, then rerun correctness and affected downstream lenses."
+    },
+    "followup_suite_result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "1212121212121212121212121212121212121212", "comparison_base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+      "verdict": "clean", "findings": [], "blocking_reasons": [],
+      "next_action": "No further local review action is required."
+    },
+    "remote_policy": {"ci": "passed", "human": "not_required", "connector": "not_configured"}
+  },
+  {
+    "id": "solution-redesign-early-exit",
+    "request": "Implement and merge the ready child after all required gates pass.",
+    "ticket": {
+      "goal": "Persist one local audit record.",
+      "acceptance_criteria": ["One local record is written."],
+      "non_goals": ["Support remote storage providers."],
+      "preserved_behaviors": ["Existing local writes remain atomic."]
+    },
+    "candidate": {
+      "head_sha": "2222222222222222222222222222222222222222",
+      "comparison_base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "diff_summary": "Adds a provider registry, dispatch layer, and remote-provider configuration for one local write.",
+      "validation": ["focused passed", "full passed"]
+    },
+    "review_dependency_available": true,
+    "suite_result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "2222222222222222222222222222222222222222", "comparison_base_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "solution-simplicity.remove-provider-platform", "lens": "solution_simplicity", "severity": "blocking", "confidence": "high",
+        "rule": "Remote providers are outside scope.",
+        "evidence": [{"location": "candidate diff", "detail": "Provider configuration and dispatch exist for one local write."}],
+        "concern": "The implementation strategy exceeds the ticket.", "impact": "It adds unsupported ownership and failure modes.",
+        "proposed_change": "Replace the provider platform with one direct local write.", "expected_effect": "Remove provider configuration, dispatch, and remote failure modes."
+      }],
+      "blocking_reasons": [],
+      "next_action": "Redesign the implementation, capture a new head, and restart the full review sequence."
+    },
+    "remote_policy": {"ci": "required", "human": "not_required", "connector": "not_configured"}
+  },
+  {
+    "id": "code-simplicity-targeted-correctness",
+    "request": "Implement and merge the ready child after all required gates pass.",
+    "ticket": {
+      "goal": "Authorize two new admin actions.",
+      "acceptance_criteria": ["Only active admins may invoke either action."],
+      "non_goals": ["Create another authorization framework."],
+      "preserved_behaviors": ["The shared active-admin policy remains authoritative."]
+    },
+    "candidate": {
+      "head_sha": "3333333333333333333333333333333333333333",
+      "comparison_base_sha": "cccccccccccccccccccccccccccccccccccccccc",
+      "diff_summary": "Both actions repeat the existing active-admin policy instead of calling its helper.",
+      "validation": ["focused passed", "full passed"]
+    },
+    "review_dependency_available": true,
+    "suite_result": {
+      "schema_version": "1.0", "lens": "aggregate",
+      "candidate": {"head_sha": "3333333333333333333333333333333333333333", "comparison_base_sha": "cccccccccccccccccccccccccccccccccccccccc"},
+      "verdict": "changes_required",
+      "findings": [{
+        "id": "code-simplicity.reuse-admin-policy", "lens": "code_simplicity", "severity": "strong_recommendation", "confidence": "high",
+        "rule": "Reuse the repository authorization helper.",
+        "evidence": [{"location": "two new actions", "detail": "Both repeat require_active_admin logic."}],
+        "concern": "Authorization policy has three owners.", "impact": "The repeated checks can drift.",
+        "proposed_change": "Call require_active_admin from each action.", "expected_effect": "Restore one authorization-policy owner."
+      }],
+      "blocking_reasons": [],
+      "next_action": "Apply the code-simplicity fix on a new head, rerun code simplicity, then run targeted correctness."
+    },
+    "remote_policy": {"ci": "required", "human": "not_required", "connector": "not_configured"}
+  },
+  {
+    "id": "unrelated-base-drift-retained",
+    "request": "Merge the clean reviewed child when all current gates pass.",
+    "ticket": {"goal": "Add a parser boundary test.", "acceptance_criteria": ["The boundary is covered."], "non_goals": [], "preserved_behaviors": ["Parser behavior is unchanged."]},
+    "candidate": {
+      "head_sha": "4444444444444444444444444444444444444444",
+      "comparison_base_sha": "dddddddddddddddddddddddddddddddddddddddd",
+      "diff_summary": "Adds one parser test.", "validation": ["focused passed", "full passed"]
+    },
+    "review_dependency_available": true,
+    "suite_result": {"schema_version": "1.0", "lens": "aggregate", "candidate": {"head_sha": "4444444444444444444444444444444444444444", "comparison_base_sha": "dddddddddddddddddddddddddddddddddddddddd"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+    "base_drift": {"new_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "effective_diff_changed": false, "resulting_tree_changed": false, "conflict": false, "relevant_overlap": false, "repository_requires_reset": false},
+    "remote_policy": {"ci": "passed", "human": "not_required", "connector": "not_configured"}
+  },
+  {
+    "id": "relevant-base-drift-restarts-gates",
+    "request": "Merge the clean reviewed child when all current gates pass.",
+    "ticket": {"goal": "Change retry classification.", "acceptance_criteria": ["Permanent errors do not retry."], "non_goals": [], "preserved_behaviors": ["Transient errors retry."]},
+    "candidate": {
+      "head_sha": "5555555555555555555555555555555555555555",
+      "comparison_base_sha": "ffffffffffffffffffffffffffffffffffffffff",
+      "diff_summary": "Changes the retry classifier.", "validation": ["focused passed", "full passed"]
+    },
+    "review_dependency_available": true,
+    "suite_result": {"schema_version": "1.0", "lens": "aggregate", "candidate": {"head_sha": "5555555555555555555555555555555555555555", "comparison_base_sha": "ffffffffffffffffffffffffffffffffffffffff"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+    "base_drift": {"new_base_sha": "abababababababababababababababababababab", "effective_diff_changed": true, "resulting_tree_changed": true, "conflict": true, "relevant_overlap": true, "repository_requires_reset": false},
+    "remote_policy": {"ci": "required", "human": "required", "connector": "required"}
+  },
+  {
+    "id": "missing-review-dependency",
+    "request": "Implement and merge the ready child after all required gates pass.",
+    "ticket": {"goal": "Add one command.", "acceptance_criteria": ["The command runs."], "non_goals": [], "preserved_behaviors": []},
+    "candidate": {"head_sha": "6666666666666666666666666666666666666666", "comparison_base_sha": "1212121212121212121212121212121212121212", "diff_summary": "Adds one command.", "validation": ["focused passed", "full passed"]},
+    "review_dependency_available": false,
+    "suite_result": {"schema_version": "1.0", "lens": "aggregate", "candidate": {"head_sha": "6666666666666666666666666666666666666666", "comparison_base_sha": "1212121212121212121212121212121212121212"}, "verdict": "blocked", "findings": [], "blocking_reasons": ["Required review skill review-code-change is unavailable."], "next_action": "Make review-code-change available before continuing the merge-inclusive run."},
+    "remote_policy": {"ci": "required", "human": "not_required", "connector": "not_configured"}
+  },
+  {
+    "id": "clean-local-review-remote-policy-pending",
+    "request": "Merge the clean reviewed child when all current gates pass.",
+    "ticket": {"goal": "Expose one read-only status field.", "acceptance_criteria": ["The field is returned."], "non_goals": [], "preserved_behaviors": ["Existing fields are unchanged."]},
+    "candidate": {"head_sha": "7777777777777777777777777777777777777777", "comparison_base_sha": "3434343434343434343434343434343434343434", "diff_summary": "Adds one read-only field and test.", "validation": ["focused passed", "full passed"]},
+    "review_dependency_available": true,
+    "suite_result": {"schema_version": "1.0", "lens": "aggregate", "candidate": {"head_sha": "7777777777777777777777777777777777777777", "comparison_base_sha": "3434343434343434343434343434343434343434"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+    "remote_policy": {"ci": "passed", "human": "required_pending", "connector": "required_pending", "unresolved_threads": 0}
+  }
+]

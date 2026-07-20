@@ -89,12 +89,12 @@ or an equivalent thread-aware API when flat PR output does not expose thread
 resolution.
 
 For required human review, record the reviewer, review state, reviewed commit
-OID, submission time, and base SHA observed when the review arrives. Accept the
-approval for the captured candidate only when its reviewed commit and observed
-base equal the captured head/base pair. After a base advance, request fresh
-approval after capturing the new pair. When the host cannot bind fresh approval
-to an unchanged head plus a new base, update the branch so the candidate has a
-new reviewable head and require approval on it.
+OID, submission time, and base SHA observed when the review arrives. Require its
+reviewed commit to equal the current head. After a base advance, apply the
+generic base-drift gate: retain approval only when the effective candidate is
+unchanged and repository policy permits it; otherwise request fresh approval.
+When the host cannot bind a required fresh approval to an unchanged head plus a
+new base, update the branch so the candidate has a new reviewable head.
 
 When the repository uses a connector bot, use the identity, initiation mode, and
 clean signal recorded during PR-host preflight. Accept a clean result only when
@@ -109,7 +109,8 @@ all of these conditions hold:
   - a configured PR-object thumbs-up from the connector bot that appeared as the
     completion signal for the connector run on the captured SHA;
 - the PR head still equals the captured SHA; and
-- the current base-branch head still equals the captured base SHA; and
+- any base advance has passed the generic base-drift gate and the connector
+  policy permits retaining its current-head signal; and
 - there are zero unresolved connector-authored review threads.
 
 For a PR-object thumbs-up, require repository evidence that this is the
@@ -136,12 +137,14 @@ For every actionable conversation comment, formal review, and inline thread:
 Require zero undispositioned actionable items across conversation comments,
 formal reviews, connector feedback, and inline threads before merge.
 
-After any head or base change, capture the new head/base pair and wait for a
-fresh connector verdict tied to that candidate. Trigger the repository's
-configured connector when review is request-driven. When review is automatic,
-record evidence that a run began for the captured candidate after it was pushed
-or rebuilt. Do not accept a verdict until its review request or automatic run is
-tied to that candidate.
+After a head change, capture the new head/base pair and wait for a fresh
+connector verdict tied to that candidate. After base-only drift, apply the
+generic drift gate and request a fresh connector verdict only when the effective
+candidate changed, relevant overlap exists, or connector/repository policy
+requires it. Trigger the configured connector when review is request-driven.
+When review is automatic, record evidence that a run began for the captured
+candidate after it was pushed or rebuilt. Do not accept a required fresh verdict
+until its review request or automatic run is tied to that candidate.
 
 Resolve the connector polling window and interval from repository instructions.
 When none is configured, state and use a 30-minute window with a 30-to-60-second
@@ -177,12 +180,13 @@ incorrect, outside scope, polish, or hypothetical hardening.
 - Report unavailable external checks without weakening or bypassing the gate.
 - If the repository has no branch checks, state that explicitly and use the
   documented local and review gates.
-- Immediately before merge, re-read the base SHA. If it differs from the base
-  used for validation or review, build an up-to-date merge candidate and rerun
-  applicable local validation, CI, adversarial review, human review, connector
-  review, and feedback disposition. When a review system cannot bind evidence to
-  an unchanged head plus a new base, update the branch so the new candidate has
-  a reviewable head SHA.
+- Immediately before merge, re-read the base SHA. If it differs from the
+  comparison base, build or inspect an up-to-date merge candidate and apply the
+  generic base-drift gate. Record why each signal is retained or rerun every
+  affected local validation, CI, local review, human review, connector review,
+  and feedback disposition. When a review system cannot bind required fresh
+  evidence to an unchanged head plus a new base, update the branch so the new
+  candidate has a reviewable head SHA.
 - Use the repository's approved merge method.
 - If local worktree ownership prevents the CLI from switching to the base
   branch, merge through GitHub's API and perform local cleanup separately.
