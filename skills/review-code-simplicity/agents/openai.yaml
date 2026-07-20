@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Code Simplicity"
+  short_description: "Reduce local code and cognitive complexity"
+  default_prompt: "Use $review-code-simplicity to find concrete behavior-preserving reuse and DRY improvements in this change."

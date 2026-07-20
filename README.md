@@ -19,6 +19,8 @@ Current skills:
   compatibility, data-integrity, and validation failures in a code change
 - `skills/review-solution-simplicity` — challenge whole-solution machinery that
   is not justified by real requirements or repository constraints
+- `skills/review-code-simplicity` — reduce local cognitive load through
+  behavior-preserving reuse, DRY, control-flow, and test simplification
 
 ## Quick Start
 

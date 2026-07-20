@@ -1,0 +1,13 @@
+diff --git a/actions.py b/actions.py
+new file mode 100644
+--- /dev/null
++++ b/actions.py
+@@ -0,0 +1,8 @@
++def delete_user(actor, user):
++    if actor.role != 'admin' or actor.suspended:
++        raise Forbidden()
++    store.delete(user)
++def restore_user(actor, user):
++    if actor.role != 'admin' or actor.suspended:
++        raise Forbidden()
++    store.restore(user)

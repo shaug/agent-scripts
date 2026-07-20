@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {"head_sha": "8888888888888888888888888888888888888888", "comparison_base_sha": "9898989898989898989898989898989898989898"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "code-simplicity.use-one-pass-total",
+    "lens": "code_simplicity",
+    "severity": "strong_recommendation",
+    "confidence": "high",
+    "rule": "Use the repository's one-pass accumulation pattern when intermediate collections have no required meaning.",
+    "evidence": [{"location": "totals.py:2", "detail": "The candidate materializes four sequential collections used only by the next phase."}, {"location": "credits.py:credit_total", "detail": "The nearby primitive normalizes once and accumulates qualifying rounded values directly."}],
+    "concern": "Four named phases and collections obscure one local filter-and-sum operation.",
+    "impact": "Reviewers must track five representations of the same rows and the runtime allocates four unnecessary collections.",
+    "proposed_change": "Use one direct loop that normalizes each raw row once, skips non-billable rows, and adds round_cents(price(row)) to the total.",
+    "expected_effect": "Reduce four passes and four intermediate representations to one pass and one accumulator while preserving normalization and rounding behavior.",
+    "location": "totals.py:2"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Replace the phase pipeline with the repository's direct accumulation pattern and rerun total tests."
+}

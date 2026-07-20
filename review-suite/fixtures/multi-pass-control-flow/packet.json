@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/billing", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8888888888888888888888888888888888888888",
+    "comparison_base_sha": "9898989898989898989898989898989898989898",
+    "diff": {"format": "unified_diff", "complete": true, "content": "diff --git a/totals.py b/totals.py\nnew file mode 100644\n--- /dev/null\n+++ b/totals.py\n@@ -0,0 +1,6 @@\n+def billable_total(raw_rows):\n+    normalized = [normalize(row) for row in raw_rows]\n+    billable = [row for row in normalized if row.billable]\n+    amounts = [price(row) for row in billable]\n+    rounded = [round_cents(amount) for amount in amounts]\n+    return sum(rounded)\n"}
+  },
+  "change_contract": {
+    "goal": "Calculate the rounded total of billable rows.",
+    "acceptance_criteria": ["Each row is normalized once.", "Only billable rows contribute their rounded price."],
+    "non_goals": ["Retain intermediate collections."],
+    "preserved_behaviors": ["Input order does not change the total."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [],
+    "nearby_patterns": [{"label": "Streaming totals", "location": "credits.py:credit_total", "summary": "Normalize each input once and accumulate qualifying rounded values in one loop."}]
+  },
+  "validation": [
+    {"name": "total tests", "command": "pytest tests/test_totals.py", "scope": "focused", "status": "passed", "result": "5 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "26 passed"}
+  ]
+}

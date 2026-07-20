@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {"head_sha": "8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b", "comparison_base_sha": "9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b"},
+  "verdict": "clean",
+  "findings": [],
+  "blocking_reasons": [],
+  "next_action": "Keep the three authorization invariants explicit; no material local simplification is warranted."
+}
