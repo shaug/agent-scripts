@@ -6,7 +6,7 @@
   "findings": [{
     "id": "solution-simplicity.remove-provider-framework",
     "lens": "solution_simplicity",
-    "severity": "strong_recommendation",
+    "severity": "blocking",
     "confidence": "high",
     "rule": "Remote providers and an extension API are explicit non-goals.",
     "evidence": [{"location": "export.py:1", "detail": "A registry, factory, provider interface, and selection parameter exist only for unspecified providers."}],

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "lens": "solution_simplicity",
+  "candidate": {"head_sha": "8585858585858585858585858585858585858585", "comparison_base_sha": "9595959595959595959595959595959595959595"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "solution-simplicity.remove-speculative-timezone-migration",
+    "lens": "solution_simplicity",
+    "severity": "blocking",
+    "confidence": "high",
+    "rule": "Historical migration and legacy-field compatibility are explicit non-goals, and no deployed data or callers exist.",
+    "evidence": [
+      {"location": "timezones.py:1", "detail": "The candidate adds a feature flag, dual reads, dual writes, and a backfill solely for legacy timezone state."},
+      {"location": "README.md", "detail": "The settings service is unreleased and has no production records to migrate."}
+    ],
+    "concern": "The solution carries a migration protocol for historical state that cannot exist.",
+    "impact": "It adds configuration, duplicate fields, a backfill lifecycle, and divergent read paths without satisfying any current requirement.",
+    "proposed_change": "Store one timezone field directly on new settings records and default it to UTC when absent; remove the flag, legacy field path, dual write, and backfill.",
+    "expected_effect": "Preserve all required timezone behavior while eliminating the migration state, compatibility branch, and duplicate source of truth.",
+    "location": "timezones.py:1"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Replace the speculative migration layer with the direct timezone field before detailed review continues."
+}

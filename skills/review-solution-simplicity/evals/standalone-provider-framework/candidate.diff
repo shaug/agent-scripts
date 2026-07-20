@@ -1,0 +1,29 @@
+diff --git a/export.py b/export.py
+new file mode 100644
+--- /dev/null
++++ b/export.py
+@@ -0,0 +1,24 @@
++from pathlib import Path
++
++class ExportProviderRegistry:
++    def __init__(self):
++        self.providers = {}
++
++    def register(self, name, factory):
++        self.providers[name] = factory
++
++    def create(self, name):
++        return self.providers[name]()
++
++class LocalFileProvider:
++    def write(self, path, value):
++        Path(path).write_text(value)
++
++def build_registry():
++    registry = ExportProviderRegistry()
++    registry.register('local', LocalFileProvider)
++    return registry
++
++def export(path, value, provider='local'):
++    registry = build_registry()
++    registry.create(provider).write(path, value)

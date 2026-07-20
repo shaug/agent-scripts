@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0",
+  "lens": "solution_simplicity",
+  "candidate": {"head_sha": "8686868686868686868686868686868686868686", "comparison_base_sha": "9696969696969696969696969696969696969696"},
+  "verdict": "blocked",
+  "findings": [],
+  "blocking_reasons": ["The deployment topology, available durable storage primitive, and required retention and availability are missing, so no smaller design can be shown to satisfy retrieval after worker exit."],
+  "validation_limitations": ["Passing fake-backend tests do not resolve which persistence behavior is required in the real deployment."],
+  "next_action": "Decide the deployment storage boundary and durability requirements, then compare the candidate with the smallest repository-supported implementation."
+}

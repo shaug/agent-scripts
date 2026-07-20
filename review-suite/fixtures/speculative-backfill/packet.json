@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/settings", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8585858585858585858585858585858585858585",
+    "comparison_base_sha": "9595959595959595959595959595959595959595",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/timezones.py b/timezones.py\nnew file mode 100644\n--- /dev/null\n+++ b/timezones.py\n@@ -0,0 +1,17 @@\n+class TimezoneMigration:\n+    def read(self, account):\n+        if flags.enabled('timezone_v2') and account.timezone_v2:\n+            return account.timezone_v2\n+        return account.legacy_timezone or 'UTC'\n+\n+    def write(self, account, timezone):\n+        account.timezone_v2 = timezone\n+        account.legacy_timezone = timezone\n+\n+    def backfill(self, accounts):\n+        for account in accounts:\n+            if not account.timezone_v2:\n+                account.timezone_v2 = account.legacy_timezone or 'UTC'\n+\n+def timezone_for(account):\n+    return TimezoneMigration().read(account)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Store a timezone on newly created account settings.",
+    "acceptance_criteria": ["New account settings store and return the selected timezone."],
+    "non_goals": ["Migrate historical account settings.", "Support a legacy timezone field."],
+    "preserved_behaviors": ["UTC remains the default when a timezone is not selected."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [{"label": "Release status", "location": "README.md", "summary": "The settings table and service have not been deployed and contain no production data."}],
+    "nearby_patterns": [{"label": "Account settings", "location": "settings.py", "summary": "New fields are stored directly on the unreleased settings record."}]
+  },
+  "validation": [
+    {"name": "timezone tests", "command": "pytest tests/test_timezones.py", "scope": "focused", "status": "passed", "result": "5 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "21 passed"}
+  ],
+  "context": {"data": ["No account settings records exist outside test fixtures."], "compatibility": ["There are no released callers or stored legacy timezone values."]}
+}
