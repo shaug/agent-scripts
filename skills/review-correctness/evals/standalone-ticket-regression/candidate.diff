@@ -1,0 +1,14 @@
+diff --git a/webhooks.py b/webhooks.py
+--- a/webhooks.py
++++ b/webhooks.py
+@@ -1,9 +1,6 @@
+ def handle(event, repository, mailer, clock):
+-    existing = repository.find(event.id)
+-    if existing is not None:
+-        return existing.result
+-
++    repository.record_receipt(event.id, clock.now())
+     result = apply_event(event)
+     repository.save_result(event.id, result)
+     mailer.send(result.notification)
+     return result

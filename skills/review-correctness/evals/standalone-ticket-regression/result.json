@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "lens": "correctness",
+  "candidate": {
+    "head_sha": "8484848484848484848484848484848484848484",
+    "comparison_base_sha": "9494949494949494949494949494949494949494"
+  },
+  "verdict": "changes_required",
+  "findings": [
+    {
+      "id": "correctness.duplicate-idempotency-regression",
+      "lens": "correctness",
+      "severity": "blocking",
+      "confidence": "high",
+      "rule": "Duplicate deliveries with the same provider event ID must return the stored result without applying the event or sending another notification.",
+      "evidence": [
+        {
+          "location": "ticket.md",
+          "detail": "The ticket explicitly preserves provider-event-ID idempotency and requires retries to return the stored result without reapplying the event or resending its notification."
+        },
+        {
+          "location": "candidate.diff:webhooks.py",
+          "detail": "The candidate removes repository.find(event.id) and its early return, so every delivery now calls apply_event, save_result, and mailer.send."
+        },
+        {
+          "location": "repository-evidence.md",
+          "detail": "The repository requires webhook handlers to remain idempotent by provider event ID, and the prior handler performed the existing-delivery lookup before applying the event."
+        }
+      ],
+      "concern": "A retry of an already stored provider event no longer takes the idempotent return path.",
+      "impact": "Duplicate deliveries reapply the event and send duplicate notifications, violating an explicit preserved behavior and repository rule.",
+      "proposed_change": "Restore the existing-delivery lookup and early return before record_receipt, then record received_at only for a provider event ID that is newly received.",
+      "expected_effect": "First deliveries record received_at before processing, while duplicate deliveries continue returning the stored result without repeated side effects.",
+      "location": "webhooks.py"
+    }
+  ],
+  "blocking_reasons": [],
+  "validation_limitations": [
+    "The reported passing focused and full test runs conflict with the complete diff and the repository evidence that nearby tests assert duplicate-delivery idempotency; the supplied validation summary does not explain this contradiction."
+  ],
+  "next_action": "Restore the provider-event-ID duplicate guard ahead of receipt recording and rerun the duplicate-delivery and full suites."
+}

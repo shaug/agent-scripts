@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Correctness"
+  short_description: "Find material correctness and security failures"
+  default_prompt: "Use $review-correctness to review this code change for material correctness, security, compatibility, and validation failures."

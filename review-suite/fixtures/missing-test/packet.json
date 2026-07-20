@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/parser", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8282828282828282828282828282828282828282",
+    "comparison_base_sha": "9292929292929292929292929292929292929292",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/parser.py b/parser.py\n--- a/parser.py\n+++ b/parser.py\n@@ -1,2 +1,4 @@\n def parse_count(value):\n+    if not value.isdigit():\n+        raise InvalidCount(value)\n     return int(value)\ndiff --git a/test_parser.py b/test_parser.py\n--- a/test_parser.py\n+++ b/test_parser.py\n@@ -1,2 +1,5 @@\n def test_count():\n     assert parse_count('2') == 2\n+\n+def test_larger_count():\n+    assert parse_count('20') == 20\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Return the domain InvalidCount error for non-numeric input.",
+    "acceptance_criteria": ["Non-numeric input raises InvalidCount.", "Numeric parsing remains unchanged."],
+    "non_goals": ["Accept signed or decimal counts."],
+    "preserved_behaviors": ["Numeric strings return their integer value."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [],
+    "nearby_patterns": [{"label": "Domain error tests", "location": "test_amount_parser.py", "summary": "Error conversions are asserted by exception type and input."}]
+  },
+  "validation": [
+    {"name": "parser tests", "command": "pytest test_parser.py", "scope": "focused", "status": "passed", "result": "2 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "18 passed"}
+  ]
+}
