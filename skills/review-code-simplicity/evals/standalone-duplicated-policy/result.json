@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {
+    "head_sha": "8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d8d",
+    "comparison_base_sha": "9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d9d"
+  },
+  "verdict": "changes_required",
+  "findings": [
+    {
+      "id": "code-simplicity.duplicated-active-admin-policy",
+      "lens": "code_simplicity",
+      "severity": "strong_recommendation",
+      "confidence": "high",
+      "rule": "Reuse the repository-owned authorization boundary instead of duplicating business policy.",
+      "evidence": [
+        {
+          "location": "actions.py:2-3",
+          "detail": "delete_user reimplements the active-administrator check with a role comparison, suspended-state branch, and Forbidden error."
+        },
+        {
+          "location": "actions.py:6-7",
+          "detail": "restore_user repeats the same authorization policy a second time."
+        },
+        {
+          "location": "repository-evidence.md",
+          "detail": "require_active_admin(actor) already owns these exact semantics, existing administrator actions call it directly, and repository guidance forbids duplicating authorization policy."
+        }
+      ],
+      "concern": "The candidate creates two local copies of an established authorization rule, so future policy or failure-semantics changes must remain synchronized across three implementations.",
+      "impact": "Reviewers and maintainers must reason about the same authorization policy in the shared boundary and both new actions, increasing drift risk without adding useful separation.",
+      "proposed_change": "Call require_active_admin(actor) at the start of delete_user and restore_user, then retain only each action's store operation.",
+      "expected_effect": "Reduce three implementations of the active-administrator policy to one repository-owned implementation while preserving the two explicit action flows and their tested behavior.",
+      "location": "actions.py:1-8"
+    }
+  ],
+  "blocking_reasons": [],
+  "next_action": "Replace both inline authorization checks with direct calls to require_active_admin(actor), then rerun the focused and full test suites."
+}

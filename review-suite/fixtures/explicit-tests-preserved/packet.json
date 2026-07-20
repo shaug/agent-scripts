@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/authorization", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b",
+    "comparison_base_sha": "9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b",
+    "diff": {"format": "unified_diff", "complete": true, "content": "diff --git a/test_authorization.py b/test_authorization.py\nnew file mode 100644\n--- /dev/null\n+++ b/test_authorization.py\n@@ -0,0 +1,11 @@\n+def test_non_admin_is_forbidden():\n+    actor = actor_for(role='member', suspended=False, tenant='a')\n+    with raises(Forbidden):\n+        export(actor, tenant='a')\n+\n+def test_suspended_admin_is_forbidden():\n+    actor = actor_for(role='admin', suspended=True, tenant='a')\n+    with raises(Forbidden):\n+        export(actor, tenant='a')\n+\n+def test_cross_tenant_admin_is_forbidden():\n+    actor = actor_for(role='admin', suspended=False, tenant='b')\n+    with raises(Forbidden):\n+        export(actor, tenant='a')\n"}
+  },
+  "change_contract": {
+    "goal": "Prove each independent export authorization boundary.",
+    "acceptance_criteria": ["Role, suspension, and tenant boundaries each reject access independently."],
+    "non_goals": ["Collapse distinct authorization guarantees into an opaque table."],
+    "preserved_behaviors": ["Each failed boundary identifies its own contract in test output."]
+  },
+  "sources": {"repository_instructions": [{"label": "Security test convention", "location": "SECURITY.md", "summary": "Keep independent authorization invariants in named tests."}], "named_documents": [], "nearby_patterns": []},
+  "validation": [
+    {"name": "authorization tests", "command": "pytest test_authorization.py", "scope": "focused", "status": "passed", "result": "3 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "30 passed"}
+  ]
+}

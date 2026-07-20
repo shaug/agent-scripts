@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/uploads", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a",
+    "comparison_base_sha": "9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a",
+    "diff": {"format": "unified_diff", "complete": true, "content": "diff --git a/test_uploads.py b/test_uploads.py\nnew file mode 100644\n--- /dev/null\n+++ b/test_uploads.py\n@@ -0,0 +1,17 @@\n+def test_small_upload():\n+    store = FakeStore()\n+    clock = FixedClock()\n+    uploader = Uploader(store, clock, max_bytes=10)\n+    assert uploader.upload(b'abc').size == 3\n+\n+def test_limit_upload():\n+    store = FakeStore()\n+    clock = FixedClock()\n+    uploader = Uploader(store, clock, max_bytes=10)\n+    assert uploader.upload(b'0123456789').size == 10\n+\n+def test_large_upload_rejected():\n+    store = FakeStore()\n+    clock = FixedClock()\n+    uploader = Uploader(store, clock, max_bytes=10)\n+    with raises(TooLarge):\n+        uploader.upload(b'01234567890')\n"}
+  },
+  "change_contract": {
+    "goal": "Prove upload size behavior below, at, and above the limit.",
+    "acceptance_criteria": ["Small and boundary uploads succeed.", "Over-limit uploads raise TooLarge."],
+    "non_goals": ["Hide the three boundary scenarios in one parameterized test."],
+    "preserved_behaviors": ["Each boundary remains an explicit named test."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": [{"label": "Uploader test builder", "location": "tests/helpers.py:make_uploader", "summary": "Builds Uploader with FakeStore, FixedClock, and configurable max_bytes."}]},
+  "validation": [
+    {"name": "upload tests", "command": "pytest test_uploads.py", "scope": "focused", "status": "passed", "result": "3 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "22 passed"}
+  ]
+}

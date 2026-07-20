@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/policies", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "8989898989898989898989898989898989898989",
+    "comparison_base_sha": "9999999999999999999999999999999999999999",
+    "diff": {"format": "unified_diff", "complete": true, "content": "diff --git a/access.py b/access.py\n--- a/access.py\n+++ b/access.py\n@@ -1,2 +1,7 @@\n+class AccessPolicyAdapter:\n+    def evaluate(self, actor, resource):\n+        return is_allowed(actor, resource)\n+\n def can_view(actor, resource):\n-    return is_allowed(actor, resource)\n+    adapter = AccessPolicyAdapter()\n+    return adapter.evaluate(actor, resource)\n"}
+  },
+  "change_contract": {
+    "goal": "Keep resource visibility on the existing access policy.",
+    "acceptance_criteria": ["can_view returns the result of is_allowed."],
+    "non_goals": ["Create a public policy-adapter API."],
+    "preserved_behaviors": ["is_allowed remains the policy owner."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": [{"label": "Direct policy use", "location": "edit.py:can_edit", "summary": "Call policy functions directly unless adapting different semantics."}]},
+  "validation": [
+    {"name": "access tests", "command": "pytest tests/test_access.py", "scope": "focused", "status": "passed", "result": "4 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "17 passed"}
+  ]
+}

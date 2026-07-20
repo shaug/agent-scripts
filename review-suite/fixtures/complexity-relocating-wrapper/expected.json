@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {"head_sha": "8989898989898989898989898989898989898989", "comparison_base_sha": "9999999999999999999999999999999999999999"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "code-simplicity.remove-policy-adapter",
+    "lens": "code_simplicity",
+    "severity": "strong_recommendation",
+    "confidence": "high",
+    "rule": "Prefer direct use of the existing policy owner when a wrapper does not adapt semantics or remove caller knowledge.",
+    "evidence": [{"location": "access.py:1", "detail": "AccessPolicyAdapter forwards the same actor and resource directly to is_allowed and has one caller."}, {"location": "edit.py:can_edit", "detail": "Nearby code calls policy functions directly when no semantic adaptation exists."}],
+    "concern": "The adapter moves one call behind a class without removing any branch, parameter, or policy concept.",
+    "impact": "It adds a public concept, allocation, method, and call-path hop while leaving the caller's knowledge unchanged.",
+    "proposed_change": "Remove AccessPolicyAdapter and return is_allowed(actor, resource) directly from can_view.",
+    "expected_effect": "Remove one class, one method, one allocation, and one call hop without changing policy behavior.",
+    "location": "access.py:1"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Remove the pass-through adapter and retain direct use of is_allowed."
+}

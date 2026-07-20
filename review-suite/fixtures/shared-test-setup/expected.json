@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "lens": "code_simplicity",
+  "candidate": {"head_sha": "8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a", "comparison_base_sha": "9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a9a"},
+  "verdict": "changes_required",
+  "findings": [{
+    "id": "code-simplicity.reuse-uploader-builder",
+    "lens": "code_simplicity",
+    "severity": "strong_recommendation",
+    "confidence": "high",
+    "rule": "Reuse the repository's uploader builder for irrelevant construction while keeping materially different boundary scenarios explicit.",
+    "evidence": [{"location": "test_uploads.py", "detail": "All three tests repeat the same FakeStore, FixedClock, and Uploader construction."}, {"location": "tests/helpers.py:make_uploader", "detail": "The existing builder supplies exactly that setup with a configurable byte limit."}],
+    "concern": "Repeated irrelevant construction obscures the below, equal, and above-limit scenarios.",
+    "impact": "The same setup policy appears three times and must be reviewed independently without adding scenario meaning.",
+    "proposed_change": "Call make_uploader(max_bytes=10) in each named test while retaining the three separate actions and expectations.",
+    "expected_effect": "Reduce three copies of construction policy to one shared helper while preserving three explicit boundary tests.",
+    "location": "test_uploads.py"
+  }],
+  "blocking_reasons": [],
+  "next_action": "Reuse make_uploader for setup and keep the boundary tests separate."
+}
