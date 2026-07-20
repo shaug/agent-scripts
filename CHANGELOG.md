@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-19 — Epic workflow and review contract cleanup
 
+- feat: add standalone ticket implementation skill
 - feat: integrate repository-owned review into epic execution
+  (28c3945b3db8f84a812cd2e498d54a6912bcd934)
 - feat: compose repository-owned code review
   (556fea80b6970b97c31e819693f43c251b7b3796)
 - feat: add local code simplicity review

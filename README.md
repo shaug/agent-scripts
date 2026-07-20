@@ -11,6 +11,11 @@ A personal monorepo for agent skills and supporting scripts.
 
 Current skills:
 
+- `skills/implement-ticket` — implement exactly one standalone ticket or named
+  epic child through isolated execution, repository-owned review, PR gates, and
+  authorized merge and cleanup; this is the canonical owner of generic
+  single-ticket execution rules, with duplication in `implement-epic-sequence`
+  temporary until its dependent orchestrator refactor
 - `skills/review-code-change` — orchestrate the repository-owned review lenses
   into one evidence-bound, deduplicated verdict
 - `skills/implement-epic-sequence` — execute GitHub or Linear epics through
@@ -38,6 +43,7 @@ Run skill-specific tests:
 ```bash
 just test-prepare-changesets
 just test-review-suite
+just test-implement-ticket
 ```
 
 Validate a review packet and result together:

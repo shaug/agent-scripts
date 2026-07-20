@@ -1,0 +1,82 @@
+[
+  {
+    "case_id": "standalone-ready-pr",
+    "terminal_state": "ready_pr",
+    "required_actions": ["implement one ticket", "validate", "run repository-owned review", "publish one PR", "report merge authority as pending"]
+  },
+  {
+    "case_id": "authorized-merge-cleanup",
+    "terminal_state": "merged",
+    "required_actions": ["verify all current-candidate gates", "merge", "verify mainline and ticket transition", "clean only verified branch state"]
+  },
+  {
+    "case_id": "named-epic-child-only",
+    "terminal_state": "ready_pr",
+    "required_actions": ["use parent context as evidence", "implement only G-23", "leave siblings and parent untouched"]
+  },
+  {
+    "case_id": "open-native-blocker",
+    "terminal_state": "blocked",
+    "required_actions": ["name G-19 and its required outcome", "perform no implementation mutation"]
+  },
+  {
+    "case_id": "closed-prerequisite-outcome-missing",
+    "terminal_state": "blocked",
+    "required_actions": ["verify the API contract is absent", "do not treat administrative closure as delivered outcome"]
+  },
+  {
+    "case_id": "sibling-outcome-missing",
+    "terminal_state": "blocked",
+    "required_actions": ["name the missing G-37 shared-contract outcome", "perform no implementation mutation", "do not absorb or mutate sibling work"]
+  },
+  {
+    "case_id": "canonical-pr-owned-elsewhere",
+    "terminal_state": "blocked",
+    "required_actions": ["report the canonical PR", "require explicit ownership transfer", "do not create a competing branch or claim ready_pr"]
+  },
+  {
+    "case_id": "correctness-fix-and-rereview",
+    "terminal_state": "merged",
+    "required_actions": ["fix in the implementation context", "revalidate and commit a new head", "accept only the clean new-head review", "merge after current gates pass"]
+  },
+  {
+    "case_id": "clean-local-review-remote-pending",
+    "terminal_state": "ready_pr",
+    "required_actions": ["report clean local review", "report human and connector gates pending", "do not merge"]
+  },
+  {
+    "case_id": "unrelated-base-drift-retained",
+    "terminal_state": "merged",
+    "required_actions": ["record the evidence-retention basis", "reread final gates", "merge without unnecessary head change"]
+  },
+  {
+    "case_id": "linear-ticket-github-pr",
+    "terminal_state": "ready_pr",
+    "required_actions": ["use Linear for ticket state", "use GitHub for PR state", "ignore unrelated GitHub issue 30", "do not merge"]
+  },
+  {
+    "case_id": "epic-with-children",
+    "terminal_state": "requires_epic",
+    "required_actions": ["perform no mutation", "target implement-epic", "emit implement-ticket:requires-epic:github:G-31"]
+  },
+  {
+    "case_id": "undecomposed-epic",
+    "terminal_state": "requires_epic",
+    "required_actions": ["perform no mutation", "do not flatten the epic", "emit implement-ticket:requires-epic:github:G-32"]
+  },
+  {
+    "case_id": "explicit-child-not-redirected",
+    "terminal_state": "ready_pr",
+    "required_actions": ["remain in implement-ticket", "emit no epic routing marker", "implement only G-34"]
+  },
+  {
+    "case_id": "missing-implement-epic",
+    "terminal_state": "requires_epic",
+    "required_actions": ["perform no mutation", "report implement-epic unavailable", "emit implement-ticket:requires-epic:github:G-35"]
+  },
+  {
+    "case_id": "repeated-epic-handoff",
+    "terminal_state": "blocked",
+    "required_actions": ["report routing cycle detected", "perform no mutation", "do not emit another requires_epic"]
+  }
+]
