@@ -31,6 +31,9 @@ test-review-suite:
 test-implement-ticket:
   python3 -m unittest discover -s {{skills_dir}}/implement-ticket/scripts/tests -p 'test_*.py'
 
+test-implement-epic:
+  python3 -m unittest discover -s {{skills_dir}}/implement-epic/scripts/tests -p 'test_*.py'
+
 test-prepare-changesets:
   python3 -m unittest discover -s {{skills_dir}}/prepare-changesets/scripts/tests -p 'test_*.py'
 

@@ -1,0 +1,67 @@
+[
+  {
+    "case_id": "two-child-refresh-chain",
+    "workflow_state": "epic_children_merged",
+    "required_actions": ["invoke G-101 once", "verify merged", "refresh the complete graph", "select G-102 only after refresh", "invoke G-102 once"]
+  },
+  {
+    "case_id": "named-child-boundary",
+    "workflow_state": "requested_child_merged",
+    "required_actions": ["invoke only G-111", "refresh and report ready work", "leave G-112 and G-110 open"]
+  },
+  {
+    "case_id": "ready-pr-does-not-unblock",
+    "workflow_state": "waiting_for_child_merge",
+    "required_actions": ["record G-121 ready_pr", "do not select G-122", "do not claim child or epic complete"]
+  },
+  {
+    "case_id": "blocked-missing-sibling-outcome",
+    "workflow_state": "blocked",
+    "required_actions": ["preserve the G-131 reason", "do not absorb G-132", "do not count G-131 complete"]
+  },
+  {
+    "case_id": "blocked-then-independent-ready",
+    "workflow_state": "partial_progress",
+    "required_actions": ["preserve G-141 blocked", "select independently ready G-142", "refresh after G-142 merge"]
+  },
+  {
+    "case_id": "missing-implement-ticket",
+    "workflow_state": "blocked",
+    "required_actions": ["fail before mutation", "name implement-ticket", "do not inline a ticket workflow"]
+  },
+  {
+    "case_id": "exclusive-delegated-worktree",
+    "workflow_state": "ticket_result_verified",
+    "required_actions": ["verify exclusive ownership", "verify returned candidate and worktree", "reject ambiguous mutation state"]
+  },
+  {
+    "case_id": "ticket-evidence-pass-through",
+    "workflow_state": "graph_refresh_required",
+    "required_actions": ["verify ticket evidence without reproducing review rubrics", "verify merge and transition", "refresh graph"]
+  },
+  {
+    "case_id": "late-feedback-blocks-closeout",
+    "workflow_state": "closeout_blocked",
+    "required_actions": ["keep G-180 open", "record the finding", "route authorized remediation through implement-ticket"]
+  },
+  {
+    "case_id": "authorized-full-epic-closeout",
+    "workflow_state": "epic_closed",
+    "required_actions": ["verify every closeout gate", "close G-190", "report final graph and evidence"]
+  },
+  {
+    "case_id": "umbrella-closeout-separately",
+    "workflow_state": "umbrella_open",
+    "required_actions": ["verify G-201 separately", "keep G-202 open", "keep G-200 open"]
+  },
+  {
+    "case_id": "unexpected-requires-epic-child-result",
+    "workflow_state": "blocked",
+    "required_actions": ["treat handoff as invalid", "do not recurse or bounce", "refresh or request scope correction"]
+  },
+  {
+    "case_id": "parallel-nonoverlap-required",
+    "workflow_state": "serial_execution_required",
+    "required_actions": ["reject parallel mutation", "sequence shared-contract work", "recompute readiness after each result"]
+  }
+]

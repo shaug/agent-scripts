@@ -58,9 +58,10 @@ class ImplementTicketContractTests(unittest.TestCase):
             self.skill_compact,
         )
         self.assertIn(
-            "Duplication in `implement-epic-sequence` is temporary",
+            "`implement-epic` consumes this contract",
             self.skill_compact,
         )
+        self.assertNotIn("implement-epic-sequence", self.skill_compact)
 
     def test_epic_routing_is_pre_mutation_and_acyclic(self):
         self.assertIn("Guard whole-epic scope before mutation", self.skill_compact)

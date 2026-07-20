@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Epic"
+  short_description: "Orchestrate epics through implement-ticket"
+  default_prompt: "Use $implement-epic to implement this epic through its live dependency graph and the repository-owned ticket workflow."
