@@ -33,6 +33,9 @@ to the caller.
   validation evidence cannot be established.
 - Bind the result to the packet's candidate identity. Never reuse evidence after
   a head change. Apply the shared base-drift rules when only the base advances.
+- When an orchestrator supplies a validated simplification result beside the
+  packet, assess each gating proposal against the packet's requirements and
+  preserved behavior. Keep the packet itself unchanged.
 
 ## Review in priority order
 
@@ -71,6 +74,19 @@ Do not perform the dedicated whole-solution or local code-simplicity lenses.
 Report correctness consequences of complexity only when they create a concrete
 failure or make required behavior unprovable.
 
+## Disposition supplied simplification proposals
+
+For every gating proposal supplied by the orchestrator, return one shared
+`proposal_dispositions` item:
+
+- use `compatible` when the proposal preserves demonstrated correctness; or
+- use `unsafe` when concrete correctness or repository evidence invalidates the
+  proposal even though the current candidate may already be correct.
+
+Do not turn a rejected hypothetical edit into a candidate correctness finding. A
+proposal disposition does not change the correctness verdict by itself. If the
+proposal cannot be assessed from trustworthy evidence, return `blocked`.
+
 ## Return the shared result
 
 Return only JSON conforming to
@@ -82,6 +98,8 @@ Return only JSON conforming to
 - Return `blocked` when essential evidence or a product or architecture decision
   prevents a trustworthy verdict.
 - Keep deferred findings non-gating.
+- Include proposal dispositions when the orchestrator supplied simplification
+  proposals, using the shared contract shape.
 - Do not add praise, a scorecard, generic resources, or prose outside the shared
   result.
 

@@ -159,6 +159,44 @@ class ResultValidationTests(unittest.TestCase):
         result["findings"][0]["confidence"] = "certain"
         self.assertTrue(VALIDATOR.validate_result(result))
 
+    def test_clean_correctness_result_can_reject_an_unsafe_proposal(self):
+        result = copy.deepcopy(self.clean)
+        result["lens"] = "correctness"
+        result["proposal_dispositions"] = [
+            {
+                "finding_id": "solution-simplicity.remove-claim-fence",
+                "source_lens": "solution_simplicity",
+                "disposition": "unsafe",
+                "reason": "The predicates implement the required claim fence.",
+                "evidence": [
+                    {
+                        "location": "worker.py:complete",
+                        "detail": "The token predicate prevents stale completion.",
+                    }
+                ],
+            }
+        ]
+        self.assertEqual([], VALIDATOR.validate_result(result))
+
+    def test_simplification_lens_cannot_disposition_its_own_proposal(self):
+        result = copy.deepcopy(self.clean)
+        result["lens"] = "solution_simplicity"
+        result["proposal_dispositions"] = [
+            {
+                "finding_id": "solution-simplicity.remove-claim-fence",
+                "source_lens": "solution_simplicity",
+                "disposition": "unsafe",
+                "reason": "The predicates implement the required claim fence.",
+                "evidence": [
+                    {
+                        "location": "worker.py:complete",
+                        "detail": "The token predicate prevents stale completion.",
+                    }
+                ],
+            }
+        ]
+        self.assertTrue(VALIDATOR.validate_result(result))
+
     def test_result_must_match_packet_candidate(self):
         packet = load(ROOT / "fixtures" / "clean-change" / "packet.json")
         result = copy.deepcopy(self.clean)

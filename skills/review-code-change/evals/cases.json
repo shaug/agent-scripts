@@ -1,0 +1,102 @@
+[
+  {
+    "id": "ordered-clean",
+    "candidate": {"head_sha": "1010101010101010101010101010101010101010", "comparison_base_sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "1010101010101010101010101010101010101010", "comparison_base_sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "1010101010101010101010101010101010101010", "comparison_base_sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "1010101010101010101010101010101010101010", "comparison_base_sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "early-solution-redesign",
+    "candidate": {"head_sha": "2020202020202020202020202020202020202020", "comparison_base_sha": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "2020202020202020202020202020202020202020", "comparison_base_sha": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"}, "verdict": "changes_required", "findings": [{"id": "solution-simplicity.remove-provider-platform", "lens": "solution_simplicity", "severity": "blocking", "confidence": "high", "rule": "Remote providers are out of scope.", "evidence": [{"location": "candidate diff", "detail": "A registry, provider API, configuration, and dispatch exist for one local write."}], "concern": "The candidate implements an out-of-scope provider platform.", "impact": "It adds configuration, dispatch, and provider failure modes.", "proposed_change": "Replace the provider platform with one direct local write.", "expected_effect": "Remove the platform, configuration, and provider failure modes."}], "blocking_reasons": [], "next_action": "Redesign the implementation and restart the full review on a new head."},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "2020202020202020202020202020202020202020", "comparison_base_sha": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "2020202020202020202020202020202020202020", "comparison_base_sha": "b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "correctness-overrides-simplification",
+    "candidate": {"head_sha": "3030303030303030303030303030303030303030", "comparison_base_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "3030303030303030303030303030303030303030", "comparison_base_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"}, "verdict": "changes_required", "findings": [{"id": "solution-simplicity.remove-conditional-write", "lens": "solution_simplicity", "severity": "strong_recommendation", "confidence": "medium", "rule": "Prefer a direct status update when extra predicates are unnecessary.", "evidence": [{"location": "candidate update", "detail": "The conditional update has more predicates than a direct update."}], "concern": "The predicates may be unnecessary local machinery.", "impact": "They add conditions and a failure path.", "proposed_change": "Remove claim-token and running-state predicates.", "expected_effect": "Fewer predicates and one less failure path."}], "blocking_reasons": [], "next_action": "Continue to correctness before accepting this in-strategy simplification."},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "3030303030303030303030303030303030303030", "comparison_base_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"}, "verdict": "clean", "findings": [], "blocking_reasons": [], "proposal_dispositions": [{"finding_id": "solution-simplicity.remove-conditional-write", "source_lens": "solution_simplicity", "disposition": "unsafe", "reason": "The proposed removal would discard the required atomic claim fence; the current candidate already preserves it.", "evidence": [{"location": "candidate conditional update", "detail": "The claim-token and running-state predicates prevent an expired worker from completing another worker's claim."}]}], "next_action": "Reject the unsafe simplification and continue reviewing the unchanged candidate."},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "3030303030303030303030303030303030303030", "comparison_base_sha": "c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "deduplicate-overlap",
+    "candidate": {"head_sha": "4040404040404040404040404040404040404040", "comparison_base_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "4040404040404040404040404040404040404040", "comparison_base_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0"}, "verdict": "changes_required", "findings": [{"id": "solution-simplicity.remove-local-policy-service", "lens": "solution_simplicity", "severity": "strong_recommendation", "confidence": "high", "rule": "Use the existing authorization boundary.", "evidence": [{"location": "policy service", "detail": "A new service duplicates the active-admin rule."}], "concern": "The service duplicates repository policy.", "impact": "It adds a service and another policy owner.", "proposed_change": "Call require_active_admin directly.", "expected_effect": "Remove one service and one duplicate policy."}], "blocking_reasons": [], "next_action": "Continue through correctness because this is a bounded in-strategy removal."},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "4040404040404040404040404040404040404040", "comparison_base_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0"}, "verdict": "clean", "findings": [], "blocking_reasons": [], "proposal_dispositions": [{"finding_id": "solution-simplicity.remove-local-policy-service", "source_lens": "solution_simplicity", "disposition": "compatible", "reason": "Reusing the existing active-admin helper preserves the repository's authorization boundary.", "evidence": [{"location": "repository policy helper", "detail": "require_active_admin implements the same required authorization check."}]}]},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "4040404040404040404040404040404040404040", "comparison_base_sha": "d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0"}, "verdict": "changes_required", "findings": [{"id": "code-simplicity.reuse-active-admin", "lens": "code_simplicity", "severity": "strong_recommendation", "confidence": "high", "rule": "Reuse repository policy helpers.", "evidence": [{"location": "new actions", "detail": "Two actions repeat the active-admin condition."}], "concern": "The actions duplicate the same repository policy.", "impact": "Three policy definitions can drift.", "proposed_change": "Call require_active_admin directly.", "expected_effect": "Reduce three policy definitions to one."}], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "targeted-correctness-recheck",
+    "candidate": {"head_sha": "5050505050505050505050505050505050505050", "comparison_base_sha": "e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true, "new_packet_after_code_simplification": true}, "cycle": 2, "phase": "post_code_simplification",
+    "harness_outcomes": {
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "5050505050505050505050505050505050505050", "comparison_base_sha": "e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "5050505050505050505050505050505050505050", "comparison_base_sha": "e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "missing-dependency",
+    "candidate": {"head_sha": "6060606060606060606060606060606060606060", "comparison_base_sha": "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full", "harness_outcomes": {}
+  },
+  {
+    "id": "missing-evidence",
+    "candidate": {"head_sha": "7070707070707070707070707070707070707070", "comparison_base_sha": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": false, "blocking_reasons": ["Acceptance criteria are missing.", "Full validation has no result or unavailable reason."]},
+    "cycle": 1, "phase": "full", "harness_outcomes": {}
+  },
+  {
+    "id": "deferred-only-clean",
+    "candidate": {"head_sha": "8080808080808080808080808080808080808080", "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "8080808080808080808080808080808080808080", "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"}, "verdict": "clean", "findings": [{"id": "solution-simplicity.future-cleanup", "lens": "solution_simplicity", "severity": "defer", "confidence": "high", "rule": "A real legacy path remains outside this ticket.", "evidence": [{"location": "ticket", "detail": "Migration cleanup is explicitly deferred to issue #90."}], "concern": "A compatibility path remains outside active scope.", "impact": "The branch remains until callers migrate.", "proposed_change": "Remove the path in issue #90.", "expected_effect": "Retire one compatibility branch after migration."}], "blocking_reasons": []},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "8080808080808080808080808080808080808080", "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "8080808080808080808080808080808080808080", "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "cycle-budget-exhausted",
+    "candidate": {"head_sha": "9090909090909090909090909090909090909090", "comparison_base_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 3, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "solution_simplicity", "candidate": {"head_sha": "9090909090909090909090909090909090909090", "comparison_base_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "9090909090909090909090909090909090909090", "comparison_base_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"}, "verdict": "changes_required", "findings": [{"id": "correctness.retry-still-unbounded", "lens": "correctness", "severity": "blocking", "confidence": "high", "rule": "Retries must stop at the configured maximum.", "evidence": [{"location": "candidate diff", "detail": "The third candidate still schedules after the maximum."}], "concern": "Retry scheduling remains unbounded.", "impact": "The required retry limit is violated.", "proposed_change": "Stop scheduling at max_retries.", "expected_effect": "Bound repeated work at the required limit."}], "blocking_reasons": []},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "9090909090909090909090909090909090909090", "comparison_base_sha": "c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  },
+  {
+    "id": "mismatched-lens-result",
+    "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": true}, "cycle": 1, "phase": "full",
+    "harness_outcomes": {
+      "solution_simplicity": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "correctness": {"schema_version": "1.0", "lens": "correctness", "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
+      "code_simplicity": {"schema_version": "1.0", "lens": "code_simplicity", "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
+    }
+  }
+]

@@ -88,6 +88,24 @@ fields that the caller could not establish and may preserve already-demonstrated
 findings, but those findings do not convert the blocked review into a merge
 verdict.
 
+## Simplification proposal dispositions
+
+When an orchestrator asks correctness to assess a validated simplification
+result, supply that result beside the unchanged review packet. Do not add review
+conclusions to the packet itself. Correctness returns one
+`proposal_dispositions` item for every supplied gating proposal:
+
+- `compatible` means the proposal preserves demonstrated correctness and remains
+  actionable; and
+- `unsafe` means concrete correctness or repository evidence invalidates the
+  proposal even though the current candidate may already be correct.
+
+Each disposition identifies the source finding and lens and cites concrete
+evidence. It does not describe a candidate defect and therefore does not change
+the correctness verdict by itself. If correctness cannot assess a supplied
+proposal trustworthily, return `blocked`. Only `correctness` and `aggregate`
+results may contain proposal dispositions.
+
 ## Candidate identity and base drift
 
 Bind every result to the packet's captured head and comparison base. Any edit,

@@ -1,0 +1,20 @@
+{
+  "observed_sequence": [
+    "review-solution-simplicity",
+    "review-correctness",
+    "review-code-simplicity"
+  ],
+  "result": {
+    "schema_version": "1.0",
+    "lens": "aggregate",
+    "candidate": {
+      "head_sha": "1212121212121212121212121212121212121212",
+      "comparison_base_sha": "abababababababababababababababababababab"
+    },
+    "verdict": "clean",
+    "findings": [],
+    "blocking_reasons": [],
+    "validation_limitations": [],
+    "next_action": "No changes are required."
+  }
+}
