@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Repository-owned PR babysitting
 
+- fix: bind each watcher lock to an immutable repository and pull request target
 - fix: validate the locked PR state path before any snapshot read or write
+  (`322a83c6b31d5668e6648df8f0fabe3732c3e74f`)
 - fix: serialize every watcher state mutation through one repository/PR lock
   (`8c64b05daa9cde6832fb128c7c6786896fb57108`)
 - fix: serialize retry mutation and durably reserve each per-head retry cycle

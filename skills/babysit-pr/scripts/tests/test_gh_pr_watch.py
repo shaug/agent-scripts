@@ -500,7 +500,11 @@ class SnapshotAndStateTests(unittest.TestCase):
                     WATCHER, "failed_jobs_from_workflow_runs", return_value=[]
                 ),
             ):
-                snapshot, _ = WATCHER.collect_snapshot(args)
+                snapshot, _ = WATCHER.collect_snapshot(
+                    args,
+                    Path(directory) / "state.json",
+                    ("example/project", 123),
+                )
         self.assertLess(calls.index("feedback"), calls.index("checks"))
         self.assertLess(calls.index("threads"), calls.index("checks"))
         self.assertTrue(snapshot["candidate_change"]["head_changed"])
@@ -630,6 +634,7 @@ class RetryTests(unittest.TestCase):
             result = WATCHER._retry_failed_now_locked(
                 sample_args(Path("state.json")),
                 Path("state.json"),
+                ("example/project", 123),
             )
         self.assertTrue(result["rerun_attempted"])
         gh_text.assert_called_once_with(
@@ -664,7 +669,11 @@ class RetryTests(unittest.TestCase):
             ),
             mock.patch.object(WATCHER, "gh_text") as gh_text,
         ):
-            result = WATCHER._retry_failed_now_locked(args, Path("state.json"))
+            result = WATCHER._retry_failed_now_locked(
+                args,
+                Path("state.json"),
+                ("example/project", 123),
+            )
         self.assertFalse(result["rerun_attempted"])
         self.assertEqual("eligible_runs_not_current_failed_pr_checks", result["reason"])
         self.assertEqual([100], result["rejected_run_ids"])
@@ -718,7 +727,11 @@ class RetryTests(unittest.TestCase):
             mock.patch.object(WATCHER, "save_state", side_effect=save_state),
             mock.patch.object(WATCHER, "gh_text", side_effect=rerun),
         ):
-            result = WATCHER._retry_failed_now_locked(args, Path("state.json"))
+            result = WATCHER._retry_failed_now_locked(
+                args,
+                Path("state.json"),
+                ("example/project", 123),
+            )
 
         self.assertEqual(["save", "rerun:99", "rerun:100"], events)
         self.assertEqual(2, state["retries_by_sha"]["head-1"])
@@ -766,6 +779,7 @@ class RetryTests(unittest.TestCase):
             result = WATCHER._retry_failed_now_locked(
                 sample_args(Path("state.json")),
                 Path("state.json"),
+                ("example/project", 123),
             )
         self.assertEqual("retry_budget_exhausted", result["reason"])
         save_state.assert_not_called()
@@ -790,7 +804,11 @@ class RetryTests(unittest.TestCase):
             result = WATCHER.retry_failed_now(args)
         self.assertIs(expected, result)
         watcher_lock.assert_called_once_with(Path("state.json"))
-        retry_locked.assert_called_once_with(args, Path("state.json"))
+        retry_locked.assert_called_once_with(
+            args,
+            Path("state.json"),
+            ("example/project", 123),
+        )
 
 
 class OneShotLockTests(unittest.TestCase):
@@ -817,6 +835,7 @@ class OneShotLockTests(unittest.TestCase):
         collect_snapshot.assert_called_once_with(
             args,
             locked_state_path=Path("state.json"),
+            locked_pr_identity=("example/project", 123),
         )
 
     def test_one_shot_rejects_target_change_before_state_write(self):
@@ -847,10 +866,34 @@ class OneShotLockTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(
                 RuntimeError,
-                "Snapshot target changed state-file identity",
+                "Snapshot target changed repository/PR identity",
             ):
                 WATCHER.collect_snapshot_once(args)
         watcher_lock.assert_called_once_with(pr_one_path)
+        load_state.assert_not_called()
+        save_state.assert_not_called()
+
+    def test_one_shot_rejects_target_change_with_explicit_state_file(self):
+        args = sample_args(Path("state.json"))
+        pr_one = sample_pr(number=1)
+        pr_two = sample_pr(number=2)
+
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", side_effect=[pr_one, pr_two]),
+            mock.patch.object(
+                WATCHER,
+                "watcher_lock",
+                return_value=nullcontext(),
+            ) as watcher_lock,
+            mock.patch.object(WATCHER, "load_state") as load_state,
+            mock.patch.object(WATCHER, "save_state") as save_state,
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Snapshot target changed repository/PR identity",
+            ):
+                WATCHER.collect_snapshot_once(args)
+        watcher_lock.assert_called_once_with(Path("state.json"))
         load_state.assert_not_called()
         save_state.assert_not_called()
 

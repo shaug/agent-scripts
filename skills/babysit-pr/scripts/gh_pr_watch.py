@@ -979,12 +979,18 @@ def recommend_actions(
     return unique_actions(actions)
 
 
-def collect_snapshot(args, locked_state_path=None):
+def pr_identity(pr):
+    return str(pr["repo"]), int(pr["number"])
+
+
+def collect_snapshot(args, locked_state_path, locked_pr_identity):
     pr = resolve_pr(args.pr, repo_override=args.repo)
+    if pr_identity(pr) != locked_pr_identity:
+        raise RuntimeError("Snapshot target changed repository/PR identity")
     state_path = (
         Path(args.state_file) if args.state_file else default_state_file_for(pr)
     )
-    if locked_state_path is not None and state_path != locked_state_path:
+    if state_path != locked_state_path:
         raise RuntimeError("Snapshot target changed state-file identity")
     state, _ = load_state(state_path)
     validate_state_target(state, pr, state_path)
@@ -1076,23 +1082,25 @@ def collect_snapshot(args, locked_state_path=None):
     return snapshot, state_path
 
 
-def resolve_state_path(args):
+def resolve_locked_target(args):
     initial_pr = resolve_pr(args.pr, repo_override=args.repo)
-    return (
+    state_path = (
         Path(args.state_file) if args.state_file else default_state_file_for(initial_pr)
     )
+    return state_path, pr_identity(initial_pr)
 
 
 def retry_failed_now(args):
-    state_path = resolve_state_path(args)
+    state_path, locked_pr_identity = resolve_locked_target(args)
     with watcher_lock(state_path):
-        return _retry_failed_now_locked(args, state_path)
+        return _retry_failed_now_locked(args, state_path, locked_pr_identity)
 
 
-def _retry_failed_now_locked(args, state_path):
+def _retry_failed_now_locked(args, state_path, locked_pr_identity):
     snapshot, _ = collect_snapshot(
         args,
         locked_state_path=state_path,
+        locked_pr_identity=locked_pr_identity,
     )
     pr = snapshot["pr"]
     checks_summary = snapshot["checks"]
@@ -1194,12 +1202,13 @@ def print_event(event, payload):
 
 
 def run_watch(args):
-    state_path = resolve_state_path(args)
+    state_path, locked_pr_identity = resolve_locked_target(args)
     with watcher_lock(state_path):
         while True:
             snapshot, _ = collect_snapshot(
                 args,
                 locked_state_path=state_path,
+                locked_pr_identity=locked_pr_identity,
             )
             print_event(
                 "snapshot",
@@ -1223,11 +1232,12 @@ def run_watch(args):
 
 
 def collect_snapshot_once(args):
-    state_path = resolve_state_path(args)
+    state_path, locked_pr_identity = resolve_locked_target(args)
     with watcher_lock(state_path):
         snapshot, _ = collect_snapshot(
             args,
             locked_state_path=state_path,
+            locked_pr_identity=locked_pr_identity,
         )
         return snapshot, state_path
 
