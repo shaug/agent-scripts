@@ -298,6 +298,30 @@ class PaginationAndThreadTests(unittest.TestCase):
             ):
                 WATCHER.get_review_threads(sample_pr(), "operator")
 
+    def test_review_threads_fail_closed_on_graphql_errors_with_partial_data(self):
+        response = {
+            "errors": [{"message": "A thread could not be resolved"}],
+            "data": {
+                "repository": {
+                    "pullRequest": {
+                        "reviewThreads": {
+                            "pageInfo": {
+                                "hasNextPage": False,
+                                "endCursor": None,
+                            },
+                            "nodes": [],
+                        }
+                    }
+                }
+            },
+        }
+        with mock.patch.object(WATCHER, "gh_json", return_value=response):
+            with self.assertRaisesRegex(
+                WATCHER.GhCommandError,
+                "refusing to report partial thread evidence",
+            ):
+                WATCHER.get_review_threads(sample_pr(), "operator")
+
     def test_pending_review_thread_surfaces_only_after_publication(self):
         def payload(review_state):
             return {

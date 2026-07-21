@@ -600,6 +600,11 @@ query($owner:String!,$name:String!,$number:Int!,$after:String) {
         if cursor:
             command.extend(["-f", f"after={cursor}"])
         payload = gh_json(command, repo=pr["repo"])
+        if isinstance(payload, dict) and payload.get("errors"):
+            raise GhCommandError(
+                "reviewThreads GraphQL returned errors; "
+                "refusing to report partial thread evidence"
+            )
         try:
             connection = payload["data"]["repository"]["pullRequest"]["reviewThreads"]
         except (KeyError, TypeError) as err:
@@ -1112,47 +1117,7 @@ def print_event(event, payload):
     print_json({"event": event, "payload": payload})
 
 
-def is_ci_green(snapshot):
-    checks = snapshot.get("checks") or {}
-    return (
-        int(checks.get("total_count") or 0) > 0
-        and bool(checks.get("all_terminal"))
-        and int(checks.get("failed_count") or 0) == 0
-        and int(checks.get("pending_count") or 0) == 0
-    )
-
-
-def snapshot_change_key(snapshot):
-    pr = snapshot.get("pr") or {}
-    checks = snapshot.get("checks") or {}
-    review_items = snapshot.get("new_review_items") or []
-    return (
-        str(pr.get("head_sha") or ""),
-        str(pr.get("base_sha") or ""),
-        str(pr.get("state") or ""),
-        str(pr.get("mergeable") or ""),
-        str(pr.get("merge_state_status") or ""),
-        str(pr.get("review_decision") or ""),
-        int(checks.get("passed_count") or 0),
-        int(checks.get("failed_count") or 0),
-        int(checks.get("pending_count") or 0),
-        tuple(
-            str(thread.get("id") or "")
-            for thread in snapshot.get("unresolved_threads") or []
-            if isinstance(thread, dict)
-        ),
-        tuple(
-            (str(item.get("kind") or ""), str(item.get("id") or ""))
-            for item in review_items
-            if isinstance(item, dict)
-        ),
-        tuple(snapshot.get("actions") or []),
-    )
-
-
 def run_watch(args):
-    poll_seconds = args.poll_seconds
-    last_change_key = None
     initial_pr = resolve_pr(args.pr, repo_override=args.repo)
     state_path = (
         Path(args.state_file) if args.state_file else default_state_file_for(initial_pr)
@@ -1167,7 +1132,7 @@ def run_watch(args):
                 {
                     "snapshot": snapshot,
                     "state_file": str(state_path),
-                    "next_poll_seconds": poll_seconds,
+                    "next_poll_seconds": args.poll_seconds,
                 },
             )
             actions = set(snapshot.get("actions") or [])
@@ -1180,18 +1145,7 @@ def run_watch(args):
                     },
                 )
                 return 0
-
-            current_change_key = snapshot_change_key(snapshot)
-            changed = current_change_key != last_change_key
-            green = is_ci_green(snapshot)
-            pr = snapshot.get("pr") or {}
-            pr_open = not bool(pr.get("closed")) and not bool(pr.get("merged"))
-
-            if not green or pr_open or changed or last_change_key is None:
-                poll_seconds = args.poll_seconds
-
-            last_change_key = current_change_key
-            time.sleep(poll_seconds)
+            time.sleep(args.poll_seconds)
 
 
 def main():
