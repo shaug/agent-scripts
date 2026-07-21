@@ -49,9 +49,10 @@ default state is isolated by repository and PR in the operating system's
 temporary directory. A state file whose stored repository/PR differs from the
 live target fails closed.
 
-Continuous watch acquires a nonblocking lock. Do not run a second watcher for
-the same state. The controlling task must consume output and terminate the
-process when interrupted; never leave a detached watcher.
+Continuous watch and retry mutation share a nonblocking lock on their state
+file. Do not run a second watcher or retry controller for the same state. The
+controlling task must consume output and terminate the process when interrupted;
+never leave a detached watcher.
 
 The watcher emits:
 

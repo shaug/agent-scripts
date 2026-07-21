@@ -6,8 +6,15 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Repository-owned PR babysitting
 
+- fix: serialize retry mutation and durably reserve each per-head retry cycle
+- fix: scope CI retries to explicitly diagnosed current-PR runs
+  (`7f559ead6a4373bc2f0bd441b5af853d66260753`)
+- fix: fail closed on partial review data and remove inert polling state
+  (`b14dca750337eacd0f34f5b705afbe81591174b7`)
+- fix: hide pending inline review threads until publication
+  (`76ed0f6090f23e7a9c0aae14897ae48948922a37`)
 - feat: add the portable `babysit-pr` skill with candidate-bound CI, feedback,
-  review, and merge gates
+  review, and merge gates (`b57bd0f3625d7aba9fe4ba32e2abb3f2c7b0df91`)
 
 ## 2026-07-20 — Portable ticket and epic execution
 

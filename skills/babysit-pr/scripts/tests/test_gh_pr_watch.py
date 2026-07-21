@@ -627,7 +627,10 @@ class RetryTests(unittest.TestCase):
             mock.patch.object(WATCHER, "save_state") as save_state,
             mock.patch.object(WATCHER, "gh_text") as gh_text,
         ):
-            result = WATCHER.retry_failed_now(sample_args(Path("state.json")))
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+            )
         self.assertTrue(result["rerun_attempted"])
         gh_text.assert_called_once_with(
             ["run", "rerun", "99", "--failed"], repo="example/project"
@@ -661,11 +664,133 @@ class RetryTests(unittest.TestCase):
             ),
             mock.patch.object(WATCHER, "gh_text") as gh_text,
         ):
-            result = WATCHER.retry_failed_now(args)
+            result = WATCHER._retry_failed_now_locked(args, Path("state.json"))
         self.assertFalse(result["rerun_attempted"])
         self.assertEqual("eligible_runs_not_current_failed_pr_checks", result["reason"])
         self.assertEqual([100], result["rejected_run_ids"])
         gh_text.assert_not_called()
+
+    def test_retry_reserves_budget_before_reporting_partial_command_failure(self):
+        events = []
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {"head-1": 1},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                failed_count=2,
+                items=[
+                    {
+                        "bucket": "fail",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    },
+                    {
+                        "bucket": "fail",
+                        "link": "https://github.com/example/project/actions/runs/100/job/9",
+                    },
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}, {"run_id": 100}],
+            "failed_jobs": [{"job_id": 8}, {"job_id": 9}],
+            "retry_state": {
+                "current_sha_retries_used": 1,
+                "max_flaky_retries": 3,
+            },
+        }
+        args = sample_args(Path("state.json"))
+        args.eligible_run_id = [99, 100]
+
+        def save_state(*_args):
+            events.append("save")
+
+        def rerun(command, **_kwargs):
+            run_id = int(command[2])
+            events.append(f"rerun:{run_id}")
+            if run_id == 100:
+                raise WATCHER.GhCommandError("simulated command failure")
+
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state", side_effect=save_state),
+            mock.patch.object(WATCHER, "gh_text", side_effect=rerun),
+        ):
+            result = WATCHER._retry_failed_now_locked(args, Path("state.json"))
+
+        self.assertEqual(["save", "rerun:99", "rerun:100"], events)
+        self.assertEqual(2, state["retries_by_sha"]["head-1"])
+        self.assertTrue(result["budget_reserved"])
+        self.assertEqual("rerun_partially_failed", result["reason"])
+        self.assertEqual(
+            [
+                {"run_id": 99, "status": "triggered"},
+                {"run_id": 100, "status": "command_failed"},
+            ],
+            result["rerun_results"],
+        )
+
+    def test_retry_rechecks_budget_from_locked_state(self):
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {"head-1": 3},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                failed_count=1,
+                items=[
+                    {
+                        "bucket": "fail",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}],
+            "failed_jobs": [{"job_id": 8}],
+            "retry_state": {
+                "current_sha_retries_used": 1,
+                "max_flaky_retries": 3,
+            },
+        }
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state") as save_state,
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+            )
+        self.assertEqual("retry_budget_exhausted", result["reason"])
+        save_state.assert_not_called()
+        gh_text.assert_not_called()
+
+    def test_retry_serializes_with_the_watcher_state_lock(self):
+        args = sample_args(Path("state.json"))
+        expected = {"reason": "test"}
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(
+                WATCHER,
+                "watcher_lock",
+                return_value=nullcontext(),
+            ) as watcher_lock,
+            mock.patch.object(
+                WATCHER,
+                "_retry_failed_now_locked",
+                return_value=expected,
+            ) as retry_locked,
+        ):
+            result = WATCHER.retry_failed_now(args)
+        self.assertIs(expected, result)
+        watcher_lock.assert_called_once_with(Path("state.json"))
+        retry_locked.assert_called_once_with(args, Path("state.json"))
 
 
 if __name__ == "__main__":

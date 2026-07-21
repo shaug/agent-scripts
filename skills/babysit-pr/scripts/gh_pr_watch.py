@@ -1075,7 +1075,18 @@ def collect_snapshot(args):
 
 
 def retry_failed_now(args):
-    snapshot, state_path = collect_snapshot(args)
+    initial_pr = resolve_pr(args.pr, repo_override=args.repo)
+    state_path = (
+        Path(args.state_file) if args.state_file else default_state_file_for(initial_pr)
+    )
+    with watcher_lock(state_path):
+        return _retry_failed_now_locked(args, state_path)
+
+
+def _retry_failed_now_locked(args, state_path):
+    snapshot, current_state_path = collect_snapshot(args)
+    if current_state_path != state_path:
+        raise RuntimeError("Retry target changed state-file identity")
     pr = snapshot["pr"]
     checks_summary = snapshot["checks"]
     failed_runs = snapshot["failed_runs"]
@@ -1088,8 +1099,11 @@ def retry_failed_now(args):
         "rerun_attempted": False,
         "rerun_count": 0,
         "rerun_run_ids": [],
+        "rerun_results": [],
         "requested_run_ids": sorted(set(args.eligible_run_id)),
         "rejected_run_ids": [],
+        "budget_reserved": False,
+        "reserved_retry_count": None,
         "reason": None,
     }
 
@@ -1122,20 +1136,44 @@ def retry_failed_now(args):
         result["reason"] = "eligible_runs_not_current_failed_pr_checks"
         return result
 
-    for run_id in sorted(requested_run_ids):
-        gh_text(["run", "rerun", str(run_id), "--failed"], repo=pr["repo"])
-        result["rerun_run_ids"].append(run_id)
+    state, _ = load_state(state_path)
+    validate_state_target(state, pr, state_path)
+    live_retries_used = current_retry_count(state, pr["head_sha"])
+    if live_retries_used >= max_retries:
+        result["reason"] = "retry_budget_exhausted"
+        return result
 
-    if result["rerun_run_ids"]:
-        state, _ = load_state(state_path)
-        validate_state_target(state, pr, state_path)
-        new_count = current_retry_count(state, pr["head_sha"]) + 1
-        set_retry_count(state, pr["head_sha"], new_count)
-        state["last_snapshot_at"] = int(time.time())
-        save_state(state_path, state)
-        result["rerun_attempted"] = True
-        result["rerun_count"] = len(result["rerun_run_ids"])
+    reserved_retry_count = live_retries_used + 1
+    set_retry_count(state, pr["head_sha"], reserved_retry_count)
+    state["last_snapshot_at"] = int(time.time())
+    save_state(state_path, state)
+    result["budget_reserved"] = True
+    result["reserved_retry_count"] = reserved_retry_count
+    result["snapshot"]["retry_state"]["current_sha_retries_used"] = reserved_retry_count
+    result["snapshot"]["retry_state"]["remaining"] = max(
+        0,
+        max_retries - reserved_retry_count,
+    )
+
+    for run_id in sorted(requested_run_ids):
+        try:
+            gh_text(["run", "rerun", str(run_id), "--failed"], repo=pr["repo"])
+        except GhCommandError:
+            result["rerun_results"].append(
+                {"run_id": run_id, "status": "command_failed"}
+            )
+        else:
+            result["rerun_run_ids"].append(run_id)
+            result["rerun_results"].append({"run_id": run_id, "status": "triggered"})
+
+    result["rerun_attempted"] = True
+    result["rerun_count"] = len(result["rerun_run_ids"])
+    if result["rerun_count"] == len(requested_run_ids):
         result["reason"] = "rerun_triggered"
+    elif result["rerun_count"]:
+        result["reason"] = "rerun_partially_failed"
+    else:
+        result["reason"] = "rerun_failed"
     return result
 
 

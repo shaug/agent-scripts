@@ -49,6 +49,10 @@ fails.
 Never alter unrelated tests, CI configuration, dependency pins, or
 infrastructure-adjacent code merely to obtain green status.
 
+For a multi-run retry cycle, reserve one durable per-head budget unit before
+triggering any run. Report each selected run as triggered or command-failed;
+never roll back the reservation after a partial outcome.
+
 ## Disposition review feedback
 
 For every published conversation comment, formal review, inline comment,
