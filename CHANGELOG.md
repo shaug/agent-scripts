@@ -4,9 +4,17 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-21 — Carve-changesets live validation, identity, and contract
+## 2026-07-21 — Consolidated carve-changesets CLI and live contract
 
+- refactor: make strict apply use one proof
+- fix: bind GitHub operations to the selected remote
+  (`cfdddb0aeb792fabfb4021173e25738b45329083`)
+- fix: close consolidated carve CLI review gaps
+  (`d4b071ff46b7b4f2bf8b256f9071d76325e4d146`)
+- feat: add the consolidated carve-changesets CLI
+  (`0d942c50cff2d9472b664e74d423661c9f1693cb`)
 - fix: bind changeset validation to current live refs
+  (`721a1ea07c0e8d8af1265bbf70326afaf286aa4a`)
 - feat: validate changeset chains from live git
   (`df24771983819b05110670a8d03d43e003d23d28`)
 - feat: add self-describing changeset identity
