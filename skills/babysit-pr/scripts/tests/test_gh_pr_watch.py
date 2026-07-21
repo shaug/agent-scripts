@@ -298,6 +298,63 @@ class PaginationAndThreadTests(unittest.TestCase):
             ):
                 WATCHER.get_review_threads(sample_pr(), "operator")
 
+    def test_pending_review_thread_surfaces_only_after_publication(self):
+        def payload(review_state):
+            return {
+                "data": {
+                    "repository": {
+                        "pullRequest": {
+                            "reviewThreads": {
+                                "pageInfo": {
+                                    "hasNextPage": False,
+                                    "endCursor": None,
+                                },
+                                "nodes": [
+                                    {
+                                        "id": "thread-1",
+                                        "isResolved": False,
+                                        "isOutdated": False,
+                                        "path": "src/example.py",
+                                        "line": 4,
+                                        "originalLine": 4,
+                                        "comments": {
+                                            "pageInfo": {"hasNextPage": False},
+                                            "nodes": [
+                                                {
+                                                    "databaseId": 9,
+                                                    "author": {"login": "reviewer"},
+                                                    "authorAssociation": "MEMBER",
+                                                    "body": "Concern",
+                                                    "createdAt": "2026-01-01T00:00:00Z",
+                                                    "url": "https://example.test/9",
+                                                    "pullRequestReview": {
+                                                        "databaseId": 8,
+                                                        "state": review_state,
+                                                        "commit": {"oid": "head-1"},
+                                                    },
+                                                }
+                                            ],
+                                        },
+                                    }
+                                ],
+                            }
+                        }
+                    }
+                }
+            }
+
+        with mock.patch.object(WATCHER, "gh_json", return_value=payload("PENDING")):
+            self.assertEqual([], WATCHER.get_review_threads(sample_pr(), "operator"))
+
+        with mock.patch.object(
+            WATCHER,
+            "gh_json",
+            return_value=payload("COMMENTED"),
+        ):
+            threads = WATCHER.get_review_threads(sample_pr(), "operator")
+        self.assertEqual(["thread-1"], [thread["id"] for thread in threads])
+        self.assertEqual("9", threads[0]["comments"][0]["id"])
+
 
 class RecommendationTests(unittest.TestCase):
     def test_feedback_precedes_ci_retry(self):

@@ -614,6 +614,8 @@ query($owner:String!,$name:String!,$number:Int!,$after:String) {
             comments = []
             for comment in comments_connection.get("nodes") or []:
                 review = comment.get("pullRequestReview") or {}
+                if str(review.get("state") or "").upper() == "PENDING":
+                    continue
                 normalized = {
                     "id": str(comment.get("databaseId") or ""),
                     "author": extract_login(comment.get("author")),
@@ -630,6 +632,8 @@ query($owner:String!,$name:String!,$number:Int!,$after:String) {
                     authenticated_login,
                 )
                 comments.append(normalized)
+            if not comments:
+                continue
             threads.append(
                 {
                     "id": str(node.get("id") or ""),
