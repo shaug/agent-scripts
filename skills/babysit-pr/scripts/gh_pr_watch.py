@@ -7,6 +7,7 @@ under Apache License 2.0. See ../LICENSE.apache-2.0 and
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -168,6 +169,8 @@ def parse_args():
         parser.error("--watch cannot be combined with --retry-failed-now")
     if args.once and args.watch:
         parser.error("--once cannot be combined with --watch")
+    if args.once and args.retry_failed_now:
+        parser.error("--once cannot be combined with --retry-failed-now")
     if args.eligible_run_id and not args.retry_failed_now:
         parser.error("--eligible-run-id requires --retry-failed-now")
     if args.retry_failed_now and not args.eligible_run_id:
@@ -381,9 +384,13 @@ def default_state_directory():
 
 
 def default_state_file_for(pr):
+    # The slug keeps the filename readable; the digest of the exact
+    # repository string guarantees distinct repositories can never collide
+    # on one state file (e.g. `a-b/c` vs `a/b-c`).
     repo_slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", pr["repo"]).strip("-")
+    digest = hashlib.sha256(pr["repo"].encode("utf-8")).hexdigest()[:8]
     return default_state_directory() / (
-        f"agent-babysit-pr-{repo_slug}-pr{pr['number']}.json"
+        f"agent-babysit-pr-{repo_slug}-{digest}-pr{pr['number']}.json"
     )
 
 
@@ -494,7 +501,11 @@ def workflow_run_ids_from_checks(checks):
     for check in checks:
         if not isinstance(check, dict):
             continue
-        match = re.search(r"/actions/runs/(\d+)(?:/|$)", str(check.get("link") or ""))
+        # Details links take several shapes: .../runs/123, .../runs/123/job/456,
+        # and the legacy .../runs/123?check_suite_focus=true.
+        match = re.search(
+            r"/actions/runs/(\d+)(?:[/?]|$)", str(check.get("link") or "")
+        )
         if match:
             run_ids.add(int(match.group(1)))
     return run_ids
@@ -1092,6 +1103,9 @@ def recommend_actions(
     )
     if has_failed_pr_checks:
         if checks_summary["all_terminal"] and retries_used >= max_retries:
+            # The exhausted budget only ends flaky retries; a new fixable
+            # branch-caused failure at this head still deserves diagnosis.
+            actions.append("diagnose_ci_failure")
             actions.append("stop_exhausted_retries")
         else:
             actions.append("diagnose_ci_failure")
@@ -1293,7 +1307,13 @@ def _retry_failed_now_locked(args, state_path, locked_pr_identity):
     if pr["closed"] or pr["merged"]:
         result["reason"] = "pr_closed"
         return result
-    if checks_summary["failed_count"] <= 0 and not snapshot["failed_jobs"]:
+    # Mirror recommend_actions: cancelled checks count as failed PR checks,
+    # so a recommended retry is never refused for a cancelled-only failure.
+    if (
+        checks_summary["failed_count"] <= 0
+        and int(checks_summary.get("cancelled_count") or 0) <= 0
+        and not snapshot["failed_jobs"]
+    ):
         result["reason"] = "no_failed_pr_checks"
         return result
     if not failed_runs:

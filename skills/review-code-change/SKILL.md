@@ -1,7 +1,7 @@
 ---
 name: review-code-change
 description: Review a code change, diff, PR, branch, or patch with the complete repository-owned review suite. Use when asked to review a change or run code review; builds a trustworthy evidence packet, invokes solution simplicity, correctness, and code simplicity in order, reconciles their results, and returns one bounded aggregate verdict. Fails closed when evidence or local lens skills are missing, remains read-only, and never depends on a third-party review skill.
-allowed-tools: Read, Grep, Glob, Bash
+allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 
 # Review Code Change

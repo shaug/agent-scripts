@@ -54,7 +54,9 @@ and re-invoke until a terminal condition is reached. `--stop-when-clear` exits
 when GitHub-native gates are clear; it never asserts repository-specific gates
 or feedback disposition. When no completion policy is passed it implies
 `ready_to_merge`; combining it with an explicit `watch_until_closed` is
-rejected.
+rejected. On a repository with zero configured checks the candidate is never
+GitHub-clear (the watcher emits `verify_required_check_policy` instead), so pair
+`--stop-when-clear` with `--max-polls` to keep the window bounded.
 
 Watch mode tolerates a bounded number of consecutive transient GitHub CLI
 failures (`--max-transient-failures`, default 5), emitting a `transient_error`

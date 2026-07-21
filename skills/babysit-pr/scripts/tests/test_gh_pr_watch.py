@@ -280,6 +280,17 @@ class ParseArgsTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.parse("--pr", "123", "--once", "--watch")
 
+    def test_once_and_retry_conflict(self):
+        with self.assertRaises(SystemExit):
+            self.parse(
+                "--pr",
+                "123",
+                "--once",
+                "--retry-failed-now",
+                "--eligible-run-id",
+                "99",
+            )
+
 
 class PaginationAndThreadTests(unittest.TestCase):
     def test_check_json_accepts_gh_failure_and_pending_exit_codes(self):
@@ -546,6 +557,15 @@ class RecommendationTests(unittest.TestCase):
         self.assertNotIn("verify_external_gates", actions)
         self.assertIn("diagnose_ci_failure", actions)
 
+    def test_run_ids_extracted_from_all_details_link_shapes(self):
+        checks = [
+            {"link": "https://github.com/e/p/actions/runs/1"},
+            {"link": "https://github.com/e/p/actions/runs/2/job/9"},
+            {"link": "https://github.com/e/p/actions/runs/3?check_suite_focus=true"},
+            {"link": "https://external-ci.example.test/build/4"},
+        ]
+        self.assertEqual({1, 2, 3}, WATCHER.workflow_run_ids_from_checks(checks))
+
     def test_non_pr_check_run_failures_do_not_block_or_wedge(self):
         failed_runs = [
             {"run_id": 99, "workflow_name": "ci"},
@@ -755,8 +775,15 @@ class SnapshotAndStateTests(unittest.TestCase):
 
     def test_default_state_file_is_product_neutral(self):
         state_path = WATCHER.default_state_file_for(sample_pr())
-        self.assertIn("agent-babysit-pr-example-project-pr123", str(state_path))
+        self.assertIn("agent-babysit-pr-example-project-", str(state_path))
+        self.assertTrue(state_path.name.endswith("-pr123.json"))
         self.assertNotIn("codex", str(state_path).lower())
+
+    def test_distinct_repositories_never_share_a_state_file(self):
+        first = WATCHER.default_state_file_for(sample_pr(repo="owner/re-po"))
+        second = WATCHER.default_state_file_for(sample_pr(repo="owner-re/po"))
+        third = WATCHER.default_state_file_for(sample_pr(repo="owner/re_po"))
+        self.assertEqual(3, len({first, second, third}))
 
     def test_failed_jobs_include_direct_log_endpoint(self):
         with mock.patch.object(
@@ -999,6 +1026,48 @@ class RetryTests(unittest.TestCase):
             ["run", "rerun", "99", "--failed"], repo="example/project"
         )
         self.assertEqual(2, save_state.call_args.args[1]["retries_by_sha"]["head-1"])
+
+    def test_retry_accepts_cancelled_only_check_failures(self):
+        # recommend_actions counts cancelled checks as failed PR checks; the
+        # retry gate must mirror that so a recommended retry is never refused.
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                cancelled_count=1,
+                items=[
+                    {
+                        "bucket": "cancel",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}],
+            "failed_jobs": [],
+            "retry_state": {
+                "current_sha_retries_used": 0,
+                "max_flaky_retries": 3,
+            },
+        }
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state"),
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+                ("example/project", 123),
+            )
+        self.assertTrue(result["rerun_attempted"])
+        self.assertEqual("rerun_triggered", result["reason"])
+        gh_text.assert_called_once()
 
     def test_retry_rejects_mixed_current_and_unverified_run_ids(self):
         snapshot = {

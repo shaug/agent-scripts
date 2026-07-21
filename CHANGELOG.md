@@ -6,6 +6,13 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- fix: align retry gating and delegation tooling with review round four — accept
+  cancelled-only check failures in the retry gate so a recommended retry is
+  never refused, grant the review orchestrator the subagent and skill tools its
+  Claude adapter requires, reject `--once` with `--retry-failed-now`, match
+  query-string run links, add a repo digest to default state filenames, keep
+  `diagnose_ci_failure` visible after retry exhaustion, and document zero-check
+  `--stop-when-clear` pairing
 - fix: close adversarial-review findings — resolve bundled-validator schemas in
   both layouts and execute every bundled copy in place, scope failed workflow
   runs to the PR's own checks so push/schedule failures cannot wedge the
@@ -15,6 +22,7 @@ summary: Chronological history of repository and skill changes.
   executor, reject `--once --watch`, handle `OSError` cleanly, import bundled
   validators in review-skill tests, and document eval flag pre-classification,
   the gh 2.37 floor, and state-file durability
+  (`48b6f614d15d50dae4ba5c63d7b3e3471647dd1a`)
 - fix: close independent-review findings — count cancelled checks and failed
   runs/jobs in the watcher's clear predicate, run review-suite tests in CI,
   bundle the dependency-free packet validator into each review skill, make

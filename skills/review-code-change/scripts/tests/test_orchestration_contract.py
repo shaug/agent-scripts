@@ -53,6 +53,14 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertEqual(sorted(positions), positions)
         self.assertNotIn("code-review-pro", self.skill + self.protocol)
 
+    def test_orchestrator_allowed_tools_can_delegate_but_not_edit(self):
+        # The orchestrator needs subagent/skill tools to run each lens in a
+        # fresh context, but must never hold file-editing tools.
+        self.assertIn(
+            "allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill",
+            self.skill,
+        )
+
     def test_skill_bundles_the_shared_contract(self):
         self.assertIn("references/review-suite/CONTRACT.md", self.skill)
         bundle = SKILL_ROOT / "references" / "review-suite"
