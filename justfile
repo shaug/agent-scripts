@@ -34,6 +34,9 @@ test-babysit-pr:
 test-implement-ticket:
   python3 -m unittest discover -s {{skills_dir}}/implement-ticket/scripts/tests -p 'test_*.py'
 
+eval-implement-ticket:
+  python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py
+
 test-implement-epic:
   python3 -m unittest discover -s {{skills_dir}}/implement-epic/scripts/tests -p 'test_*.py'
 

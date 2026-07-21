@@ -4,8 +4,8 @@
     "request": "Implement GitHub issue G-21.",
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
-    "runtime_profile": "Repository-owned skills and named subagents are available.",
-    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "runtime_profile": "Repository-owned review-code-change and babysit-pr plus named isolated contexts are available.",
+    "capabilities": ["stable_skill_loading", "review_code_change", "babysit_pr", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -50,7 +50,7 @@
     "id": "clean-local-review-remote-pending",
     "request": "Implement GitHub issue G-28 to a ready PR.",
     "authority": "ready_pr_only",
-    "candidate_state": "Local validation and review are clean; required current-head human and connector approvals remain pending; zero threads are unresolved."
+    "candidate_state": "Initial validation and review are clean; babysit-pr waits through pending human and connector approvals until both become current for the unchanged head."
   },
   {
     "id": "unrelated-base-drift-retained",

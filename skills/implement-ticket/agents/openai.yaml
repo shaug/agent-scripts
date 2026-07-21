@@ -1,4 +1,4 @@
 interface:
   display_name: "Implement Ticket"
-  short_description: "Implement one ticket through a reviewed PR"
-  default_prompt: "Use $implement-ticket to implement this ticket through the authorized validation, review, PR, and merge gates."
+  short_description: "Implement and babysit one ticket PR"
+  default_prompt: "Use $implement-ticket to implement this ticket, run its initial review, delegate the published PR to babysit-pr, and verify the authorized result."

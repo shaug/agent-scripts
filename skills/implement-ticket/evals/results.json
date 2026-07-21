@@ -2,12 +2,12 @@
   {
     "case_id": "standalone-ready-pr",
     "terminal_state": "ready_pr",
-    "required_actions": ["implement one ticket", "validate", "run repository-owned review", "publish one PR", "report merge authority as pending"]
+    "required_actions": ["implement one ticket", "validate", "run initial repository-owned review", "publish one PR", "invoke babysit-pr with ready_to_merge", "verify every non-merge gate", "withhold merge"]
   },
   {
     "case_id": "authorized-merge-cleanup",
     "terminal_state": "merged",
-    "required_actions": ["verify all current-candidate gates", "merge", "verify mainline and ticket transition", "clean only verified branch state"]
+    "required_actions": ["invoke babysit-pr with merge_when_ready", "verify its merged identity live", "verify mainline and ticket transition", "clean only verified branch state"]
   },
   {
     "case_id": "named-epic-child-only",
@@ -42,7 +42,7 @@
   {
     "case_id": "clean-local-review-remote-pending",
     "terminal_state": "ready_pr",
-    "required_actions": ["report clean local review", "report human and connector gates pending", "do not merge"]
+    "required_actions": ["pass clean initial review evidence to babysit-pr", "wait through ordinary pending gates", "verify current human and connector approval", "accept ready_to_merge", "do not merge"]
   },
   {
     "case_id": "unrelated-base-drift-retained",

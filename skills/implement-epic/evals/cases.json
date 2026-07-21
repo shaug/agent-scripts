@@ -101,5 +101,11 @@
     "request": "Implement epic G-260 through child merges.",
     "graph": "G-261 is open and ready, with asynchronous CI and review gates required by its ticket workflow.",
     "runtime_profile": "The runtime cannot poll, wait, or resume after asynchronous child gates."
+  },
+  {
+    "id": "transitive-babysit-results",
+    "request": "Continue epic G-270 across three independently selected children.",
+    "graph": "Each child is selected only when independently ready; implement-ticket owns all direct dependencies.",
+    "ticket_results": ["G-271 ready_pr at the complete non-merge gate", "G-272 merged with verified mainline and transition evidence", "G-273 blocked with preserved artifacts"]
   }
 ]

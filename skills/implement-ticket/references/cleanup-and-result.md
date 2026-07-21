@@ -55,11 +55,24 @@ unless the caller has one. Include every applicable field:
 - branch, worktree, candidate head, and PR identity when created;
 - completion policy and the authority actually used;
 - focused and full validation commands, outcomes, and limitations;
-- `review-code-change` verdict and reviewed candidate identity;
+- initial `review-code-change` verdict and reviewed candidate identity;
+- `babysit-pr` policy, terminal state, returned candidate identity, authority
+  used, mutation ownership, and independently verified live-state match;
 - applicable CI, human, connector, comment, formal-review, and thread state;
 - merge, mainline, ticket transition, and cleanup state;
 - deferred findings and intentionally unperformed work; and
 - one concrete next action or blocking reason.
+
+For `ready_pr`, require a verified `babysit-pr: ready_to_merge` result for the
+still-current open and mergeable PR. Every applicable non-merge gate must pass;
+the only withheld action is merge. Do not list ordinary pending CI or review as
+a remaining gate on a terminal `ready_pr`.
+
+For `merged`, require a verified `babysit-pr: merged` result plus the
+independent mainline, tracker-transition, dependency-refresh, and cleanup checks
+above. A `closed` babysitter result becomes `blocked` with
+`PR closed without merge` and preserves local artifacts unless another canonical
+completion is proven.
 
 For `requires_epic`, require all of:
 

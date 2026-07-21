@@ -83,5 +83,10 @@
     "case_id": "missing-asynchronous-wait",
     "workflow_state": "blocked",
     "required_actions": ["name asynchronous wait as unavailable", "perform no child mutation", "do not pretend ticket or remote gates passed"]
+  },
+  {
+    "case_id": "transitive-babysit-results",
+    "workflow_state": "mixed_ticket_results",
+    "required_actions": ["consume ready_pr merged and blocked unchanged", "do not invoke babysit-pr directly", "do not count ready_pr or blocked as merged", "refresh graph only after verified merged"]
   }
 ]

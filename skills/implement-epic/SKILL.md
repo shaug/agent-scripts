@@ -38,9 +38,11 @@ A compatible agentic runtime must be able to:
   taking ownership of local review.
 
 The portable dependency chain is `implement-epic` → `implement-ticket` →
-`review-code-change`. Verify `implement-ticket` directly and require its result
-to prove that its own review dependency and applicable capabilities were
-available. Do not make this skill invoke `review-code-change` itself.
+(`review-code-change`, `babysit-pr`), with `babysit-pr` → `review-code-change`
+after a head-changing fix. Verify `implement-ticket` directly and require its
+result to prove that its own dependencies and applicable capabilities were
+available. Do not make this skill invoke `review-code-change` or `babysit-pr`
+itself.
 
 Stop before child mutation with an explicit limitation when an applicable
 capability or dependency is unavailable. Product-specific discovery metadata
@@ -147,9 +149,10 @@ Do not trust a reported result until ticket identity, repository, base,
 branch/worktree, candidate, PR, validation, review, remote-gate, merge,
 transition, and cleanup evidence are internally consistent and match live state.
 
-- `ready_pr`: record the candidate and remaining gates. Do not count the child
-  complete or unblock dependents that require merge. Continue only with another
-  independently ready child when the requested scope permits it.
+- `ready_pr`: verify the candidate is open, mergeable, and at the complete
+  current-candidate non-merge gate with only merge withheld. Do not count the
+  child complete or unblock dependents that require merge. Continue only with
+  another independently ready child when the requested scope permits it.
 - `merged`: verify mainline and tracker evidence, then refresh the complete live
   graph before any selection or completion claim.
 - `blocked`: preserve the exact reason and partial artifacts. Never count it as

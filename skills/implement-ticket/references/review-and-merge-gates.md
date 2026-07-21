@@ -1,21 +1,16 @@
-# Review and merge gates
+# Initial review and delegation gates
 
-Apply these gates to the single ticket candidate. Repository instructions may
-add stricter requirements but must not silently weaken them.
+Apply these gates to the complete initial ticket candidate. Repository
+instructions may add stricter requirements but must not silently weaken them.
+Delegate the published PR's continuing lifecycle to repository-owned
+`babysit-pr`; do not duplicate its CI, feedback, drift, post-fix review, or
+merge mechanics here.
 
-## Contents
+## Initial bounded review loop
 
-- [Bounded review loop](#bounded-review-loop)
-- [Revalidation](#revalidation)
-- [Base-drift gate](#base-drift-gate)
-- [Merge gate](#merge-gate)
-- [Feedback that must not expand the PR](#feedback-that-must-not-expand-the-pr)
-
-## Bounded review loop
-
-Require the repository-owned `review-code-change` skill before a merge-inclusive
-run. Fail closed when it is missing or unreadable. Do not substitute another
-skill, a generic self-review, or an unreviewed merge path.
+Require repository-owned `review-code-change` before a PR can be handed to
+`babysit-pr`. Fail closed when it is missing or unreadable. Do not substitute
+another skill, a generic self-review, or an unreviewed path.
 
 Require every intended ticket change to be committed and the implementation
 worktree to be clean before review. If unrelated user artifacts prevent a clean
@@ -45,68 +40,43 @@ Apply only blocking and strong-recommendation findings that are material,
 tractable, and ticket-scoped. Preserve deferred findings without expanding the
 PR. Reply with evidence when a finding no longer applies.
 
-After a material fix, run affected and required validation, commit and push the
-new head, rebuild the evidence packet, and follow the returned re-review
-instruction. Use at most three full fix/re-review cycles by default. A clean
-aggregate ends the local loop. If material findings remain after the final
-cycle, keep the PR open and return `blocked` with the unresolved evidence.
+After a material initial-review fix, run affected and required validation,
+commit and push the new head, rebuild the raw evidence packet, and follow the
+returned re-review instruction. Use at most three full fix/re-review cycles by
+default. A clean aggregate ends the initial loop. If material findings remain
+after the final cycle, keep the PR open and return `blocked` with unresolved
+evidence.
 
-## Revalidation
+## Delegation gate
 
-After every accepted fix:
+Before invoking `babysit-pr`:
 
-- run affected focused tests;
-- rerun the repository-required gate;
-- commit every intended ticket change;
-- confirm `base...HEAD` contains the complete ticket implementation and no
-  unexplained artifact;
-- push the new head;
-- capture the new head and comparison-base identities; and
-- reread current-candidate check and review state.
+- verify the initial review is clean for the exact live head and applicable
+  base;
+- verify the PR identity, effective diff, resulting tree, validation, worktree,
+  ticket reference, and authority are internally consistent;
+- assemble every field required by
+  [the handoff contract](babysit-pr-handoff.md);
+- map the completion policy without broadening authority; and
+- establish one exclusive mutating owner.
 
-Never carry head-bound evidence across an edit, push, rebase, conflict
-resolution, or update operation that changes the head.
+Treat a missing dependency, malformed result, `blocked` verdict, reviewer
+mutation, stale identity, or unavailable required evidence as a failed gate. Do
+not claim `ready_pr` merely because a PR exists or an initial review is clean.
 
-## Base-drift gate
+## Caller-side completion verification
 
-Bind local review to the captured head and comparison base. Immediately before
-merge, reread both identities and inspect the effective merge candidate when the
-base advanced.
+After `babysit-pr` returns, reread live GitHub state and apply the result
+mapping in [the handoff contract](babysit-pr-handoff.md). A `ready_pr` requires
+a validated current `ready_to_merge` result. A `merged` result requires
+independent remote merge, mainline, tracker-transition, dependency-refresh, and
+cleanup verification by `implement-ticket`.
 
-Retain head-bound evidence across base-only drift only when all are true:
+If the live head, base, PR state, ownership, or gate evidence differs from the
+result, reconcile the live candidate or fail closed. Never carry stale evidence
+through a head change or accept a closed-unmerged PR as complete.
 
-- the effective diff and resulting tree are unchanged;
-- no conflict or relevant overlap exists;
-- repository policy permits retaining the evidence; and
-- the reason is recorded.
-
-Otherwise invalidate and rerun every affected local-validation, CI,
-repository-owned-review, human-review, connector-review, and
-feedback-disposition gate. Any rebase, merge, conflict resolution, or update
-that changes the head restarts all head-bound gates.
-
-## Merge gate
-
-Require every applicable condition:
-
-- every intended ticket change is committed and represented by the candidate
-  diff, with unrelated artifacts classified, preserved, and proven irrelevant;
-- focused and full local validation passed;
-- required remote checks passed;
-- the repository-owned review is clean for the current head, with later base
-  drift explicitly retained or re-reviewed;
-- every required human and connector review is current under repository policy;
-- no undispositioned actionable conversation comment, formal review, connector
-  finding, or inline thread remains;
-- no conflict or superseding implementation exists;
-- the candidate still satisfies one ticket and its non-goals; and
-- required rollout or migration prerequisites are complete.
-
-If the repository has no CI or a category of remote review, record that fact and
-use the remaining documented gates. Do not infer absence merely from an empty
-first read.
-
-## Feedback that must not expand the PR
+## Findings that must not expand the ticket
 
 Keep these out unless the live ticket requires them:
 
