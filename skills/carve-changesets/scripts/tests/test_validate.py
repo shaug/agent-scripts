@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import helpers
 from metadata import ChangesetMetadata, stamp_commit_message
@@ -93,6 +94,7 @@ class LiveValidationTests(unittest.TestCase):
 
     def test_rewritten_mid_chain_branch_breaks_live_ancestry(self) -> None:
         self._materialize_equivalent_chain()
+        chain = self._rehydrate()
         helpers.run(self.repo, "git", "checkout", "-b", "replacement", "main")
         for path in ("source.txt", "second.txt"):
             content = helpers.run(self.repo, "git", "show", f"feature/report:{path}")
@@ -107,9 +109,10 @@ class LiveValidationTests(unittest.TestCase):
             replacement,
         )
 
-        result = validate_live_chain(self._rehydrate(), cwd=self.repo)
+        result = validate_live_chain(chain, cwd=self.repo)
 
         self.assertFalse(result.valid)
+        self.assertIn("changeset_ref_moved", {item.code for item in result.errors})
         self.assertIn(
             "predecessor_ancestry_broken", {item.code for item in result.errors}
         )
@@ -159,6 +162,27 @@ class LiveValidationTests(unittest.TestCase):
         self.assertEqual("different", different.source_status)
         self.assertIn(
             "source_history_mismatch", {item.code for item in different.errors}
+        )
+
+    def test_source_ancestry_command_failure_is_not_reported_as_divergence(
+        self,
+    ) -> None:
+        self._materialize_equivalent_chain()
+        helpers.run(self.repo, "git", "checkout", "feature/report")
+        (self.repo / "later.txt").write_text("later source work\n")
+        helpers.run(self.repo, "git", "add", "later.txt")
+        helpers.commit(self.repo, "feat: advance source")
+
+        with mock.patch("validate._is_ancestor", side_effect=[True, True, True, None]):
+            result = validate_live_chain(self._rehydrate(), cwd=self.repo)
+
+        self.assertFalse(result.valid)
+        self.assertEqual("unavailable", result.source_status)
+        self.assertIn(
+            "source_ancestry_check_failed", {item.code for item in result.errors}
+        )
+        self.assertNotIn(
+            "source_history_mismatch", {item.code for item in result.errors}
         )
 
 

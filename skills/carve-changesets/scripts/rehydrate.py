@@ -69,9 +69,11 @@ def _git(cwd: Path, *args: str) -> str:
     return result.stdout
 
 
-def _discover_heads(
+def discover_changeset_heads(
     cwd: Path, source_branch: str, remote: str
 ) -> dict[int, tuple[str, str]]:
+    """Resolve current changeset refs and reject local/remote ambiguity."""
+
     output = _git(
         cwd,
         "for-each-ref",
@@ -147,7 +149,7 @@ def rehydrate_chain(
     if not source_branch.strip():
         raise RehydrationError("Source branch must not be empty.")
     repo = Path(cwd)
-    heads = _discover_heads(repo, source_branch, remote)
+    heads = discover_changeset_heads(repo, source_branch, remote)
     if not heads:
         raise RehydrationError(
             f"No changeset branches named {source_branch}-N were found locally or on {remote}."
