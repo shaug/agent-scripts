@@ -85,6 +85,7 @@ def validate_live_chain(
     *,
     cwd: Path | str = Path.cwd(),
     remote: str = "origin",
+    allow_partial_propagation: bool = False,
 ) -> ChainValidation:
     """Check ancestry, source identity, and equivalence using only live git."""
 
@@ -139,15 +140,23 @@ def validate_live_chain(
         )
 
     expected_indices = {item.metadata.index for item in chain.changesets}
-    if live_heads is not None and set(live_heads) != expected_indices:
-        diagnostics.append(
-            ValidationDiagnostic(
-                "chain_shape_changed",
-                "error",
-                "Current changeset branch indices differ from the rehydrated chain: "
-                f"expected {sorted(expected_indices)}, found {sorted(live_heads)}.",
+    if live_heads is not None:
+        missing_open = {
+            item.metadata.index
+            for item in chain.changesets
+            if item.pr_state != "MERGED" and item.metadata.index not in live_heads
+        }
+        unexpected = set(live_heads) - expected_indices
+        if missing_open or unexpected:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "chain_shape_changed",
+                    "error",
+                    "Current open changeset branch indices differ from the rehydrated "
+                    f"chain: missing open {sorted(missing_open)}, unexpected "
+                    f"{sorted(unexpected)}.",
+                )
             )
-        )
 
     base_head = _resolve_branch(repo, chain.base_branch, remote)
     if base_head is None:
@@ -159,13 +168,15 @@ def validate_live_chain(
             )
         )
 
-    predecessor = base_head
-    predecessor_name = chain.base_branch
+    open_changeset_seen = False
+    merged_changeset_seen = False
+    rehydrated_heads = {item.branch: item.head for item in chain.changesets}
     for changeset in chain.changesets:
         live = (
             live_heads.get(changeset.metadata.index) if live_heads is not None else None
         )
-        if live is None:
+        is_merged = changeset.pr_state == "MERGED"
+        if live is None and not is_merged:
             diagnostics.append(
                 ValidationDiagnostic(
                     "changeset_ref_missing",
@@ -174,6 +185,8 @@ def validate_live_chain(
                 )
             )
             head = None
+        elif live is None:
+            head = changeset.head
         else:
             live_branch, head = live
             if live_branch != changeset.branch or head != changeset.head:
@@ -186,9 +199,50 @@ def validate_live_chain(
                     )
                 )
 
-        if head is not None and predecessor is not None:
+        if is_merged and open_changeset_seen:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "merge_sequence_broken",
+                    "error",
+                    f"Changeset branch {changeset.branch} is merged after an unmerged "
+                    "changeset; merges must remain a leading sequence.",
+                )
+            )
+        if not is_merged:
+            open_changeset_seen = True
+        else:
+            merged_changeset_seen = True
+
+        predecessor_name = changeset.base
+        predecessor = _resolve_branch(repo, predecessor_name, remote)
+        if predecessor is None:
+            predecessor = rehydrated_heads.get(predecessor_name)
+        if not is_merged and predecessor is None:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "predecessor_missing",
+                    "error",
+                    f"Predecessor {predecessor_name!r} for {changeset.branch} is not "
+                    "available in live git.",
+                )
+            )
+        if not is_merged and head is not None and predecessor is not None:
             ancestry = _is_ancestor(repo, predecessor, head)
-            if ancestry is False:
+            if (
+                ancestry is False
+                and allow_partial_propagation
+                and merged_changeset_seen
+            ):
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "partial_propagation_frontier",
+                        "warning",
+                        f"Changeset branch {changeset.branch} is still based on its "
+                        "pre-propagation predecessor; propagation must validate and "
+                        "advance this live frontier.",
+                    )
+                )
+            elif ancestry is False:
                 diagnostics.append(
                     ValidationDiagnostic(
                         "predecessor_ancestry_broken",
@@ -206,13 +260,13 @@ def validate_live_chain(
                         f"{predecessor} with {changeset.branch} at {head}.",
                     )
                 )
-        predecessor = head
-        predecessor_name = changeset.branch
 
     if stamped_source is not None and chain.changesets and live_heads is not None:
         tip_record = chain.changesets[-1]
         live_tip = live_heads.get(tip_record.metadata.index)
         tip = live_tip[1] if live_tip is not None else None
+        if tip is None and tip_record.pr_state == "MERGED":
+            tip = base_head
         source_tree = _resolve(repo, f"{stamped_source}^{{tree}}")
         tip_tree = _resolve(repo, f"{tip}^{{tree}}") if tip is not None else None
         if source_tree is None or tip_tree is None:

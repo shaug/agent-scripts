@@ -30,6 +30,9 @@ class PullRequestRecord:
     base_branch: str
     state: str
     body: str
+    title: str = ""
+    merge_sha: str | None = None
+    is_cross_repository: bool = False
 
 
 @dataclass(frozen=True)
@@ -70,7 +73,11 @@ def _git(cwd: Path, *args: str) -> str:
 
 
 def discover_changeset_heads(
-    cwd: Path, source_branch: str, remote: str
+    cwd: Path,
+    source_branch: str,
+    remote: str,
+    *,
+    prefer_remote: bool = False,
 ) -> dict[int, tuple[str, str]]:
     """Resolve current changeset refs and reject local/remote ambiguity."""
 
@@ -108,6 +115,9 @@ def discover_changeset_heads(
         local = variants.get("local")
         published = variants.get("remote")
         if local and published and local[1] != published[1]:
+            if prefer_remote:
+                heads[index] = published
+                continue
             raise RehydrationError(
                 f"Changeset branch {local[0]} is ambiguous: local head {local[1]} "
                 f"differs from {remote} head {published[1]}."
@@ -143,18 +153,25 @@ def rehydrate_chain(
     base_branch: str | None = None,
     cwd: Path | str = Path.cwd(),
     remote: str = "origin",
+    prefer_remote: bool = False,
 ) -> Chain:
     """Reconstruct an ordered chain without consulting local plan or state files."""
 
     if not source_branch.strip():
         raise RehydrationError("Source branch must not be empty.")
     repo = Path(cwd)
-    heads = discover_changeset_heads(repo, source_branch, remote)
-    if not heads:
+    heads = discover_changeset_heads(
+        repo, source_branch, remote, prefer_remote=prefer_remote
+    )
+    prs = _pr_by_branch(pull_requests, source_branch)
+    pr_indices = {
+        int(pr.head_branch.removeprefix(f"{source_branch}-")): pr for pr in prs.values()
+    }
+    found = sorted(set(heads) | set(pr_indices))
+    if not found:
         raise RehydrationError(
-            f"No changeset branches named {source_branch}-N were found locally or on {remote}."
+            f"No changeset branches or PRs named {source_branch}-N were found."
         )
-    found = sorted(heads)
     expected = list(range(1, found[-1] + 1))
     if found != expected:
         missing = sorted(set(expected) - set(found))
@@ -164,7 +181,6 @@ def rehydrate_chain(
             + "."
         )
 
-    prs = _pr_by_branch(pull_requests, source_branch)
     if base_branch is None:
         first_pr = prs.get(f"{source_branch}-1")
         if first_pr is None:
@@ -178,8 +194,18 @@ def rehydrate_chain(
     records: list[ChangesetRecord] = []
     source_sha: str | None = None
     slugs: set[str] = set()
+    prior_prs_merged = True
     for index in found:
-        branch, head = heads[index]
+        pr = pr_indices.get(index)
+        if index in heads:
+            branch, head = heads[index]
+        elif pr is not None and pr.state.upper() == "MERGED":
+            branch, head = pr.head_branch, pr.head_sha
+            _git(repo, "cat-file", "-e", f"{head}^{{commit}}")
+        else:
+            raise RehydrationError(
+                f"Open changeset branch {source_branch}-{index} is missing locally and on {remote}."
+            )
         message = _git(repo, "show", "-s", "--format=%B", head)
         try:
             metadata = parse_commit_message(message)
@@ -207,17 +233,26 @@ def rehydrate_chain(
             )
         slugs.add(metadata.slug)
 
-        expected_base = base_branch if index == 1 else f"{source_branch}-{index - 1}"
+        predecessor_base = base_branch if index == 1 else f"{source_branch}-{index - 1}"
         pr = prs.get(branch)
         if pr is not None:
+            if pr.is_cross_repository:
+                raise RehydrationError(
+                    f"PR #{pr.number} uses a fork head; changeset branches must belong "
+                    "to the selected repository."
+                )
             if pr.head_sha != head:
                 raise RehydrationError(
                     f"PR #{pr.number} head {pr.head_sha} disagrees with branch {branch} head {head}."
                 )
-            if pr.base_branch != expected_base:
+            allowed_bases = {predecessor_base}
+            if prior_prs_merged:
+                allowed_bases.add(base_branch)
+            if pr.base_branch not in allowed_bases:
                 raise RehydrationError(
-                    f"PR #{pr.number} base {pr.base_branch!r} conflicts with expected "
-                    f"base {expected_base!r} for changeset {index}."
+                    f"PR #{pr.number} base {pr.base_branch!r} conflicts with allowed "
+                    f"base(s) {', '.join(repr(item) for item in sorted(allowed_bases))} "
+                    f"for changeset {index}."
                 )
             try:
                 pr_metadata = parse_pr_metadata(pr.body)
@@ -232,10 +267,13 @@ def rehydrate_chain(
                 metadata=metadata,
                 branch=branch,
                 head=head,
-                base=expected_base,
+                base=pr.base_branch if pr else predecessor_base,
                 pr_number=pr.number if pr else None,
                 pr_state=pr.state.upper() if pr else None,
             )
+        )
+        prior_prs_merged = (
+            prior_prs_merged and pr is not None and pr.state.upper() == "MERGED"
         )
 
     assert source_sha is not None

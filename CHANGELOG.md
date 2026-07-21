@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Consolidated carve-changesets CLI and live contract
 
+- feat: add stateless changeset merge and propagation
 - refactor: make strict apply use one proof
+  (`c8ca89566562d7d154bfe1a1711140323e3ba9f8`)
 - fix: bind GitHub operations to the selected remote
   (`cfdddb0aeb792fabfb4021173e25738b45329083`)
 - fix: close consolidated carve CLI review gaps

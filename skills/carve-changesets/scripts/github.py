@@ -27,6 +27,11 @@ from metadata import (
 )
 from rehydrate import PullRequestRecord
 
+_PR_JSON_FIELDS = (
+    "number,headRefName,headRefOid,baseRefName,state,body,title,mergeCommit,"
+    "isCrossRepository"
+)
+
 
 def _format_error(command: Sequence[str], error: subprocess.CalledProcessError) -> str:
     stdout = (error.stdout or "").strip()
@@ -308,7 +313,7 @@ def pull_requests_for_source(
             "--limit",
             "100",
             "--json",
-            "number,headRefName,headRefOid,baseRefName,state,body",
+            _PR_JSON_FIELDS,
         )
     )
     if not isinstance(payload, list):
@@ -322,14 +327,121 @@ def pull_requests_for_source(
         suffix = head.removeprefix(prefix)
         if not head.startswith(prefix) or not suffix.isdigit() or int(suffix) < 1:
             continue
-        records.append(
-            PullRequestRecord(
-                number=int(item["number"]),
-                head_branch=head,
-                head_sha=str(item.get("headRefOid") or ""),
-                base_branch=str(item.get("baseRefName") or ""),
-                state=str(item.get("state") or ""),
-                body=str(item.get("body") or ""),
-            )
-        )
+        records.append(_pull_request_record(item, context=f"changeset PR for {head}"))
     return records
+
+
+def _merge_sha(item: Dict) -> str | None:
+    value = item.get("mergeCommit")
+    if not isinstance(value, dict):
+        return None
+    oid = str(value.get("oid") or "").strip()
+    return oid or None
+
+
+def _pull_request_record(item: object, *, context: str) -> PullRequestRecord:
+    """Decode one selected gh PR payload with operation-specific errors."""
+
+    if not isinstance(item, dict):
+        raise CommandError(f"Unexpected GitHub response for {context}.")
+    try:
+        number = int(item["number"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise CommandError(
+            f"GitHub response for {context} has no valid PR number."
+        ) from exc
+    return PullRequestRecord(
+        number=number,
+        head_branch=str(item.get("headRefName") or ""),
+        head_sha=str(item.get("headRefOid") or ""),
+        base_branch=str(item.get("baseRefName") or ""),
+        state=str(item.get("state") or ""),
+        body=str(item.get("body") or ""),
+        title=str(item.get("title") or ""),
+        merge_sha=_merge_sha(item),
+        is_cross_repository=bool(item.get("isCrossRepository", False)),
+    )
+
+
+def pull_request_by_number(number: int, *, remote: str = "origin") -> PullRequestRecord:
+    """Read one exact PR using the same fields as chain discovery."""
+
+    repository = github_repo_for_remote(remote)
+    item = gh_json(
+        (
+            "pr",
+            "view",
+            str(number),
+            "-R",
+            repository,
+            "--json",
+            _PR_JSON_FIELDS,
+        )
+    )
+    record = _pull_request_record(item, context=f"PR #{number}")
+    actual_number = record.number
+    if actual_number != number:
+        raise CommandError(
+            f"GitHub returned PR #{actual_number} while verifying requested PR #{number}."
+        )
+    return record
+
+
+def merge_pull_request(
+    number: int,
+    *,
+    expected_head: str,
+    method: str,
+    remote: str = "origin",
+    dry_run: bool,
+) -> None:
+    """Merge one explicitly numbered PR in the selected remote repository."""
+
+    method_flags = {"merge": "--merge", "squash": "--squash", "rebase": "--rebase"}
+    if method not in method_flags:
+        raise CommandError("Merge method must be 'merge', 'squash', or 'rebase'.")
+    repository = github_repo_for_remote(remote)
+    args = (
+        "pr",
+        "merge",
+        str(number),
+        "-R",
+        repository,
+        method_flags[method],
+        "--match-head-commit",
+        expected_head,
+    )
+    print(f"[STEP] Merging PR #{number} with method={method}")
+    if dry_run:
+        print("[DRY-RUN] Would run:")
+        _print_command(("gh", *args))
+        return
+    ensure_gh_ready(repository)
+    gh_capture(args)
+
+
+def edit_pull_request(
+    number: int,
+    *,
+    remote: str = "origin",
+    base: str | None = None,
+    title: str | None = None,
+    dry_run: bool,
+) -> None:
+    """Edit one explicit PR; never infer a target from the checked-out branch."""
+
+    if base is None and title is None:
+        return
+    repository = github_repo_for_remote(remote)
+    args: list[str] = ["pr", "edit", str(number), "-R", repository]
+    if base is not None:
+        args.extend(("--base", base))
+    if title is not None:
+        args.extend(("--title", title))
+    print(f"[STEP] Updating PR #{number}")
+    if dry_run:
+        print("[DRY-RUN] Would run:")
+        _print_command(("gh", *args))
+        return
+    ensure_gh_ready(repository)
+    gh_capture(tuple(args))
