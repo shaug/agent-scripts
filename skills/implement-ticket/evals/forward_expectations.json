@@ -41,6 +41,11 @@
   },
   {
     "case_id": "authorized-merge-closeout",
+    "forbidden_actions": [
+      "fail_before_mutation",
+      "invoke_ready_to_merge",
+      "perform_no_mutation"
+    ],
     "required_actions": [
       "invoke_merge_when_ready",
       "verify_merge_live",
@@ -51,6 +56,10 @@
   },
   {
     "case_id": "linear-ticket-github-pr",
+    "forbidden_actions": [
+      "invoke_ready_to_merge",
+      "perform_no_mutation"
+    ],
     "required_actions": [
       "preserve_tracker_pr_host_separation",
       "invoke_merge_when_ready",
@@ -75,6 +84,10 @@
   },
   {
     "case_id": "branch-caused-ci-fix",
+    "forbidden_actions": [
+      "make_no_code_mutation",
+      "retry_diagnosed_run_only"
+    ],
     "required_actions": [
       "ticket_scoped_fix",
       "revalidate_commit_push",
@@ -111,6 +124,10 @@
   },
   {
     "case_id": "stale-connector-verdict",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
     "required_actions": [
       "reject_stale_connector_verdict"
     ],
@@ -130,6 +147,9 @@
   },
   {
     "case_id": "relevant-base-drift",
+    "forbidden_actions": [
+      "retain_only_proven_unaffected_evidence"
+    ],
     "required_actions": [
       "invalidate_drift_affected_evidence",
       "revalidate_commit_push",
@@ -141,6 +161,9 @@
   },
   {
     "case_id": "external-head-change",
+    "forbidden_actions": [
+      "invoke_merge_when_ready"
+    ],
     "required_actions": [
       "revalidate_candidate_identity",
       "invalidate_head_bound_evidence",
@@ -164,6 +187,10 @@
   },
   {
     "case_id": "malformed-babysitter-result",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
     "required_actions": [
       "reject_stale_or_malformed_result",
       "reread_live_pr"
@@ -173,6 +200,10 @@
   },
   {
     "case_id": "delegated-mutation-ownership",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "reject_concurrent_mutation"
+    ],
     "required_actions": [
       "transfer_exclusive_mutation_ownership"
     ],
@@ -181,6 +212,10 @@
   },
   {
     "case_id": "resumed-pr-deduplication",
+    "forbidden_actions": [
+      "fail_before_mutation",
+      "perform_no_mutation"
+    ],
     "required_actions": [
       "adopt_verified_canonical_pr",
       "deduplicate_prior_actions"
@@ -190,6 +225,10 @@
   },
   {
     "case_id": "implement-epic-consumes-ticket-results",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
     "required_actions": [
       "consume_ticket_states_unchanged",
       "do_not_invoke_babysit_pr_directly",

@@ -99,6 +99,8 @@ Do not edit or format files, apply the alternative, create repository artifacts,
 commit, push, resolve threads, post reviews, or update tickets. Run only safe
 read-only inspection and validation commands. Runtimes that support tool
 restriction should enforce the `allowed-tools` frontmatter, which excludes
-file-editing tools; the shell remains available only for read-only inspection
-and validation. Preserve supplied pre-review candidate state exactly and report
-unexpected mutation as an integrity failure.
+file-editing tools. The shell remains necessary for validation commands and can
+still mutate files, so prefer a sandboxed or deny-write shell where available;
+the recorded before/after candidate state is the authoritative integrity check.
+Preserve supplied pre-review candidate state exactly and report unexpected
+mutation as an integrity failure.

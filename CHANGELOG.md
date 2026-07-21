@@ -6,6 +6,15 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- fix: close adversarial-review findings — resolve bundled-validator schemas in
+  both layouts and execute every bundled copy in place, scope failed workflow
+  runs to the PR's own checks so push/schedule failures cannot wedge the
+  watcher, emit `resolve_draft_state`/`resolve_merge_conflict` instead of
+  `idle`, complete `forbidden_actions` on all forward expectations with a
+  vocabulary-spam canary, stop backfilling `target_skill` in the Claude
+  executor, reject `--once --watch`, handle `OSError` cleanly, import bundled
+  validators in review-skill tests, and document eval flag pre-classification,
+  the gh 2.37 floor, and state-file durability
 - fix: close independent-review findings — count cancelled checks and failed
   runs/jobs in the watcher's clear predicate, run review-suite tests in CI,
   bundle the dependency-free packet validator into each review skill, make
@@ -14,7 +23,7 @@ summary: Chronological history of repository and skill changes.
   comments, move watcher state into a per-user 0700 directory, add
   forbidden-action forward grading, unify `observed_sequence` tokens, and rename
   `agents/claude.md` to `agents/claude-code.md` to avoid the case-insensitive
-  CLAUDE.md memory-file collision
+  CLAUDE.md memory-file collision (`b5bf81b81a6dd521edcdfc561988ca621a566d39`)
 - fix: make skills self-contained and adapt the suite to Claude runtimes —
   bundle the review-suite contract into each review skill with a
   `just sync-contracts` target and drift test, use skill-root-relative watcher

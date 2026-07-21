@@ -8,6 +8,8 @@ fails when any copy drifts from the canonical file.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -48,6 +50,42 @@ class BundledContractTests(unittest.TestCase):
                         f"{bundled} drifted from {canonical}; "
                         "run `just sync-contracts`",
                     )
+
+    def test_every_bundled_validator_executes_in_its_installed_layout(self):
+        """The bundled validate.py must run from references/review-suite/.
+
+        Byte-identity alone once shipped a copy that resolved its schemas
+        against the canonical directory layout and crashed everywhere else;
+        execute each copy in place against a known-good fixture pair.
+        """
+        fixture = REVIEW_SUITE / "fixtures" / "repository-convention-clean"
+        for skill in BUNDLING_SKILLS:
+            bundled = (
+                REPOSITORY_ROOT
+                / "skills"
+                / skill
+                / "references"
+                / "review-suite"
+                / "validate.py"
+            )
+            with self.subTest(skill=skill):
+                completed = subprocess.run(
+                    [
+                        sys.executable,
+                        str(bundled),
+                        "pair",
+                        str(fixture / "packet.json"),
+                        str(fixture / "expected.json"),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(
+                    0,
+                    completed.returncode,
+                    f"{bundled} failed: {completed.stderr.strip()}",
+                )
 
 
 if __name__ == "__main__":

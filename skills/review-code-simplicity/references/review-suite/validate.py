@@ -10,10 +10,27 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+HERE = Path(__file__).resolve().parent
+
+
+def _schema_file(name: str) -> Path:
+    """Locate a schema in either supported layout.
+
+    Canonical layout: review-suite/scripts/validate.py with schemas under
+    review-suite/contracts/. Bundled layout (installed review skills):
+    references/review-suite/validate.py with the schemas beside it.
+    """
+    for candidate in (HERE / name, HERE.parent / "contracts" / name):
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(
+        f"Cannot locate {name} beside {HERE} or in {HERE.parent / 'contracts'}"
+    )
+
+
 SCHEMAS = {
-    "packet": ROOT / "contracts" / "review-packet.schema.json",
-    "result": ROOT / "contracts" / "review-result.schema.json",
+    "packet": _schema_file("review-packet.schema.json"),
+    "result": _schema_file("review-result.schema.json"),
 }
 
 BLOCKABLE_PACKET_ERROR_PATTERNS = (

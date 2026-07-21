@@ -61,10 +61,13 @@ failures (`--max-transient-failures`, default 5), emitting a `transient_error`
 event with backoff before retrying; it still exits nonzero when the budget is
 exhausted and immediately on identity failures.
 
-Use `--state-file` only when the caller needs a controlled durable location. The
-default state is isolated by repository and PR in the operating system's
-temporary directory. A state file whose stored repository/PR differs from the
-live target fails closed.
+Use `--state-file` when the caller needs a controlled durable location. The
+default state is isolated by repository and PR in a per-user mode-0700 directory
+under the operating system's temporary directory; a reboot or temp-file cleaner
+may reset it, which re-surfaces already-seen feedback (safe) and resets retry
+budgets (permits extra reruns). Pass `--state-file` on a durable path when retry
+budgets must survive reboots. A state file whose stored repository/PR differs
+from the live target fails closed.
 
 All modes share a nonblocking lock on their repository/PR state file, including
 one-shot snapshots, continuous watch, and retry mutation. Do not run a second
@@ -76,8 +79,13 @@ detached watcher.
 The watcher emits:
 
 - exact PR/head/base identity and candidate-change flags;
-- check counts and per-check metadata;
-- workflow failures and direct failed-job log endpoints;
+- check counts (including cancelled checks) and per-check metadata;
+- failed workflow runs and direct failed-job log endpoints, scoped to the runs
+  backing the PR's own checks; failed head-SHA workflows that are not PR checks
+  (push- or schedule-triggered) appear separately under
+  `non_pr_check_failed_runs` and never gate readiness or retries;
+- explicit `resolve_draft_state` and `resolve_merge_conflict` actions for draft
+  and conflicting PRs;
 - all published feedback, new feedback, and unresolved threads;
 - retry count and remaining budget;
 - mergeability/review state; and

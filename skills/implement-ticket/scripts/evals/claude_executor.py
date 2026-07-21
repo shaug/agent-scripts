@@ -144,7 +144,9 @@ def normalize(payload: dict, observed: dict) -> dict:
     if not isinstance(actions, list):
         actions = []
     return {
-        "target_skill": observed.get("target_skill") or payload["target_skill"],
+        # Report exactly what the model claimed; backfilling from the payload
+        # would make the grader's target_skill check vacuous.
+        "target_skill": observed.get("target_skill"),
         "terminal_state": observed.get("terminal_state"),
         "actions": sorted(
             {str(action) for action in actions if str(action) in ACTION_VOCABULARY}

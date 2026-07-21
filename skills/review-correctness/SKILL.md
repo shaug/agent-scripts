@@ -112,7 +112,9 @@ lens `correctness`.
 Do not edit or format files, create repository artifacts, commit, push, resolve
 threads, post reviews, or update tickets. Run only safe read-only inspection and
 validation commands. Runtimes that support tool restriction should enforce the
-`allowed-tools` frontmatter, which excludes file-editing tools; the shell
-remains available only for read-only inspection and validation. When the caller
-supplies pre-review candidate state, preserve it exactly and report any
-unexpected mutation as an integrity failure.
+`allowed-tools` frontmatter, which excludes file-editing tools. The shell
+remains necessary for validation commands and can still mutate files, so prefer
+a sandboxed or deny-write shell where available; the recorded before/after
+candidate state is the authoritative integrity check. When the caller supplies
+pre-review candidate state, preserve it exactly and report any unexpected
+mutation as an integrity failure.

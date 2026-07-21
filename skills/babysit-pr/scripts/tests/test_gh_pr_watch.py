@@ -276,6 +276,10 @@ class ParseArgsTests(unittest.TestCase):
         self.assertTrue(args.retry_failed_now)
         self.assertEqual([99], args.eligible_run_id)
 
+    def test_once_and_watch_conflict(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--once", "--watch")
+
 
 class PaginationAndThreadTests(unittest.TestCase):
     def test_check_json_accepts_gh_failure_and_pending_exit_codes(self):
@@ -541,6 +545,58 @@ class RecommendationTests(unittest.TestCase):
         )
         self.assertNotIn("verify_external_gates", actions)
         self.assertIn("diagnose_ci_failure", actions)
+
+    def test_non_pr_check_run_failures_do_not_block_or_wedge(self):
+        failed_runs = [
+            {"run_id": 99, "workflow_name": "ci"},
+            {"run_id": 500, "workflow_name": "nightly-push"},
+        ]
+        pr_runs, other_runs = WATCHER.partition_runs_by_pr_checks(failed_runs, {99})
+        self.assertEqual([failed_runs[0]], pr_runs)
+        self.assertEqual([failed_runs[1]], other_runs)
+        # A failed push/schedule workflow on the head SHA must not block a
+        # clear candidate or produce an unretryable retry recommendation.
+        self.assertTrue(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(), sample_checks(), [], [], [], []
+            )
+        )
+        actions = WATCHER.recommend_actions(
+            sample_pr(), sample_checks(), [], [], [], [], False, 0, 3
+        )
+        self.assertEqual(["verify_external_gates"], actions)
+
+    def test_draft_pr_recommends_draft_resolution_not_idle(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(draft=True),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("resolve_draft_state", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
+
+    def test_conflicting_pr_recommends_conflict_resolution_not_idle(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(mergeable="CONFLICTING", merge_state_status="DIRTY"),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("resolve_merge_conflict", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
 
     def test_failed_runs_block_clear_even_with_green_check_buckets(self):
         self.assertFalse(

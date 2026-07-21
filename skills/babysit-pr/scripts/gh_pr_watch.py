@@ -166,6 +166,8 @@ def parse_args():
         )
     if args.watch and args.retry_failed_now:
         parser.error("--watch cannot be combined with --retry-failed-now")
+    if args.once and args.watch:
+        parser.error("--once cannot be combined with --watch")
     if args.eligible_run_id and not args.retry_failed_now:
         parser.error("--eligible-run-id requires --retry-failed-now")
     if args.retry_failed_now and not args.eligible_run_id:
@@ -534,6 +536,18 @@ def failed_runs_from_workflow_runs(runs, head_sha):
         )
     )
     return failed_runs
+
+
+def partition_runs_by_pr_checks(failed_runs, pr_check_run_ids):
+    """Split failed runs into PR-check-backed runs and other head workflows."""
+    pr_check_runs = []
+    other_runs = []
+    for run in failed_runs:
+        if run.get("run_id") in pr_check_run_ids:
+            pr_check_runs.append(run)
+        else:
+            other_runs.append(run)
+    return pr_check_runs, other_runs
 
 
 def get_jobs_for_run(repo, run_id):
@@ -1058,6 +1072,16 @@ def recommend_actions(
     if candidate_changed:
         actions.append("rebuild_candidate_evidence")
 
+    # Draft and conflicting states are the ones that most need controller
+    # action; never let them degenerate to a bare `idle`.
+    if pr.get("draft"):
+        actions.append("resolve_draft_state")
+    if (
+        str(pr.get("mergeable") or "") == "CONFLICTING"
+        or str(pr.get("merge_state_status") or "") == "DIRTY"
+    ):
+        actions.append("resolve_merge_conflict")
+
     if new_review_items or unresolved_threads:
         actions.append("process_review_feedback")
 
@@ -1152,11 +1176,25 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
     # After resolving `--pr auto`, reuse the concrete PR number.
     checks = get_pr_checks(str(pr["number"]), repo=pr["repo"])
     checks_summary = summarize_checks(checks)
+    pr_check_run_ids = workflow_run_ids_from_checks(checks)
     workflow_runs = get_workflow_runs_for_sha(pr["repo"], pr["head_sha"])
-    failed_runs = failed_runs_from_workflow_runs(workflow_runs, pr["head_sha"])
+    all_failed_runs = failed_runs_from_workflow_runs(workflow_runs, pr["head_sha"])
+    # Only workflow runs backing the PR's own checks gate readiness, diagnosis,
+    # and retries. Other failed head-SHA workflows (push- or schedule-triggered)
+    # are reported informationally so they can never wedge the watcher in an
+    # unretryable, unclearable state.
+    failed_runs, non_pr_check_failed_runs = partition_runs_by_pr_checks(
+        all_failed_runs,
+        pr_check_run_ids,
+    )
+    pr_check_workflow_runs = [
+        run
+        for run in workflow_runs
+        if isinstance(run, dict) and run.get("id") in pr_check_run_ids
+    ]
     failed_jobs = failed_jobs_from_workflow_runs(
         pr["repo"],
-        workflow_runs,
+        pr_check_workflow_runs,
         pr["head_sha"],
     )
 
@@ -1185,6 +1223,7 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
         "pr": pr,
         "checks": checks_summary,
         "failed_runs": failed_runs,
+        "non_pr_check_failed_runs": non_pr_check_failed_runs,
         "failed_jobs": failed_jobs,
         "review_items": all_review_items,
         "new_review_items": new_review_items,
@@ -1435,7 +1474,7 @@ def main():
         snapshot["state_file"] = str(state_path)
         print_json(snapshot)
         return 0
-    except (GhCommandError, RuntimeError, ValueError) as err:
+    except (GhCommandError, OSError, RuntimeError, ValueError) as err:
         sys.stderr.write(f"PR watcher error: {err}\n")
         return 1
     except KeyboardInterrupt:

@@ -115,7 +115,7 @@ lint-skills:
   AGENTSKILLS_DIR=".tools/agentskills"; \
   SKILLS_REF_BIN=""; \
   install_skills_ref() { \
-    echo "Installing skills-ref into .venv from local cache..."; \
+    echo "Installing skills-ref: recreating .venv and cloning agentskills from GitHub (network required)..."; \
     rm -rf .venv; \
     python -m venv .venv; \
     mkdir -p .tools; \

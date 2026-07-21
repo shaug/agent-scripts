@@ -104,6 +104,7 @@ Do not edit or format reviewed files, apply fixes, create candidate artifacts,
 commit, push, post reviews, resolve threads, approve, merge, or update tickets.
 Run only safe read-only inspection and validation commands. Runtimes that
 support tool restriction should enforce the `allowed-tools` frontmatter, which
-excludes file-editing tools; the shell remains available only for read-only
-inspection and validation. Verify that the candidate state is unchanged before
-returning.
+excludes file-editing tools. The shell remains necessary for validation commands
+and can still mutate files, so prefer a sandboxed or deny-write shell where
+available; the recorded before/after candidate state is the authoritative
+integrity check. Verify that the candidate state is unchanged before returning.

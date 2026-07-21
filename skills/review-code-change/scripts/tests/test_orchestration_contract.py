@@ -8,8 +8,11 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY_ROOT = SKILL_ROOT.parents[1]
 REVIEW_SUITE = REPOSITORY_ROOT / "review-suite"
+# Import the skill's own bundled validator so these tests exercise the
+# installed layout, not only the canonical monorepo copy.
 SPEC = importlib.util.spec_from_file_location(
-    "review_contract_validator", REVIEW_SUITE / "scripts" / "validate.py"
+    "review_contract_validator",
+    SKILL_ROOT / "references" / "review-suite" / "validate.py",
 )
 assert SPEC and SPEC.loader
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -57,6 +60,7 @@ class OrchestrationContractTests(unittest.TestCase):
             "CONTRACT.md",
             "review-packet.schema.json",
             "review-result.schema.json",
+            "validate.py",
         ):
             self.assertTrue((bundle / name).is_file(), name)
 

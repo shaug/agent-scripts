@@ -90,8 +90,11 @@ just eval-prepare-changesets
 just eval-implement-ticket
 ```
 
-The ticket-composition evaluator starts a fresh process for each raw-artifact
-case, with fixture identity and grader expectations withheld. Its bundled
+The ticket-composition evaluator starts a fresh process for each case, with
+fixture identity and grader expectations withheld. Case artifacts carry
+pre-classified scenario flags (for example, a CI failure already labeled
+branch-caused or infrastructure), so the harness grades obligation mapping and
+terminal-state selection — not evidence classification itself. Its bundled
 reference executor is a deterministic simulation of a compliant runtime, not a
 model. To forward-evaluate a real agent runtime, pass its stdin/stdout JSON
 adapter through `scripts/evals/run_forward.py --executor` and retain captured
@@ -105,7 +108,8 @@ just eval-implement-ticket-claude
 
 - Python 3.11+
 - Git
-- GitHub CLI (`gh`) for PR workflows
+- GitHub CLI (`gh`) 2.37 or newer for PR workflows (the babysit-pr watcher
+  requires `gh pr checks --json`)
 - `skills-ref` on `PATH` for skill validation (optional but recommended)
 
 ## Notes
