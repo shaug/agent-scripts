@@ -1,0 +1,146 @@
+# GitHub watcher contract
+
+Use GitHub as the PR host. Resolve tracker state separately when another system
+owns the ticket.
+
+## Contents
+
+- [Preflight](#preflight)
+- [Watcher commands](#watcher-commands)
+- [State and candidate changes](#state-and-candidate-changes)
+- [Feedback surfaces](#feedback-surfaces)
+- [Repository-specific connectors](#repository-specific-connectors)
+- [Terminal verification](#terminal-verification)
+
+## Preflight
+
+- Confirm `gh` authentication and repository access.
+- Resolve the PR from an explicit number/URL or an unambiguous current branch.
+- Capture repository, number, URL, state, head repository/branch/SHA, base
+  branch/SHA, mergeability, merge-state status, and review decision.
+- Inspect open/merged PRs and plausible branches for a superseding candidate.
+- Map the exact local branch/worktree before any mutation.
+- Read repository policy for required checks, human review, connector review,
+  thread handling, merge method, and communication authority.
+- Record documented absence of a category; do not infer it from empty output.
+
+When a tracker ticket is supplied, use its goal and scope but leave status,
+dependency, and close mutations to the caller.
+
+## Watcher commands
+
+Use a one-shot snapshot for diagnosis:
+
+```bash
+python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+  --repo OWNER/REPO --pr NUMBER --once
+```
+
+Use JSONL monitoring for a persistent task:
+
+```bash
+python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+  --repo OWNER/REPO --pr NUMBER \
+  --completion-policy ready_to_merge --watch
+```
+
+Use `--state-file` only when the caller needs a controlled durable location. The
+default state is isolated by repository and PR in the operating system's
+temporary directory. A state file whose stored repository/PR differs from the
+live target fails closed.
+
+Continuous watch acquires a nonblocking lock. Do not run a second watcher for
+the same state. The controlling task must consume output and terminate the
+process when interrupted; never leave a detached watcher.
+
+The watcher emits:
+
+- exact PR/head/base identity and candidate-change flags;
+- check counts and per-check metadata;
+- workflow failures and direct failed-job log endpoints;
+- all published feedback, new feedback, and unresolved threads;
+- retry count and remaining budget;
+- mergeability/review state; and
+- ordered recommended actions.
+
+Recommendations never establish repository-specific review, connector, or
+local-validation success.
+
+## State and candidate changes
+
+Persist only operational deduplication and retry state. Write state atomically.
+Never store credentials or raw job logs.
+
+On every snapshot:
+
+- compare live head and base with the last observed identities;
+- emit head/base change flags;
+- preserve retry budgets per head SHA;
+- preserve seen feedback IDs while continuing to emit the complete published
+  feedback and every unresolved thread; and
+- remove pending review IDs from seen state so feedback surfaces after
+  publication.
+
+A head change invalidates head-bound evidence even when GitHub reports green
+checks. A base-only change requires the risk-based proof in the main skill.
+
+Use REST pagination for comments, reviews, workflow runs, and jobs. Use GraphQL
+pagination for review threads because flat PR output does not reliably provide
+resolution state. Treat API errors, partial data, and unknown mergeability as
+unknown rather than clean.
+
+## Feedback surfaces
+
+Read all of:
+
+- PR conversation comments;
+- formal reviews, including their reviewed commit IDs;
+- inline review comments and parent review state;
+- resolved/unresolved review threads; and
+- repository-documented reactions or connector signals when applicable.
+
+Ignore reviews in `PENDING` state and inline comments belonging to them. Do not
+add pending IDs to seen state. Emit all published authors rather than silently
+filtering outsiders or unfamiliar bots; the controller verifies relevance and
+repository trust policy.
+
+Do not accept review cleanliness merely because no new items appeared. Use the
+complete feedback and thread collections, and require zero undispositioned
+actionable items.
+
+## Repository-specific connectors
+
+Before polling a required connector, discover and record:
+
+- connector identity;
+- automatic or request-driven initiation;
+- exact initiation action and per-push policy;
+- run-start evidence;
+- accepted clean signal;
+- candidate binding;
+- polling window/interval; and
+- base-drift retention policy.
+
+Fail closed when a required contract cannot be discovered. Accept cleanliness
+only from a current-head formal review, a result naming the head, a configured
+reaction on a request/result naming the head, or an equivalent documented
+signal. Require zero unresolved connector-authored threads.
+
+After a head change, reinitiate or await a new signal according to repository
+policy. Do not infer current approval from timing, comment order, CI success, or
+a generic bot message.
+
+## Terminal verification
+
+For `ready_to_merge`, reread head/base, checks, reviews, comments, reactions,
+threads, connector state, and mergeability immediately before returning.
+
+For `merge_when_ready`, repeat that read immediately before merge, use the
+repository-approved method, and then verify:
+
+- PR state is merged;
+- merged head/commit identity is recorded; and
+- the expected candidate is represented by the remote merge.
+
+Do not transition a tracker ticket, verify application behavior on mainline, or
+delete branches/worktrees. Return those caller-owned actions explicitly.

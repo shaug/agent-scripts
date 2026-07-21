@@ -4,6 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-20 — Repository-owned PR babysitting
+
+- feat: add the portable `babysit-pr` skill with candidate-bound CI, feedback,
+  review, and merge gates
+
 ## 2026-07-20 — Portable ticket and epic execution
 
 - feat: make ticket and epic execution runtime agnostic
