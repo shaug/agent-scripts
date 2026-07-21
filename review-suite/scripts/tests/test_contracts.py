@@ -82,6 +82,15 @@ class PacketValidationTests(unittest.TestCase):
         self.packet["validation"][0]["status"] = "skipped"
         self.assertTrue(VALIDATOR.validate_packet(self.packet))
 
+    def test_boolean_const_rejects_numeric_one(self):
+        # Python's `1 == True` must not let numeric values satisfy
+        # `"const": true`.
+        self.packet["candidate"]["diff"]["complete"] = 1
+        self.assertIn(
+            "$.candidate.diff.complete: expected constant True",
+            VALIDATOR.validate_packet(self.packet),
+        )
+
     def test_unavailable_validation_requires_reason(self):
         self.packet["validation"][0] = {
             "name": "tests",

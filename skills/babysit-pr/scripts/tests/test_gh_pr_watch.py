@@ -280,6 +280,10 @@ class ParseArgsTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.parse("--pr", "123", "--once", "--watch")
 
+    def test_repo_override_requires_explicit_pr(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--repo", "example/project", "--once")
+
     def test_once_and_retry_conflict(self):
         with self.assertRaises(SystemExit):
             self.parse(
@@ -562,9 +566,10 @@ class RecommendationTests(unittest.TestCase):
             {"link": "https://github.com/e/p/actions/runs/1"},
             {"link": "https://github.com/e/p/actions/runs/2/job/9"},
             {"link": "https://github.com/e/p/actions/runs/3?check_suite_focus=true"},
-            {"link": "https://external-ci.example.test/build/4"},
+            {"link": "https://github.com/e/p/actions/runs/4#summary"},
+            {"link": "https://external-ci.example.test/build/5"},
         ]
-        self.assertEqual({1, 2, 3}, WATCHER.workflow_run_ids_from_checks(checks))
+        self.assertEqual({1, 2, 3, 4}, WATCHER.workflow_run_ids_from_checks(checks))
 
     def test_non_pr_check_run_failures_do_not_block_or_wedge(self):
         failed_runs = [
@@ -585,6 +590,25 @@ class RecommendationTests(unittest.TestCase):
             sample_pr(), sample_checks(), [], [], [], [], False, 0, 3
         )
         self.assertEqual(["verify_external_gates"], actions)
+
+    def test_pr_check_failed_run_alone_still_recommends_diagnosis(self):
+        # Diagnosis must mirror the clear predicate: a PR-check-backed failed
+        # run with green buckets and no failed jobs is not clear, so it must
+        # never degenerate to `idle`.
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            sample_checks(),
+            [{"run_id": 99}],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("diagnose_ci_failure", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
 
     def test_draft_pr_recommends_draft_resolution_not_idle(self):
         actions = WATCHER.recommend_actions(
@@ -784,6 +808,14 @@ class SnapshotAndStateTests(unittest.TestCase):
         second = WATCHER.default_state_file_for(sample_pr(repo="owner-re/po"))
         third = WATCHER.default_state_file_for(sample_pr(repo="owner/re_po"))
         self.assertEqual(3, len({first, second, third}))
+
+    def test_repo_case_variants_share_one_state_file(self):
+        # GitHub slugs are case-insensitive; `--repo Owner/Repo` and a
+        # URL-derived `owner/repo` must share one state file and one lock.
+        self.assertEqual(
+            WATCHER.default_state_file_for(sample_pr(repo="Example/Project")),
+            WATCHER.default_state_file_for(sample_pr(repo="example/project")),
+        )
 
     def test_failed_jobs_include_direct_log_endpoint(self):
         with mock.patch.object(

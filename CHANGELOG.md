@@ -6,13 +6,19 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- fix: close the final low-severity review findings — mirror the clear predicate
+  in `has_failed_pr_checks` so a PR-check-backed failed run never reads as
+  `idle`, case-normalize repositories before deriving state files and locks,
+  match fragment run links, reject `--repo` without an explicit `--pr`, make
+  boolean schema constants reject numeric one, and document `--poll-seconds` and
+  `--max-flaky-retries`
 - fix: align retry gating and delegation tooling with review round four — accept
   cancelled-only check failures in the retry gate so a recommended retry is
   never refused, grant the review orchestrator the subagent and skill tools its
   Claude adapter requires, reject `--once` with `--retry-failed-now`, match
   query-string run links, add a repo digest to default state filenames, keep
   `diagnose_ci_failure` visible after retry exhaustion, and document zero-check
-  `--stop-when-clear` pairing
+  `--stop-when-clear` pairing (`ddb29d0ce0409554cec61ed54b2c6e7ed6d84c6a`)
 - fix: close adversarial-review findings — resolve bundled-validator schemas in
   both layouts and execute every bundled copy in place, scope failed workflow
   runs to the PR's own checks so push/schedule failures cannot wedge the

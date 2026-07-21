@@ -171,6 +171,8 @@ def parse_args():
         parser.error("--once cannot be combined with --watch")
     if args.once and args.retry_failed_now:
         parser.error("--once cannot be combined with --retry-failed-now")
+    if args.repo and args.pr == "auto":
+        parser.error("--repo requires an explicit --pr number or URL")
     if args.eligible_run_id and not args.retry_failed_now:
         parser.error("--eligible-run-id requires --retry-failed-now")
     if args.retry_failed_now and not args.eligible_run_id:
@@ -386,9 +388,12 @@ def default_state_directory():
 def default_state_file_for(pr):
     # The slug keeps the filename readable; the digest of the exact
     # repository string guarantees distinct repositories can never collide
-    # on one state file (e.g. `a-b/c` vs `a/b-c`).
-    repo_slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", pr["repo"]).strip("-")
-    digest = hashlib.sha256(pr["repo"].encode("utf-8")).hexdigest()[:8]
+    # on one state file (e.g. `a-b/c` vs `a/b-c`). GitHub slugs are
+    # case-insensitive, so normalize case first: `--repo Owner/Repo` and a
+    # URL-derived `owner/repo` must share one state file and one lock.
+    repo = pr["repo"].lower()
+    repo_slug = re.sub(r"[^a-z0-9_.-]+", "-", repo).strip("-")
+    digest = hashlib.sha256(repo.encode("utf-8")).hexdigest()[:8]
     return default_state_directory() / (
         f"agent-babysit-pr-{repo_slug}-{digest}-pr{pr['number']}.json"
     )
@@ -502,9 +507,9 @@ def workflow_run_ids_from_checks(checks):
         if not isinstance(check, dict):
             continue
         # Details links take several shapes: .../runs/123, .../runs/123/job/456,
-        # and the legacy .../runs/123?check_suite_focus=true.
+        # the legacy .../runs/123?check_suite_focus=true, and fragments.
         match = re.search(
-            r"/actions/runs/(\d+)(?:[/?]|$)", str(check.get("link") or "")
+            r"/actions/runs/(\d+)(?:[/?#]|$)", str(check.get("link") or "")
         )
         if match:
             run_ids.add(int(match.group(1)))
@@ -1096,9 +1101,12 @@ def recommend_actions(
     if new_review_items or unresolved_threads:
         actions.append("process_review_feedback")
 
+    # Mirror is_github_candidate_clear exactly: anything that blocks a clear
+    # candidate must also surface a diagnosis recommendation, never `idle`.
     has_failed_pr_checks = (
         checks_summary["failed_count"] > 0
         or int(checks_summary.get("cancelled_count") or 0) > 0
+        or bool(failed_runs)
         or bool(failed_jobs)
     )
     if has_failed_pr_checks:

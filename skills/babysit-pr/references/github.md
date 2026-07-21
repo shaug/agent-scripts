@@ -58,10 +58,11 @@ rejected. On a repository with zero configured checks the candidate is never
 GitHub-clear (the watcher emits `verify_required_check_policy` instead), so pair
 `--stop-when-clear` with `--max-polls` to keep the window bounded.
 
-Watch mode tolerates a bounded number of consecutive transient GitHub CLI
-failures (`--max-transient-failures`, default 5), emitting a `transient_error`
-event with backoff before retrying; it still exits nonzero when the budget is
-exhausted and immediately on identity failures.
+Watch mode polls every `--poll-seconds` (default 30) and tolerates a bounded
+number of consecutive transient GitHub CLI failures (`--max-transient-failures`,
+default 5), emitting a `transient_error` event with backoff before retrying; it
+still exits nonzero when the budget is exhausted and immediately on identity
+failures. The per-head flaky retry budget is `--max-flaky-retries` (default 3).
 
 Use `--state-file` when the caller needs a controlled durable location. The
 default state is isolated by repository and PR in a per-user mode-0700 directory

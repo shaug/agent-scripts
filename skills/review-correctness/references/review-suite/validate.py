@@ -91,8 +91,11 @@ def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[s
     if expected_type and not _is_type(value, expected_type):
         return [f"{at}: expected {expected_type}"]
 
-    if "const" in schema and value != schema["const"]:
-        errors.append(f"{at}: expected constant {schema['const']!r}")
+    if "const" in schema:
+        const = schema["const"]
+        # `1 == True` in Python; a boolean constant must reject numeric 1/1.0.
+        if value != const or isinstance(const, bool) != isinstance(value, bool):
+            errors.append(f"{at}: expected constant {const!r}")
     if "enum" in schema and value not in schema["enum"]:
         errors.append(f"{at}: expected one of {schema['enum']!r}")
     if isinstance(value, str):
