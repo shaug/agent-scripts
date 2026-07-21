@@ -63,6 +63,7 @@ just test-review-suite
 just test-babysit-pr
 just test-implement-ticket
 just test-implement-epic
+just eval-implement-ticket
 ```
 
 Validate a review packet and result together:
@@ -75,7 +76,15 @@ Run deterministic local evals without an agent runtime:
 
 ```bash
 just eval-prepare-changesets
+just eval-implement-ticket
 ```
+
+The ticket-composition evaluator starts a fresh process for each raw-artifact
+case, with fixture identity and grader expectations withheld. Its bundled
+reference executor validates the portable skill contract deterministically. To
+forward-evaluate another compatible agent runtime, pass its stdin/stdout JSON
+adapter through `scripts/evals/run_forward.py --executor` and retain captured
+observations with `--output-dir`.
 
 ## Prerequisites
 

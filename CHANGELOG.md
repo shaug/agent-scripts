@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Composed ticket and PR execution
 
+- fix: execute result-blind forward evaluations in fresh contexts
 - feat: delegate the `implement-ticket` PR lifecycle to `babysit-pr`
+  (`d5838d49587ab34a00973441a870cd525cfcd773`)
 
 ## 2026-07-20 — Repository-owned PR babysitting
 

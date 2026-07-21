@@ -262,18 +262,6 @@ class ImplementTicketContractTests(unittest.TestCase):
             "missing-review-code-change",
             "missing-isolation-capability",
             "missing-asynchronous-wait",
-            "missing-babysit-pr",
-            "published-feedback-postfix-rereview",
-            "branch-ci-postfix-rereview",
-            "flaky-infrastructure-no-mutation",
-            "unauthorized-human-response",
-            "stale-connector-verdict",
-            "relevant-base-drift-reset",
-            "external-head-change",
-            "closed-without-merge",
-            "malformed-babysitter-result",
-            "delegated-mutation-ownership",
-            "resumed-pr-deduplicates",
         }
         self.assertEqual(required, set(self.cases))
         self.assertEqual(required, set(self.results))
@@ -302,7 +290,6 @@ class ImplementTicketContractTests(unittest.TestCase):
         )
         for case_id in (
             "missing-review-code-change",
-            "missing-babysit-pr",
             "missing-isolation-capability",
             "missing-asynchronous-wait",
         ):
@@ -310,12 +297,6 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn(
             "do not merge",
             self.results["clean-local-review-remote-pending"]["required_actions"],
-        )
-        self.assertEqual(
-            "blocked", self.results["closed-without-merge"]["terminal_state"]
-        )
-        self.assertEqual(
-            "blocked", self.results["malformed-babysitter-result"]["terminal_state"]
         )
 
     def test_ui_metadata_matches_skill(self):
