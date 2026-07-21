@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Carve-changesets operating contract
 
+- fix: clarify published terminal evidence
 - docs: define the carve-changesets operating contract
+  (`77865c25190e7205142318229f17c1d3f18e1fef`)
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 

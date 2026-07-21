@@ -387,7 +387,11 @@ Requires:
 
 Requires:
 
-- all `chain_ready` evidence for the published candidate;
+- exact source and base commit identities;
+- every changeset materialized with required commit trailers and verified
+  predecessor ancestry;
+- approved per-changeset validation and repository-owned review evidence;
+- whole-chain equivalence evidence against the immutable source;
 - exact remote head and predecessor base identity for every changeset PR;
 - one open PR per changeset with current metadata;
 - every applicable non-merge gate required at the requested boundary; and
