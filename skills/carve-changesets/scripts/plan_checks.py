@@ -22,8 +22,6 @@ from common import (
 )
 from patch_apply import (
     build_diff,
-    check_patch_file,
-    check_patch_text,
     parse_hunk_selectors,
     select_hunks_for_changeset,
 )
@@ -252,32 +250,12 @@ def strict_apply_check(plan: Dict) -> None:
     temp_branch = unique_temp_branch("pcs-temp-strict-check")
     print(f"[INFO] Creating temporary strict-check branch: {temp_branch}")
 
-    diff_files = build_diff(base, source)
-
     with checkout_restore() as original:
         try:
             git("checkout", "-B", temp_branch, base)
             source_sha = git("rev-parse", source).stdout.strip()
             for idx, cs in enumerate(changesets, start=1):
                 print(f"[STEP] Strict-apply changeset {idx}")
-                mode = str(cs.get("mode", "paths")).strip() or "paths"
-                if mode == "patch":
-                    patch_file = cs.get("patch_file", "")
-                    check_patch_file(str(patch_file), label=f"Changeset {idx}")
-                elif mode == "hunks":
-                    selectors = cs.get("hunk_selectors", [])
-                    parsed = parse_hunk_selectors(
-                        selectors, changeset_label=f"Changeset {idx}"
-                    )
-                    selected = select_hunks_for_changeset(
-                        diff_files,
-                        parsed,
-                        include_paths=cs.get("include_paths", []),
-                        exclude_paths=cs.get("exclude_paths", []),
-                        allow_partial_files=bool(cs.get("allow_partial_files", True)),
-                        changeset_label=f"Changeset {idx}",
-                    )
-                    check_patch_text(selected.text, label=f"Changeset {idx}")
                 apply_changeset(
                     base_branch=base,
                     source_branch=source,

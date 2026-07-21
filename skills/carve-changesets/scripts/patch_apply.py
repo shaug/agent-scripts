@@ -387,33 +387,6 @@ def apply_patch_text(patch_text: str, *, label: str) -> None:
         patch_path.unlink(missing_ok=True)
 
 
-def check_patch_text(patch_text: str, *, label: str) -> None:
-    if not patch_text.strip():
-        raise CommandError(f"{label}: patch is empty.")
-
-    with tempfile.NamedTemporaryFile("w", delete=False, prefix="pcs-patch-") as handle:
-        handle.write(patch_text)
-        patch_path = Path(handle.name)
-
-    try:
-        result = git(
-            "apply",
-            "--check",
-            "--3way",
-            "--whitespace=nowarn",
-            str(patch_path),
-            check=False,
-        )
-        if result.returncode != 0:
-            detail = (result.stderr or result.stdout or "").strip()
-            raise CommandError(
-                f"{label}: git apply --check failed.\n"
-                f"{detail or 'Patch did not apply cleanly.'}"
-            )
-    finally:
-        patch_path.unlink(missing_ok=True)
-
-
 def resolve_patch_path(patch_file: str) -> Path:
     raw = Path(patch_file)
     return raw if raw.is_absolute() else repo_root() / raw
@@ -425,11 +398,3 @@ def apply_patch_file(patch_file: str, *, label: str) -> None:
         raise CommandError(f"{label}: patch file not found: {patch_path}")
     patch_text = patch_path.read_text()
     apply_patch_text(patch_text, label=label)
-
-
-def check_patch_file(patch_file: str, *, label: str) -> None:
-    patch_path = resolve_patch_path(patch_file)
-    if not patch_path.exists():
-        raise CommandError(f"{label}: patch file not found: {patch_path}")
-    patch_text = patch_path.read_text()
-    check_patch_text(patch_text, label=label)
