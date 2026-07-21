@@ -11,6 +11,9 @@ A personal monorepo for agent skills and supporting scripts.
 
 Current reusable agent skills:
 
+- `skills/babysit-pr` — monitor one existing GitHub pull request through
+  current-head CI, feedback, repository-owned re-review, mergeability, and an
+  explicitly authorized completion policy
 - `skills/implement-ticket` — implement exactly one standalone ticket or named
   epic child through isolated execution, repository-owned review, PR gates, and
   authorized merge and cleanup; this is the canonical owner of generic
@@ -35,7 +38,13 @@ The composed implementation dependency chain is:
 implement-epic
 └── implement-ticket
     └── review-code-change
+
+babysit-pr
+└── review-code-change (after a head change or when current evidence is absent)
 ```
+
+Integrating `babysit-pr` into `implement-ticket` is tracked separately so the
+standalone skill can be reviewed and merged first.
 
 Compatible runtimes may provide named subagents or equivalent isolated
 implementation and review contexts. OpenAI-facing files under `agents/` are
@@ -54,6 +63,7 @@ Run skill-specific tests:
 ```bash
 just test-prepare-changesets
 just test-review-suite
+just test-babysit-pr
 just test-implement-ticket
 just test-implement-epic
 ```

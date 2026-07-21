@@ -4,6 +4,24 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-20 — Repository-owned PR babysitting
+
+- fix: bind each watcher lock to an immutable repository and pull request target
+- fix: validate the locked PR state path before any snapshot read or write
+  (`322a83c6b31d5668e6648df8f0fabe3732c3e74f`)
+- fix: serialize every watcher state mutation through one repository/PR lock
+  (`8c64b05daa9cde6832fb128c7c6786896fb57108`)
+- fix: serialize retry mutation and durably reserve each per-head retry cycle
+  (`4ecdd65767164e7f0f112d4049a856c6e8ea53ed`)
+- fix: scope CI retries to explicitly diagnosed current-PR runs
+  (`7f559ead6a4373bc2f0bd441b5af853d66260753`)
+- fix: fail closed on partial review data and remove inert polling state
+  (`b14dca750337eacd0f34f5b705afbe81591174b7`)
+- fix: hide pending inline review threads until publication
+  (`76ed0f6090f23e7a9c0aae14897ae48948922a37`)
+- feat: add the portable `babysit-pr` skill with candidate-bound CI, feedback,
+  review, and merge gates (`b57bd0f3625d7aba9fe4ba32e2abb3f2c7b0df91`)
+
 ## 2026-07-20 — Portable ticket and epic execution
 
 - feat: make ticket and epic execution runtime agnostic

@@ -28,6 +28,9 @@ test:
 test-review-suite:
   python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'
 
+test-babysit-pr:
+  python3 -m unittest discover -s {{skills_dir}}/babysit-pr/scripts/tests -p 'test_*.py'
+
 test-implement-ticket:
   python3 -m unittest discover -s {{skills_dir}}/implement-ticket/scripts/tests -p 'test_*.py'
 
