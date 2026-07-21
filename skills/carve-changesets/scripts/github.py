@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from typing import Dict, Iterable, List, Sequence
+from urllib.parse import urlparse
 
 from common import (
     CommandError,
@@ -73,8 +75,46 @@ def gh_json(args: Sequence[str], *, allowed_returncodes: Iterable[int] = ()) -> 
         ) from exc
 
 
-def ensure_gh_ready() -> None:
-    gh_capture(("auth", "status"))
+def github_repo_for_remote(remote: str) -> str:
+    """Resolve one selected git remote to an exact gh HOST/OWNER/REPO target."""
+
+    remotes = git("remote").stdout.splitlines()
+    if remote not in remotes:
+        raise CommandError(f"Git remote {remote!r} does not exist.")
+    configured = git("config", "--get-all", f"remote.{remote}.url").stdout.splitlines()
+    urls = [url.strip() for url in configured if url.strip()]
+    if len(urls) != 1:
+        raise CommandError(
+            f"Git remote {remote!r} must have exactly one fetch URL; found {len(urls)}."
+        )
+    raw_url = urls[0]
+    host = ""
+    path = ""
+    if "://" in raw_url:
+        parsed = urlparse(raw_url)
+        host = parsed.hostname or ""
+        path = parsed.path
+    else:
+        scp_match = re.fullmatch(r"(?:[^@/]+@)?([^:/]+):(.+)", raw_url)
+        if scp_match is not None:
+            host, path = scp_match.groups()
+    parts = [part for part in path.strip("/").split("/") if part]
+    if len(parts) != 2 or not host:
+        raise CommandError(
+            f"Git remote {remote!r} URL is not an exact GitHub repository: {raw_url}"
+        )
+    owner, repo = parts
+    repo = repo.removesuffix(".git")
+    if not owner or not repo:
+        raise CommandError(
+            f"Git remote {remote!r} URL is not an exact GitHub repository: {raw_url}"
+        )
+    return f"{host.lower()}/{owner}/{repo}"
+
+
+def ensure_gh_ready(repository: str) -> None:
+    host = repository.split("/", 1)[0]
+    gh_capture(("auth", "status", "--hostname", host))
 
 
 def pr_title_for(feature_title: str, index: int, total: int) -> str:
@@ -177,8 +217,9 @@ def pr_create(
 ) -> None:
     ensure_git_repo()
     ensure_clean_tree()
+    repository = github_repo_for_remote(remote)
     if not dry_run:
-        ensure_gh_ready()
+        ensure_gh_ready(repository)
 
     base = plan["base_branch"]
     source = plan["source_branch"]
@@ -209,6 +250,8 @@ def pr_create(
             args = (
                 "pr",
                 "create",
+                "-R",
+                repository,
                 "--base",
                 pr_base,
                 "--head",
@@ -231,6 +274,8 @@ def pr_create(
                     "pr",
                     "view",
                     head,
+                    "-R",
+                    repository,
                     "--json",
                     "number,url,headRefOid,baseRefName,body",
                 )
@@ -246,13 +291,18 @@ def pr_create(
         print("[OK] Dry-run complete. Re-run with --no-dry-run to execute.")
 
 
-def pull_requests_for_source(source_branch: str) -> list[PullRequestRecord]:
+def pull_requests_for_source(
+    source_branch: str, *, remote: str = "origin"
+) -> list[PullRequestRecord]:
     """Return complete GitHub PR evidence needed by live rehydration."""
 
+    repository = github_repo_for_remote(remote)
     payload = gh_json(
         (
             "pr",
             "list",
+            "-R",
+            repository,
             "--state",
             "all",
             "--limit",

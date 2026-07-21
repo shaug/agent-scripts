@@ -76,8 +76,18 @@ class ScriptIntegrationTests(unittest.TestCase):
                 cwd=repo_dir,
             )
             run([cli, "compare"], cwd=repo_dir)
-            run([cli, "pr-create"], cwd=repo_dir)
             run([cli, "push-chain", "--remote", "origin"], cwd=repo_dir)
+            run(
+                [
+                    "git",
+                    "remote",
+                    "set-url",
+                    "origin",
+                    "git@github.com:example/carve-eval.git",
+                ],
+                cwd=repo_dir,
+            )
+            run([cli, "pr-create"], cwd=repo_dir)
         finally:
             shutil.rmtree(repo_dir)
             if remote_dir is not None:

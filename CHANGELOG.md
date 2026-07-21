@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Consolidated carve-changesets CLI and live contract
 
+- fix: bind GitHub operations to the selected remote
 - fix: close consolidated carve CLI review gaps
+  (`d4b071ff46b7b4f2bf8b256f9071d76325e4d146`)
 - feat: add the consolidated carve-changesets CLI
   (`0d942c50cff2d9472b664e74d423661c9f1693cb`)
 - fix: bind changeset validation to current live refs

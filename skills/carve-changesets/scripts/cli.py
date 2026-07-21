@@ -122,7 +122,7 @@ def cmd_validate(args: argparse.Namespace) -> None:
             pull_requests = (
                 []
                 if args.local_only
-                else pull_requests_for_source(plan["source_branch"])
+                else pull_requests_for_source(plan["source_branch"], remote=args.remote)
             )
             chain = rehydrate_chain(
                 source_branch=plan["source_branch"],
@@ -140,7 +140,11 @@ def cmd_validate(args: argparse.Namespace) -> None:
 
 
 def cmd_status(args: argparse.Namespace) -> None:
-    pull_requests = [] if args.local_only else pull_requests_for_source(args.source)
+    pull_requests = (
+        []
+        if args.local_only
+        else pull_requests_for_source(args.source, remote=args.remote)
+    )
     print(
         status_from_live(
             source_branch=args.source,
@@ -175,7 +179,9 @@ def cmd_validate_chain(args: argparse.Namespace) -> None:
     test_cmd = str(args.test_cmd or plan.get("test_command", "")).strip()
     validate_chain(plan, test_cmd=test_cmd)
     pull_requests = (
-        [] if args.local_only else pull_requests_for_source(plan["source_branch"])
+        []
+        if args.local_only
+        else pull_requests_for_source(plan["source_branch"], remote=args.remote)
     )
     chain = rehydrate_chain(
         source_branch=plan["source_branch"],
