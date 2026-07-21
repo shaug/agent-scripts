@@ -7,6 +7,7 @@ under Apache License 2.0. See ../LICENSE.apache-2.0 and
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -69,10 +70,44 @@ def parse_args():
             "trigger flaky reruns."
         )
     )
-    parser.add_argument("--pr", default="auto", help="auto, PR number, or PR URL")
+    parser.add_argument(
+        "--pr",
+        default="auto",
+        help=(
+            "PR number or PR URL. `auto` resolves from the current branch; "
+            "prefer an explicit number or URL in multi-PR repositories."
+        ),
+    )
     parser.add_argument("--repo", help="Optional OWNER/REPO override")
     parser.add_argument(
         "--poll-seconds", type=int, default=30, help="Watch poll interval"
+    )
+    parser.add_argument(
+        "--max-transient-failures",
+        type=int,
+        default=5,
+        help=(
+            "Consecutive transient GitHub CLI failures tolerated in --watch "
+            "mode before exiting nonzero"
+        ),
+    )
+    parser.add_argument(
+        "--max-polls",
+        type=int,
+        default=0,
+        help=(
+            "Exit --watch after this many successful snapshots (0 = unlimited). "
+            "Use for bounded foreground execution windows."
+        ),
+    )
+    parser.add_argument(
+        "--stop-when-clear",
+        action="store_true",
+        help=(
+            "Exit --watch once GitHub-native gates are clear "
+            "(the `verify_external_gates` action). The controller must still "
+            "verify repository-specific gates and feedback disposition."
+        ),
     )
     parser.add_argument(
         "--max-flaky-retries",
@@ -84,8 +119,12 @@ def parse_args():
     parser.add_argument(
         "--completion-policy",
         choices=sorted(COMPLETION_POLICIES),
-        default="watch_until_closed",
-        help="Controller-selected terminal policy (reported but not enforced alone)",
+        default=None,
+        help=(
+            "Controller-selected terminal policy (reported but not enforced "
+            "alone). Defaults to watch_until_closed, or ready_to_merge when "
+            "--stop-when-clear is given."
+        ),
     )
     parser.add_argument(
         "--once", action="store_true", help="Emit one snapshot and exit"
@@ -111,8 +150,29 @@ def parse_args():
         parser.error("--poll-seconds must be > 0")
     if args.max_flaky_retries < 0:
         parser.error("--max-flaky-retries must be >= 0")
+    if args.max_transient_failures < 0:
+        parser.error("--max-transient-failures must be >= 0")
+    if args.max_polls < 0:
+        parser.error("--max-polls must be >= 0")
+    if (args.max_polls or args.stop_when_clear) and not args.watch:
+        parser.error("--max-polls and --stop-when-clear require --watch")
+    if args.stop_when_clear and args.completion_policy == "watch_until_closed":
+        parser.error(
+            "--stop-when-clear conflicts with an explicit watch_until_closed; "
+            "a ready snapshot is progress, not terminal, under that policy"
+        )
+    if args.completion_policy is None:
+        args.completion_policy = (
+            "ready_to_merge" if args.stop_when_clear else "watch_until_closed"
+        )
     if args.watch and args.retry_failed_now:
         parser.error("--watch cannot be combined with --retry-failed-now")
+    if args.once and args.watch:
+        parser.error("--once cannot be combined with --watch")
+    if args.once and args.retry_failed_now:
+        parser.error("--once cannot be combined with --retry-failed-now")
+    if args.repo and args.pr == "auto":
+        parser.error("--repo requires an explicit --pr number or URL")
     if args.eligible_run_id and not args.retry_failed_now:
         parser.error("--eligible-run-id requires --retry-failed-now")
     if args.retry_failed_now and not args.eligible_run_id:
@@ -133,7 +193,8 @@ def _format_gh_error(cmd, err):
     return "\n".join(parts)
 
 
-def gh_text(args, repo=None, allowed_returncodes=()):
+def gh_capture(args, repo=None, allowed_returncodes=()):
+    """Run gh and return (stdout, stderr), tolerating allowed exit codes."""
     cmd = ["gh"]
     # `gh api` does not accept `-R/--repo` on all gh versions. The watcher's
     # API calls use explicit endpoints (e.g. repos/{owner}/{repo}/...), so the
@@ -147,9 +208,14 @@ def gh_text(args, repo=None, allowed_returncodes=()):
         raise GhCommandError("`gh` command not found") from err
     except subprocess.CalledProcessError as err:
         if err.returncode in allowed_returncodes:
-            return err.stdout or ""
+            return err.stdout or "", err.stderr or ""
         raise GhCommandError(_format_gh_error(cmd, err)) from err
-    return proc.stdout
+    return proc.stdout, proc.stderr or ""
+
+
+def gh_text(args, repo=None, allowed_returncodes=()):
+    stdout, _ = gh_capture(args, repo=repo, allowed_returncodes=allowed_returncodes)
+    return stdout
 
 
 def gh_json(args, repo=None, allowed_returncodes=()):
@@ -304,10 +370,32 @@ def save_state(path, state):
         raise
 
 
+def default_state_directory():
+    """Per-user, mode-0700 state directory under the system temp directory.
+
+    State content is trusted (seen-feedback IDs, retry budgets), so on shared
+    multi-user hosts it must not live at a predictable world-writable path.
+    chmod fails closed when another user pre-created the directory.
+    """
+    getuid = getattr(os, "getuid", None)
+    owner = str(getuid()) if getuid else "user"
+    directory = Path(tempfile.gettempdir()) / f"agent-babysit-pr-{owner}"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    os.chmod(directory, 0o700)
+    return directory
+
+
 def default_state_file_for(pr):
-    repo_slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", pr["repo"]).strip("-")
-    return Path(tempfile.gettempdir()) / (
-        f"agent-babysit-pr-{repo_slug}-pr{pr['number']}.json"
+    # The slug keeps the filename readable; the digest of the exact
+    # repository string guarantees distinct repositories can never collide
+    # on one state file (e.g. `a-b/c` vs `a/b-c`). GitHub slugs are
+    # case-insensitive, so normalize case first: `--repo Owner/Repo` and a
+    # URL-derived `owner/repo` must share one state file and one lock.
+    repo = pr["repo"].lower()
+    repo_slug = re.sub(r"[^a-z0-9_.-]+", "-", repo).strip("-")
+    digest = hashlib.sha256(repo.encode("utf-8")).hexdigest()[:8]
+    return default_state_directory() / (
+        f"agent-babysit-pr-{repo_slug}-{digest}-pr{pr['number']}.json"
     )
 
 
@@ -321,7 +409,9 @@ def validate_state_target(state, pr, state_path):
         number_matches = int(stored_number) == int(pr["number"])
     except (TypeError, ValueError):
         number_matches = False
-    if stored_repo != pr["repo"] or not number_matches:
+    # GitHub slugs are case-insensitive; match the normalization used by
+    # default_state_file_for so mixed-case invocations share one state file.
+    if stored_repo.lower() != pr["repo"].lower() or not number_matches:
         raise RuntimeError(
             "State file target does not match live PR: "
             f"{state_path} stores {stored_repo}#{stored_number}, "
@@ -332,7 +422,10 @@ def validate_state_target(state, pr, state_path):
 @contextmanager
 def watcher_lock(state_path):
     if fcntl is None:
-        raise RuntimeError("Continuous watch requires file-lock support")
+        raise RuntimeError(
+            "This watcher requires POSIX file-lock support (fcntl); every "
+            "mode, including --once, shares the repository/PR state lock"
+        )
     lock_path = state_path.with_suffix(state_path.suffix + ".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+", encoding="utf-8") as lock_file:
@@ -354,9 +447,23 @@ def get_pr_checks(pr_spec, repo):
     if parsed["value"] is not None:
         cmd.append(parsed["value"])
     cmd.extend(["--json", checks_fields()])
-    data = gh_json(cmd, repo=repo, allowed_returncodes=(1, 8))
-    if data is None:
-        return []
+    # gh exits 1 when checks failed and 8 when checks are pending, still
+    # emitting JSON. An empty payload on those codes is a real error unless
+    # gh explicitly reports that the PR has no checks; otherwise treating it
+    # as zero checks would mask a failure as a benign policy state.
+    stdout, stderr = gh_capture(cmd, repo=repo, allowed_returncodes=(1, 8))
+    raw = stdout.strip()
+    if not raw:
+        if "no checks reported" in stderr.lower():
+            return []
+        raise GhCommandError(
+            "`gh pr checks` returned no JSON payload; check state is unknown"
+            + (f"\nstderr: {stderr.strip()}" if stderr.strip() else "")
+        )
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise GhCommandError("Failed to parse JSON from `gh pr checks`") from err
     if not isinstance(data, list):
         raise GhCommandError("Unexpected payload from `gh pr checks`")
     return data
@@ -372,6 +479,7 @@ def summarize_checks(checks):
     pending_count = 0
     failed_count = 0
     passed_count = 0
+    cancelled_count = 0
     for check in checks:
         bucket = str(check.get("bucket") or "").lower()
         if is_pending_check(check):
@@ -380,11 +488,16 @@ def summarize_checks(checks):
             failed_count += 1
         if bucket == "pass":
             passed_count += 1
+        # gh buckets cancelled checks as `cancel`, not `fail`; a cancelled
+        # required check must never read as clean.
+        if bucket == "cancel":
+            cancelled_count += 1
     return {
         "total_count": len(checks),
         "pending_count": pending_count,
         "failed_count": failed_count,
         "passed_count": passed_count,
+        "cancelled_count": cancelled_count,
         "all_terminal": pending_count == 0,
         "items": checks,
     }
@@ -395,7 +508,11 @@ def workflow_run_ids_from_checks(checks):
     for check in checks:
         if not isinstance(check, dict):
             continue
-        match = re.search(r"/actions/runs/(\d+)(?:/|$)", str(check.get("link") or ""))
+        # Details links take several shapes: .../runs/123, .../runs/123/job/456,
+        # the legacy .../runs/123?check_suite_focus=true, and fragments.
+        match = re.search(
+            r"/actions/runs/(\d+)(?:[/?#]|$)", str(check.get("link") or "")
+        )
         if match:
             run_ids.add(int(match.group(1)))
     return run_ids
@@ -437,6 +554,18 @@ def failed_runs_from_workflow_runs(runs, head_sha):
         )
     )
     return failed_runs
+
+
+def partition_runs_by_pr_checks(failed_runs, pr_check_run_ids):
+    """Split failed runs into PR-check-backed runs and other head workflows."""
+    pr_check_runs = []
+    other_runs = []
+    for run in failed_runs:
+        if run.get("run_id") in pr_check_run_ids:
+            pr_check_runs.append(run)
+        else:
+            other_runs.append(run)
+    return pr_check_runs, other_runs
 
 
 def get_jobs_for_run(repo, run_id):
@@ -496,13 +625,20 @@ def failed_jobs_from_workflow_runs(repo, runs, head_sha):
     return failed_jobs
 
 
+_authenticated_login_cache = None
+
+
 def get_authenticated_login():
+    global _authenticated_login_cache
+    if _authenticated_login_cache is not None:
+        return _authenticated_login_cache
     data = gh_json(["api", "user"])
     if not isinstance(data, dict) or not data.get("login"):
         raise GhCommandError(
             "Unable to determine authenticated GitHub login from `gh api user`"
         )
-    return str(data["login"])
+    _authenticated_login_cache = str(data["login"])
+    return _authenticated_login_cache
 
 
 def comment_endpoints(repo, pr_number):
@@ -836,7 +972,9 @@ def fetch_review_state(pr, state, authenticated_login=None):
     new_items = []
     for item in all_items:
         item_id = item.get("id")
-        if not item_id or not item.get("author"):
+        # Keep items with a deleted ("ghost") author: they still carry
+        # published feedback and must surface as new exactly once.
+        if not item_id:
             continue
         kind = item["kind"]
         seen = {
@@ -891,9 +1029,26 @@ def unique_actions(actions):
     return out
 
 
+def has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
+    """One shared failed-PR-check predicate.
+
+    recommend_actions, is_github_candidate_clear, and the retry gate must
+    all agree on what counts as a failed PR check; two diverging copies of
+    this test have twice produced recommend/refuse contradictions.
+    """
+    return (
+        checks_summary["failed_count"] > 0
+        or int(checks_summary.get("cancelled_count") or 0) > 0
+        or bool(failed_runs)
+        or bool(failed_jobs)
+    )
+
+
 def is_github_candidate_clear(
     pr,
     checks_summary,
+    failed_runs,
+    failed_jobs,
     new_review_items,
     unresolved_threads,
 ):
@@ -907,7 +1062,9 @@ def is_github_candidate_clear(
         return False
     if not checks_summary["all_terminal"]:
         return False
-    if checks_summary["failed_count"] > 0 or checks_summary["pending_count"] > 0:
+    if checks_summary["pending_count"] > 0:
+        return False
+    if has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
         return False
     if new_review_items:
         return False
@@ -932,10 +1089,11 @@ def recommend_actions(
     candidate_changed,
     retries_used,
     max_retries,
+    has_published_feedback=False,
 ):
     actions = []
     if pr["closed"] or pr["merged"]:
-        if new_review_items:
+        if new_review_items or unresolved_threads:
             actions.append("process_review_feedback")
         actions.append("stop_pr_closed")
         return unique_actions(actions)
@@ -943,12 +1101,24 @@ def recommend_actions(
     if candidate_changed:
         actions.append("rebuild_candidate_evidence")
 
+    # Draft and conflicting states are the ones that most need controller
+    # action; never let them degenerate to a bare `idle`.
+    if pr.get("draft"):
+        actions.append("resolve_draft_state")
+    if (
+        str(pr.get("mergeable") or "") == "CONFLICTING"
+        or str(pr.get("merge_state_status") or "") == "DIRTY"
+    ):
+        actions.append("resolve_merge_conflict")
+
     if new_review_items or unresolved_threads:
         actions.append("process_review_feedback")
 
-    has_failed_pr_checks = checks_summary["failed_count"] > 0 or bool(failed_jobs)
-    if has_failed_pr_checks:
+    if has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
         if checks_summary["all_terminal"] and retries_used >= max_retries:
+            # The exhausted budget only ends flaky retries; a new fixable
+            # branch-caused failure at this head still deserves diagnosis.
+            actions.append("diagnose_ci_failure")
             actions.append("stop_exhausted_retries")
         else:
             actions.append("diagnose_ci_failure")
@@ -967,10 +1137,19 @@ def recommend_actions(
     if is_github_candidate_clear(
         pr,
         checks_summary,
+        failed_runs,
+        failed_jobs,
         new_review_items,
         unresolved_threads,
     ):
         actions.append("verify_external_gates")
+        # The watcher can dedupe conversation comments as "seen" but cannot
+        # verify that the controller dispositioned them; issue comments have
+        # no resolvable thread. `verify_external_gates` therefore asserts only
+        # GitHub-native gates. Remind the controller whenever any published
+        # feedback exists for this PR.
+        if has_published_feedback:
+            actions.append("confirm_feedback_disposition")
     elif str(pr.get("mergeable") or "") not in {"MERGEABLE", "CONFLICTING"}:
         actions.append("wait_for_mergeability")
 
@@ -1024,11 +1203,25 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
     # After resolving `--pr auto`, reuse the concrete PR number.
     checks = get_pr_checks(str(pr["number"]), repo=pr["repo"])
     checks_summary = summarize_checks(checks)
+    pr_check_run_ids = workflow_run_ids_from_checks(checks)
     workflow_runs = get_workflow_runs_for_sha(pr["repo"], pr["head_sha"])
-    failed_runs = failed_runs_from_workflow_runs(workflow_runs, pr["head_sha"])
+    all_failed_runs = failed_runs_from_workflow_runs(workflow_runs, pr["head_sha"])
+    # Only workflow runs backing the PR's own checks gate readiness, diagnosis,
+    # and retries. Other failed head-SHA workflows (push- or schedule-triggered)
+    # are reported informationally so they can never wedge the watcher in an
+    # unretryable, unclearable state.
+    failed_runs, non_pr_check_failed_runs = partition_runs_by_pr_checks(
+        all_failed_runs,
+        pr_check_run_ids,
+    )
+    pr_check_workflow_runs = [
+        run
+        for run in workflow_runs
+        if isinstance(run, dict) and run.get("id") in pr_check_run_ids
+    ]
     failed_jobs = failed_jobs_from_workflow_runs(
         pr["repo"],
-        workflow_runs,
+        pr_check_workflow_runs,
         pr["head_sha"],
     )
 
@@ -1043,6 +1236,7 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
         candidate_changed,
         retries_used,
         args.max_flaky_retries,
+        has_published_feedback=bool(all_review_items or review_threads),
     )
 
     state["version"] = STATE_VERSION
@@ -1056,6 +1250,7 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
         "pr": pr,
         "checks": checks_summary,
         "failed_runs": failed_runs,
+        "non_pr_check_failed_runs": non_pr_check_failed_runs,
         "failed_jobs": failed_jobs,
         "review_items": all_review_items,
         "new_review_items": new_review_items,
@@ -1125,7 +1320,9 @@ def _retry_failed_now_locked(args, state_path, locked_pr_identity):
     if pr["closed"] or pr["merged"]:
         result["reason"] = "pr_closed"
         return result
-    if checks_summary["failed_count"] <= 0 and not snapshot["failed_jobs"]:
+    # Use the exact predicate recommend_actions uses, so a recommended retry
+    # is never refused with no_failed_pr_checks.
+    if not has_failed_pr_checks(checks_summary, failed_runs, snapshot["failed_jobs"]):
         result["reason"] = "no_failed_pr_checks"
         return result
     if not failed_runs:
@@ -1201,15 +1398,46 @@ def print_event(event, payload):
     print_json({"event": event, "payload": payload})
 
 
+def transient_retry_delay(poll_seconds, consecutive_failures):
+    return min(poll_seconds * (2 ** (consecutive_failures - 1)), 300)
+
+
 def run_watch(args):
     state_path, locked_pr_identity = resolve_locked_target(args)
+    max_transient_failures = getattr(args, "max_transient_failures", 5)
+    max_polls = getattr(args, "max_polls", 0)
+    stop_when_clear = getattr(args, "stop_when_clear", False)
+    consecutive_failures = 0
+    polls = 0
     with watcher_lock(state_path):
         while True:
-            snapshot, _ = collect_snapshot(
-                args,
-                locked_state_path=state_path,
-                locked_pr_identity=locked_pr_identity,
-            )
+            try:
+                snapshot, _ = collect_snapshot(
+                    args,
+                    locked_state_path=state_path,
+                    locked_pr_identity=locked_pr_identity,
+                )
+            except GhCommandError as err:
+                # A persistent watcher must survive transient GitHub CLI and
+                # network failures. Identity failures (RuntimeError) still
+                # fail closed immediately.
+                consecutive_failures += 1
+                if consecutive_failures > max_transient_failures:
+                    raise
+                delay = transient_retry_delay(args.poll_seconds, consecutive_failures)
+                print_event(
+                    "transient_error",
+                    {
+                        "error": str(err),
+                        "consecutive_failures": consecutive_failures,
+                        "max_transient_failures": max_transient_failures,
+                        "retry_in_seconds": delay,
+                    },
+                )
+                time.sleep(delay)
+                continue
+            consecutive_failures = 0
+            polls += 1
             print_event(
                 "snapshot",
                 {
@@ -1223,6 +1451,27 @@ def run_watch(args):
                 print_event(
                     "stop",
                     {
+                        "reason": "terminal_actions",
+                        "actions": snapshot.get("actions"),
+                        "pr": snapshot.get("pr"),
+                    },
+                )
+                return 0
+            if stop_when_clear and "verify_external_gates" in actions:
+                print_event(
+                    "stop",
+                    {
+                        "reason": "github_candidate_clear",
+                        "actions": snapshot.get("actions"),
+                        "pr": snapshot.get("pr"),
+                    },
+                )
+                return 0
+            if max_polls and polls >= max_polls:
+                print_event(
+                    "stop",
+                    {
+                        "reason": "max_polls_reached",
                         "actions": snapshot.get("actions"),
                         "pr": snapshot.get("pr"),
                     },
@@ -1254,7 +1503,7 @@ def main():
         snapshot["state_file"] = str(state_path)
         print_json(snapshot)
         return 0
-    except (GhCommandError, RuntimeError, ValueError) as err:
+    except (GhCommandError, OSError, RuntimeError, ValueError) as err:
         sys.stderr.write(f"PR watcher error: {err}\n")
         return 1
     except KeyboardInterrupt:

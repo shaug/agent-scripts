@@ -1,6 +1,6 @@
 ---
 name: babysit-pr
-description: Monitor an existing GitHub pull request through current-head CI, review feedback, mergeability, and optional merge. Use when an agent must watch a PR until it is ready to merge, merge it when explicitly authorized, or keep watching until it closes; diagnose failures, make only authorized ticket-scoped fixes, rerun validation and repository-owned review after head changes, and return a candidate-bound terminal handoff.
+description: Watch, monitor, or babysit an existing GitHub pull request through current-head CI, review feedback, mergeability, and optional merge. Use when asked to watch a PR until it is ready to merge, merge it when explicitly authorized, shepherd it through failing checks and review comments, or keep watching until it closes; diagnoses failures, makes only authorized ticket-scoped fixes, reruns validation and repository-owned review after head changes, and returns a candidate-bound terminal handoff.
 ---
 
 # Babysit PR
@@ -23,7 +23,9 @@ tracker, close a parent, deploy, or delete branches and worktrees.
   watcher or evaluating a new upstream version.
 
 Use `scripts/gh_pr_watch.py` for deterministic snapshots, JSONL monitoring, and
-bounded failed-run retries. Treat its actions as recommendations, not proof that
+bounded failed-run retries. All watcher paths below are relative to this skill's
+root directory; resolve them against the installed skill location, not the
+repository checkout. Treat its actions as recommendations, not proof that
 repository-specific gates passed.
 
 ## Require compatible capabilities
@@ -109,25 +111,43 @@ than continuing from cached state.
 
 ## Start and own the watcher
 
-Run a snapshot first:
+Run a snapshot first (paths are relative to this skill's root):
 
 ```bash
-python3 skills/babysit-pr/scripts/gh_pr_watch.py --pr <number-or-url> --once
+python3 scripts/gh_pr_watch.py --pr <number-or-url> --once
 ```
 
 For persistent monitoring, run:
 
 ```bash
-python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+python3 scripts/gh_pr_watch.py \
   --pr <number-or-url> \
   --completion-policy <ready_to_merge|merge_when_ready|watch_until_closed> \
   --watch
 ```
 
-Keep consuming JSONL output in the controlling task. Do not detach the watcher
-and claim monitoring is complete. Run only one continuous watcher for one
-repository/PR state file. After pausing to change or push code, restart the
-watcher on the new live candidate without waiting for another user request.
+Always pass an explicit PR number or URL; do not rely on `auto` resolution in a
+repository with multiple open PRs.
+
+Keep consuming JSONL output in the controlling task, using whichever execution
+mode the runtime supports:
+
+- A runtime that can hold a long-running foreground process may stream `--watch`
+  output directly.
+- A runtime with bounded foreground command windows (for example, a shell tool
+  with a timeout) must either run `--watch` as a managed background task and
+  read its incremental JSONL output between other work, or run bounded
+  foreground windows with `--watch --max-polls <n>` or
+  `--watch --stop-when-clear` and re-invoke until a terminal condition is
+  reached. `--stop-when-clear` asserts only GitHub-native gates; every
+  repository-specific gate and feedback disposition must still be verified.
+
+Do not detach the watcher and claim monitoring is complete. Run only one
+continuous watcher for one repository/PR state file; every mode, including
+`--once` and `--retry-failed-now`, takes the same exclusive state lock, so stop
+the running watcher before a snapshot or retry and restart it afterward. After
+pausing to change or push code, restart the watcher on the new live candidate
+without waiting for another user request.
 
 The watcher reports all published feedback sources, unresolved threads,
 candidate changes, CI state, failed-job log endpoints, retry usage,
@@ -174,10 +194,11 @@ Follow [CI and feedback decisions](references/ci-and-feedback.md).
 - Never change tests, CI, dependencies, or infrastructure merely to hide a flaky
   or unrelated failure.
 - Use the retry command only after log-based classification and only within the
-  configured budget:
+  configured budget. Stop the continuous watcher first; retry shares its
+  exclusive state lock:
 
 ```bash
-python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+python3 scripts/gh_pr_watch.py \
   --pr <number-or-url> \
   --retry-failed-now \
   --eligible-run-id <diagnosed-run-id>
@@ -266,6 +287,23 @@ Include repository, PR, head, base, branch/worktree, policy, authority used,
 validation, repository-owned review, CI, retry, human/connector/comment/review/
 thread state, fixes and pushed heads, mergeability, merged/closed identity,
 deferred findings, mutation ownership, caller-owned follow-up, and one next
-action or blocker.
+action or blocker. For example:
+
+```text
+terminal_state: ready_to_merge
+repository: example/project        pr: #482
+head: 4f2c…9a1d (branch fix/issue-77, worktree ../wt-issue-77)
+base: main @ 7be0…44c2
+completion_policy: ready_to_merge  authority_used: read + ticket-scoped fix + push
+validation: `just test` pass @ head; full gate pass @ head
+repository_review: review-code-change clean @ head 4f2c…9a1d vs base 7be0…44c2
+ci: 6/6 checks pass @ head        retries_used: 1/3 (run 8123, infrastructure)
+feedback: 3 comments dispositioned (2 fixed, 1 rejected with evidence);
+  0 unresolved threads; human review approved @ head; connector clean @ head
+fixes_pushed: 1 (commit 4f2c…9a1d, review-requested null check)
+mergeability: MERGEABLE / CLEAN    mutation_ownership: this task, released
+caller_owned_follow_up: merge, tracker transition, branch/worktree cleanup
+next_action: caller may merge via repository-approved squash method
+```
 
 Under `watch_until_closed`, a ready snapshot is progress rather than terminal.

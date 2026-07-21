@@ -8,8 +8,11 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY_ROOT = SKILL_ROOT.parents[1]
 REVIEW_SUITE = REPOSITORY_ROOT / "review-suite"
+# Import the skill's own bundled validator so these tests exercise the
+# installed layout, not only the canonical monorepo copy.
 SPEC = importlib.util.spec_from_file_location(
-    "review_contract_validator", REVIEW_SUITE / "scripts" / "validate.py"
+    "review_contract_validator",
+    SKILL_ROOT / "references" / "review-suite" / "validate.py",
 )
 assert SPEC and SPEC.loader
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -23,7 +26,16 @@ def load(path: Path):
 class SkillContractTests(unittest.TestCase):
     def test_skill_uses_shared_contract_and_is_read_only(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text()
-        self.assertIn("../../review-suite/CONTRACT.md", skill)
+        self.assertIn("references/review-suite/CONTRACT.md", skill)
+        self.assertIn("allowed-tools: Read, Grep, Glob, Bash", skill)
+        bundle = SKILL_ROOT / "references" / "review-suite"
+        for name in (
+            "CONTRACT.md",
+            "review-packet.schema.json",
+            "review-result.schema.json",
+            "validate.py",
+        ):
+            self.assertTrue((bundle / name).is_file(), name)
         self.assertIn("Preserve read-only integrity", skill)
         self.assertIn("From raw evidence", skill)
         self.assertIn("already installed", skill)
@@ -60,8 +72,17 @@ class SkillContractTests(unittest.TestCase):
                 "validation.md",
             )
         )
-        result = load(evaluation / "result.json")
+        result = load(
+            SKILL_ROOT
+            / "evals"
+            / "expected"
+            / "standalone-duplicated-policy.result.json"
+        )
 
+        # The reviewer-visible input directory must not contain the answer key.
+        self.assertEqual(
+            [], [path for path in evaluation.glob("*result*") if path.is_file()]
+        )
         self.assertNotIn("expected", prompt.lower())
         self.assertNotIn("change_contract", evidence)
         self.assertEqual([], VALIDATOR.validate_result(result))

@@ -43,6 +43,7 @@ def sample_checks(**overrides):
         "pending_count": 0,
         "failed_count": 0,
         "passed_count": 4,
+        "cancelled_count": 0,
         "all_terminal": True,
         "items": [],
     }
@@ -50,8 +51,8 @@ def sample_checks(**overrides):
     return value
 
 
-def sample_args(state_file):
-    return argparse.Namespace(
+def sample_args(state_file, **overrides):
+    args = argparse.Namespace(
         pr="123",
         repo="example/project",
         state_file=str(state_file),
@@ -59,7 +60,13 @@ def sample_args(state_file):
         completion_policy="ready_to_merge",
         poll_seconds=1,
         eligible_run_id=[99],
+        max_transient_failures=2,
+        max_polls=0,
+        stop_when_clear=False,
     )
+    for key, value in overrides.items():
+        setattr(args, key, value)
+    return args
 
 
 class ReviewStateTests(unittest.TestCase):
@@ -155,6 +162,44 @@ class ReviewStateTests(unittest.TestCase):
         self.assertEqual(all_items, new_items)
         self.assertEqual("$(unsafe command)", all_items[0]["body"])
 
+    def test_ghost_author_comment_still_surfaces_as_new(self):
+        comments = [
+            {
+                "id": 7,
+                "user": None,
+                "author_association": "NONE",
+                "body": "Comment from a deleted account.",
+                "created_at": "2026-01-01T00:00:00Z",
+                "html_url": "https://example.test/7",
+            }
+        ]
+        with mock.patch.object(
+            WATCHER,
+            "_review_payloads",
+            return_value=(comments, [], []),
+        ):
+            all_items, new_items = WATCHER.fetch_review_state(
+                sample_pr(), {}, "operator"
+            )
+        self.assertEqual(1, len(all_items))
+        self.assertEqual(1, len(new_items))
+        self.assertEqual("external", new_items[0]["source_class"])
+
+    def test_pr_checks_empty_payload_fails_closed_unless_no_checks(self):
+        with mock.patch.object(
+            WATCHER, "gh_capture", return_value=("", "some transient error")
+        ):
+            with self.assertRaisesRegex(
+                WATCHER.GhCommandError, "check state is unknown"
+            ):
+                WATCHER.get_pr_checks("123", "example/project")
+        with mock.patch.object(
+            WATCHER,
+            "gh_capture",
+            return_value=("", "no checks reported on the 'feature' branch"),
+        ):
+            self.assertEqual([], WATCHER.get_pr_checks("123", "example/project"))
+
     def test_seen_items_remain_in_complete_feedback(self):
         state = {"seen_issue_comment_ids": ["1"]}
         comments = [
@@ -177,6 +222,78 @@ class ReviewStateTests(unittest.TestCase):
             )
         self.assertEqual(1, len(all_items))
         self.assertEqual([], new_items)
+
+
+class ParseArgsTests(unittest.TestCase):
+    """The documented command lines must parse; doc drift fails here."""
+
+    def parse(self, *argv):
+        with mock.patch.object(WATCHER.sys, "argv", ["gh_pr_watch.py", *argv]):
+            return WATCHER.parse_args()
+
+    def test_documented_once_snapshot_parses(self):
+        args = self.parse("--pr", "123", "--once")
+        self.assertTrue(args.once)
+        self.assertEqual("watch_until_closed", args.completion_policy)
+
+    def test_documented_watch_with_policy_parses(self):
+        args = self.parse(
+            "--pr", "123", "--completion-policy", "ready_to_merge", "--watch"
+        )
+        self.assertTrue(args.watch)
+        self.assertEqual("ready_to_merge", args.completion_policy)
+
+    def test_documented_stop_when_clear_implies_ready_to_merge(self):
+        args = self.parse("--pr", "123", "--watch", "--stop-when-clear")
+        self.assertTrue(args.stop_when_clear)
+        self.assertEqual("ready_to_merge", args.completion_policy)
+
+    def test_documented_max_polls_parses(self):
+        args = self.parse("--pr", "123", "--watch", "--max-polls", "3")
+        self.assertEqual(3, args.max_polls)
+
+    def test_stop_when_clear_rejects_explicit_watch_until_closed(self):
+        with self.assertRaises(SystemExit):
+            self.parse(
+                "--pr",
+                "123",
+                "--watch",
+                "--stop-when-clear",
+                "--completion-policy",
+                "watch_until_closed",
+            )
+
+    def test_bounded_flags_require_watch(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--stop-when-clear")
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--max-polls", "2")
+
+    def test_documented_retry_invocation_parses(self):
+        args = self.parse(
+            "--pr", "123", "--retry-failed-now", "--eligible-run-id", "99"
+        )
+        self.assertTrue(args.retry_failed_now)
+        self.assertEqual([99], args.eligible_run_id)
+
+    def test_once_and_watch_conflict(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--once", "--watch")
+
+    def test_repo_override_requires_explicit_pr(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--repo", "example/project", "--once")
+
+    def test_once_and_retry_conflict(self):
+        with self.assertRaises(SystemExit):
+            self.parse(
+                "--pr",
+                "123",
+                "--once",
+                "--retry-failed-now",
+                "--eligible-run-id",
+                "99",
+            )
 
 
 class PaginationAndThreadTests(unittest.TestCase):
@@ -425,6 +542,160 @@ class RecommendationTests(unittest.TestCase):
         )
         self.assertEqual(["verify_external_gates"], actions)
 
+    def test_cancelled_check_is_never_clear(self):
+        summary = WATCHER.summarize_checks([{"bucket": "cancel", "state": "CANCELLED"}])
+        self.assertEqual(1, summary["cancelled_count"])
+        self.assertEqual(0, summary["failed_count"])
+        self.assertTrue(summary["all_terminal"])
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            summary,
+            [{"run_id": 99}],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertNotIn("verify_external_gates", actions)
+        self.assertIn("diagnose_ci_failure", actions)
+
+    def test_run_ids_extracted_from_all_details_link_shapes(self):
+        checks = [
+            {"link": "https://github.com/e/p/actions/runs/1"},
+            {"link": "https://github.com/e/p/actions/runs/2/job/9"},
+            {"link": "https://github.com/e/p/actions/runs/3?check_suite_focus=true"},
+            {"link": "https://github.com/e/p/actions/runs/4#summary"},
+            {"link": "https://external-ci.example.test/build/5"},
+        ]
+        self.assertEqual({1, 2, 3, 4}, WATCHER.workflow_run_ids_from_checks(checks))
+
+    def test_non_pr_check_run_failures_do_not_block_or_wedge(self):
+        failed_runs = [
+            {"run_id": 99, "workflow_name": "ci"},
+            {"run_id": 500, "workflow_name": "nightly-push"},
+        ]
+        pr_runs, other_runs = WATCHER.partition_runs_by_pr_checks(failed_runs, {99})
+        self.assertEqual([failed_runs[0]], pr_runs)
+        self.assertEqual([failed_runs[1]], other_runs)
+        # A failed push/schedule workflow on the head SHA must not block a
+        # clear candidate or produce an unretryable retry recommendation.
+        self.assertTrue(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(), sample_checks(), [], [], [], []
+            )
+        )
+        actions = WATCHER.recommend_actions(
+            sample_pr(), sample_checks(), [], [], [], [], False, 0, 3
+        )
+        self.assertEqual(["verify_external_gates"], actions)
+
+    def test_pr_check_failed_run_alone_still_recommends_diagnosis(self):
+        # Diagnosis must mirror the clear predicate: a PR-check-backed failed
+        # run with green buckets and no failed jobs is not clear, so it must
+        # never degenerate to `idle`.
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            sample_checks(),
+            [{"run_id": 99}],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("diagnose_ci_failure", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
+
+    def test_draft_pr_recommends_draft_resolution_not_idle(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(draft=True),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("resolve_draft_state", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
+
+    def test_conflicting_pr_recommends_conflict_resolution_not_idle(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(mergeable="CONFLICTING", merge_state_status="DIRTY"),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertIn("resolve_merge_conflict", actions)
+        self.assertNotIn("idle", actions)
+        self.assertNotIn("verify_external_gates", actions)
+
+    def test_failed_runs_block_clear_even_with_green_check_buckets(self):
+        self.assertFalse(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(),
+                sample_checks(),
+                [{"run_id": 99, "conclusion": "cancelled"}],
+                [],
+                [],
+                [],
+            )
+        )
+        self.assertFalse(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(),
+                sample_checks(),
+                [],
+                [{"job_id": 8}],
+                [],
+                [],
+            )
+        )
+
+    def test_native_clear_with_prior_feedback_requires_disposition_check(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+            has_published_feedback=True,
+        )
+        self.assertEqual(
+            ["verify_external_gates", "confirm_feedback_disposition"],
+            actions,
+        )
+
+    def test_closed_pr_with_unresolved_threads_requires_feedback_processing(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(closed=True, state="CLOSED"),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [{"id": "thread-1"}],
+            False,
+            0,
+            3,
+        )
+        self.assertEqual(["process_review_feedback", "stop_pr_closed"], actions)
+
     def test_unresolved_thread_blocks_native_clear(self):
         actions = WATCHER.recommend_actions(
             sample_pr(),
@@ -518,6 +789,15 @@ class SnapshotAndStateTests(unittest.TestCase):
                 Path("state.json"),
             )
 
+    def test_state_target_accepts_repo_case_variants(self):
+        # Mixed-case invocations share one state file; validation must use
+        # the same case-insensitive match as default_state_file_for.
+        WATCHER.validate_state_target(
+            {"pr": {"repo": "Example/Project", "number": 123}},
+            sample_pr(),
+            Path("state.json"),
+        )
+
     def test_state_is_atomic_and_round_trips(self):
         with tempfile.TemporaryDirectory() as directory:
             state_path = Path(directory) / "state.json"
@@ -528,8 +808,23 @@ class SnapshotAndStateTests(unittest.TestCase):
 
     def test_default_state_file_is_product_neutral(self):
         state_path = WATCHER.default_state_file_for(sample_pr())
-        self.assertIn("agent-babysit-pr-example-project-pr123", str(state_path))
+        self.assertIn("agent-babysit-pr-example-project-", str(state_path))
+        self.assertTrue(state_path.name.endswith("-pr123.json"))
         self.assertNotIn("codex", str(state_path).lower())
+
+    def test_distinct_repositories_never_share_a_state_file(self):
+        first = WATCHER.default_state_file_for(sample_pr(repo="owner/re-po"))
+        second = WATCHER.default_state_file_for(sample_pr(repo="owner-re/po"))
+        third = WATCHER.default_state_file_for(sample_pr(repo="owner/re_po"))
+        self.assertEqual(3, len({first, second, third}))
+
+    def test_repo_case_variants_share_one_state_file(self):
+        # GitHub slugs are case-insensitive; `--repo Owner/Repo` and a
+        # URL-derived `owner/repo` must share one state file and one lock.
+        self.assertEqual(
+            WATCHER.default_state_file_for(sample_pr(repo="Example/Project")),
+            WATCHER.default_state_file_for(sample_pr(repo="example/project")),
+        )
 
     def test_failed_jobs_include_direct_log_endpoint(self):
         with mock.patch.object(
@@ -598,6 +893,137 @@ class SnapshotAndStateTests(unittest.TestCase):
             ["snapshot", "snapshot", "stop"], [event[0] for event in events]
         )
 
+    def test_watch_survives_transient_errors_then_recovers(self):
+        outcomes = [
+            WATCHER.GhCommandError("rate limited"),
+            WATCHER.GhCommandError("bad gateway"),
+            (
+                {
+                    "pr": sample_pr(closed=True, state="CLOSED"),
+                    "checks": sample_checks(),
+                    "actions": ["stop_pr_closed"],
+                },
+                Path("/tmp/state.json"),
+            ),
+        ]
+        events = []
+        args = sample_args(Path("/tmp/state.json"))
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", side_effect=outcomes),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep") as sleep,
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(
+            ["transient_error", "transient_error", "snapshot", "stop"],
+            [event[0] for event in events],
+        )
+        self.assertEqual([1, 2], [call.args[0] for call in sleep.call_args_list])
+
+    def test_watch_fails_after_transient_failure_budget(self):
+        args = sample_args(Path("/tmp/state.json"), max_transient_failures=1)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                side_effect=WATCHER.GhCommandError("persistent outage"),
+            ),
+            mock.patch.object(WATCHER, "print_event"),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            with self.assertRaisesRegex(WATCHER.GhCommandError, "persistent outage"):
+                WATCHER.run_watch(args)
+
+    def test_watch_does_not_retry_identity_failures(self):
+        args = sample_args(Path("/tmp/state.json"))
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                side_effect=RuntimeError(
+                    "Snapshot target changed repository/PR identity"
+                ),
+            ),
+            mock.patch.object(WATCHER, "print_event"),
+            mock.patch.object(WATCHER.time, "sleep") as sleep,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "identity"):
+                WATCHER.run_watch(args)
+        sleep.assert_not_called()
+
+    def test_watch_stop_when_clear_emits_reason_and_exits(self):
+        snapshot = (
+            {
+                "pr": sample_pr(),
+                "checks": sample_checks(),
+                "actions": [
+                    "verify_external_gates",
+                    "confirm_feedback_disposition",
+                ],
+            },
+            Path("/tmp/state.json"),
+        )
+        events = []
+        args = sample_args(Path("/tmp/state.json"), stop_when_clear=True)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", return_value=snapshot),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(["snapshot", "stop"], [event[0] for event in events])
+        self.assertEqual("github_candidate_clear", events[1][1]["reason"])
+
+    def test_watch_max_polls_bounds_foreground_execution(self):
+        snapshot = (
+            {
+                "pr": sample_pr(),
+                "checks": sample_checks(pending_count=1, all_terminal=False),
+                "actions": ["wait_for_checks"],
+            },
+            Path("/tmp/state.json"),
+        )
+        events = []
+        args = sample_args(Path("/tmp/state.json"), max_polls=2)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", return_value=snapshot),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(
+            ["snapshot", "snapshot", "stop"], [event[0] for event in events]
+        )
+        self.assertEqual("max_polls_reached", events[2][1]["reason"])
+
+    def test_authenticated_login_is_cached_per_process(self):
+        WATCHER._authenticated_login_cache = None
+        try:
+            with mock.patch.object(
+                WATCHER, "gh_json", return_value={"login": "operator"}
+            ) as gh_json:
+                self.assertEqual("operator", WATCHER.get_authenticated_login())
+                self.assertEqual("operator", WATCHER.get_authenticated_login())
+            self.assertEqual(1, gh_json.call_count)
+        finally:
+            WATCHER._authenticated_login_cache = None
+
 
 class RetryTests(unittest.TestCase):
     def test_retry_uses_failed_runs_and_increments_head_budget(self):
@@ -641,6 +1067,90 @@ class RetryTests(unittest.TestCase):
             ["run", "rerun", "99", "--failed"], repo="example/project"
         )
         self.assertEqual(2, save_state.call_args.args[1]["retries_by_sha"]["head-1"])
+
+    def test_retry_accepts_cancelled_only_check_failures(self):
+        # recommend_actions counts cancelled checks as failed PR checks; the
+        # retry gate must mirror that so a recommended retry is never refused.
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                cancelled_count=1,
+                items=[
+                    {
+                        "bucket": "cancel",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}],
+            "failed_jobs": [],
+            "retry_state": {
+                "current_sha_retries_used": 0,
+                "max_flaky_retries": 3,
+            },
+        }
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state"),
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+                ("example/project", 123),
+            )
+        self.assertTrue(result["rerun_attempted"])
+        self.assertEqual("rerun_triggered", result["reason"])
+        gh_text.assert_called_once()
+
+    def test_retry_accepts_failed_runs_only_state(self):
+        # Green buckets + a PR-check-backed failed run is the same state that
+        # blocks clear and recommends diagnosis/retry; the retry gate must
+        # share recommend_actions' predicate rather than refuse it.
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                items=[
+                    {
+                        "bucket": "pass",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}],
+            "failed_jobs": [],
+            "retry_state": {
+                "current_sha_retries_used": 0,
+                "max_flaky_retries": 3,
+            },
+        }
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state"),
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+                ("example/project", 123),
+            )
+        self.assertTrue(result["rerun_attempted"])
+        self.assertEqual("rerun_triggered", result["reason"])
+        gh_text.assert_called_once()
 
     def test_retry_rejects_mixed_current_and_unverified_run_ids(self):
         snapshot = {

@@ -11,8 +11,11 @@ Read applicable repository instructions and named specifications, then capture
 the complete diff, exact candidate identity, representative nearby code and
 tests, validation evidence, and worktree state.
 
-Run the shared packet validator. Do not invoke a lens with a malformed packet.
-Do not repair missing intent by reading the implementation transcript.
+Run the shared packet validator — the bundled dependency-free copy at
+[references/review-suite/validate.py](review-suite/validate.py), or the
+canonical `review-suite/scripts/validate.py` inside the source monorepo. Do not
+invoke a lens with a malformed packet. Do not repair missing intent by reading
+the implementation transcript.
 
 ## Sequence decisions
 

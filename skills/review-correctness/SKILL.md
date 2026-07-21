@@ -1,6 +1,7 @@
 ---
 name: review-correctness
-description: Review a code change against its stated goal for material behavioral, security, authorization, compatibility, data-integrity, performance, and validation failures. Use for a correctness-focused PR, branch, or patch review, either from raw repository and ticket evidence or from the repository-owned shared review packet. Return only the shared finding and verdict shape and never modify the reviewed candidate.
+description: Review a code change, diff, PR, branch, or patch for bugs and material behavioral, security, authorization, compatibility, data-integrity, performance, and validation failures against its stated goal. Use when asked to find bugs or run a correctness-focused review, either from raw repository and ticket evidence or from the repository-owned shared review packet. Returns only the shared finding and verdict shape and never modifies the reviewed candidate.
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Review Correctness
@@ -11,8 +12,11 @@ to the caller.
 
 ## Load the contracts
 
-1. Read the canonical review contract at `../../review-suite/CONTRACT.md` and
-   its packet and result schemas.
+1. Read the bundled canonical review contract at
+   [references/review-suite/CONTRACT.md](references/review-suite/CONTRACT.md)
+   and its packet and result schemas beside it. Inside this skill's source
+   monorepo, the repository-root `review-suite/` directory is the canonical
+   origin and the bundled copies are kept byte-identical to it.
 2. Read [the correctness rubric](references/correctness-rubric.md).
 3. Treat the canonical contract as authoritative for required evidence, finding
    fields, severity, confidence, verdicts, candidate identity, and base drift.
@@ -89,9 +93,9 @@ proposal cannot be assessed from trustworthy evidence, return `blocked`.
 
 ## Return the shared result
 
-Return only JSON conforming to
-`../../review-suite/contracts/review-result.schema.json` with lens
-`correctness`.
+Return only JSON conforming to the bundled
+[review-result schema](references/review-suite/review-result.schema.json) with
+lens `correctness`.
 
 - Return `clean` when no blocking or strong-recommendation finding remains.
 - Return `changes_required` when at least one actionable gating finding remains.
@@ -107,5 +111,10 @@ Return only JSON conforming to
 
 Do not edit or format files, create repository artifacts, commit, push, resolve
 threads, post reviews, or update tickets. Run only safe read-only inspection and
-validation commands. When the caller supplies pre-review candidate state,
-preserve it exactly and report any unexpected mutation as an integrity failure.
+validation commands. Runtimes that support tool restriction should enforce the
+`allowed-tools` frontmatter, which excludes file-editing tools. The shell
+remains necessary for validation commands and can still mutate files, so prefer
+a sandboxed or deny-write shell where available; the recorded before/after
+candidate state is the authoritative integrity check. When the caller supplies
+pre-review candidate state, preserve it exactly and report any unexpected
+mutation as an integrity failure.

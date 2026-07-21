@@ -16,6 +16,8 @@ owns the ticket.
 
 - Confirm `gh` authentication and repository access.
 - Resolve the PR from an explicit number/URL or an unambiguous current branch.
+  Prefer passing the explicit number or URL to every watcher invocation; `auto`
+  resolution is a convenience for single-PR checkouts only.
 - Capture repository, number, URL, state, head repository/branch/SHA, base
   branch/SHA, mergeability, merge-state status, and review decision.
 - Inspect open/merged PRs and plausible branches for a superseding candidate.
@@ -29,43 +31,74 @@ dependency, and close mutations to the caller.
 
 ## Watcher commands
 
-Use a one-shot snapshot for diagnosis:
+Paths are relative to this skill's root directory. Use a one-shot snapshot for
+diagnosis:
 
 ```bash
-python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+python3 scripts/gh_pr_watch.py \
   --repo OWNER/REPO --pr NUMBER --once
 ```
 
 Use JSONL monitoring for a persistent task:
 
 ```bash
-python3 skills/babysit-pr/scripts/gh_pr_watch.py \
+python3 scripts/gh_pr_watch.py \
   --repo OWNER/REPO --pr NUMBER \
   --completion-policy ready_to_merge --watch
 ```
 
-Use `--state-file` only when the caller needs a controlled durable location. The
-default state is isolated by repository and PR in the operating system's
-temporary directory. A state file whose stored repository/PR differs from the
-live target fails closed.
+For runtimes with bounded foreground command windows, either run `--watch` as a
+managed background task and read its incremental JSONL output, or bound each
+foreground window with `--watch --max-polls <n>` or `--watch --stop-when-clear`
+and re-invoke until a terminal condition is reached. `--stop-when-clear` exits
+when GitHub-native gates are clear; it never asserts repository-specific gates
+or feedback disposition. When no completion policy is passed it implies
+`ready_to_merge`; combining it with an explicit `watch_until_closed` is
+rejected. On a repository with zero configured checks the candidate is never
+GitHub-clear (the watcher emits `verify_required_check_policy` instead), so pair
+`--stop-when-clear` with `--max-polls` to keep the window bounded.
+
+Watch mode polls every `--poll-seconds` (default 30) and tolerates a bounded
+number of consecutive transient GitHub CLI failures (`--max-transient-failures`,
+default 5), emitting a `transient_error` event with backoff before retrying; it
+still exits nonzero when the budget is exhausted and immediately on identity
+failures. The per-head flaky retry budget is `--max-flaky-retries` (default 3).
+
+Use `--state-file` when the caller needs a controlled durable location. The
+default state is isolated by repository and PR in a per-user mode-0700 directory
+under the operating system's temporary directory; a reboot or temp-file cleaner
+may reset it, which re-surfaces already-seen feedback (safe) and resets retry
+budgets (permits extra reruns). Pass `--state-file` on a durable path when retry
+budgets must survive reboots. A state file whose stored repository/PR differs
+from the live target fails closed.
 
 All modes share a nonblocking lock on their repository/PR state file, including
 one-shot snapshots, continuous watch, and retry mutation. Do not run a second
-controller for the same state. The controlling task must consume watch output
-and terminate the process when interrupted; never leave a detached watcher.
+controller for the same state; stop the continuous watcher before running
+`--once` or `--retry-failed-now`, then restart it. The controlling task must
+consume watch output and terminate the process when interrupted; never leave a
+detached watcher.
 
 The watcher emits:
 
 - exact PR/head/base identity and candidate-change flags;
-- check counts and per-check metadata;
-- workflow failures and direct failed-job log endpoints;
+- check counts (including cancelled checks) and per-check metadata;
+- failed workflow runs and direct failed-job log endpoints, scoped to the runs
+  backing the PR's own checks; failed head-SHA workflows that are not PR checks
+  (push- or schedule-triggered) appear separately under
+  `non_pr_check_failed_runs` and never gate readiness or retries;
+- explicit `resolve_draft_state` and `resolve_merge_conflict` actions for draft
+  and conflicting PRs;
 - all published feedback, new feedback, and unresolved threads;
 - retry count and remaining budget;
 - mergeability/review state; and
 - ordered recommended actions.
 
 Recommendations never establish repository-specific review, connector, or
-local-validation success.
+local-validation success. In particular, `verify_external_gates` asserts only
+GitHub-native gates; when any published feedback exists the watcher also emits
+`confirm_feedback_disposition` because it can deduplicate conversation comments
+but cannot verify that the controller dispositioned them.
 
 ## State and candidate changes
 

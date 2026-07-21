@@ -1,6 +1,7 @@
 ---
 name: review-code-change
-description: Run the complete repository-owned review of a PR, branch, patch, or change set. Use when one entrypoint should build a trustworthy evidence packet, invoke solution simplicity, correctness, and code simplicity in order, reconcile their results, and return one bounded aggregate verdict. Fail closed when evidence or local lens skills are missing, remain read-only, and never depend on a third-party review skill.
+description: Review a code change, diff, PR, branch, or patch with the complete repository-owned review suite. Use when asked to review a change or run code review; builds a trustworthy evidence packet, invokes solution simplicity, correctness, and code simplicity in order, reconciles their results, and returns one bounded aggregate verdict. Fails closed when evidence or local lens skills are missing, remains read-only, and never depends on a third-party review skill.
+allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 
 # Review Code Change
@@ -10,7 +11,11 @@ the repository-owned lenses; do not reproduce their rubrics.
 
 ## Load the contracts and dependencies
 
-1. Read `../../review-suite/CONTRACT.md` and both shared schemas.
+1. Read the bundled canonical review contract at
+   [references/review-suite/CONTRACT.md](references/review-suite/CONTRACT.md)
+   and both shared schemas beside it. Inside this skill's source monorepo, the
+   repository-root `review-suite/` directory is the canonical origin and the
+   bundled copies are kept byte-identical to it.
 2. Read [the orchestration protocol](references/orchestration-protocol.md).
 3. Verify that `review-solution-simplicity`, `review-correctness`, and
    `review-code-simplicity` are available and readable.
@@ -97,5 +102,9 @@ the shared risk-based merge-candidate rules.
 
 Do not edit or format reviewed files, apply fixes, create candidate artifacts,
 commit, push, post reviews, resolve threads, approve, merge, or update tickets.
-Run only safe read-only inspection and validation commands. Verify that the
-candidate state is unchanged before returning.
+Run only safe read-only inspection and validation commands. Runtimes that
+support tool restriction should enforce the `allowed-tools` frontmatter, which
+excludes file-editing tools. The shell remains necessary for validation commands
+and can still mutate files, so prefer a sandboxed or deny-write shell where
+available; the recorded before/after candidate state is the authoritative
+integrity check. Verify that the candidate state is unchanged before returning.

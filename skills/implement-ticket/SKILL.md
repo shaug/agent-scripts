@@ -1,6 +1,6 @@
 ---
 name: implement-ticket
-description: Implement exactly one standalone GitHub or Linear ticket, or one named child of a larger epic, through an isolated branch and pull request. Use when an agent should resolve live ticket and dependency context, enforce readiness and authority boundaries, implement and validate one coherent change, run an initial repository-owned review, delegate the published PR lifecycle to babysit-pr, and verify tracker, mainline, and cleanup outcomes. Detect whole-epic requests before mutation and route them toward implement-epic without creating a circular skill dependency.
+description: Implement, build, or fix exactly one standalone GitHub or Linear ticket or issue, or one named child of a larger epic, through an isolated branch and pull request. Use when asked to implement a ticket end to end; resolves live ticket and dependency context, enforces readiness and authority boundaries, implements and validates one coherent change, runs an initial repository-owned review, delegates the published PR lifecycle to babysit-pr, and verifies tracker, mainline, and cleanup outcomes. Detects whole-epic requests before mutation and routes them toward implement-epic without creating a circular skill dependency.
 ---
 
 # Implement Ticket
@@ -127,7 +127,7 @@ Use this order:
 
 1. Current user instructions.
 2. Live ticket, relationship, branch, PR, and review state.
-3. Repository `AGENTS.md` and equivalent local instructions.
+3. Repository agent instructions (`AGENTS.md`, `CLAUDE.md`, or equivalent).
 4. Named architecture, design, contract, migration, and rollout documents.
 5. Current code and tests.
 6. Prior summaries or memory.

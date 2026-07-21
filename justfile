@@ -8,6 +8,19 @@ md_targets := "."
 list-skills:
   @find {{skills_dir}} -mindepth 1 -maxdepth 1 -type d -print
 
+# Refresh the review-suite contract copies bundled into each review skill so
+# the skills stay self-contained when installed outside this repository.
+sync-contracts:
+  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity; do \
+    dest="{{skills_dir}}/$skill/references/review-suite"; \
+    mkdir -p "$dest"; \
+    cp review-suite/CONTRACT.md "$dest/CONTRACT.md"; \
+    cp review-suite/contracts/review-packet.schema.json "$dest/review-packet.schema.json"; \
+    cp review-suite/contracts/review-result.schema.json "$dest/review-result.schema.json"; \
+    cp review-suite/scripts/validate.py "$dest/validate.py"; \
+    echo "Synced $dest"; \
+  done
+
 test:
   @found=0; \
   for tests in {{skills_dir}}/*/scripts/tests; do \
@@ -36,6 +49,11 @@ test-implement-ticket:
 
 eval-implement-ticket:
   python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py
+
+# Real-runtime forward evaluation; requires the `claude` CLI on PATH.
+eval-implement-ticket-claude:
+  python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py \
+    --executor "python3 {{skills_dir}}/implement-ticket/scripts/evals/claude_executor.py"
 
 test-implement-epic:
   python3 -m unittest discover -s {{skills_dir}}/implement-epic/scripts/tests -p 'test_*.py'
@@ -97,7 +115,7 @@ lint-skills:
   AGENTSKILLS_DIR=".tools/agentskills"; \
   SKILLS_REF_BIN=""; \
   install_skills_ref() { \
-    echo "Installing skills-ref into .venv from local cache..."; \
+    echo "Installing skills-ref: recreating .venv and cloning agentskills from GitHub (network required)..."; \
     rm -rf .venv; \
     python -m venv .venv; \
     mkdir -p .tools; \

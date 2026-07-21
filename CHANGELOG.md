@@ -4,9 +4,65 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
+
+- refactor: route the clear predicate through `has_failed_pr_checks` — the
+  code-simplicity lens on PR #27 flagged the last inline copy of the
+  failed-PR-check policy inside `is_github_candidate_clear`; all three agreement
+  sites now structurally share one predicate
+- fix: share one failed-PR-check predicate across the watcher — the initial
+  `review-code-change` pass on PR #27 found the retry gate refusing retries that
+  `recommend_actions` recommends for failed-runs-only states; extract
+  `has_failed_pr_checks` and use it in both sites, and match repository case
+  insensitively in state-target validation
+  (`625dae641a9652368f03b6be825f48d9addab056`)
+- fix: close the final low-severity review findings — mirror the clear predicate
+  in `has_failed_pr_checks` so a PR-check-backed failed run never reads as
+  `idle`, case-normalize repositories before deriving state files and locks,
+  match fragment run links, reject `--repo` without an explicit `--pr`, make
+  boolean schema constants reject numeric one, and document `--poll-seconds` and
+  `--max-flaky-retries` (`f79266a390e970cd25cf8af1bed6b9bd9cf154ee`)
+- fix: align retry gating and delegation tooling with review round four — accept
+  cancelled-only check failures in the retry gate so a recommended retry is
+  never refused, grant the review orchestrator the subagent and skill tools its
+  Claude adapter requires, reject `--once` with `--retry-failed-now`, match
+  query-string run links, add a repo digest to default state filenames, keep
+  `diagnose_ci_failure` visible after retry exhaustion, and document zero-check
+  `--stop-when-clear` pairing (`ddb29d0ce0409554cec61ed54b2c6e7ed6d84c6a`)
+- fix: close adversarial-review findings — resolve bundled-validator schemas in
+  both layouts and execute every bundled copy in place, scope failed workflow
+  runs to the PR's own checks so push/schedule failures cannot wedge the
+  watcher, emit `resolve_draft_state`/`resolve_merge_conflict` instead of
+  `idle`, complete `forbidden_actions` on all forward expectations with a
+  vocabulary-spam canary, stop backfilling `target_skill` in the Claude
+  executor, reject `--once --watch`, handle `OSError` cleanly, import bundled
+  validators in review-skill tests, and document eval flag pre-classification,
+  the gh 2.37 floor, and state-file durability
+  (`48b6f614d15d50dae4ba5c63d7b3e3471647dd1a`)
+- fix: close independent-review findings — count cancelled checks and failed
+  runs/jobs in the watcher's clear predicate, run review-suite tests in CI,
+  bundle the dependency-free packet validator into each review skill, make
+  `--stop-when-clear` imply `ready_to_merge` and test every documented CLI
+  invocation, fail closed on empty `gh pr checks` payloads, surface ghost-author
+  comments, move watcher state into a per-user 0700 directory, add
+  forbidden-action forward grading, unify `observed_sequence` tokens, and rename
+  `agents/claude.md` to `agents/claude-code.md` to avoid the case-insensitive
+  CLAUDE.md memory-file collision (`b5bf81b81a6dd521edcdfc561988ca621a566d39`)
+- fix: make skills self-contained and adapt the suite to Claude runtimes —
+  bundle the review-suite contract into each review skill with a
+  `just sync-contracts` target and drift test, use skill-root-relative watcher
+  paths, survive transient watcher failures with bounded backoff, add
+  `--max-polls`/`--stop-when-clear` bounded watch modes and a
+  `confirm_feedback_disposition` action, move eval answer keys out of
+  reviewer-visible input directories, add a Claude headless forward-eval
+  executor, add `agents/claude.md` adapters, `allowed-tools` on review skills,
+  and trigger-oriented skill descriptions, and trim contract tests to
+  load-bearing invariants (`474756bea51237376b81ad7d593eef2d8de273f1`)
+
 ## 2026-07-20 — Composed ticket and PR execution
 
 - fix: execute result-blind forward evaluations in fresh contexts
+  (`f452db4cf47e56b3f8fea560977a3ce98ca26caa`)
 - feat: delegate the `implement-ticket` PR lifecycle to `babysit-pr`
   (`d5838d49587ab34a00973441a870cd525cfcd773`)
 

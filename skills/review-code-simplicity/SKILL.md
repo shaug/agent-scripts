@@ -1,6 +1,7 @@
 ---
 name: review-code-simplicity
-description: Review a code change for local implementation complexity, meaningful DRY and reuse opportunities, unnecessary control flow, and bespoke code replaceable by established repository modules or justified dependencies. Use for implementation-level simplicity review of a PR, branch, patch, or tests, either from raw evidence or the shared review packet. Preserve the chosen architecture and behavior, return only the shared result shape, and never modify the candidate.
+description: Review a code change, diff, PR, branch, patch, or tests for local implementation complexity, meaningful DRY and reuse opportunities, unnecessary control flow, and bespoke code replaceable by established repository modules or justified dependencies. Use when asked to simplify code or run an implementation-level simplicity review, either from raw evidence or the shared review packet. Preserves the chosen architecture and behavior, returns only the shared result shape, and never modifies the candidate.
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Review Code Simplicity
@@ -11,8 +12,11 @@ caller.
 
 ## Load the contracts
 
-1. Read the canonical review contract at `../../review-suite/CONTRACT.md` and
-   its packet and result schemas.
+1. Read the bundled canonical review contract at
+   [references/review-suite/CONTRACT.md](references/review-suite/CONTRACT.md)
+   and its packet and result schemas beside it. Inside this skill's source
+   monorepo, the repository-root `review-suite/` directory is the canonical
+   origin and the bundled copies are kept byte-identical to it.
 2. Read [the code-simplicity rubric](references/code-simplicity-rubric.md).
 3. Treat the canonical contract as authoritative for evidence, finding fields,
    severity, confidence, verdicts, candidate identity, and base drift.
@@ -78,9 +82,9 @@ licensing costs. Do not add a dependency for trivial behavior or future use.
 
 ## Return the shared result
 
-Return only JSON conforming to
-`../../review-suite/contracts/review-result.schema.json` with lens
-`code_simplicity`.
+Return only JSON conforming to the bundled
+[review-result schema](references/review-suite/review-result.schema.json) with
+lens `code_simplicity`.
 
 - Return `clean` when no material local simplification remains.
 - Return `changes_required` when a blocking or strong-recommendation finding
@@ -92,5 +96,10 @@ Return only JSON conforming to
 
 Do not edit or format files, apply refactors, create repository artifacts,
 commit, push, resolve threads, post reviews, or update tickets. Run only safe
-read-only inspection and validation commands. Preserve supplied pre-review
-candidate state exactly and report unexpected mutation as an integrity failure.
+read-only inspection and validation commands. Runtimes that support tool
+restriction should enforce the `allowed-tools` frontmatter, which excludes
+file-editing tools. The shell remains necessary for validation commands and can
+still mutate files, so prefer a sandboxed or deny-write shell where available;
+the recorded before/after candidate state is the authoritative integrity check.
+Preserve supplied pre-review candidate state exactly and report unexpected
+mutation as an integrity failure.

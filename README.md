@@ -44,8 +44,19 @@ implement-epic
 ```
 
 Compatible runtimes may provide named subagents or equivalent isolated
-implementation and review contexts. OpenAI-facing files under `agents/` are
-optional discovery metadata, not part of the skills' portable contracts.
+implementation and review contexts. Files under each skill's `agents/` directory
+(`openai.yaml` for OpenAI runtimes, `claude-code.md` for Claude Code) are
+optional discovery and adapter metadata, not part of the skills' portable
+contracts.
+
+Each review skill bundles a verbatim copy of the canonical `review-suite`
+contract and schemas under its own `references/review-suite/` directory so the
+skill remains self-contained when installed elsewhere. Edit only the canonical
+files and refresh the copies with:
+
+```bash
+just sync-contracts
+```
 
 ## Quick Start
 
@@ -79,18 +90,26 @@ just eval-prepare-changesets
 just eval-implement-ticket
 ```
 
-The ticket-composition evaluator starts a fresh process for each raw-artifact
-case, with fixture identity and grader expectations withheld. Its bundled
-reference executor validates the portable skill contract deterministically. To
-forward-evaluate another compatible agent runtime, pass its stdin/stdout JSON
+The ticket-composition evaluator starts a fresh process for each case, with
+fixture identity and grader expectations withheld. Case artifacts carry
+pre-classified scenario flags (for example, a CI failure already labeled
+branch-caused or infrastructure), so the harness grades obligation mapping and
+terminal-state selection — not evidence classification itself. Its bundled
+reference executor is a deterministic simulation of a compliant runtime, not a
+model. To forward-evaluate a real agent runtime, pass its stdin/stdout JSON
 adapter through `scripts/evals/run_forward.py --executor` and retain captured
-observations with `--output-dir`.
+observations with `--output-dir`. A Claude Code headless adapter is bundled:
+
+```bash
+just eval-implement-ticket-claude
+```
 
 ## Prerequisites
 
 - Python 3.11+
 - Git
-- GitHub CLI (`gh`) for PR workflows
+- GitHub CLI (`gh`) 2.37 or newer for PR workflows (the babysit-pr watcher
+  requires `gh pr checks --json`)
 - `skills-ref` on `PATH` for skill validation (optional but recommended)
 
 ## Notes

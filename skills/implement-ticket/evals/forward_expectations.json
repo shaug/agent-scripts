@@ -1,20 +1,240 @@
 [
-  {"case_id": "whole-epic-before-ticket-dependencies", "target_skill": "implement-ticket", "terminal_state": "requires_epic", "required_actions": ["route_before_ticket_dependencies", "perform_no_mutation"], "private_grader_marker": "never-send-expectations-to-executor"},
-  {"case_id": "missing-babysit-pr", "target_skill": "implement-ticket", "terminal_state": "blocked", "required_actions": ["fail_before_mutation", "name_missing_babysit_pr"]},
-  {"case_id": "standalone-ready-pr", "target_skill": "implement-ticket", "terminal_state": "ready_pr", "required_actions": ["invoke_ready_to_merge", "verify_non_merge_gates"]},
-  {"case_id": "authorized-merge-closeout", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["invoke_merge_when_ready", "verify_merge_live", "caller_verifies_mainline_tracker_cleanup"]},
-  {"case_id": "linear-ticket-github-pr", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["preserve_tracker_pr_host_separation", "invoke_merge_when_ready", "caller_verifies_mainline_tracker_cleanup"]},
-  {"case_id": "published-feedback-fix", "target_skill": "implement-ticket", "terminal_state": "ready_pr", "required_actions": ["ticket_scoped_fix", "revalidate_commit_push", "fresh_review_code_change", "rebuild_remote_gates"]},
-  {"case_id": "branch-caused-ci-fix", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["ticket_scoped_fix", "revalidate_commit_push", "fresh_review_code_change", "rebuild_remote_gates"]},
-  {"case_id": "infrastructure-retry", "target_skill": "implement-ticket", "terminal_state": "ready_pr", "required_actions": ["retry_diagnosed_run_only", "make_no_code_mutation"]},
-  {"case_id": "unauthorized-human-response", "target_skill": "implement-ticket", "terminal_state": "blocked", "required_actions": ["do_not_reply_or_resolve", "preserve_feedback_gate"]},
-  {"case_id": "stale-connector-verdict", "target_skill": "implement-ticket", "terminal_state": "blocked", "required_actions": ["reject_stale_connector_verdict"]},
-  {"case_id": "unrelated-base-drift", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["retain_only_proven_unaffected_evidence"]},
-  {"case_id": "relevant-base-drift", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["invalidate_drift_affected_evidence", "revalidate_commit_push", "fresh_review_code_change", "rebuild_remote_gates"]},
-  {"case_id": "external-head-change", "target_skill": "implement-ticket", "terminal_state": "ready_pr", "required_actions": ["revalidate_candidate_identity", "invalidate_head_bound_evidence", "rebuild_remote_gates"]},
-  {"case_id": "closed-without-merge", "target_skill": "implement-ticket", "terminal_state": "blocked", "required_actions": ["preserve_artifacts", "report_closed_without_merge"]},
-  {"case_id": "malformed-babysitter-result", "target_skill": "implement-ticket", "terminal_state": "blocked", "required_actions": ["reject_stale_or_malformed_result", "reread_live_pr"]},
-  {"case_id": "delegated-mutation-ownership", "target_skill": "implement-ticket", "terminal_state": "ready_pr", "required_actions": ["transfer_exclusive_mutation_ownership"]},
-  {"case_id": "resumed-pr-deduplication", "target_skill": "implement-ticket", "terminal_state": "merged", "required_actions": ["adopt_verified_canonical_pr", "deduplicate_prior_actions"]},
-  {"case_id": "implement-epic-consumes-ticket-results", "target_skill": "implement-epic", "terminal_state": "mixed_ticket_results", "required_actions": ["consume_ticket_states_unchanged", "do_not_invoke_babysit_pr_directly", "refresh_graph_after_merged_only"]}
+  {
+    "case_id": "whole-epic-before-ticket-dependencies",
+    "forbidden_actions": [
+      "ticket_scoped_fix",
+      "invoke_ready_to_merge",
+      "invoke_merge_when_ready"
+    ],
+    "private_grader_marker": "never-send-expectations-to-executor",
+    "required_actions": [
+      "route_before_ticket_dependencies",
+      "perform_no_mutation"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "requires_epic"
+  },
+  {
+    "case_id": "missing-babysit-pr",
+    "forbidden_actions": [
+      "invoke_ready_to_merge",
+      "invoke_merge_when_ready"
+    ],
+    "required_actions": [
+      "fail_before_mutation",
+      "name_missing_babysit_pr"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "standalone-ready-pr",
+    "forbidden_actions": [
+      "invoke_merge_when_ready"
+    ],
+    "required_actions": [
+      "invoke_ready_to_merge",
+      "verify_non_merge_gates"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_pr"
+  },
+  {
+    "case_id": "authorized-merge-closeout",
+    "forbidden_actions": [
+      "fail_before_mutation",
+      "invoke_ready_to_merge",
+      "perform_no_mutation"
+    ],
+    "required_actions": [
+      "invoke_merge_when_ready",
+      "verify_merge_live",
+      "caller_verifies_mainline_tracker_cleanup"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "linear-ticket-github-pr",
+    "forbidden_actions": [
+      "invoke_ready_to_merge",
+      "perform_no_mutation"
+    ],
+    "required_actions": [
+      "preserve_tracker_pr_host_separation",
+      "invoke_merge_when_ready",
+      "caller_verifies_mainline_tracker_cleanup"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "published-feedback-fix",
+    "forbidden_actions": [
+      "invoke_merge_when_ready"
+    ],
+    "required_actions": [
+      "ticket_scoped_fix",
+      "revalidate_commit_push",
+      "fresh_review_code_change",
+      "rebuild_remote_gates"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_pr"
+  },
+  {
+    "case_id": "branch-caused-ci-fix",
+    "forbidden_actions": [
+      "make_no_code_mutation",
+      "retry_diagnosed_run_only"
+    ],
+    "required_actions": [
+      "ticket_scoped_fix",
+      "revalidate_commit_push",
+      "fresh_review_code_change",
+      "rebuild_remote_gates"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "infrastructure-retry",
+    "forbidden_actions": [
+      "ticket_scoped_fix"
+    ],
+    "required_actions": [
+      "retry_diagnosed_run_only",
+      "make_no_code_mutation"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_pr"
+  },
+  {
+    "case_id": "unauthorized-human-response",
+    "forbidden_actions": [
+      "invoke_ready_to_merge",
+      "invoke_merge_when_ready"
+    ],
+    "required_actions": [
+      "do_not_reply_or_resolve",
+      "preserve_feedback_gate"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "stale-connector-verdict",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
+    "required_actions": [
+      "reject_stale_connector_verdict"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "unrelated-base-drift",
+    "forbidden_actions": [
+      "invalidate_drift_affected_evidence"
+    ],
+    "required_actions": [
+      "retain_only_proven_unaffected_evidence"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "relevant-base-drift",
+    "forbidden_actions": [
+      "retain_only_proven_unaffected_evidence"
+    ],
+    "required_actions": [
+      "invalidate_drift_affected_evidence",
+      "revalidate_commit_push",
+      "fresh_review_code_change",
+      "rebuild_remote_gates"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "external-head-change",
+    "forbidden_actions": [
+      "invoke_merge_when_ready"
+    ],
+    "required_actions": [
+      "revalidate_candidate_identity",
+      "invalidate_head_bound_evidence",
+      "rebuild_remote_gates"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_pr"
+  },
+  {
+    "case_id": "closed-without-merge",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "ticket_scoped_fix"
+    ],
+    "required_actions": [
+      "preserve_artifacts",
+      "report_closed_without_merge"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "malformed-babysitter-result",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
+    "required_actions": [
+      "reject_stale_or_malformed_result",
+      "reread_live_pr"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "delegated-mutation-ownership",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "reject_concurrent_mutation"
+    ],
+    "required_actions": [
+      "transfer_exclusive_mutation_ownership"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_pr"
+  },
+  {
+    "case_id": "resumed-pr-deduplication",
+    "forbidden_actions": [
+      "fail_before_mutation",
+      "perform_no_mutation"
+    ],
+    "required_actions": [
+      "adopt_verified_canonical_pr",
+      "deduplicate_prior_actions"
+    ],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "implement-epic-consumes-ticket-results",
+    "forbidden_actions": [
+      "invoke_merge_when_ready",
+      "invoke_ready_to_merge"
+    ],
+    "required_actions": [
+      "consume_ticket_states_unchanged",
+      "do_not_invoke_babysit_pr_directly",
+      "refresh_graph_after_merged_only"
+    ],
+    "target_skill": "implement-epic",
+    "terminal_state": "mixed_ticket_results"
+  }
 ]

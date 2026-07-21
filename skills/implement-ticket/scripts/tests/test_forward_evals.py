@@ -15,6 +15,14 @@ RUNNER = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(RUNNER)
 
+CLAUDE_EXECUTOR_PATH = SKILL_ROOT / "scripts" / "evals" / "claude_executor.py"
+CLAUDE_SPEC = importlib.util.spec_from_file_location(
+    "implement_ticket_claude_executor", CLAUDE_EXECUTOR_PATH
+)
+CLAUDE_EXECUTOR = importlib.util.module_from_spec(CLAUDE_SPEC)
+assert CLAUDE_SPEC and CLAUDE_SPEC.loader
+CLAUDE_SPEC.loader.exec_module(CLAUDE_EXECUTOR)
+
 
 class ForwardEvaluationTests(unittest.TestCase):
     @classmethod
@@ -72,6 +80,36 @@ class ForwardEvaluationTests(unittest.TestCase):
         )
         self.assertEqual("blocked", observed["terminal_state"])
         self.assertIn("skill_contract_incomplete", observed["actions"])
+
+    def test_vocabulary_spam_fails_every_case(self):
+        """An executor emitting the whole action vocabulary must never pass.
+
+        This forces every expectation record to keep at least one
+        forbidden action, so the anti-gaming defense stays complete as
+        cases are added.
+        """
+        expectations = json.loads(self.expectations_text)
+        vocabulary = sorted(CLAUDE_EXECUTOR.ACTION_VOCABULARY)
+        for expected in expectations:
+            spam = {
+                "target_skill": expected["target_skill"],
+                "terminal_state": expected["terminal_state"],
+                "actions": vocabulary,
+            }
+            with self.subTest(case=expected["case_id"]):
+                failures = RUNNER.grade(expected["case_id"], spam, expected)
+                self.assertTrue(
+                    any("forbidden actions" in failure for failure in failures),
+                    f"{expected['case_id']} has no forbidden_actions teeth",
+                )
+
+    def test_claude_executor_reports_model_claims_verbatim(self):
+        normalized = CLAUDE_EXECUTOR.normalize(
+            {"target_skill": "implement-ticket"},
+            {"terminal_state": "ready_pr", "actions": ["invoke_ready_to_merge"]},
+        )
+        # No backfill: a model that omits target_skill must fail grading.
+        self.assertIsNone(normalized["target_skill"])
 
     def test_required_composition_cases_are_executable(self):
         observations, failures = RUNNER.evaluate(

@@ -8,8 +8,11 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY_ROOT = SKILL_ROOT.parents[1]
 REVIEW_SUITE = REPOSITORY_ROOT / "review-suite"
+# Import the skill's own bundled validator so these tests exercise the
+# installed layout, not only the canonical monorepo copy.
 SPEC = importlib.util.spec_from_file_location(
-    "review_contract_validator", REVIEW_SUITE / "scripts" / "validate.py"
+    "review_contract_validator",
+    SKILL_ROOT / "references" / "review-suite" / "validate.py",
 )
 assert SPEC and SPEC.loader
 VALIDATOR = importlib.util.module_from_spec(SPEC)
@@ -32,7 +35,7 @@ class OrchestrationContractTests(unittest.TestCase):
         }
         cls.results = {
             record["case_id"]: record
-            for record in load(SKILL_ROOT / "evals" / "results.json")
+            for record in load(SKILL_ROOT / "evals" / "expectations.json")
         }
 
     def test_skill_uses_only_local_lenses_in_default_order(self):
@@ -49,10 +52,25 @@ class OrchestrationContractTests(unittest.TestCase):
         ]
         self.assertEqual(sorted(positions), positions)
         self.assertNotIn("code-review-pro", self.skill + self.protocol)
-        self.assertIn("Build the shared packet once", self.skill)
-        self.assertIn("implementation transcripts", self.skill)
-        self.assertIn("at most three", self.skill)
-        self.assertIn("Do not edit", self.skill)
+
+    def test_orchestrator_allowed_tools_can_delegate_but_not_edit(self):
+        # The orchestrator needs subagent/skill tools to run each lens in a
+        # fresh context, but must never hold file-editing tools.
+        self.assertIn(
+            "allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill",
+            self.skill,
+        )
+
+    def test_skill_bundles_the_shared_contract(self):
+        self.assertIn("references/review-suite/CONTRACT.md", self.skill)
+        bundle = SKILL_ROOT / "references" / "review-suite"
+        for name in (
+            "CONTRACT.md",
+            "review-packet.schema.json",
+            "review-result.schema.json",
+            "validate.py",
+        ):
+            self.assertTrue((bundle / name).is_file(), name)
 
     def test_forward_evaluations_cover_every_case_and_conform(self):
         self.assertEqual(set(self.cases), set(self.results))
@@ -182,16 +200,18 @@ class OrchestrationContractTests(unittest.TestCase):
                 "validation.md",
             )
         )
-        record = load(evaluation / "result.json")
+        record = load(
+            SKILL_ROOT / "evals" / "expected" / "standalone-clean.result.json"
+        )
 
+        # The reviewer-visible input directory must not contain the answer key.
+        self.assertEqual(
+            [], [path for path in evaluation.glob("*result*") if path.is_file()]
+        )
         self.assertNotIn("expected", prompt.lower())
         self.assertNotIn("change_contract", evidence)
         self.assertEqual(
-            [
-                "review-solution-simplicity",
-                "review-correctness",
-                "review-code-simplicity",
-            ],
+            ["solution_simplicity", "correctness", "code_simplicity"],
             record["observed_sequence"],
         )
         self.assertEqual([], VALIDATOR.validate_result(record["result"]))
