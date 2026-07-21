@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+import unittest
+from pathlib import Path
+
+import helpers  # noqa: F401
+from cli import COMMAND_MUTATION_CLASSES, build_parser
+
+
+class CliSafetyTests(unittest.TestCase):
+    def test_every_operation_has_one_mutation_class(self) -> None:
+        parser = build_parser()
+        help_text = parser.format_help()
+        self.assertEqual(14, len(COMMAND_MUTATION_CLASSES))
+        for command, mutation_class in COMMAND_MUTATION_CLASSES.items():
+            self.assertIn(command, help_text)
+            self.assertIn(f"[{mutation_class}]", help_text)
+
+    def test_all_remote_mutations_default_to_dry_run(self) -> None:
+        parser = build_parser()
+        for argv in (("pr-create",), ("push-chain",)):
+            args = parser.parse_args(argv)
+            self.assertEqual("remote-mutating", args.mutation_class)
+            self.assertTrue(args.dry_run)
+
+    def test_implementation_uses_file_messages_and_no_hard_reset(self) -> None:
+        scripts = Path(__file__).resolve().parents[1]
+        implementation = "\n".join(
+            path.read_text()
+            for path in scripts.glob("*.py")
+            if path.name
+            not in {"metadata.py", "rehydrate.py", "status.py", "validate.py"}
+        )
+        self.assertNotIn('"commit", "-m"', implementation)
+        self.assertNotIn('"--body",', implementation)
+        self.assertNotIn('"reset", "--hard"', implementation)
+
+    def test_only_github_module_invokes_gh(self) -> None:
+        scripts = Path(__file__).resolve().parents[1]
+        for path in scripts.glob("*.py"):
+            if path.name == "github.py":
+                continue
+            source = path.read_text()
+            self.assertNotIn('["gh",', source, path.name)
+            self.assertNotIn('("gh",', source, path.name)
+
+
+if __name__ == "__main__":
+    unittest.main()
