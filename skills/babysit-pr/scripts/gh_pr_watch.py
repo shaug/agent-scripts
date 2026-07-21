@@ -979,11 +979,13 @@ def recommend_actions(
     return unique_actions(actions)
 
 
-def collect_snapshot(args):
+def collect_snapshot(args, locked_state_path=None):
     pr = resolve_pr(args.pr, repo_override=args.repo)
     state_path = (
         Path(args.state_file) if args.state_file else default_state_file_for(pr)
     )
+    if locked_state_path is not None and state_path != locked_state_path:
+        raise RuntimeError("Snapshot target changed state-file identity")
     state, _ = load_state(state_path)
     validate_state_target(state, pr, state_path)
 
@@ -1088,9 +1090,10 @@ def retry_failed_now(args):
 
 
 def _retry_failed_now_locked(args, state_path):
-    snapshot, current_state_path = collect_snapshot(args)
-    if current_state_path != state_path:
-        raise RuntimeError("Retry target changed state-file identity")
+    snapshot, _ = collect_snapshot(
+        args,
+        locked_state_path=state_path,
+    )
     pr = snapshot["pr"]
     checks_summary = snapshot["checks"]
     failed_runs = snapshot["failed_runs"]
@@ -1194,9 +1197,10 @@ def run_watch(args):
     state_path = resolve_state_path(args)
     with watcher_lock(state_path):
         while True:
-            snapshot, current_state_path = collect_snapshot(args)
-            if current_state_path != state_path:
-                raise RuntimeError("Watcher target changed state-file identity")
+            snapshot, _ = collect_snapshot(
+                args,
+                locked_state_path=state_path,
+            )
             print_event(
                 "snapshot",
                 {
@@ -1221,9 +1225,10 @@ def run_watch(args):
 def collect_snapshot_once(args):
     state_path = resolve_state_path(args)
     with watcher_lock(state_path):
-        snapshot, current_state_path = collect_snapshot(args)
-        if current_state_path != state_path:
-            raise RuntimeError("Snapshot target changed state-file identity")
+        snapshot, _ = collect_snapshot(
+            args,
+            locked_state_path=state_path,
+        )
         return snapshot, state_path
 
 

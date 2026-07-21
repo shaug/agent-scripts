@@ -808,33 +808,51 @@ class OneShotLockTests(unittest.TestCase):
                 WATCHER,
                 "collect_snapshot",
                 return_value=(snapshot, Path("state.json")),
-            ),
+            ) as collect_snapshot,
         ):
             result, state_path = WATCHER.collect_snapshot_once(args)
         self.assertIs(snapshot, result)
         self.assertEqual(Path("state.json"), state_path)
         watcher_lock.assert_called_once_with(Path("state.json"))
+        collect_snapshot.assert_called_once_with(
+            args,
+            locked_state_path=Path("state.json"),
+        )
 
-    def test_one_shot_rejects_target_change_while_locked(self):
+    def test_one_shot_rejects_target_change_before_state_write(self):
         args = sample_args(Path("state.json"))
+        args.state_file = None
+        pr_one = sample_pr(number=1)
+        pr_two = sample_pr(number=2)
+        pr_one_path = Path("pr-one-state.json")
+        pr_two_path = Path("pr-two-state.json")
+
+        def state_path_for(pr):
+            return pr_one_path if pr["number"] == 1 else pr_two_path
+
         with (
-            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "resolve_pr", side_effect=[pr_one, pr_two]),
+            mock.patch.object(
+                WATCHER,
+                "default_state_file_for",
+                side_effect=state_path_for,
+            ),
             mock.patch.object(
                 WATCHER,
                 "watcher_lock",
                 return_value=nullcontext(),
-            ),
-            mock.patch.object(
-                WATCHER,
-                "collect_snapshot",
-                return_value=({}, Path("other-state.json")),
-            ),
+            ) as watcher_lock,
+            mock.patch.object(WATCHER, "load_state") as load_state,
+            mock.patch.object(WATCHER, "save_state") as save_state,
         ):
             with self.assertRaisesRegex(
                 RuntimeError,
                 "Snapshot target changed state-file identity",
             ):
                 WATCHER.collect_snapshot_once(args)
+        watcher_lock.assert_called_once_with(pr_one_path)
+        load_state.assert_not_called()
+        save_state.assert_not_called()
 
 
 if __name__ == "__main__":

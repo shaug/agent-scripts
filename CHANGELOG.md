@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Repository-owned PR babysitting
 
+- fix: validate the locked PR state path before any snapshot read or write
 - fix: serialize every watcher state mutation through one repository/PR lock
+  (`8c64b05daa9cde6832fb128c7c6786896fb57108`)
 - fix: serialize retry mutation and durably reserve each per-head retry cycle
   (`4ecdd65767164e7f0f112d4049a856c6e8ea53ed`)
 - fix: scope CI retries to explicitly diagnosed current-PR runs
