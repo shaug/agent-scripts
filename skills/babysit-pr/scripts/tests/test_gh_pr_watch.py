@@ -789,6 +789,15 @@ class SnapshotAndStateTests(unittest.TestCase):
                 Path("state.json"),
             )
 
+    def test_state_target_accepts_repo_case_variants(self):
+        # Mixed-case invocations share one state file; validation must use
+        # the same case-insensitive match as default_state_file_for.
+        WATCHER.validate_state_target(
+            {"pr": {"repo": "Example/Project", "number": 123}},
+            sample_pr(),
+            Path("state.json"),
+        )
+
     def test_state_is_atomic_and_round_trips(self):
         with tempfile.TemporaryDirectory() as directory:
             state_path = Path(directory) / "state.json"
@@ -1073,6 +1082,48 @@ class RetryTests(unittest.TestCase):
                 items=[
                     {
                         "bucket": "cancel",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}],
+            "failed_jobs": [],
+            "retry_state": {
+                "current_sha_retries_used": 0,
+                "max_flaky_retries": 3,
+            },
+        }
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "load_state", return_value=(state, False)),
+            mock.patch.object(WATCHER, "save_state"),
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER._retry_failed_now_locked(
+                sample_args(Path("state.json")),
+                Path("state.json"),
+                ("example/project", 123),
+            )
+        self.assertTrue(result["rerun_attempted"])
+        self.assertEqual("rerun_triggered", result["reason"])
+        gh_text.assert_called_once()
+
+    def test_retry_accepts_failed_runs_only_state(self):
+        # Green buckets + a PR-check-backed failed run is the same state that
+        # blocks clear and recommends diagnosis/retry; the retry gate must
+        # share recommend_actions' predicate rather than refuse it.
+        state = {
+            "pr": {"repo": "example/project", "number": 123},
+            "retries_by_sha": {},
+        }
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                items=[
+                    {
+                        "bucket": "pass",
                         "link": "https://github.com/example/project/actions/runs/99/job/8",
                     }
                 ],

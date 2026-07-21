@@ -6,12 +6,17 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- fix: share one failed-PR-check predicate across the watcher — the initial
+  `review-code-change` pass on PR #27 found the retry gate refusing retries that
+  `recommend_actions` recommends for failed-runs-only states; extract
+  `has_failed_pr_checks` and use it in both sites, and match repository case
+  insensitively in state-target validation
 - fix: close the final low-severity review findings — mirror the clear predicate
   in `has_failed_pr_checks` so a PR-check-backed failed run never reads as
   `idle`, case-normalize repositories before deriving state files and locks,
   match fragment run links, reject `--repo` without an explicit `--pr`, make
   boolean schema constants reject numeric one, and document `--poll-seconds` and
-  `--max-flaky-retries`
+  `--max-flaky-retries` (`f79266a390e970cd25cf8af1bed6b9bd9cf154ee`)
 - fix: align retry gating and delegation tooling with review round four — accept
   cancelled-only check failures in the retry gate so a recommended retry is
   never refused, grant the review orchestrator the subagent and skill tools its

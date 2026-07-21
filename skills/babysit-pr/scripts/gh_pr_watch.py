@@ -409,7 +409,9 @@ def validate_state_target(state, pr, state_path):
         number_matches = int(stored_number) == int(pr["number"])
     except (TypeError, ValueError):
         number_matches = False
-    if stored_repo != pr["repo"] or not number_matches:
+    # GitHub slugs are case-insensitive; match the normalization used by
+    # default_state_file_for so mixed-case invocations share one state file.
+    if stored_repo.lower() != pr["repo"].lower() or not number_matches:
         raise RuntimeError(
             "State file target does not match live PR: "
             f"{state_path} stores {stored_repo}#{stored_number}, "
@@ -1027,6 +1029,21 @@ def unique_actions(actions):
     return out
 
 
+def has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
+    """One shared failed-PR-check predicate.
+
+    recommend_actions, is_github_candidate_clear, and the retry gate must
+    all agree on what counts as a failed PR check; two diverging copies of
+    this test have twice produced recommend/refuse contradictions.
+    """
+    return (
+        checks_summary["failed_count"] > 0
+        or int(checks_summary.get("cancelled_count") or 0) > 0
+        or bool(failed_runs)
+        or bool(failed_jobs)
+    )
+
+
 def is_github_candidate_clear(
     pr,
     checks_summary,
@@ -1101,15 +1118,7 @@ def recommend_actions(
     if new_review_items or unresolved_threads:
         actions.append("process_review_feedback")
 
-    # Mirror is_github_candidate_clear exactly: anything that blocks a clear
-    # candidate must also surface a diagnosis recommendation, never `idle`.
-    has_failed_pr_checks = (
-        checks_summary["failed_count"] > 0
-        or int(checks_summary.get("cancelled_count") or 0) > 0
-        or bool(failed_runs)
-        or bool(failed_jobs)
-    )
-    if has_failed_pr_checks:
+    if has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
         if checks_summary["all_terminal"] and retries_used >= max_retries:
             # The exhausted budget only ends flaky retries; a new fixable
             # branch-caused failure at this head still deserves diagnosis.
@@ -1315,13 +1324,9 @@ def _retry_failed_now_locked(args, state_path, locked_pr_identity):
     if pr["closed"] or pr["merged"]:
         result["reason"] = "pr_closed"
         return result
-    # Mirror recommend_actions: cancelled checks count as failed PR checks,
-    # so a recommended retry is never refused for a cancelled-only failure.
-    if (
-        checks_summary["failed_count"] <= 0
-        and int(checks_summary.get("cancelled_count") or 0) <= 0
-        and not snapshot["failed_jobs"]
-    ):
+    # Use the exact predicate recommend_actions uses, so a recommended retry
+    # is never refused with no_failed_pr_checks.
+    if not has_failed_pr_checks(checks_summary, failed_runs, snapshot["failed_jobs"]):
         result["reason"] = "no_failed_pr_checks"
         return result
     if not failed_runs:
