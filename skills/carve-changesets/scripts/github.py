@@ -16,7 +16,13 @@ from common import (
     git,
     message_file,
 )
-from metadata import embed_pr_metadata, parse_commit_message
+from metadata import (
+    ChangesetMetadata,
+    MetadataError,
+    embed_pr_metadata,
+    parse_commit_message,
+    parse_pr_metadata,
+)
 from rehydrate import PullRequestRecord
 
 
@@ -102,7 +108,73 @@ def _print_command(command: Sequence[str]) -> None:
     print(" ".join(subprocess.list2cmdline([part]) for part in command))
 
 
-def pr_create(plan: Dict, *, indices: List[int], dry_run: bool) -> None:
+def _local_remote_head(branch: str, remote: str) -> str:
+    local_result = git(
+        "rev-parse", "--verify", f"refs/heads/{branch}^{{commit}}", check=False
+    )
+    if local_result.returncode != 0:
+        raise CommandError(f"Local changeset branch {branch!r} does not exist.")
+    local_head = local_result.stdout.strip()
+    remote_result = git(
+        "ls-remote", "--heads", remote, f"refs/heads/{branch}", check=False
+    )
+    if remote_result.returncode != 0:
+        detail = (remote_result.stderr or remote_result.stdout or "").strip()
+        raise CommandError(
+            f"Could not resolve {remote} changeset branch {branch!r}: {detail}"
+        )
+    fields = remote_result.stdout.strip().split()
+    if len(fields) != 2 or fields[1] != f"refs/heads/{branch}":
+        raise CommandError(
+            f"Remote changeset branch {remote}/{branch} does not exist; run push-chain first."
+        )
+    remote_head = fields[0]
+    if local_head != remote_head:
+        raise CommandError(
+            f"Changeset branch {branch} is not publication-ready: local head "
+            f"{local_head} differs from {remote} head {remote_head}."
+        )
+    return local_head
+
+
+def _verify_created_pr(
+    created: object,
+    *,
+    head: str,
+    expected_head: str,
+    expected_base: str,
+    expected_metadata: ChangesetMetadata,
+) -> Dict:
+    if not isinstance(created, dict):
+        raise CommandError(f"PR for {head} was created but could not be verified.")
+    if str(created.get("headRefOid") or "") != expected_head:
+        raise CommandError(
+            f"Created PR for {head} has head {created.get('headRefOid')}; "
+            f"expected {expected_head}."
+        )
+    if str(created.get("baseRefName") or "") != expected_base:
+        raise CommandError(
+            f"Created PR for {head} has base {created.get('baseRefName')!r}; "
+            f"expected {expected_base!r}."
+        )
+    try:
+        actual_metadata = parse_pr_metadata(str(created.get("body") or ""))
+    except MetadataError as exc:
+        raise CommandError(
+            f"Created PR for {head} has invalid changeset metadata: {exc}"
+        ) from exc
+    if actual_metadata != expected_metadata:
+        raise CommandError(
+            f"Created PR for {head} metadata does not match its exact changeset commit."
+        )
+    if not created.get("number") or not created.get("url"):
+        raise CommandError(f"Created PR for {head} is missing its number or URL.")
+    return created
+
+
+def pr_create(
+    plan: Dict, *, indices: List[int], dry_run: bool, remote: str = "origin"
+) -> None:
     ensure_git_repo()
     ensure_clean_tree()
     if not dry_run:
@@ -115,10 +187,24 @@ def pr_create(plan: Dict, *, indices: List[int], dry_run: bool) -> None:
     for index in indices:
         if index < 1 or index > total:
             raise CommandError(f"--index must be between 1 and {total}.")
+    expected_heads = (
+        {
+            branch_name_for(source, index): _local_remote_head(
+                branch_name_for(source, index), remote
+            )
+            for index in indices
+        }
+        if not dry_run
+        else {}
+    )
+    for index in indices:
         head = branch_name_for(source, index)
         pr_base = base_for_changeset(base, source, index)
         title = pr_title_for(plan["feature_title"], index, total)
         body = pr_body_for(plan, index, total, changesets[index - 1])
+        expected_metadata = parse_commit_message(
+            git("show", "-s", "--format=%B", head).stdout
+        )
         with message_file(body) as body_path:
             args = (
                 "pr",
@@ -137,10 +223,23 @@ def pr_create(plan: Dict, *, indices: List[int], dry_run: bool) -> None:
                 print("[DRY-RUN] Would run:")
                 _print_command(("gh", *args))
                 continue
+            expected_head = expected_heads[head]
             gh_capture(args)
-        created = gh_json(("pr", "view", head, "--json", "number,url"))
-        if not isinstance(created, dict):
-            raise CommandError(f"PR for {head} was created but could not be verified.")
+        created = _verify_created_pr(
+            gh_json(
+                (
+                    "pr",
+                    "view",
+                    head,
+                    "--json",
+                    "number,url,headRefOid,baseRefName,body",
+                )
+            ),
+            head=head,
+            expected_head=expected_head,
+            expected_base=pr_base,
+            expected_metadata=expected_metadata,
+        )
         print(f"[OK] PR #{created['number']} created: {created['url']}")
 
     if dry_run:

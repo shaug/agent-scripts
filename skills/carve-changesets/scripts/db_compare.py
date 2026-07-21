@@ -45,7 +45,7 @@ def db_compare(plan: Dict, *, source_cmd: str, chain_cmd: str, out_dir: Path) ->
     source_out = out_dir / "source.txt"
     chain_out = out_dir / "chain.txt"
 
-    temp_branch = unique_temp_branch("carve-temp-dbcompare")
+    temp_branch = unique_temp_branch("carve-temp-db_compare")
     print(f"[INFO] Using output directory: {out_dir}")
     print(f"[INFO] Creating temporary branch: {temp_branch}")
 

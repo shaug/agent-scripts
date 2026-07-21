@@ -54,6 +54,19 @@ class EvalGraderTests(unittest.TestCase):
 
 
 class EvalRunnerTests(unittest.TestCase):
+    def test_prompts_use_only_the_consolidated_carve_interface(self) -> None:
+        prompts_path = Path(__file__).resolve().parents[1] / "evals" / "prompts.csv"
+        prompts = prompts_path.read_text()
+        self.assertIn("carve-changesets skill", prompts)
+        self.assertIn("scripts/cli.py", prompts)
+        self.assertIn(".carve-changesets/plan.json", prompts)
+        for stale in (
+            "prepare" + "-changesets",
+            ".prepare" + "-changesets",
+            "scripts/" + "*.py",
+        ):
+            self.assertNotIn(stale, prompts)
+
     def test_runner_skip_codex_produces_passing_summary(self) -> None:
         prompts_path = Path(__file__).resolve().parents[1] / "evals" / "prompts.csv"
         out_dir = Path(tempfile.mkdtemp(prefix="pcs-eval-out-"))

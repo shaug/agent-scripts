@@ -23,11 +23,11 @@ from patch_apply import build_diff
 from plan_checks import strict_apply_check, validate_plan_strict
 from preflight import preflight
 from propagate import push_chain
-from rehydrate import RehydrationError, rehydrate_chain
+from rehydrate import RehydrationError, discover_changeset_heads, rehydrate_chain
 from squash_check import squash_check
 from squash_ref import _resolve_base_source, create_squashed_ref
 from status import status_from_live
-from validate import validate_live_chain
+from validate import ChainValidation, validate_live_chain
 
 READ_ONLY = "read-only"
 LOCAL_MUTATING = "local-mutating"
@@ -115,24 +115,47 @@ def cmd_validate(args: argparse.Namespace) -> None:
                 "Strict plan validation failed: " + "; ".join(strict_errors)
             )
         strict_apply_check(plan)
+        live_heads = discover_changeset_heads(
+            Path.cwd(), plan["source_branch"], args.remote
+        )
+        if live_heads:
+            pull_requests = (
+                []
+                if args.local_only
+                else pull_requests_for_source(plan["source_branch"])
+            )
+            chain = rehydrate_chain(
+                source_branch=plan["source_branch"],
+                base_branch=plan["base_branch"],
+                pull_requests=pull_requests,
+                remote=args.remote,
+            )
+            result = validate_live_chain(chain, remote=args.remote)
+            _print_live_diagnostics(result)
+            if not result.valid:
+                raise CommandError("Strict live chain validation failed.")
         print("[OK] Strict validation passed.")
         return
     print("[OK] Plan validation passed.")
 
 
 def cmd_status(args: argparse.Namespace) -> None:
-    plan = load_and_validate(Path(args.plan))
-    pull_requests = (
-        [] if args.local_only else pull_requests_for_source(plan["source_branch"])
-    )
+    pull_requests = [] if args.local_only else pull_requests_for_source(args.source)
     print(
         status_from_live(
-            source_branch=plan["source_branch"],
-            base_branch=plan["base_branch"],
+            source_branch=args.source,
+            base_branch=args.base,
             pull_requests=pull_requests,
             remote=args.remote,
         )
     )
+
+
+def _print_live_diagnostics(result: ChainValidation) -> None:
+    for diagnostic in result.diagnostics:
+        print(
+            f"[{diagnostic.severity.upper()}] {diagnostic.code}: {diagnostic.message}"
+        )
 
 
 def cmd_create_chain(args: argparse.Namespace) -> None:
@@ -161,10 +184,7 @@ def cmd_validate_chain(args: argparse.Namespace) -> None:
         remote=args.remote,
     )
     result = validate_live_chain(chain, remote=args.remote)
-    for diagnostic in result.diagnostics:
-        print(
-            f"[{diagnostic.severity.upper()}] {diagnostic.code}: {diagnostic.message}"
-        )
+    _print_live_diagnostics(result)
     if not result.valid:
         raise CommandError("Live chain validation failed.")
     print("[OK] Live chain ancestry and source equivalence passed.")
@@ -176,7 +196,7 @@ def cmd_pr_create(args: argparse.Namespace) -> None:
     indices: List[int] = (
         list(range(1, total + 1)) if args.index is None else [args.index]
     )
-    pr_create(plan, indices=indices, dry_run=args.dry_run)
+    pr_create(plan, indices=indices, dry_run=args.dry_run, remote=args.remote)
 
 
 def cmd_push_chain(args: argparse.Namespace) -> None:
@@ -321,10 +341,13 @@ def build_parser() -> argparse.ArgumentParser:
     item = _command(sub, "validate", "Validate the decomposition plan.")
     _add_plan(item)
     item.add_argument("--strict", action="store_true")
+    item.add_argument("--remote", default="origin")
+    item.add_argument("--local-only", action="store_true")
     item.set_defaults(func=cmd_validate)
 
     item = _command(sub, "status", "Render chain status from live git and GitHub.")
-    _add_plan(item)
+    item.add_argument("--source", required=True, help="Source branch")
+    item.add_argument("--base", default=None, help="Base branch")
     item.add_argument("--remote", default="origin")
     item.add_argument("--local-only", action="store_true")
     item.set_defaults(func=cmd_status)
@@ -349,6 +372,7 @@ def build_parser() -> argparse.ArgumentParser:
     item = _command(sub, "pr-create", "Publish correctly based changeset PRs.")
     _add_plan(item)
     item.add_argument("--index", type=int)
+    item.add_argument("--remote", default="origin")
     _add_remote_dry_run(item)
     item.set_defaults(func=cmd_pr_create)
 

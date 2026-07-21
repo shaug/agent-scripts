@@ -44,6 +44,13 @@ class CliSafetyTests(unittest.TestCase):
             self.assertNotIn('["gh",', source, path.name)
             self.assertNotIn('("gh",', source, path.name)
 
+    def test_database_compare_spelling_is_standardized(self) -> None:
+        scripts = Path(__file__).resolve().parents[1]
+        disallowed = "db" + "compare"
+        for path in scripts.rglob("*.py"):
+            self.assertNotIn(disallowed, path.name, str(path))
+            self.assertNotIn(disallowed, path.read_text(), str(path))
+
 
 if __name__ == "__main__":
     unittest.main()

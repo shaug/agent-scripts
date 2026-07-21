@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 import unittest
 
-import db_compare as dbcompare_mod
+import db_compare as db_compare_mod
 from chain import create_chain
 from legacy_helpers import chdir, init_repo
 
@@ -15,7 +15,7 @@ class DbCompareTests(unittest.TestCase):
             out_dir = repo_dir / ".carve-changesets" / "db-compare-test"
             with chdir(repo_dir):
                 create_chain(plan)
-                dbcompare_mod.db_compare(
+                db_compare_mod.db_compare(
                     plan,
                     source_cmd="cat a.txt",
                     chain_cmd="cat a.txt",
