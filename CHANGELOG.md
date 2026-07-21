@@ -6,11 +6,16 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- refactor: route the clear predicate through `has_failed_pr_checks` — the
+  code-simplicity lens on PR #27 flagged the last inline copy of the
+  failed-PR-check policy inside `is_github_candidate_clear`; all three agreement
+  sites now structurally share one predicate
 - fix: share one failed-PR-check predicate across the watcher — the initial
   `review-code-change` pass on PR #27 found the retry gate refusing retries that
   `recommend_actions` recommends for failed-runs-only states; extract
   `has_failed_pr_checks` and use it in both sites, and match repository case
   insensitively in state-target validation
+  (`625dae641a9652368f03b6be825f48d9addab056`)
 - fix: close the final low-severity review findings — mirror the clear predicate
   in `has_failed_pr_checks` so a PR-check-backed failed run never reads as
   `idle`, case-normalize repositories before deriving state files and locks,

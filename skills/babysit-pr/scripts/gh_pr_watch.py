@@ -1062,13 +1062,9 @@ def is_github_candidate_clear(
         return False
     if not checks_summary["all_terminal"]:
         return False
-    if checks_summary["failed_count"] > 0 or checks_summary["pending_count"] > 0:
+    if checks_summary["pending_count"] > 0:
         return False
-    if int(checks_summary.get("cancelled_count") or 0) > 0:
-        return False
-    # Cancelled or failed workflow runs can exist while every check bucket
-    # looks terminal and green; a clear candidate requires both views clean.
-    if failed_runs or failed_jobs:
+    if has_failed_pr_checks(checks_summary, failed_runs, failed_jobs):
         return False
     if new_review_items:
         return False
