@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-21 — Carve-changesets identity and operating contract
+## 2026-07-21 — Carve-changesets live validation, identity, and contract
 
+- feat: validate changeset chains from live git
 - feat: add self-describing changeset identity
+  (`e88bf87e9cb1a4e04bdf8b051ce8ca0f0dcb96e6`)
 - fix: clarify published terminal evidence
   (`edeb2f5f5f7b4cfa4e73e8289d34157b192f92ab`)
 - docs: define the carve-changesets operating contract
