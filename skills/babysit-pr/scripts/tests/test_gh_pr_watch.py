@@ -793,5 +793,49 @@ class RetryTests(unittest.TestCase):
         retry_locked.assert_called_once_with(args, Path("state.json"))
 
 
+class OneShotLockTests(unittest.TestCase):
+    def test_one_shot_serializes_state_mutation(self):
+        args = sample_args(Path("state.json"))
+        snapshot = {"pr": sample_pr()}
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(
+                WATCHER,
+                "watcher_lock",
+                return_value=nullcontext(),
+            ) as watcher_lock,
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                return_value=(snapshot, Path("state.json")),
+            ),
+        ):
+            result, state_path = WATCHER.collect_snapshot_once(args)
+        self.assertIs(snapshot, result)
+        self.assertEqual(Path("state.json"), state_path)
+        watcher_lock.assert_called_once_with(Path("state.json"))
+
+    def test_one_shot_rejects_target_change_while_locked(self):
+        args = sample_args(Path("state.json"))
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(
+                WATCHER,
+                "watcher_lock",
+                return_value=nullcontext(),
+            ),
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                return_value=({}, Path("other-state.json")),
+            ),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Snapshot target changed state-file identity",
+            ):
+                WATCHER.collect_snapshot_once(args)
+
+
 if __name__ == "__main__":
     unittest.main()

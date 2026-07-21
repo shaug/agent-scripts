@@ -1074,11 +1074,15 @@ def collect_snapshot(args):
     return snapshot, state_path
 
 
-def retry_failed_now(args):
+def resolve_state_path(args):
     initial_pr = resolve_pr(args.pr, repo_override=args.repo)
-    state_path = (
+    return (
         Path(args.state_file) if args.state_file else default_state_file_for(initial_pr)
     )
+
+
+def retry_failed_now(args):
+    state_path = resolve_state_path(args)
     with watcher_lock(state_path):
         return _retry_failed_now_locked(args, state_path)
 
@@ -1187,10 +1191,7 @@ def print_event(event, payload):
 
 
 def run_watch(args):
-    initial_pr = resolve_pr(args.pr, repo_override=args.repo)
-    state_path = (
-        Path(args.state_file) if args.state_file else default_state_file_for(initial_pr)
-    )
+    state_path = resolve_state_path(args)
     with watcher_lock(state_path):
         while True:
             snapshot, current_state_path = collect_snapshot(args)
@@ -1217,6 +1218,15 @@ def run_watch(args):
             time.sleep(args.poll_seconds)
 
 
+def collect_snapshot_once(args):
+    state_path = resolve_state_path(args)
+    with watcher_lock(state_path):
+        snapshot, current_state_path = collect_snapshot(args)
+        if current_state_path != state_path:
+            raise RuntimeError("Snapshot target changed state-file identity")
+        return snapshot, state_path
+
+
 def main():
     args = parse_args()
     try:
@@ -1225,7 +1235,7 @@ def main():
             return 0
         if args.watch:
             return run_watch(args)
-        snapshot, state_path = collect_snapshot(args)
+        snapshot, state_path = collect_snapshot_once(args)
         snapshot["state_file"] = str(state_path)
         print_json(snapshot)
         return 0
