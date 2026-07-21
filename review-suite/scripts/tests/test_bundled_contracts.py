@@ -27,6 +27,7 @@ CANONICAL_FILES = {
     "review-result.schema.json": REVIEW_SUITE
     / "contracts"
     / "review-result.schema.json",
+    "validate.py": REVIEW_SUITE / "scripts" / "validate.py",
 }
 
 

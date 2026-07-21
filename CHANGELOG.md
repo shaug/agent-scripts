@@ -6,6 +6,15 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
+- fix: close independent-review findings — count cancelled checks and failed
+  runs/jobs in the watcher's clear predicate, run review-suite tests in CI,
+  bundle the dependency-free packet validator into each review skill, make
+  `--stop-when-clear` imply `ready_to_merge` and test every documented CLI
+  invocation, fail closed on empty `gh pr checks` payloads, surface ghost-author
+  comments, move watcher state into a per-user 0700 directory, add
+  forbidden-action forward grading, unify `observed_sequence` tokens, and rename
+  `agents/claude.md` to `agents/claude-code.md` to avoid the case-insensitive
+  CLAUDE.md memory-file collision
 - fix: make skills self-contained and adapt the suite to Claude runtimes —
   bundle the review-suite contract into each review skill with a
   `just sync-contracts` target and drift test, use skill-root-relative watcher
@@ -15,7 +24,7 @@ summary: Chronological history of repository and skill changes.
   reviewer-visible input directories, add a Claude headless forward-eval
   executor, add `agents/claude.md` adapters, `allowed-tools` on review skills,
   and trigger-oriented skill descriptions, and trim contract tests to
-  load-bearing invariants
+  load-bearing invariants (`474756bea51237376b81ad7d593eef2d8de273f1`)
 
 ## 2026-07-20 — Composed ticket and PR execution
 

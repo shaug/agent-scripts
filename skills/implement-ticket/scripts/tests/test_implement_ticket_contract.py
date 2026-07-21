@@ -129,7 +129,9 @@ class ImplementTicketContractTests(unittest.TestCase):
     def test_runtime_adapters_exist_for_both_products(self):
         metadata = read(SKILL_ROOT / "agents" / "openai.yaml")
         self.assertIn('display_name: "Implement Ticket"', metadata)
-        self.assertIn("Claude Code adapter", read(SKILL_ROOT / "agents" / "claude.md"))
+        self.assertIn(
+            "Claude Code adapter", read(SKILL_ROOT / "agents" / "claude-code.md")
+        )
 
 
 if __name__ == "__main__":

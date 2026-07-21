@@ -49,7 +49,9 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertTrue(self.skill.startswith("---\nname: implement-epic\n"))
         metadata = read(SKILL_ROOT / "agents" / "openai.yaml")
         self.assertIn('display_name: "Implement Epic"', metadata)
-        self.assertIn("Claude Code adapter", read(SKILL_ROOT / "agents" / "claude.md"))
+        self.assertIn(
+            "Claude Code adapter", read(SKILL_ROOT / "agents" / "claude-code.md")
+        )
 
     def test_product_neutral_runtime_contract(self):
         self.assertNotIn("Codex", self.contract)

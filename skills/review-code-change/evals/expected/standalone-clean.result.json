@@ -1,8 +1,8 @@
 {
   "observed_sequence": [
-    "review-solution-simplicity",
-    "review-correctness",
-    "review-code-simplicity"
+    "solution_simplicity",
+    "correctness",
+    "code_simplicity"
   ],
   "result": {
     "schema_version": "1.0",

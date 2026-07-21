@@ -92,7 +92,7 @@ class BabysitPrContractTests(unittest.TestCase):
 
     def test_runtime_adapters_exist_for_both_products(self):
         self.assertIn('display_name: "Babysit PR"', read("agents/openai.yaml"))
-        self.assertIn("Claude Code adapter", read("agents/claude.md"))
+        self.assertIn("Claude Code adapter", read("agents/claude-code.md"))
 
 
 if __name__ == "__main__":

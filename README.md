@@ -45,8 +45,9 @@ implement-epic
 
 Compatible runtimes may provide named subagents or equivalent isolated
 implementation and review contexts. Files under each skill's `agents/` directory
-(`openai.yaml` for OpenAI runtimes, `claude.md` for Claude Code) are optional
-discovery and adapter metadata, not part of the skills' portable contracts.
+(`openai.yaml` for OpenAI runtimes, `claude-code.md` for Claude Code) are
+optional discovery and adapter metadata, not part of the skills' portable
+contracts.
 
 Each review skill bundles a verbatim copy of the canonical `review-suite`
 contract and schemas under its own `references/review-suite/` directory so the

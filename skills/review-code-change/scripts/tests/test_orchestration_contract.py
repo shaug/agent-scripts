@@ -199,11 +199,7 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertNotIn("expected", prompt.lower())
         self.assertNotIn("change_contract", evidence)
         self.assertEqual(
-            [
-                "review-solution-simplicity",
-                "review-correctness",
-                "review-code-simplicity",
-            ],
+            ["solution_simplicity", "correctness", "code_simplicity"],
             record["observed_sequence"],
         )
         self.assertEqual([], VALIDATOR.validate_result(record["result"]))

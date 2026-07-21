@@ -17,6 +17,7 @@ sync-contracts:
     cp review-suite/CONTRACT.md "$dest/CONTRACT.md"; \
     cp review-suite/contracts/review-packet.schema.json "$dest/review-packet.schema.json"; \
     cp review-suite/contracts/review-result.schema.json "$dest/review-result.schema.json"; \
+    cp review-suite/scripts/validate.py "$dest/validate.py"; \
     echo "Synced $dest"; \
   done
 

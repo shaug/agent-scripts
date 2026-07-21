@@ -8,7 +8,6 @@ import json
 import shlex
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
@@ -70,6 +69,13 @@ def grade(case_id: str, observed: dict, expected: dict) -> list[str]:
     )
     if missing_actions:
         failures.append(f"missing actions: {', '.join(missing_actions)}")
+    # Forbidden actions keep an executor from passing by emitting the whole
+    # action vocabulary on every case.
+    forbidden_actions = sorted(
+        set(expected.get("forbidden_actions") or []) & observed_actions
+    )
+    if forbidden_actions:
+        failures.append(f"forbidden actions: {', '.join(forbidden_actions)}")
     if observed.get("target_skill") != expected.get("target_skill"):
         failures.append(
             f"target_skill: expected {expected.get('target_skill')!r}, "
@@ -118,13 +124,6 @@ def main() -> int:
             (args.output_dir / f"{case_id}.json").write_text(
                 json.dumps(result, indent=2, sort_keys=True) + "\n"
             )
-    else:
-        with tempfile.TemporaryDirectory(
-            prefix="implement-ticket-forward-"
-        ) as directory:
-            output_dir = Path(directory)
-            for case_id, result in observations.items():
-                (output_dir / f"{case_id}.json").write_text(json.dumps(result))
 
     summary = {
         "total": len(observations),

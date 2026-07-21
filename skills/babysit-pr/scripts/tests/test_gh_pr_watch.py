@@ -43,6 +43,7 @@ def sample_checks(**overrides):
         "pending_count": 0,
         "failed_count": 0,
         "passed_count": 4,
+        "cancelled_count": 0,
         "all_terminal": True,
         "items": [],
     }
@@ -161,6 +162,44 @@ class ReviewStateTests(unittest.TestCase):
         self.assertEqual(all_items, new_items)
         self.assertEqual("$(unsafe command)", all_items[0]["body"])
 
+    def test_ghost_author_comment_still_surfaces_as_new(self):
+        comments = [
+            {
+                "id": 7,
+                "user": None,
+                "author_association": "NONE",
+                "body": "Comment from a deleted account.",
+                "created_at": "2026-01-01T00:00:00Z",
+                "html_url": "https://example.test/7",
+            }
+        ]
+        with mock.patch.object(
+            WATCHER,
+            "_review_payloads",
+            return_value=(comments, [], []),
+        ):
+            all_items, new_items = WATCHER.fetch_review_state(
+                sample_pr(), {}, "operator"
+            )
+        self.assertEqual(1, len(all_items))
+        self.assertEqual(1, len(new_items))
+        self.assertEqual("external", new_items[0]["source_class"])
+
+    def test_pr_checks_empty_payload_fails_closed_unless_no_checks(self):
+        with mock.patch.object(
+            WATCHER, "gh_capture", return_value=("", "some transient error")
+        ):
+            with self.assertRaisesRegex(
+                WATCHER.GhCommandError, "check state is unknown"
+            ):
+                WATCHER.get_pr_checks("123", "example/project")
+        with mock.patch.object(
+            WATCHER,
+            "gh_capture",
+            return_value=("", "no checks reported on the 'feature' branch"),
+        ):
+            self.assertEqual([], WATCHER.get_pr_checks("123", "example/project"))
+
     def test_seen_items_remain_in_complete_feedback(self):
         state = {"seen_issue_comment_ids": ["1"]}
         comments = [
@@ -183,6 +222,59 @@ class ReviewStateTests(unittest.TestCase):
             )
         self.assertEqual(1, len(all_items))
         self.assertEqual([], new_items)
+
+
+class ParseArgsTests(unittest.TestCase):
+    """The documented command lines must parse; doc drift fails here."""
+
+    def parse(self, *argv):
+        with mock.patch.object(WATCHER.sys, "argv", ["gh_pr_watch.py", *argv]):
+            return WATCHER.parse_args()
+
+    def test_documented_once_snapshot_parses(self):
+        args = self.parse("--pr", "123", "--once")
+        self.assertTrue(args.once)
+        self.assertEqual("watch_until_closed", args.completion_policy)
+
+    def test_documented_watch_with_policy_parses(self):
+        args = self.parse(
+            "--pr", "123", "--completion-policy", "ready_to_merge", "--watch"
+        )
+        self.assertTrue(args.watch)
+        self.assertEqual("ready_to_merge", args.completion_policy)
+
+    def test_documented_stop_when_clear_implies_ready_to_merge(self):
+        args = self.parse("--pr", "123", "--watch", "--stop-when-clear")
+        self.assertTrue(args.stop_when_clear)
+        self.assertEqual("ready_to_merge", args.completion_policy)
+
+    def test_documented_max_polls_parses(self):
+        args = self.parse("--pr", "123", "--watch", "--max-polls", "3")
+        self.assertEqual(3, args.max_polls)
+
+    def test_stop_when_clear_rejects_explicit_watch_until_closed(self):
+        with self.assertRaises(SystemExit):
+            self.parse(
+                "--pr",
+                "123",
+                "--watch",
+                "--stop-when-clear",
+                "--completion-policy",
+                "watch_until_closed",
+            )
+
+    def test_bounded_flags_require_watch(self):
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--stop-when-clear")
+        with self.assertRaises(SystemExit):
+            self.parse("--pr", "123", "--max-polls", "2")
+
+    def test_documented_retry_invocation_parses(self):
+        args = self.parse(
+            "--pr", "123", "--retry-failed-now", "--eligible-run-id", "99"
+        )
+        self.assertTrue(args.retry_failed_now)
+        self.assertEqual([99], args.eligible_run_id)
 
 
 class PaginationAndThreadTests(unittest.TestCase):
@@ -430,6 +522,47 @@ class RecommendationTests(unittest.TestCase):
             sample_pr(), sample_checks(), [], [], [], [], False, 0, 3
         )
         self.assertEqual(["verify_external_gates"], actions)
+
+    def test_cancelled_check_is_never_clear(self):
+        summary = WATCHER.summarize_checks([{"bucket": "cancel", "state": "CANCELLED"}])
+        self.assertEqual(1, summary["cancelled_count"])
+        self.assertEqual(0, summary["failed_count"])
+        self.assertTrue(summary["all_terminal"])
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            summary,
+            [{"run_id": 99}],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+        )
+        self.assertNotIn("verify_external_gates", actions)
+        self.assertIn("diagnose_ci_failure", actions)
+
+    def test_failed_runs_block_clear_even_with_green_check_buckets(self):
+        self.assertFalse(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(),
+                sample_checks(),
+                [{"run_id": 99, "conclusion": "cancelled"}],
+                [],
+                [],
+                [],
+            )
+        )
+        self.assertFalse(
+            WATCHER.is_github_candidate_clear(
+                sample_pr(),
+                sample_checks(),
+                [],
+                [{"job_id": 8}],
+                [],
+                [],
+            )
+        )
 
     def test_native_clear_with_prior_feedback_requires_disposition_check(self):
         actions = WATCHER.recommend_actions(

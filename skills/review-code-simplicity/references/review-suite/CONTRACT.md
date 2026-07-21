@@ -16,11 +16,15 @@ silently redefine them.
   for deterministic tests and independent forward tests.
 
 Because a skill folder is the unit of distribution, each review skill bundles a
-verbatim copy of this document and both schemas under its own
-`references/review-suite/` directory so the skill works when installed outside
-this repository. The copies are mechanical mirrors, not forks: edit only the
+verbatim copy of this document, both schemas, and the dependency-free
+`validate.py` under its own `references/review-suite/` directory so the skill
+works — including packet and result validation — when installed outside this
+repository. The copies are mechanical mirrors, not forks: edit only the
 canonical files here, refresh the copies with `just sync-contracts`, and rely on
-the bundled-contract test to fail on any drift.
+the bundled-contract test to fail on any drift. References in this document to
+`scripts/validate.py` and `fixtures/` describe this canonical directory; in an
+installed skill, use the bundled `validate.py` beside this file, and expect no
+fixtures.
 
 ## Review packet
 

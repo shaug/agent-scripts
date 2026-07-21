@@ -52,7 +52,9 @@ managed background task and read its incremental JSONL output, or bound each
 foreground window with `--watch --max-polls <n>` or `--watch --stop-when-clear`
 and re-invoke until a terminal condition is reached. `--stop-when-clear` exits
 when GitHub-native gates are clear; it never asserts repository-specific gates
-or feedback disposition and is rejected for `watch_until_closed`.
+or feedback disposition. When no completion policy is passed it implies
+`ready_to_merge`; combining it with an explicit `watch_until_closed` is
+rejected.
 
 Watch mode tolerates a bounded number of consecutive transient GitHub CLI
 failures (`--max-transient-failures`, default 5), emitting a `transient_error`

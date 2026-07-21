@@ -118,8 +118,12 @@ def parse_args():
     parser.add_argument(
         "--completion-policy",
         choices=sorted(COMPLETION_POLICIES),
-        default="watch_until_closed",
-        help="Controller-selected terminal policy (reported but not enforced alone)",
+        default=None,
+        help=(
+            "Controller-selected terminal policy (reported but not enforced "
+            "alone). Defaults to watch_until_closed, or ready_to_merge when "
+            "--stop-when-clear is given."
+        ),
     )
     parser.add_argument(
         "--once", action="store_true", help="Emit one snapshot and exit"
@@ -153,8 +157,12 @@ def parse_args():
         parser.error("--max-polls and --stop-when-clear require --watch")
     if args.stop_when_clear and args.completion_policy == "watch_until_closed":
         parser.error(
-            "--stop-when-clear conflicts with watch_until_closed; "
+            "--stop-when-clear conflicts with an explicit watch_until_closed; "
             "a ready snapshot is progress, not terminal, under that policy"
+        )
+    if args.completion_policy is None:
+        args.completion_policy = (
+            "ready_to_merge" if args.stop_when_clear else "watch_until_closed"
         )
     if args.watch and args.retry_failed_now:
         parser.error("--watch cannot be combined with --retry-failed-now")
@@ -178,7 +186,8 @@ def _format_gh_error(cmd, err):
     return "\n".join(parts)
 
 
-def gh_text(args, repo=None, allowed_returncodes=()):
+def gh_capture(args, repo=None, allowed_returncodes=()):
+    """Run gh and return (stdout, stderr), tolerating allowed exit codes."""
     cmd = ["gh"]
     # `gh api` does not accept `-R/--repo` on all gh versions. The watcher's
     # API calls use explicit endpoints (e.g. repos/{owner}/{repo}/...), so the
@@ -192,9 +201,14 @@ def gh_text(args, repo=None, allowed_returncodes=()):
         raise GhCommandError("`gh` command not found") from err
     except subprocess.CalledProcessError as err:
         if err.returncode in allowed_returncodes:
-            return err.stdout or ""
+            return err.stdout or "", err.stderr or ""
         raise GhCommandError(_format_gh_error(cmd, err)) from err
-    return proc.stdout
+    return proc.stdout, proc.stderr or ""
+
+
+def gh_text(args, repo=None, allowed_returncodes=()):
+    stdout, _ = gh_capture(args, repo=repo, allowed_returncodes=allowed_returncodes)
+    return stdout
 
 
 def gh_json(args, repo=None, allowed_returncodes=()):
@@ -349,9 +363,24 @@ def save_state(path, state):
         raise
 
 
+def default_state_directory():
+    """Per-user, mode-0700 state directory under the system temp directory.
+
+    State content is trusted (seen-feedback IDs, retry budgets), so on shared
+    multi-user hosts it must not live at a predictable world-writable path.
+    chmod fails closed when another user pre-created the directory.
+    """
+    getuid = getattr(os, "getuid", None)
+    owner = str(getuid()) if getuid else "user"
+    directory = Path(tempfile.gettempdir()) / f"agent-babysit-pr-{owner}"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    os.chmod(directory, 0o700)
+    return directory
+
+
 def default_state_file_for(pr):
     repo_slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", pr["repo"]).strip("-")
-    return Path(tempfile.gettempdir()) / (
+    return default_state_directory() / (
         f"agent-babysit-pr-{repo_slug}-pr{pr['number']}.json"
     )
 
@@ -402,9 +431,23 @@ def get_pr_checks(pr_spec, repo):
     if parsed["value"] is not None:
         cmd.append(parsed["value"])
     cmd.extend(["--json", checks_fields()])
-    data = gh_json(cmd, repo=repo, allowed_returncodes=(1, 8))
-    if data is None:
-        return []
+    # gh exits 1 when checks failed and 8 when checks are pending, still
+    # emitting JSON. An empty payload on those codes is a real error unless
+    # gh explicitly reports that the PR has no checks; otherwise treating it
+    # as zero checks would mask a failure as a benign policy state.
+    stdout, stderr = gh_capture(cmd, repo=repo, allowed_returncodes=(1, 8))
+    raw = stdout.strip()
+    if not raw:
+        if "no checks reported" in stderr.lower():
+            return []
+        raise GhCommandError(
+            "`gh pr checks` returned no JSON payload; check state is unknown"
+            + (f"\nstderr: {stderr.strip()}" if stderr.strip() else "")
+        )
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise GhCommandError("Failed to parse JSON from `gh pr checks`") from err
     if not isinstance(data, list):
         raise GhCommandError("Unexpected payload from `gh pr checks`")
     return data
@@ -420,6 +463,7 @@ def summarize_checks(checks):
     pending_count = 0
     failed_count = 0
     passed_count = 0
+    cancelled_count = 0
     for check in checks:
         bucket = str(check.get("bucket") or "").lower()
         if is_pending_check(check):
@@ -428,11 +472,16 @@ def summarize_checks(checks):
             failed_count += 1
         if bucket == "pass":
             passed_count += 1
+        # gh buckets cancelled checks as `cancel`, not `fail`; a cancelled
+        # required check must never read as clean.
+        if bucket == "cancel":
+            cancelled_count += 1
     return {
         "total_count": len(checks),
         "pending_count": pending_count,
         "failed_count": failed_count,
         "passed_count": passed_count,
+        "cancelled_count": cancelled_count,
         "all_terminal": pending_count == 0,
         "items": checks,
     }
@@ -891,7 +940,9 @@ def fetch_review_state(pr, state, authenticated_login=None):
     new_items = []
     for item in all_items:
         item_id = item.get("id")
-        if not item_id or not item.get("author"):
+        # Keep items with a deleted ("ghost") author: they still carry
+        # published feedback and must surface as new exactly once.
+        if not item_id:
             continue
         kind = item["kind"]
         seen = {
@@ -949,6 +1000,8 @@ def unique_actions(actions):
 def is_github_candidate_clear(
     pr,
     checks_summary,
+    failed_runs,
+    failed_jobs,
     new_review_items,
     unresolved_threads,
 ):
@@ -963,6 +1016,12 @@ def is_github_candidate_clear(
     if not checks_summary["all_terminal"]:
         return False
     if checks_summary["failed_count"] > 0 or checks_summary["pending_count"] > 0:
+        return False
+    if int(checks_summary.get("cancelled_count") or 0) > 0:
+        return False
+    # Cancelled or failed workflow runs can exist while every check bucket
+    # looks terminal and green; a clear candidate requires both views clean.
+    if failed_runs or failed_jobs:
         return False
     if new_review_items:
         return False
@@ -1002,7 +1061,11 @@ def recommend_actions(
     if new_review_items or unresolved_threads:
         actions.append("process_review_feedback")
 
-    has_failed_pr_checks = checks_summary["failed_count"] > 0 or bool(failed_jobs)
+    has_failed_pr_checks = (
+        checks_summary["failed_count"] > 0
+        or int(checks_summary.get("cancelled_count") or 0) > 0
+        or bool(failed_jobs)
+    )
     if has_failed_pr_checks:
         if checks_summary["all_terminal"] and retries_used >= max_retries:
             actions.append("stop_exhausted_retries")
@@ -1023,6 +1086,8 @@ def recommend_actions(
     if is_github_candidate_clear(
         pr,
         checks_summary,
+        failed_runs,
+        failed_jobs,
         new_review_items,
         unresolved_threads,
     ):
