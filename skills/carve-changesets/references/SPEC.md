@@ -141,6 +141,21 @@ the reconstructed full chain. A temporary local integration branch may be used
 for this proof. Any local reference created to simplify comparison must remain
 local, must not mutate the source branch, and must not become a truth source.
 
+#### Live chain validation
+
+Validation derives every invariant from the rehydrated chain and current git
+objects. It must prove that the first changeset descends from the base, every
+later changeset descends from its immediate predecessor, and the final changeset
+tree equals the source commit stamped in every `Changeset-Source` trailer.
+
+The current source ref is classified against that stamped source commit. An
+unchanged ref is clean. A descendant is reported as `source_advanced`, while the
+chain remains validated against its stamped source. A ref that does not descend
+from the stamped commit is a `source_history_mismatch` error because the chain
+was built against a different source history. Legitimate downstream rebase
+propagation therefore validates cleanly: validation compares live ancestry and
+trees, never recorded branch heads.
+
 ### Plain git and GitHub stack shape
 
 Every materialized and published chain must remain ordinary git and GitHub:
@@ -446,12 +461,12 @@ Return `blocked` without widening scope when:
 
 ### Compatibility
 
-No backwards compatibility is provided for `.prepare-changesets/state.json`, old
-plan files, old commit conventions, or chains created by `prepare-changesets`.
-Those artifacts are neither migrated nor accepted as authoritative evidence.
-Live branches and PRs may be adopted only when they independently satisfy the
-`carve-changesets` contract and are explicitly brought into scope; old metadata
-alone never qualifies them.
+No backwards compatibility is provided for cached `prepare-changesets` chain
+snapshots, old plan files, old commit conventions, or chains created by
+`prepare-changesets`. Those artifacts are ignored rather than migrated or
+accepted as authoritative evidence. Live branches and PRs may be adopted only
+when they independently satisfy the `carve-changesets` contract and are
+explicitly brought into scope; old metadata alone never qualifies them.
 
 ### Non-goals
 

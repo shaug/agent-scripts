@@ -1,0 +1,288 @@
+"""Validate a rehydrated changeset chain against live git evidence."""
+
+from __future__ import annotations
+
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
+
+from rehydrate import Chain, RehydrationError, discover_changeset_heads
+
+Severity = Literal["error", "warning"]
+SourceStatus = Literal["unchanged", "advanced", "different", "unavailable"]
+
+
+@dataclass(frozen=True)
+class ValidationDiagnostic:
+    """One candidate-bound live invariant result."""
+
+    code: str
+    severity: Severity
+    message: str
+
+
+@dataclass(frozen=True)
+class ChainValidation:
+    """Aggregate result for one rehydrated chain."""
+
+    source_status: SourceStatus
+    stamped_source: str
+    current_source: str | None
+    diagnostics: tuple[ValidationDiagnostic, ...]
+
+    @property
+    def errors(self) -> tuple[ValidationDiagnostic, ...]:
+        return tuple(item for item in self.diagnostics if item.severity == "error")
+
+    @property
+    def warnings(self) -> tuple[ValidationDiagnostic, ...]:
+        return tuple(item for item in self.diagnostics if item.severity == "warning")
+
+    @property
+    def valid(self) -> bool:
+        return not self.errors
+
+
+def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            ["git", *args],
+            cwd=cwd,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("Git is required to validate a changeset chain.") from exc
+
+
+def _resolve(cwd: Path, ref: str) -> str | None:
+    result = _git(cwd, "rev-parse", "--verify", ref)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _resolve_branch(cwd: Path, branch: str, remote: str) -> str | None:
+    local = _resolve(cwd, f"refs/heads/{branch}^{{commit}}")
+    if local is not None:
+        return local
+    return _resolve(cwd, f"refs/remotes/{remote}/{branch}^{{commit}}")
+
+
+def _is_ancestor(cwd: Path, ancestor: str, descendant: str) -> bool | None:
+    result = _git(cwd, "merge-base", "--is-ancestor", ancestor, descendant)
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    return None
+
+
+def validate_live_chain(
+    chain: Chain,
+    *,
+    cwd: Path | str = Path.cwd(),
+    remote: str = "origin",
+) -> ChainValidation:
+    """Check ancestry, source identity, and equivalence using only live git."""
+
+    repo = Path(cwd)
+    diagnostics: list[ValidationDiagnostic] = []
+    source_status: SourceStatus = "unavailable"
+
+    if not chain.changesets:
+        diagnostics.append(
+            ValidationDiagnostic(
+                "empty_chain", "error", "The changeset chain has no branches."
+            )
+        )
+
+    stamped_source = _resolve(repo, f"{chain.source_sha}^{{commit}}")
+    if stamped_source is None:
+        diagnostics.append(
+            ValidationDiagnostic(
+                "stamped_source_missing",
+                "error",
+                f"Stamped source commit {chain.source_sha} is not available in live git.",
+            )
+        )
+
+    for changeset in chain.changesets:
+        metadata = changeset.metadata
+        if (
+            metadata.source_branch != chain.source_branch
+            or metadata.source_sha != chain.source_sha
+        ):
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "source_stamp_mismatch",
+                    "error",
+                    f"Changeset branch {changeset.branch} names source "
+                    f"{metadata.source_branch} @ {metadata.source_sha}; expected "
+                    f"{chain.source_branch} @ {chain.source_sha}.",
+                )
+            )
+
+    live_heads: dict[int, tuple[str, str]] | None
+    try:
+        live_heads = discover_changeset_heads(repo, chain.source_branch, remote)
+    except RehydrationError as exc:
+        live_heads = None
+        diagnostics.append(
+            ValidationDiagnostic(
+                "changeset_ref_ambiguous",
+                "error",
+                f"Current changeset refs are ambiguous: {exc}",
+            )
+        )
+
+    expected_indices = {item.metadata.index for item in chain.changesets}
+    if live_heads is not None and set(live_heads) != expected_indices:
+        diagnostics.append(
+            ValidationDiagnostic(
+                "chain_shape_changed",
+                "error",
+                "Current changeset branch indices differ from the rehydrated chain: "
+                f"expected {sorted(expected_indices)}, found {sorted(live_heads)}.",
+            )
+        )
+
+    base_head = _resolve_branch(repo, chain.base_branch, remote)
+    if base_head is None:
+        diagnostics.append(
+            ValidationDiagnostic(
+                "base_missing",
+                "error",
+                f"Base branch {chain.base_branch!r} is not available in live git.",
+            )
+        )
+
+    predecessor = base_head
+    predecessor_name = chain.base_branch
+    for changeset in chain.changesets:
+        live = (
+            live_heads.get(changeset.metadata.index) if live_heads is not None else None
+        )
+        if live is None:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "changeset_ref_missing",
+                    "error",
+                    f"Changeset branch {changeset.branch} is not available in live git.",
+                )
+            )
+            head = None
+        else:
+            live_branch, head = live
+            if live_branch != changeset.branch or head != changeset.head:
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "changeset_ref_moved",
+                        "error",
+                        f"Changeset branch {changeset.branch} moved from rehydrated head "
+                        f"{changeset.head} to current head {head}.",
+                    )
+                )
+
+        if head is not None and predecessor is not None:
+            ancestry = _is_ancestor(repo, predecessor, head)
+            if ancestry is False:
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "predecessor_ancestry_broken",
+                        "error",
+                        f"Changeset branch {changeset.branch} at {head} is not a "
+                        f"descendant of predecessor {predecessor_name} at {predecessor}.",
+                    )
+                )
+            elif ancestry is None:
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "ancestry_check_failed",
+                        "error",
+                        f"Git could not compare predecessor {predecessor_name} at "
+                        f"{predecessor} with {changeset.branch} at {head}.",
+                    )
+                )
+        predecessor = head
+        predecessor_name = changeset.branch
+
+    if stamped_source is not None and chain.changesets and live_heads is not None:
+        tip_record = chain.changesets[-1]
+        live_tip = live_heads.get(tip_record.metadata.index)
+        tip = live_tip[1] if live_tip is not None else None
+        source_tree = _resolve(repo, f"{stamped_source}^{{tree}}")
+        tip_tree = _resolve(repo, f"{tip}^{{tree}}") if tip is not None else None
+        if source_tree is None or tip_tree is None:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "equivalence_check_failed",
+                    "error",
+                    "Git could not resolve both trees required for source equivalence.",
+                )
+            )
+        elif source_tree != tip_tree:
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "source_equivalence_mismatch",
+                    "error",
+                    f"Changeset tip {tip_record.branch} at {tip} does not "
+                    f"recompose to stamped source {chain.source_branch} at "
+                    f"{stamped_source}.",
+                )
+            )
+
+    current_source = _resolve_branch(repo, chain.source_branch, remote)
+    if current_source is None:
+        diagnostics.append(
+            ValidationDiagnostic(
+                "source_branch_missing",
+                "error",
+                f"Source branch {chain.source_branch!r} is not available in live git.",
+            )
+        )
+    elif stamped_source is not None and current_source == stamped_source:
+        source_status = "unchanged"
+    elif stamped_source is not None:
+        advanced = _is_ancestor(repo, stamped_source, current_source)
+        if advanced is True:
+            source_status = "advanced"
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "source_advanced",
+                    "warning",
+                    f"Source branch {chain.source_branch} legitimately advanced from "
+                    f"stamped commit {stamped_source} to {current_source}; the chain "
+                    "remains validated against the stamped source.",
+                )
+            )
+        elif advanced is False:
+            source_status = "different"
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "source_history_mismatch",
+                    "error",
+                    f"Source branch {chain.source_branch} at {current_source} does not "
+                    f"descend from stamped commit {stamped_source}; the chain was built "
+                    "against a different source history.",
+                )
+            )
+        else:
+            source_status = "unavailable"
+            diagnostics.append(
+                ValidationDiagnostic(
+                    "source_ancestry_check_failed",
+                    "error",
+                    f"Git could not compare stamped source {stamped_source} with "
+                    f"current source {current_source}; source history is unavailable.",
+                )
+            )
+
+    return ChainValidation(
+        source_status=source_status,
+        stamped_source=chain.source_sha,
+        current_source=current_source,
+        diagnostics=tuple(diagnostics),
+    )
