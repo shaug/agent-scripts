@@ -58,6 +58,7 @@ def sample_args(state_file):
         max_flaky_retries=3,
         completion_policy="ready_to_merge",
         poll_seconds=1,
+        eligible_run_id=[99],
     )
 
 
@@ -602,7 +603,15 @@ class RetryTests(unittest.TestCase):
         }
         snapshot = {
             "pr": sample_pr(),
-            "checks": sample_checks(failed_count=1),
+            "checks": sample_checks(
+                failed_count=1,
+                items=[
+                    {
+                        "bucket": "fail",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
             "failed_runs": [{"run_id": 99}],
             "failed_jobs": [{"job_id": 8}],
             "retry_state": {
@@ -624,6 +633,39 @@ class RetryTests(unittest.TestCase):
             ["run", "rerun", "99", "--failed"], repo="example/project"
         )
         self.assertEqual(2, save_state.call_args.args[1]["retries_by_sha"]["head-1"])
+
+    def test_retry_rejects_mixed_current_and_unverified_run_ids(self):
+        snapshot = {
+            "pr": sample_pr(),
+            "checks": sample_checks(
+                failed_count=2,
+                items=[
+                    {
+                        "bucket": "fail",
+                        "link": "https://github.com/example/project/actions/runs/99/job/8",
+                    }
+                ],
+            ),
+            "failed_runs": [{"run_id": 99}, {"run_id": 100}],
+            "failed_jobs": [{"job_id": 8}, {"job_id": 9}],
+            "retry_state": {
+                "current_sha_retries_used": 1,
+                "max_flaky_retries": 3,
+            },
+        }
+        args = sample_args(Path("state.json"))
+        args.eligible_run_id = [99, 100]
+        with (
+            mock.patch.object(
+                WATCHER, "collect_snapshot", return_value=(snapshot, Path("state.json"))
+            ),
+            mock.patch.object(WATCHER, "gh_text") as gh_text,
+        ):
+            result = WATCHER.retry_failed_now(args)
+        self.assertFalse(result["rerun_attempted"])
+        self.assertEqual("eligible_runs_not_current_failed_pr_checks", result["reason"])
+        self.assertEqual([100], result["rejected_run_ids"])
+        gh_text.assert_not_called()
 
 
 if __name__ == "__main__":

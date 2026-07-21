@@ -98,6 +98,13 @@ def parse_args():
         action="store_true",
         help="Rerun failed jobs for current failed workflow runs when policy allows",
     )
+    parser.add_argument(
+        "--eligible-run-id",
+        action="append",
+        default=[],
+        type=int,
+        help="Diagnosed current-PR workflow run eligible for retry (repeatable)",
+    )
     args = parser.parse_args()
 
     if args.poll_seconds <= 0:
@@ -106,6 +113,10 @@ def parse_args():
         parser.error("--max-flaky-retries must be >= 0")
     if args.watch and args.retry_failed_now:
         parser.error("--watch cannot be combined with --retry-failed-now")
+    if args.eligible_run_id and not args.retry_failed_now:
+        parser.error("--eligible-run-id requires --retry-failed-now")
+    if args.retry_failed_now and not args.eligible_run_id:
+        parser.error("--retry-failed-now requires at least one --eligible-run-id")
     if not args.once and not args.watch and not args.retry_failed_now:
         args.once = True
     return args
@@ -377,6 +388,17 @@ def summarize_checks(checks):
         "all_terminal": pending_count == 0,
         "items": checks,
     }
+
+
+def workflow_run_ids_from_checks(checks):
+    run_ids = set()
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        match = re.search(r"/actions/runs/(\d+)(?:/|$)", str(check.get("link") or ""))
+        if match:
+            run_ids.add(int(match.group(1)))
+    return run_ids
 
 
 def get_workflow_runs_for_sha(repo, head_sha):
@@ -1066,6 +1088,8 @@ def retry_failed_now(args):
         "rerun_attempted": False,
         "rerun_count": 0,
         "rerun_run_ids": [],
+        "requested_run_ids": sorted(set(args.eligible_run_id)),
+        "rejected_run_ids": [],
         "reason": None,
     }
 
@@ -1085,10 +1109,20 @@ def retry_failed_now(args):
         result["reason"] = "retry_budget_exhausted"
         return result
 
-    for run in failed_runs:
-        run_id = run.get("run_id")
-        if run_id in (None, ""):
-            continue
+    failed_run_ids = {
+        int(run["run_id"]) for run in failed_runs if run.get("run_id") not in (None, "")
+    }
+    current_pr_run_ids = workflow_run_ids_from_checks(checks_summary["items"])
+    requested_run_ids = set(args.eligible_run_id)
+    rejected_run_ids = sorted(
+        requested_run_ids - failed_run_ids.intersection(current_pr_run_ids)
+    )
+    if rejected_run_ids:
+        result["rejected_run_ids"] = rejected_run_ids
+        result["reason"] = "eligible_runs_not_current_failed_pr_checks"
+        return result
+
+    for run_id in sorted(requested_run_ids):
         gh_text(["run", "rerun", str(run_id), "--failed"], repo=pr["repo"])
         result["rerun_run_ids"].append(run_id)
 
@@ -1102,9 +1136,6 @@ def retry_failed_now(args):
         result["rerun_attempted"] = True
         result["rerun_count"] = len(result["rerun_run_ids"])
         result["reason"] = "rerun_triggered"
-    else:
-        result["reason"] = "failed_runs_missing_ids"
-
     return result
 
 
