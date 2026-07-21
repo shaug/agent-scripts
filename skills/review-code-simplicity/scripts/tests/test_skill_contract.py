@@ -23,7 +23,15 @@ def load(path: Path):
 class SkillContractTests(unittest.TestCase):
     def test_skill_uses_shared_contract_and_is_read_only(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text()
-        self.assertIn("../../review-suite/CONTRACT.md", skill)
+        self.assertIn("references/review-suite/CONTRACT.md", skill)
+        self.assertIn("allowed-tools: Read, Grep, Glob, Bash", skill)
+        bundle = SKILL_ROOT / "references" / "review-suite"
+        for name in (
+            "CONTRACT.md",
+            "review-packet.schema.json",
+            "review-result.schema.json",
+        ):
+            self.assertTrue((bundle / name).is_file(), name)
         self.assertIn("Preserve read-only integrity", skill)
         self.assertIn("From raw evidence", skill)
         self.assertIn("already installed", skill)
@@ -60,8 +68,17 @@ class SkillContractTests(unittest.TestCase):
                 "validation.md",
             )
         )
-        result = load(evaluation / "result.json")
+        result = load(
+            SKILL_ROOT
+            / "evals"
+            / "expected"
+            / "standalone-duplicated-policy.result.json"
+        )
 
+        # The reviewer-visible input directory must not contain the answer key.
+        self.assertEqual(
+            [], [path for path in evaluation.glob("*result*") if path.is_file()]
+        )
         self.assertNotIn("expected", prompt.lower())
         self.assertNotIn("change_contract", evidence)
         self.assertEqual([], VALIDATOR.validate_result(result))

@@ -32,7 +32,7 @@ class OrchestrationContractTests(unittest.TestCase):
         }
         cls.results = {
             record["case_id"]: record
-            for record in load(SKILL_ROOT / "evals" / "results.json")
+            for record in load(SKILL_ROOT / "evals" / "expectations.json")
         }
 
     def test_skill_uses_only_local_lenses_in_default_order(self):
@@ -49,10 +49,16 @@ class OrchestrationContractTests(unittest.TestCase):
         ]
         self.assertEqual(sorted(positions), positions)
         self.assertNotIn("code-review-pro", self.skill + self.protocol)
-        self.assertIn("Build the shared packet once", self.skill)
-        self.assertIn("implementation transcripts", self.skill)
-        self.assertIn("at most three", self.skill)
-        self.assertIn("Do not edit", self.skill)
+
+    def test_skill_bundles_the_shared_contract(self):
+        self.assertIn("references/review-suite/CONTRACT.md", self.skill)
+        bundle = SKILL_ROOT / "references" / "review-suite"
+        for name in (
+            "CONTRACT.md",
+            "review-packet.schema.json",
+            "review-result.schema.json",
+        ):
+            self.assertTrue((bundle / name).is_file(), name)
 
     def test_forward_evaluations_cover_every_case_and_conform(self):
         self.assertEqual(set(self.cases), set(self.results))
@@ -182,8 +188,14 @@ class OrchestrationContractTests(unittest.TestCase):
                 "validation.md",
             )
         )
-        record = load(evaluation / "result.json")
+        record = load(
+            SKILL_ROOT / "evals" / "expected" / "standalone-clean.result.json"
+        )
 
+        # The reviewer-visible input directory must not contain the answer key.
+        self.assertEqual(
+            [], [path for path in evaluation.glob("*result*") if path.is_file()]
+        )
         self.assertNotIn("expected", prompt.lower())
         self.assertNotIn("change_contract", evidence)
         self.assertEqual(

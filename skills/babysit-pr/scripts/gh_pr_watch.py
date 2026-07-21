@@ -69,10 +69,44 @@ def parse_args():
             "trigger flaky reruns."
         )
     )
-    parser.add_argument("--pr", default="auto", help="auto, PR number, or PR URL")
+    parser.add_argument(
+        "--pr",
+        default="auto",
+        help=(
+            "PR number or PR URL. `auto` resolves from the current branch; "
+            "prefer an explicit number or URL in multi-PR repositories."
+        ),
+    )
     parser.add_argument("--repo", help="Optional OWNER/REPO override")
     parser.add_argument(
         "--poll-seconds", type=int, default=30, help="Watch poll interval"
+    )
+    parser.add_argument(
+        "--max-transient-failures",
+        type=int,
+        default=5,
+        help=(
+            "Consecutive transient GitHub CLI failures tolerated in --watch "
+            "mode before exiting nonzero"
+        ),
+    )
+    parser.add_argument(
+        "--max-polls",
+        type=int,
+        default=0,
+        help=(
+            "Exit --watch after this many successful snapshots (0 = unlimited). "
+            "Use for bounded foreground execution windows."
+        ),
+    )
+    parser.add_argument(
+        "--stop-when-clear",
+        action="store_true",
+        help=(
+            "Exit --watch once GitHub-native gates are clear "
+            "(the `verify_external_gates` action). The controller must still "
+            "verify repository-specific gates and feedback disposition."
+        ),
     )
     parser.add_argument(
         "--max-flaky-retries",
@@ -111,6 +145,17 @@ def parse_args():
         parser.error("--poll-seconds must be > 0")
     if args.max_flaky_retries < 0:
         parser.error("--max-flaky-retries must be >= 0")
+    if args.max_transient_failures < 0:
+        parser.error("--max-transient-failures must be >= 0")
+    if args.max_polls < 0:
+        parser.error("--max-polls must be >= 0")
+    if (args.max_polls or args.stop_when_clear) and not args.watch:
+        parser.error("--max-polls and --stop-when-clear require --watch")
+    if args.stop_when_clear and args.completion_policy == "watch_until_closed":
+        parser.error(
+            "--stop-when-clear conflicts with watch_until_closed; "
+            "a ready snapshot is progress, not terminal, under that policy"
+        )
     if args.watch and args.retry_failed_now:
         parser.error("--watch cannot be combined with --retry-failed-now")
     if args.eligible_run_id and not args.retry_failed_now:
@@ -332,7 +377,10 @@ def validate_state_target(state, pr, state_path):
 @contextmanager
 def watcher_lock(state_path):
     if fcntl is None:
-        raise RuntimeError("Continuous watch requires file-lock support")
+        raise RuntimeError(
+            "This watcher requires POSIX file-lock support (fcntl); every "
+            "mode, including --once, shares the repository/PR state lock"
+        )
     lock_path = state_path.with_suffix(state_path.suffix + ".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+", encoding="utf-8") as lock_file:
@@ -496,13 +544,20 @@ def failed_jobs_from_workflow_runs(repo, runs, head_sha):
     return failed_jobs
 
 
+_authenticated_login_cache = None
+
+
 def get_authenticated_login():
+    global _authenticated_login_cache
+    if _authenticated_login_cache is not None:
+        return _authenticated_login_cache
     data = gh_json(["api", "user"])
     if not isinstance(data, dict) or not data.get("login"):
         raise GhCommandError(
             "Unable to determine authenticated GitHub login from `gh api user`"
         )
-    return str(data["login"])
+    _authenticated_login_cache = str(data["login"])
+    return _authenticated_login_cache
 
 
 def comment_endpoints(repo, pr_number):
@@ -932,10 +987,11 @@ def recommend_actions(
     candidate_changed,
     retries_used,
     max_retries,
+    has_published_feedback=False,
 ):
     actions = []
     if pr["closed"] or pr["merged"]:
-        if new_review_items:
+        if new_review_items or unresolved_threads:
             actions.append("process_review_feedback")
         actions.append("stop_pr_closed")
         return unique_actions(actions)
@@ -971,6 +1027,13 @@ def recommend_actions(
         unresolved_threads,
     ):
         actions.append("verify_external_gates")
+        # The watcher can dedupe conversation comments as "seen" but cannot
+        # verify that the controller dispositioned them; issue comments have
+        # no resolvable thread. `verify_external_gates` therefore asserts only
+        # GitHub-native gates. Remind the controller whenever any published
+        # feedback exists for this PR.
+        if has_published_feedback:
+            actions.append("confirm_feedback_disposition")
     elif str(pr.get("mergeable") or "") not in {"MERGEABLE", "CONFLICTING"}:
         actions.append("wait_for_mergeability")
 
@@ -1043,6 +1106,7 @@ def collect_snapshot(args, locked_state_path, locked_pr_identity):
         candidate_changed,
         retries_used,
         args.max_flaky_retries,
+        has_published_feedback=bool(all_review_items or review_threads),
     )
 
     state["version"] = STATE_VERSION
@@ -1201,15 +1265,46 @@ def print_event(event, payload):
     print_json({"event": event, "payload": payload})
 
 
+def transient_retry_delay(poll_seconds, consecutive_failures):
+    return min(poll_seconds * (2 ** (consecutive_failures - 1)), 300)
+
+
 def run_watch(args):
     state_path, locked_pr_identity = resolve_locked_target(args)
+    max_transient_failures = getattr(args, "max_transient_failures", 5)
+    max_polls = getattr(args, "max_polls", 0)
+    stop_when_clear = getattr(args, "stop_when_clear", False)
+    consecutive_failures = 0
+    polls = 0
     with watcher_lock(state_path):
         while True:
-            snapshot, _ = collect_snapshot(
-                args,
-                locked_state_path=state_path,
-                locked_pr_identity=locked_pr_identity,
-            )
+            try:
+                snapshot, _ = collect_snapshot(
+                    args,
+                    locked_state_path=state_path,
+                    locked_pr_identity=locked_pr_identity,
+                )
+            except GhCommandError as err:
+                # A persistent watcher must survive transient GitHub CLI and
+                # network failures. Identity failures (RuntimeError) still
+                # fail closed immediately.
+                consecutive_failures += 1
+                if consecutive_failures > max_transient_failures:
+                    raise
+                delay = transient_retry_delay(args.poll_seconds, consecutive_failures)
+                print_event(
+                    "transient_error",
+                    {
+                        "error": str(err),
+                        "consecutive_failures": consecutive_failures,
+                        "max_transient_failures": max_transient_failures,
+                        "retry_in_seconds": delay,
+                    },
+                )
+                time.sleep(delay)
+                continue
+            consecutive_failures = 0
+            polls += 1
             print_event(
                 "snapshot",
                 {
@@ -1223,6 +1318,27 @@ def run_watch(args):
                 print_event(
                     "stop",
                     {
+                        "reason": "terminal_actions",
+                        "actions": snapshot.get("actions"),
+                        "pr": snapshot.get("pr"),
+                    },
+                )
+                return 0
+            if stop_when_clear and "verify_external_gates" in actions:
+                print_event(
+                    "stop",
+                    {
+                        "reason": "github_candidate_clear",
+                        "actions": snapshot.get("actions"),
+                        "pr": snapshot.get("pr"),
+                    },
+                )
+                return 0
+            if max_polls and polls >= max_polls:
+                print_event(
+                    "stop",
+                    {
+                        "reason": "max_polls_reached",
                         "actions": snapshot.get("actions"),
                         "pr": snapshot.get("pr"),
                     },

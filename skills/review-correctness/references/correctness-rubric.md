@@ -36,8 +36,9 @@ Do not request generalized hardening without a reachable current risk.
 
 ## Repository architecture and compatibility
 
-- Read applicable `AGENTS.md`, contributor guidance, named designs, and public
-  contracts before judging architecture or idioms.
+- Read applicable agent instructions (`AGENTS.md`, `CLAUDE.md`, or equivalent),
+  contributor guidance, named designs, and public contracts before judging
+  architecture or idioms.
 - Inspect representative nearby code and tests for actual extension points,
   module boundaries, error handling, naming, and test conventions.
 - Check public APIs, schemas, migrations, serialization, compatibility, and

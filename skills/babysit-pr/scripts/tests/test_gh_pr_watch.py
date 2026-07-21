@@ -50,8 +50,8 @@ def sample_checks(**overrides):
     return value
 
 
-def sample_args(state_file):
-    return argparse.Namespace(
+def sample_args(state_file, **overrides):
+    args = argparse.Namespace(
         pr="123",
         repo="example/project",
         state_file=str(state_file),
@@ -59,7 +59,13 @@ def sample_args(state_file):
         completion_policy="ready_to_merge",
         poll_seconds=1,
         eligible_run_id=[99],
+        max_transient_failures=2,
+        max_polls=0,
+        stop_when_clear=False,
     )
+    for key, value in overrides.items():
+        setattr(args, key, value)
+    return args
 
 
 class ReviewStateTests(unittest.TestCase):
@@ -425,6 +431,38 @@ class RecommendationTests(unittest.TestCase):
         )
         self.assertEqual(["verify_external_gates"], actions)
 
+    def test_native_clear_with_prior_feedback_requires_disposition_check(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [],
+            False,
+            0,
+            3,
+            has_published_feedback=True,
+        )
+        self.assertEqual(
+            ["verify_external_gates", "confirm_feedback_disposition"],
+            actions,
+        )
+
+    def test_closed_pr_with_unresolved_threads_requires_feedback_processing(self):
+        actions = WATCHER.recommend_actions(
+            sample_pr(closed=True, state="CLOSED"),
+            sample_checks(),
+            [],
+            [],
+            [],
+            [{"id": "thread-1"}],
+            False,
+            0,
+            3,
+        )
+        self.assertEqual(["process_review_feedback", "stop_pr_closed"], actions)
+
     def test_unresolved_thread_blocks_native_clear(self):
         actions = WATCHER.recommend_actions(
             sample_pr(),
@@ -597,6 +635,137 @@ class SnapshotAndStateTests(unittest.TestCase):
         self.assertEqual(
             ["snapshot", "snapshot", "stop"], [event[0] for event in events]
         )
+
+    def test_watch_survives_transient_errors_then_recovers(self):
+        outcomes = [
+            WATCHER.GhCommandError("rate limited"),
+            WATCHER.GhCommandError("bad gateway"),
+            (
+                {
+                    "pr": sample_pr(closed=True, state="CLOSED"),
+                    "checks": sample_checks(),
+                    "actions": ["stop_pr_closed"],
+                },
+                Path("/tmp/state.json"),
+            ),
+        ]
+        events = []
+        args = sample_args(Path("/tmp/state.json"))
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", side_effect=outcomes),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep") as sleep,
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(
+            ["transient_error", "transient_error", "snapshot", "stop"],
+            [event[0] for event in events],
+        )
+        self.assertEqual([1, 2], [call.args[0] for call in sleep.call_args_list])
+
+    def test_watch_fails_after_transient_failure_budget(self):
+        args = sample_args(Path("/tmp/state.json"), max_transient_failures=1)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                side_effect=WATCHER.GhCommandError("persistent outage"),
+            ),
+            mock.patch.object(WATCHER, "print_event"),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            with self.assertRaisesRegex(WATCHER.GhCommandError, "persistent outage"):
+                WATCHER.run_watch(args)
+
+    def test_watch_does_not_retry_identity_failures(self):
+        args = sample_args(Path("/tmp/state.json"))
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(
+                WATCHER,
+                "collect_snapshot",
+                side_effect=RuntimeError(
+                    "Snapshot target changed repository/PR identity"
+                ),
+            ),
+            mock.patch.object(WATCHER, "print_event"),
+            mock.patch.object(WATCHER.time, "sleep") as sleep,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "identity"):
+                WATCHER.run_watch(args)
+        sleep.assert_not_called()
+
+    def test_watch_stop_when_clear_emits_reason_and_exits(self):
+        snapshot = (
+            {
+                "pr": sample_pr(),
+                "checks": sample_checks(),
+                "actions": [
+                    "verify_external_gates",
+                    "confirm_feedback_disposition",
+                ],
+            },
+            Path("/tmp/state.json"),
+        )
+        events = []
+        args = sample_args(Path("/tmp/state.json"), stop_when_clear=True)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", return_value=snapshot),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(["snapshot", "stop"], [event[0] for event in events])
+        self.assertEqual("github_candidate_clear", events[1][1]["reason"])
+
+    def test_watch_max_polls_bounds_foreground_execution(self):
+        snapshot = (
+            {
+                "pr": sample_pr(),
+                "checks": sample_checks(pending_count=1, all_terminal=False),
+                "actions": ["wait_for_checks"],
+            },
+            Path("/tmp/state.json"),
+        )
+        events = []
+        args = sample_args(Path("/tmp/state.json"), max_polls=2)
+        with (
+            mock.patch.object(WATCHER, "resolve_pr", return_value=sample_pr()),
+            mock.patch.object(WATCHER, "watcher_lock", return_value=nullcontext()),
+            mock.patch.object(WATCHER, "collect_snapshot", return_value=snapshot),
+            mock.patch.object(
+                WATCHER, "print_event", side_effect=lambda *event: events.append(event)
+            ),
+            mock.patch.object(WATCHER.time, "sleep"),
+        ):
+            self.assertEqual(0, WATCHER.run_watch(args))
+        self.assertEqual(
+            ["snapshot", "snapshot", "stop"], [event[0] for event in events]
+        )
+        self.assertEqual("max_polls_reached", events[2][1]["reason"])
+
+    def test_authenticated_login_is_cached_per_process(self):
+        WATCHER._authenticated_login_cache = None
+        try:
+            with mock.patch.object(
+                WATCHER, "gh_json", return_value={"login": "operator"}
+            ) as gh_json:
+                self.assertEqual("operator", WATCHER.get_authenticated_login())
+                self.assertEqual("operator", WATCHER.get_authenticated_login())
+            self.assertEqual(1, gh_json.call_count)
+        finally:
+            WATCHER._authenticated_login_cache = None
 
 
 class RetryTests(unittest.TestCase):

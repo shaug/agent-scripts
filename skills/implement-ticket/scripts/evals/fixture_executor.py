@@ -1,16 +1,29 @@
 #!/usr/bin/env python3
-"""Deterministic fresh-process stand-in for a compatible agent runtime."""
+"""Deterministic fresh-process stand-in for a compatible agent runtime.
+
+This is a simulation, not a model evaluation: it hand-codes the decisions a
+compliant runtime must make so the forward harness and grading stay
+deterministic. It cannot detect a model misreading the skill; use
+`claude_executor.py` (or another real-runtime executor) via
+`run_forward.py --executor` for behavioral coverage.
+"""
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+
+
+def compact(text: str) -> str:
+    """Normalize whitespace so Markdown reflows do not break matching."""
+    return re.sub(r"\s+", " ", text)
 
 
 def action_result(payload: dict) -> dict:
     target = payload["target_skill"]
-    prompt = payload["skill_prompt"]
+    prompt = compact(payload["skill_prompt"])
     required_contract = {
         "implement-ticket": (
             "`review-code-change` and `babysit-pr` are available",
@@ -23,7 +36,7 @@ def action_result(payload: dict) -> dict:
             "`ready_pr`",
         ),
     }[target]
-    if not all(fragment in prompt for fragment in required_contract):
+    if not all(compact(fragment) in prompt for fragment in required_contract):
         return {
             "target_skill": target,
             "terminal_state": "blocked",

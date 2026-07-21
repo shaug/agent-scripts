@@ -4,9 +4,23 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
+
+- fix: make skills self-contained and adapt the suite to Claude runtimes —
+  bundle the review-suite contract into each review skill with a
+  `just sync-contracts` target and drift test, use skill-root-relative watcher
+  paths, survive transient watcher failures with bounded backoff, add
+  `--max-polls`/`--stop-when-clear` bounded watch modes and a
+  `confirm_feedback_disposition` action, move eval answer keys out of
+  reviewer-visible input directories, add a Claude headless forward-eval
+  executor, add `agents/claude.md` adapters, `allowed-tools` on review skills,
+  and trigger-oriented skill descriptions, and trim contract tests to
+  load-bearing invariants
+
 ## 2026-07-20 — Composed ticket and PR execution
 
 - fix: execute result-blind forward evaluations in fresh contexts
+  (`f452db4cf47e56b3f8fea560977a3ce98ca26caa`)
 - feat: delegate the `implement-ticket` PR lifecycle to `babysit-pr`
   (`d5838d49587ab34a00973441a870cd525cfcd773`)
 

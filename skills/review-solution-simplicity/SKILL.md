@@ -1,6 +1,7 @@
 ---
 name: review-solution-simplicity
-description: Review a code change for whole-solution over-engineering by mapping its major mechanisms to stated requirements and proposing a materially smaller requirement-complete design. Use for architecture-level simplicity review of a PR, branch, or patch, either from raw ticket and repository evidence or from the shared review packet. Preserve justified safety and operational complexity, return only the shared result shape, and never modify the candidate.
+description: Review a code change, diff, PR, branch, or patch for whole-solution over-engineering by mapping its major mechanisms to stated requirements and proposing a materially smaller requirement-complete design. Use when asked whether a change is over-engineered or for an architecture-level simplicity review, either from raw ticket and repository evidence or from the shared review packet. Preserves justified safety and operational complexity, returns only the shared result shape, and never modifies the candidate.
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Review Solution Simplicity
@@ -11,8 +12,11 @@ caller.
 
 ## Load the contracts
 
-1. Read the canonical review contract at `../../review-suite/CONTRACT.md` and
-   its packet and result schemas.
+1. Read the bundled canonical review contract at
+   [references/review-suite/CONTRACT.md](references/review-suite/CONTRACT.md)
+   and its packet and result schemas beside it. Inside this skill's source
+   monorepo, the repository-root `review-suite/` directory is the canonical
+   origin and the bundled copies are kept byte-identical to it.
 2. Read
    [the solution-simplicity rubric](references/solution-simplicity-rubric.md).
 3. Treat the canonical contract as authoritative for evidence, finding fields,
@@ -77,9 +81,9 @@ change.
 
 ## Return the shared result
 
-Return only JSON conforming to
-`../../review-suite/contracts/review-result.schema.json` with lens
-`solution_simplicity`.
+Return only JSON conforming to the bundled
+[review-result schema](references/review-suite/review-result.schema.json) with
+lens `solution_simplicity`.
 
 - Return `clean` when every major mechanism is justified and no gating finding
   remains.
@@ -93,5 +97,8 @@ Return only JSON conforming to
 
 Do not edit or format files, apply the alternative, create repository artifacts,
 commit, push, resolve threads, post reviews, or update tickets. Run only safe
-read-only inspection and validation commands. Preserve supplied pre-review
-candidate state exactly and report unexpected mutation as an integrity failure.
+read-only inspection and validation commands. Runtimes that support tool
+restriction should enforce the `allowed-tools` frontmatter, which excludes
+file-editing tools; the shell remains available only for read-only inspection
+and validation. Preserve supplied pre-review candidate state exactly and report
+unexpected mutation as an integrity failure.

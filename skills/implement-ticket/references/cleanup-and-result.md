@@ -63,6 +63,24 @@ unless the caller has one. Include every applicable field:
 - deferred findings and intentionally unperformed work; and
 - one concrete next action or blocking reason.
 
+For example:
+
+```text
+terminal_state: ready_pr
+ticket: LIN-482 (Linear)           repository: example/project (GitHub PRs)
+pr: #91 open, mergeable            base: main @ 7be0…44c2
+branch: scott/lin-482-rate-limits  worktree: ../wt-lin-482
+head: 4f2c…9a1d
+completion_policy: ready PR only   authority_used: implement + push + PR create
+validation: `just test` pass @ head; `just check` full gate pass @ head
+initial_review: review-code-change clean @ head 4f2c…9a1d vs base 7be0…44c2
+babysit_pr: ready_to_merge @ head, verified against live GitHub state;
+  CI 6/6 pass, human review approved, 0 unresolved threads
+merge: withheld (not authorized)   tracker: LIN-482 still In Progress
+cleanup: none performed (PR open)  deferred: one defer-severity naming finding
+next_action: caller may merge; merging will move LIN-482 to Done via PR link
+```
+
 For `ready_pr`, require a verified `babysit-pr: ready_to_merge` result for the
 still-current open and mergeable PR. Every applicable non-merge gate must pass;
 the only withheld action is merge. Do not list ordinary pending CI or review as
