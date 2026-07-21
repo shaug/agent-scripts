@@ -58,6 +58,9 @@ eval-implement-ticket-claude:
 test-implement-epic:
   python3 -m unittest discover -s {{skills_dir}}/implement-epic/scripts/tests -p 'test_*.py'
 
+test-carve-changesets:
+  python3 -m unittest discover -s {{skills_dir}}/carve-changesets/scripts/tests -p 'test_*.py'
+
 test-prepare-changesets:
   python3 -m unittest discover -s {{skills_dir}}/prepare-changesets/scripts/tests -p 'test_*.py'
 
