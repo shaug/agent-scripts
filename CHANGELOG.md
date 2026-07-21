@@ -4,12 +4,19 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-21 — Carve-changesets operating contract
+
+- fix: clarify published terminal evidence
+- docs: define the carve-changesets operating contract
+  (`77865c25190e7205142318229f17c1d3f18e1fef`)
+
 ## 2026-07-20 — Portability, watcher resilience, and Claude adaptation
 
 - refactor: route the clear predicate through `has_failed_pr_checks` — the
   code-simplicity lens on PR #27 flagged the last inline copy of the
   failed-PR-check policy inside `is_github_candidate_clear`; all three agreement
   sites now structurally share one predicate
+  (`93516194388116f4841fc191a8c78c191d0da5b1`)
 - fix: share one failed-PR-check predicate across the watcher — the initial
   `review-code-change` pass on PR #27 found the retry gate refusing retries that
   `recommend_actions` recommends for failed-runs-only states; extract
