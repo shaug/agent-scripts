@@ -4,8 +4,8 @@
     "request": "Implement GitHub issue G-21.",
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
-    "runtime_profile": "Repository-owned skills and named subagents are available.",
-    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "runtime_profile": "Repository-owned review-code-change and babysit-pr plus named isolated contexts are available.",
+    "capabilities": ["stable_skill_loading", "review_code_change", "babysit_pr", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -50,7 +50,7 @@
     "id": "clean-local-review-remote-pending",
     "request": "Implement GitHub issue G-28 to a ready PR.",
     "authority": "ready_pr_only",
-    "candidate_state": "Local validation and review are clean; required current-head human and connector approvals remain pending; zero threads are unresolved."
+    "candidate_state": "Initial validation and review are clean; babysit-pr waits through pending human and connector approvals until both become current for the unchanged head."
   },
   {
     "id": "unrelated-base-drift-retained",
@@ -120,5 +120,75 @@
     "tracker_state": "G-41 is otherwise ready and requires asynchronous CI and review gates.",
     "authority": "merge_after_gates",
     "runtime_profile": "The runtime cannot poll, wait, or resume after asynchronous gates."
+  },
+  {
+    "id": "missing-babysit-pr",
+    "request": "Implement GitHub issue G-42.",
+    "tracker_state": "G-42 is otherwise ready and independently shippable.",
+    "runtime_profile": "The runtime can load review-code-change but cannot load repository-owned babysit-pr by stable name or an equivalent mechanism."
+  },
+  {
+    "id": "published-feedback-postfix-rereview",
+    "request": "Implement G-43 to a ready PR.",
+    "authority": "ready_pr_only_with_ticket_scoped_fix_push_reply_and_resolution",
+    "candidate_state": "After a clean initial review and handoff, published material feedback requires a ticket-scoped fix that changes the head."
+  },
+  {
+    "id": "branch-ci-postfix-rereview",
+    "request": "Implement and merge G-44.",
+    "authority": "merge_after_gates_with_exclusive_mutation",
+    "candidate_state": "After handoff, failed-job logs demonstrate a deterministic candidate-caused regression."
+  },
+  {
+    "id": "flaky-infrastructure-no-mutation",
+    "request": "Implement G-45 to a ready PR.",
+    "authority": "ready_pr_only_with_bounded_retry",
+    "candidate_state": "After handoff, current-head logs demonstrate an eligible transient runner failure and no fixing commit is imminent."
+  },
+  {
+    "id": "unauthorized-human-response",
+    "request": "Implement G-46 to a ready PR.",
+    "authority": "monitor_and_ticket_scoped_fix_only",
+    "candidate_state": "A human review thread requires a written response before disposition, but reply and resolution authority were withheld."
+  },
+  {
+    "id": "stale-connector-verdict",
+    "request": "Implement G-47 to a ready PR.",
+    "authority": "ready_pr_only",
+    "candidate_state": "The connector is required but its clean verdict names the previous head."
+  },
+  {
+    "id": "relevant-base-drift-reset",
+    "request": "Implement and merge G-48.",
+    "authority": "merge_after_gates",
+    "candidate_state": "After handoff, base changes overlap the candidate and alter the resulting tree."
+  },
+  {
+    "id": "external-head-change",
+    "request": "Implement G-49 to a ready PR.",
+    "authority": "ready_pr_only",
+    "candidate_state": "Another authorized maintainer pushes a new head during babysitting."
+  },
+  {
+    "id": "closed-without-merge",
+    "request": "Implement G-50.",
+    "candidate_state": "After handoff, the canonical PR is closed without merge and no other canonical merged implementation exists."
+  },
+  {
+    "id": "malformed-babysitter-result",
+    "request": "Implement G-51 to a ready PR.",
+    "candidate_state": "The babysitter reports ready_to_merge for a stale head and omits required ownership and gate evidence."
+  },
+  {
+    "id": "delegated-mutation-ownership",
+    "request": "Implement G-52 using a delegated PR worker.",
+    "authority": "ready_pr_only",
+    "candidate_state": "The caller can stop mutation and transfer exact branch, worktree, PR, head, base, scope, and authority to one worker."
+  },
+  {
+    "id": "resumed-pr-deduplicates",
+    "request": "Resume implementing G-53 after the prior task stopped during babysitting.",
+    "authority": "merge_after_gates",
+    "candidate_state": "The existing canonical PR and durable watcher state record prior feedback, retry, fix commit, and merge-attempt identities."
   }
 ]

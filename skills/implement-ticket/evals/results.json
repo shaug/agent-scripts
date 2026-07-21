@@ -2,12 +2,12 @@
   {
     "case_id": "standalone-ready-pr",
     "terminal_state": "ready_pr",
-    "required_actions": ["implement one ticket", "validate", "run repository-owned review", "publish one PR", "report merge authority as pending"]
+    "required_actions": ["implement one ticket", "validate", "run initial repository-owned review", "publish one PR", "invoke babysit-pr with ready_to_merge", "verify every non-merge gate", "withhold merge"]
   },
   {
     "case_id": "authorized-merge-cleanup",
     "terminal_state": "merged",
-    "required_actions": ["verify all current-candidate gates", "merge", "verify mainline and ticket transition", "clean only verified branch state"]
+    "required_actions": ["invoke babysit-pr with merge_when_ready", "verify its merged identity live", "verify mainline and ticket transition", "clean only verified branch state"]
   },
   {
     "case_id": "named-epic-child-only",
@@ -42,7 +42,7 @@
   {
     "case_id": "clean-local-review-remote-pending",
     "terminal_state": "ready_pr",
-    "required_actions": ["report clean local review", "report human and connector gates pending", "do not merge"]
+    "required_actions": ["pass clean initial review evidence to babysit-pr", "wait through ordinary pending gates", "verify current human and connector approval", "accept ready_to_merge", "do not merge"]
   },
   {
     "case_id": "unrelated-base-drift-retained",
@@ -98,5 +98,65 @@
     "case_id": "missing-asynchronous-wait",
     "terminal_state": "blocked",
     "required_actions": ["name asynchronous wait as unavailable", "perform no implementation mutation", "do not pretend CI or review gates passed"]
+  },
+  {
+    "case_id": "missing-babysit-pr",
+    "terminal_state": "blocked",
+    "required_actions": ["name babysit-pr as unavailable", "fail before branch or worktree mutation", "do not download an external skill", "do not publish an unmonitored PR"]
+  },
+  {
+    "case_id": "published-feedback-postfix-rereview",
+    "terminal_state": "ready_pr",
+    "required_actions": ["transfer exclusive mutation ownership", "fix only the material ticket-scoped finding", "run affected and full validation", "commit and push", "invoke fresh review-code-change", "rebuild remote gates", "verify ready_to_merge"]
+  },
+  {
+    "case_id": "branch-ci-postfix-rereview",
+    "terminal_state": "merged",
+    "required_actions": ["let babysit-pr own CI diagnosis and repair", "fix the demonstrated regression", "revalidate commit and push", "invoke fresh review-code-change", "rebuild all invalidated gates", "merge and verify live"]
+  },
+  {
+    "case_id": "flaky-infrastructure-no-mutation",
+    "terminal_state": "ready_pr",
+    "required_actions": ["make no code mutation", "retry only the diagnosed current-PR run within budget", "continue watching", "verify ready_to_merge"]
+  },
+  {
+    "case_id": "unauthorized-human-response",
+    "terminal_state": "blocked",
+    "required_actions": ["do not reply", "do not resolve", "preserve the open feedback gate", "return the concrete authority blocker and suggested response"]
+  },
+  {
+    "case_id": "stale-connector-verdict",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the earlier-head verdict", "await or request a current-head signal under policy", "do not translate stale green evidence into ready_pr"]
+  },
+  {
+    "case_id": "relevant-base-drift-reset",
+    "terminal_state": "merged",
+    "required_actions": ["let babysit-pr invalidate affected evidence", "resolve overlap safely", "rerun validation and fresh review", "rebuild remote gates", "merge only the reverified candidate"]
+  },
+  {
+    "case_id": "external-head-change",
+    "terminal_state": "ready_pr",
+    "required_actions": ["detect identity change", "stop or reestablish mutation ownership", "invalidate stale head-bound evidence", "rebuild gates", "verify ready_to_merge"]
+  },
+  {
+    "case_id": "closed-without-merge",
+    "terminal_state": "blocked",
+    "required_actions": ["map closed to PR closed without merge", "preserve local artifacts", "do not transition the ticket", "do not perform destructive cleanup"]
+  },
+  {
+    "case_id": "malformed-babysitter-result",
+    "terminal_state": "blocked",
+    "required_actions": ["reread live GitHub state", "reject stale and incomplete evidence", "preserve the current candidate", "report one reconciliation action"]
+  },
+  {
+    "case_id": "delegated-mutation-ownership",
+    "terminal_state": "ready_pr",
+    "required_actions": ["transfer exact identity scope and authority", "stop caller mutation", "allow exactly one mutating worker", "verify returned ownership and live candidate"]
+  },
+  {
+    "case_id": "resumed-pr-deduplicates",
+    "terminal_state": "merged",
+    "required_actions": ["adopt only the verified canonical PR", "reread durable watcher state", "deduplicate feedback retries commits and merge attempts", "continue from current gates", "verify merge independently"]
   }
 ]

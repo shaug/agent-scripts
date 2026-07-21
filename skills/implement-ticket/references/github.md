@@ -64,68 +64,25 @@ than creating a competing PR when canonical ownership is unresolved.
 Use file-based commit and PR messages when shell interpolation could alter
 Markdown.
 
-## Review state
+## Handoff and caller-owned closeout
 
-Capture exact PR head and base SHAs. Read conversation comments, formal reviews,
-inline comments, and thread resolution state; use GraphQL or another
-thread-aware API when flat PR output is insufficient.
+Capture the exact PR head and base, effective candidate, worktree state,
+validation, initial review, required remote-gate policy, connector contract,
+completion policy, and authority required by
+[the babysit-pr handoff](babysit-pr-handoff.md). Then delegate GitHub Actions,
+published feedback, human and connector review, thread disposition,
+candidate-changing fixes, base drift, mergeability, and optional merge to the
+repository-owned `babysit-pr` skill.
 
-For required human review, record reviewer, state, reviewed commit, submission
-time, and relevant base. Require current-candidate approval under repository
-policy. Apply the generic base-drift gate after a base advance.
+Do not infer a gate's absence from an empty read. Pass the documented policy and
+all known current evidence so the babysitter can establish current-candidate
+state. Do not also poll, mutate, reply, resolve, or merge from this caller after
+ownership transfer.
 
-For required connector review, discover and record before polling:
-
-- connector identity;
-- automatic or request-driven initiation;
-- exact initiation action and per-push policy;
-- run-start evidence;
-- accepted clean signal; and
-- polling window and interval.
-
-Fail closed if this contract cannot be discovered. Accept a clean connector
-result only when it is tied to the captured candidate by a current-head formal
-review, a comment naming the head, a configured reaction on a request/result
-naming the head, or another repository-documented completion signal with
-equivalent candidate identity. Require zero unresolved connector-authored
-threads.
-
-Do not infer current approval from timing, comment order, a generic bot message,
-CI success, or a verdict on an earlier head. After every head change, require a
-fresh candidate-bound signal. For base-only drift, use the generic drift gate
-and the connector's documented retention policy.
-
-For every actionable comment, review, and thread:
-
-1. Verify it against the current code and ticket.
-2. Fix it or reject it with concrete evidence.
-3. Run affected and required validation.
-4. Push when code changed.
-5. Reply on the originating surface when possible and record disposition.
-6. Resolve a thread only after disposition is complete.
-
-Require zero undispositioned actionable items before merge. Use at most three
-connector feedback passes by default; do not spend passes on rejected,
-out-of-scope, polish, or hypothetical findings.
-
-## Checks, merge, and ticket transition
-
-- Read required GitHub Actions checks and logs directly.
-- Continue monitoring pending checks; ordinary wait time is not a user blocker.
-- Separate in-scope failures from infrastructure, dependency, or
-  external-service failures.
-- Fix only demonstrated ticket-scoped failures, revalidate, push, and restart
-  every invalidated current-head gate.
-- Immediately before merge, reread head, base, checks, reviews, comments,
-  reactions, and threads.
-- Apply the generic base-drift gate if the base advanced.
-- Use the repository's approved merge method.
-- Verify PR state, merged result, base content, and GitHub issue transition
-  before cleanup.
-- When the ticket is an epic child, reread its affected native `blocking` and
-  sibling `blockedBy` relationships after the transition and report newly
-  unblocked work without selecting or mutating it.
-
-If local worktree ownership prevents the CLI from switching to the base, merge
-through the GitHub API when authorized and perform local cleanup separately.
-Never close a parent issue from this skill.
+After a babysitter `merged` result, independently verify PR state, merged
+candidate representation on the base, and the GitHub issue transition before
+cleanup. When the ticket is an epic child, reread its affected native `blocking`
+and sibling `blockedBy` relationships and report newly unblocked work without
+selecting or mutating it. If local worktree ownership prevents the CLI from
+switching to the base, use a read-only remote verification path and perform
+local cleanup separately. Never close a parent issue from this skill.

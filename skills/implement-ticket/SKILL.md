@@ -1,6 +1,6 @@
 ---
 name: implement-ticket
-description: Implement exactly one standalone GitHub or Linear ticket, or one named child of a larger epic, through an isolated branch and pull request. Use when an agent should resolve live ticket and dependency context, enforce readiness and authority boundaries, implement and validate one coherent change, invoke the repository-owned review-code-change skill in a fresh read-only context, handle current-head remote gates, and optionally merge and clean up when explicitly authorized. Detect whole-epic requests before mutation and route them toward implement-epic without creating a circular skill dependency.
+description: Implement exactly one standalone GitHub or Linear ticket, or one named child of a larger epic, through an isolated branch and pull request. Use when an agent should resolve live ticket and dependency context, enforce readiness and authority boundaries, implement and validate one coherent change, run an initial repository-owned review, delegate the published PR lifecycle to babysit-pr, and verify tracker, mainline, and cleanup outcomes. Detect whole-epic requests before mutation and route them toward implement-epic without creating a circular skill dependency.
 ---
 
 # Implement Ticket
@@ -10,10 +10,11 @@ claiming a parent epic is complete. Treat live tracker and repository evidence
 as execution state; use old plans or summaries only for orientation.
 
 Treat this skill as the canonical owner of generic single-ticket readiness,
-implementation, review, PR, merge, base-drift, feedback, tracker-transition,
-cleanup, and terminal-reporting rules. `implement-epic` consumes this contract
-for each selected child. Do not copy these rules back into epic orchestration or
-create a third shared workflow abstraction.
+implementation, initial review, PR publication, tracker transition, mainline
+verification, cleanup, and terminal reporting. Delegate the post-publication PR
+lifecycle to repository-owned `babysit-pr`. `implement-epic` consumes this
+contract for each selected child. Do not copy either skill's rules back into
+epic orchestration or create a third shared workflow abstraction.
 
 ## Load the applicable references
 
@@ -23,6 +24,8 @@ create a third shared workflow abstraction.
   parent, dependency, or status state.
 - Always read [review and merge gates](references/review-and-merge-gates.md)
   before publishing the pull request.
+- Always read [the babysit-pr handoff](references/babysit-pr-handoff.md) before
+  creating implementation state and again before transferring PR ownership.
 - Always read [cleanup and result](references/cleanup-and-result.md) before a
   merge or terminal handoff.
 
@@ -34,8 +37,9 @@ same-numbered issue from the PR host for the real tracker ticket.
 
 A compatible agentic runtime must be able to:
 
-- load `implement-ticket` and repository-owned `review-code-change` by stable
-  skill name or an equivalent repository-owned dependency mechanism;
+- load `implement-ticket`, repository-owned `review-code-change`, and
+  repository-owned `babysit-pr` by stable skill name or an equivalent
+  repository-owned dependency mechanism;
 - read repository instructions, tracker state, and structured relationships;
 - inspect and create isolated branch/worktree state;
 - edit files, run commands, commit, push, and manage PRs when authorized;
@@ -95,11 +99,27 @@ manual transition. State that consequence before publication or merge. Do not
 use automatic closing syntax when its effect conflicts with the resolved
 completion policy.
 
-Before implementation can produce a reviewed PR, verify that
-`review-code-change` is available and readable by stable name or an equivalent
-repository-owned dependency mechanism. It is the only local adversarial-review
-dependency. Return `blocked` before mutation when it is unavailable; do not
-substitute a third-party skill, generic self-review, or unreviewed path.
+After applying the whole-epic scope guard, and before creating a branch,
+worktree, or other implementation state for a ticket, verify that both
+`review-code-change` and `babysit-pr` are available and readable by stable name
+or an equivalent repository-owned dependency mechanism. Return `blocked` before
+mutation when either is unavailable. Do not substitute a third-party reviewer,
+generic self-review, private PR loop, runtime download, or stranded unmonitored
+PR path. A whole-epic `requires_epic` result occurs before these ticket-only
+dependencies are invoked.
+
+The dependency graph is deliberately acyclic:
+
+```text
+implement-epic
+└── implement-ticket
+    ├── review-code-change          # initial candidate review
+    └── babysit-pr                  # published PR lifecycle
+        └── review-code-change      # after a head-changing fix
+```
+
+`babysit-pr` must never invoke `implement-ticket`. Do not re-enter this skill
+while consuming a babysitter result.
 
 ## Establish source-of-truth precedence
 
@@ -244,20 +264,29 @@ cycles by default.
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
 mutation, or unavailable required evidence as a failed local gate. The review
-suite stays read-only; this skill owns accepted fixes, GitHub replies, thread
-resolution, commits, pushes, merge, and cleanup within granted authority.
+suite stays read-only. This skill owns accepted fixes, commits, and pushes
+during the initial review loop. Post-publication fixes, replies, thread
+resolution, pushes, and merge belong to `babysit-pr` after explicit ownership
+transfer; cleanup remains here.
 
-### 6. Apply current-candidate remote and merge gates
+### 6. Delegate the published PR lifecycle
 
-Do not equate CI success, stale approval, or zero threads with a clean review.
-Require every applicable local, CI, human, connector, comment, formal-review,
-and thread gate for the current candidate. Follow the risk-based base-drift
-rules in the gate reference.
+Follow [the babysit-pr handoff](references/babysit-pr-handoff.md). After the
+initial review loop is clean, reread the live PR, build the verified handoff,
+and transfer exclusive mutation ownership to `babysit-pr` or follow it in the
+same exclusive context. Do not maintain a second CI, feedback, base-drift,
+post-fix review, or merge loop here.
 
-When merge is authorized and every gate passes, merge using the repository's
-approved method. Verify remote merge state, mainline representation, and the
-owning tracker's ticket transition before cleanup. For an epic child, reread the
-affected native dependency relationships after that transition and report newly
+Map `ready PR only` to `ready_to_merge`. Map both merge policies to
+`merge_when_ready`. Normal ticket execution never uses `watch_until_closed`.
+Ordinary pending CI or review time is not a blocker; retain task ownership and
+continue until the mapped policy reaches a terminal result or a genuine
+user-help-required condition occurs.
+
+Validate the returned identity and evidence against live GitHub state. After an
+authorized merge, independently verify remote merge state, mainline
+representation, and the owning tracker's ticket transition before cleanup. For
+an epic child, reread affected native dependency relationships and report newly
 unblocked work without selecting or mutating it. Never close or verify a parent
 epic from this skill.
 
@@ -281,9 +310,10 @@ sibling work is not a blocker.
 Follow [cleanup and result](references/cleanup-and-result.md). Return exactly
 one terminal state:
 
-- `ready_pr`: the one-ticket PR exists at the reported candidate; state every
-  remaining remote or authority gate, and confirm this run owns or was
-  explicitly handed ownership of the candidate;
+- `ready_pr`: the one-ticket PR is open and mergeable at the reported candidate,
+  every applicable current-candidate non-merge gate has passed, merge was
+  withheld, and this run owns or was explicitly handed ownership of the
+  candidate;
 - `merged`: the PR is verified on the base, the ticket transition is verified,
   and authorized cleanup is complete or precisely limited;
 - `blocked`: give one concrete blocking reason and next action, preserving any

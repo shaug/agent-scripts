@@ -4,9 +4,14 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-20 — Composed ticket and PR execution
+
+- feat: delegate the `implement-ticket` PR lifecycle to `babysit-pr`
+
 ## 2026-07-20 — Repository-owned PR babysitting
 
 - fix: bind each watcher lock to an immutable repository and pull request target
+  (`3666b3d5beb9182b3dab221d2489a7acf23323b7`)
 - fix: validate the locked PR state path before any snapshot read or write
   (`322a83c6b31d5668e6648df8f0fabe3732c3e74f`)
 - fix: serialize every watcher state mutation through one repository/PR lock

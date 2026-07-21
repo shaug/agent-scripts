@@ -58,7 +58,7 @@ class ImplementEpicContractTests(unittest.TestCase):
             self.contract,
         )
         self.assertIn(
-            "`implement-epic` → `implement-ticket` → `review-code-change`",
+            "`implement-epic` → `implement-ticket` → (`review-code-change`, `babysit-pr`)",
             self.contract,
         )
         self.assertIn("retain task state", self.contract)
@@ -90,6 +90,10 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertNotIn("review-code-simplicity", self.contract)
         self.assertNotIn("fix/re-review cycles", self.contract)
         self.assertNotIn("per-PR cleanup", self.closeout)
+        self.assertIn(
+            "Do not make this skill invoke `review-code-change` or `babysit-pr` itself",
+            self.contract,
+        )
 
     def test_graph_selection_and_refresh_use_live_native_state(self):
         self.assertIn(
@@ -168,6 +172,7 @@ class ImplementEpicContractTests(unittest.TestCase):
             "missing-review-dependency-through-ticket",
             "missing-isolation-capability",
             "missing-asynchronous-wait",
+            "transitive-babysit-results",
         }
         self.assertEqual(required, set(self.cases))
         self.assertEqual(required, set(self.results))
@@ -198,6 +203,14 @@ class ImplementEpicContractTests(unittest.TestCase):
             "missing-asynchronous-wait",
         ):
             self.assertEqual("blocked", self.results[case_id]["workflow_state"])
+        self.assertEqual(
+            "mixed_ticket_results",
+            self.results["transitive-babysit-results"]["workflow_state"],
+        )
+        self.assertIn(
+            "do not invoke babysit-pr directly",
+            self.results["transitive-babysit-results"]["required_actions"],
+        )
 
 
 if __name__ == "__main__":

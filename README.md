@@ -15,8 +15,9 @@ Current reusable agent skills:
   current-head CI, feedback, repository-owned re-review, mergeability, and an
   explicitly authorized completion policy
 - `skills/implement-ticket` — implement exactly one standalone ticket or named
-  epic child through isolated execution, repository-owned review, PR gates, and
-  authorized merge and cleanup; this is the canonical owner of generic
+  epic child through isolated execution and initial repository-owned review,
+  delegate the published PR lifecycle to `babysit-pr`, then verify tracker,
+  mainline, and cleanup outcomes; this is the canonical owner of generic
   single-ticket execution rules consumed by `implement-epic`
 - `skills/implement-epic` — traverse live GitHub or Linear epic graphs and
   delegate each selected child to `implement-ticket`, then refresh graph state
@@ -37,14 +38,10 @@ The composed implementation dependency chain is:
 ```text
 implement-epic
 └── implement-ticket
-    └── review-code-change
-
-babysit-pr
-└── review-code-change (after a head change or when current evidence is absent)
+    ├── review-code-change          # initial candidate review
+    └── babysit-pr                  # published PR lifecycle
+        └── review-code-change      # after a head-changing fix
 ```
-
-Integrating `babysit-pr` into `implement-ticket` is tracked separately so the
-standalone skill can be reviewed and merged first.
 
 Compatible runtimes may provide named subagents or equivalent isolated
 implementation and review contexts. OpenAI-facing files under `agents/` are
