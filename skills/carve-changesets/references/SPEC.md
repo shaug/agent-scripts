@@ -470,12 +470,12 @@ Return `blocked` without widening scope when:
 
 ### Compatibility
 
-No backwards compatibility is provided for cached `prepare-changesets` chain
-snapshots, old plan files, old commit conventions, or chains created by
-`prepare-changesets`. Those artifacts are ignored rather than migrated or
-accepted as authoritative evidence. Live branches and PRs may be adopted only
-when they independently satisfy the `carve-changesets` contract and are
-explicitly brought into scope; old metadata alone never qualifies them.
+No backwards compatibility is provided for cached predecessor-skill chain
+snapshots, old plan files, old commit conventions, or legacy chains. Those
+artifacts are ignored rather than migrated or accepted as authoritative
+evidence. Live branches and PRs may be adopted only when they independently
+satisfy the `carve-changesets` contract and are explicitly brought into scope;
+old metadata alone never qualifies them.
 
 ### Non-goals
 
@@ -487,6 +487,6 @@ explicitly brought into scope; old metadata alone never qualifies them.
 - support non-git version-control systems or PR hosts other than GitHub;
 - replace a general-purpose stacked-PR tool;
 - depend on Graphite, git-spice, or another stacking tool;
-- migrate artifacts from `prepare-changesets`;
+- migrate legacy predecessor-skill artifacts;
 - own generic post-publication PR lifecycle mechanics; or
 - weaken repository validation, review, rollout, or merge policy.

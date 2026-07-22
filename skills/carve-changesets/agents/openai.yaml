@@ -1,0 +1,4 @@
+interface:
+  display_name: "Carve Changesets"
+  short_description: "Split a large branch into reviewable PRs"
+  default_prompt: "Use $carve-changesets to recompose this review-ready branch into an authority-gated chain of reviewed changesets and drive it to the requested terminal state."

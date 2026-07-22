@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Consolidated carve-changesets CLI and live contract
 
+- feat: package the carve-changesets skill
 - docs: define carve-changesets suite handoffs
+  (`2df5136e2a7226666bc136e30905c2442a579c78`)
 - feat: add stateless changeset merge and propagation
   (`925affa807c203824127a0fe5e0fb084f14f378d`)
 - refactor: make strict apply use one proof
@@ -170,7 +172,7 @@ summary: Chronological history of repository and skill changes.
   (797e56fcb2bc41fd8e84491866c86a2af1dd31f9)
 - fix: CI agentskills install and changelog workflow rules
   (460a81780211264cdc568e42e3f8e4b73ca2bcea)
-- feat: AGENTS-aware test command discovery for prepare-changesets
+- feat: add AGENTS-aware test command discovery
   (1730fb654885f4ea1a5448e18bab1f558b5063ad)
 - chore: initialize agent-scripts monorepo
   (420d1cdacb2855d3d9c494e57447954995043c42)
