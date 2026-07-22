@@ -12,6 +12,80 @@ from legacy_helpers import chdir, commit, init_remote, init_repo, run
 
 
 class GithubTests(unittest.TestCase):
+    def test_shared_pr_decoder_reports_operation_context(self) -> None:
+        with self.assertRaisesRegex(
+            CommandError, "changeset PR for feature/test-2.*valid PR number"
+        ):
+            github_mod._pull_request_record(
+                {"number": "not-a-number"},
+                context="changeset PR for feature/test-2",
+            )
+
+    def test_pr_merge_fences_the_exact_number_and_head(self) -> None:
+        with (
+            mock.patch.object(
+                github_mod,
+                "github_repo_for_remote",
+                return_value="github.com/acme/widgets",
+            ),
+            mock.patch.object(github_mod, "ensure_gh_ready"),
+            mock.patch.object(github_mod, "gh_capture") as capture,
+        ):
+            github_mod.merge_pull_request(
+                94,
+                expected_head="a" * 40,
+                method="squash",
+                remote="origin",
+                dry_run=False,
+            )
+
+        self.assertEqual(
+            (
+                "pr",
+                "merge",
+                "94",
+                "-R",
+                "github.com/acme/widgets",
+                "--squash",
+                "--match-head-commit",
+                "a" * 40,
+            ),
+            capture.call_args.args[0],
+        )
+
+    def test_pr_edit_targets_explicit_number(self) -> None:
+        with (
+            mock.patch.object(
+                github_mod,
+                "github_repo_for_remote",
+                return_value="github.com/acme/widgets",
+            ),
+            mock.patch.object(github_mod, "ensure_gh_ready"),
+            mock.patch.object(github_mod, "gh_capture") as capture,
+        ):
+            github_mod.edit_pull_request(
+                93,
+                remote="origin",
+                base="main",
+                title="Feature (2 of 3)",
+                dry_run=False,
+            )
+
+        self.assertEqual(
+            (
+                "pr",
+                "edit",
+                "93",
+                "-R",
+                "github.com/acme/widgets",
+                "--base",
+                "main",
+                "--title",
+                "Feature (2 of 3)",
+            ),
+            capture.call_args.args[0],
+        )
+
     def test_pr_create_dry_run_uses_body_file(self) -> None:
         repo_dir, plan = init_repo()
         try:

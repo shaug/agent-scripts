@@ -145,11 +145,11 @@ class RehydrationTests(unittest.TestCase):
         _, prs = self._materialize()
         clone = self._fresh_clone()
         conflicting = [
-            prs[0],
+            PullRequestRecord(**{**prs[0].__dict__, "state": "OPEN"}),
             PullRequestRecord(**{**prs[1].__dict__, "base_branch": "main"}),
         ]
 
-        with self.assertRaisesRegex(RehydrationError, "conflicts with expected base"):
+        with self.assertRaisesRegex(RehydrationError, "conflicts with allowed base"):
             rehydrate_chain(
                 source_branch="feature/report", pull_requests=conflicting, cwd=clone
             )
@@ -168,6 +168,19 @@ class RehydrationTests(unittest.TestCase):
         with self.assertRaisesRegex(RehydrationError, "metadata disagrees"):
             rehydrate_chain(
                 source_branch="feature/report", pull_requests=conflicting, cwd=clone
+            )
+
+    def test_cross_repository_changeset_pr_fails_closed(self) -> None:
+        _, prs = self._materialize()
+        clone = self._fresh_clone()
+        forked = [
+            PullRequestRecord(**{**prs[0].__dict__, "is_cross_repository": True}),
+            prs[1],
+        ]
+
+        with self.assertRaisesRegex(RehydrationError, "uses a fork head"):
+            rehydrate_chain(
+                source_branch="feature/report", pull_requests=forked, cwd=clone
             )
 
 

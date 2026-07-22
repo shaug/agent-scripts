@@ -11,14 +11,19 @@ class CliSafetyTests(unittest.TestCase):
     def test_every_operation_has_one_mutation_class(self) -> None:
         parser = build_parser()
         help_text = parser.format_help()
-        self.assertEqual(14, len(COMMAND_MUTATION_CLASSES))
+        self.assertEqual(16, len(COMMAND_MUTATION_CLASSES))
         for command, mutation_class in COMMAND_MUTATION_CLASSES.items():
             self.assertIn(command, help_text)
             self.assertIn(f"[{mutation_class}]", help_text)
 
     def test_all_remote_mutations_default_to_dry_run(self) -> None:
         parser = build_parser()
-        for argv in (("pr-create",), ("push-chain",)):
+        for argv in (
+            ("pr-create",),
+            ("push-chain",),
+            ("propagate", "--source", "feature/test", "--index", "1"),
+            ("merge-propagate", "--source", "feature/test", "--index", "1"),
+        ):
             args = parser.parse_args(argv)
             self.assertEqual("remote-mutating", args.mutation_class)
             self.assertTrue(args.dry_run)

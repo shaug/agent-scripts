@@ -22,7 +22,7 @@ from github import pr_create, pull_requests_for_source
 from patch_apply import build_diff
 from plan_checks import strict_apply_check, validate_plan_strict
 from preflight import preflight
-from propagate import push_chain
+from propagate import merge_propagate_from_live, propagate_from_live, push_chain
 from rehydrate import RehydrationError, discover_changeset_heads, rehydrate_chain
 from squash_check import squash_check
 from squash_ref import _resolve_base_source, create_squashed_ref
@@ -43,6 +43,8 @@ COMMAND_MUTATION_CLASSES = {
     "validate-chain": LOCAL_MUTATING,
     "pr-create": REMOTE_MUTATING,
     "push-chain": REMOTE_MUTATING,
+    "propagate": REMOTE_MUTATING,
+    "merge-propagate": REMOTE_MUTATING,
     "db-compare": LOCAL_MUTATING,
     "hunk-preview": READ_ONLY,
     "squash-ref": LOCAL_MUTATING,
@@ -213,6 +215,33 @@ def cmd_push_chain(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_propagate(args: argparse.Namespace) -> None:
+    propagate_from_live(
+        source=args.source,
+        base=args.base,
+        pr_number=args.pr,
+        index=args.index,
+        strategy=args.strategy,
+        remote=args.remote,
+        dry_run=args.dry_run,
+        authority_acknowledged=args.ack_merge_and_propagate,
+    )
+
+
+def cmd_merge_propagate(args: argparse.Namespace) -> None:
+    merge_propagate_from_live(
+        source=args.source,
+        base=args.base,
+        pr_number=args.pr,
+        index=args.index,
+        strategy=args.strategy,
+        method=args.method,
+        remote=args.remote,
+        dry_run=args.dry_run,
+        authority_acknowledged=args.ack_merge_and_propagate,
+    )
+
+
 def cmd_db_compare(args: argparse.Namespace) -> None:
     db_compare(
         load_and_validate(Path(args.plan)),
@@ -321,6 +350,24 @@ def _add_remote_dry_run(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(dry_run=True)
 
 
+def _add_propagation_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--source", required=True, help="Source branch")
+    parser.add_argument("--base", default=None, help="Base branch")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--pr", type=int, help="Changeset pull request number")
+    target.add_argument("--index", type=int, help="One-based changeset index")
+    parser.add_argument(
+        "--strategy", choices=("rebase", "cherry-pick"), default="rebase"
+    )
+    parser.add_argument("--remote", default="origin")
+    parser.add_argument(
+        "--ack-merge-and-propagate",
+        action="store_true",
+        help="Acknowledge explicit merge-and-propagate authority",
+    )
+    _add_remote_dry_run(parser)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Carve a review-ready source branch into intentional changesets.",
@@ -387,6 +434,25 @@ def build_parser() -> argparse.ArgumentParser:
     item.add_argument("--remote", default="origin")
     _add_remote_dry_run(item)
     item.set_defaults(func=cmd_push_chain)
+
+    item = _command(
+        sub,
+        "propagate",
+        "Verify a merged changeset and propagate its downstream suffix.",
+    )
+    _add_propagation_options(item)
+    item.set_defaults(func=cmd_propagate)
+
+    item = _command(
+        sub,
+        "merge-propagate",
+        "Merge one changeset PR, verify it, and propagate downstream.",
+    )
+    _add_propagation_options(item)
+    item.add_argument(
+        "--method", choices=("merge", "squash", "rebase"), default="merge"
+    )
+    item.set_defaults(func=cmd_merge_propagate)
 
     item = _command(sub, "db-compare", "Compare source and chain database schemas.")
     _add_plan(item)
