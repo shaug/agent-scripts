@@ -61,14 +61,11 @@ test-implement-epic:
 test-carve-changesets:
   python3 -m unittest discover -s {{skills_dir}}/carve-changesets/scripts/tests -p 'test_*.py'
 
-test-prepare-changesets:
-  python3 -m unittest discover -s {{skills_dir}}/prepare-changesets/scripts/tests -p 'test_*.py'
+eval-carve-changesets:
+  {{skills_dir}}/carve-changesets/scripts/evals/runner.py --skip-codex
 
-eval-prepare-changesets:
-  {{skills_dir}}/prepare-changesets/scripts/evals/runner.py --skip-codex
-
-eval-prepare-changesets-codex:
-  {{skills_dir}}/prepare-changesets/scripts/evals/runner.py
+eval-carve-changesets-codex:
+  {{skills_dir}}/carve-changesets/scripts/evals/runner.py
 
 validate-skills: lint-skills
 

@@ -27,8 +27,6 @@ Current reusable agent skills:
   delegate each published PR lifecycle to `babysit-pr`
 - `skills/review-code-change` — orchestrate the repository-owned review lenses
   into one evidence-bound, deduplicated verdict
-- `skills/prepare-changesets` — decompose a large, review-ready branch into a
-  deterministic chain of smaller, reviewable changesets and GitHub PRs
 - `skills/review-correctness` — find material behavioral, security,
   compatibility, data-integrity, and validation failures in a code change
 - `skills/review-solution-simplicity` — challenge whole-solution machinery that
@@ -77,7 +75,7 @@ just check
 Run skill-specific tests:
 
 ```bash
-just test-prepare-changesets
+just test-carve-changesets
 just test-review-suite
 just test-babysit-pr
 just test-implement-ticket
@@ -94,7 +92,7 @@ python3 review-suite/scripts/validate.py pair packet.json result.json
 Run deterministic local evals without an agent runtime:
 
 ```bash
-just eval-prepare-changesets
+just eval-carve-changesets
 just eval-implement-ticket
 ```
 
