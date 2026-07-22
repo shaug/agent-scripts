@@ -118,18 +118,13 @@ def preflight(
             "This workflow assumes the source includes the current base HEAD to avoid churn\n"
             "while carving changesets.\n\n"
             f"Fix: merge or rebase {source} onto {base}, then re-run preflight.\n"
-            "Override (not recommended): re-run with --allow-source-behind-base and record why in the plan."
+            "Override (not recommended): re-run with both --allow-source-behind-base "
+            "and --confirm-source-behind-base, then record why in the plan."
         )
-        if allow_source_behind_base:
+        if allow_source_behind_base and confirm_source_behind_base:
             print(
-                "[WARN] Source branch is behind base branch; proceeding by explicit override."
-            )
-        elif confirm_source_behind_base:
-            response = input("Source is behind base. Proceed anyway? [y/N] ").strip()
-            if response.lower() not in ("y", "yes"):
-                raise CommandError(message)
-            print(
-                "[WARN] Source branch is behind base branch; proceeding by explicit confirmation."
+                "[WARN] Source branch is behind base branch; proceeding by explicit "
+                "two-flag override."
             )
         else:
             raise CommandError(message)

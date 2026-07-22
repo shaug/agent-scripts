@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Completed carve-changesets skill and verification suite
 
+- fix: require the two-part source freshness override
 - test: complete the carve-changesets verification suite
+  (`f669d322985c435daf9b0c7296889d8a3bdd270c`)
 - feat: package the carve-changesets skill
   (`a8e19110380e048e0aaf85e820c114fe2a07cc7f`)
 - docs: define carve-changesets suite handoffs
