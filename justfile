@@ -62,10 +62,12 @@ test-carve-changesets:
   python3 -m unittest discover -s {{skills_dir}}/carve-changesets/scripts/tests -p 'test_*.py'
 
 eval-carve-changesets:
-  {{skills_dir}}/carve-changesets/scripts/evals/runner.py --skip-codex
+  python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py --integration-self-test
+  python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py
 
-eval-carve-changesets-codex:
-  {{skills_dir}}/carve-changesets/scripts/evals/runner.py
+# Forward-evaluate through any fresh-process stdin/stdout JSON adapter.
+eval-carve-changesets-executor executor:
+  python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py --executor "{{executor}}"
 
 validate-skills: lint-skills
 

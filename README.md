@@ -89,11 +89,22 @@ Validate a review packet and result together:
 python3 review-suite/scripts/validate.py pair packet.json result.json
 ```
 
-Run deterministic local evals without an agent runtime:
+Run deterministic local evaluation harnesses without an agent runtime:
 
 ```bash
 just eval-carve-changesets
 just eval-implement-ticket
+```
+
+The carve-changesets command first runs its objective integration self-test,
+which checks clean-tree, plan, immutable-source, chain, equivalence, and
+validation invariants. It then runs peer-shaped judgment cases through a fresh
+process for each result-blind packet. The bundled executor is a deterministic
+simulation of a compliant runtime, not a model evaluation. Pass any compatible
+stdin/stdout JSON adapter with:
+
+```bash
+just eval-carve-changesets-executor "python3 /path/to/adapter.py"
 ```
 
 The ticket-composition evaluator starts a fresh process for each case, with

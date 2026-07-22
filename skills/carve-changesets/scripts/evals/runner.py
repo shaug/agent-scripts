@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Local eval runner that optionally invokes codex exec, then grades deterministically."""
+"""Run result-blind forward evals or the deterministic integration self-test."""
 
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 import os
-import shutil
+import shlex
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List
 
 THIS_DIR = Path(__file__).resolve().parent
-SCRIPTS_DIR = THIS_DIR.parents[0]
-DEFAULT_PROMPTS_PATH = THIS_DIR / "prompts.csv"
-DEFAULT_OUT_DIR = THIS_DIR / "out"
+SCRIPTS_DIR = THIS_DIR.parent
+SKILL_ROOT = SCRIPTS_DIR.parent
+DEFAULT_CASES = SKILL_ROOT / "evals" / "cases.json"
+DEFAULT_EXPECTATIONS = SKILL_ROOT / "evals" / "expectations.json"
+DEFAULT_INTEGRATION_CASES = SKILL_ROOT / "evals" / "integration_cases.json"
+DEFAULT_EXECUTOR = THIS_DIR / "fixture_executor.py"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -26,146 +27,195 @@ from evals.grader import GradeResult, grade_repo  # noqa: E402
 from evals.helpers import cleanup_repo, init_eval_repo  # noqa: E402
 
 
-def codex_available(codex_bin: str) -> bool:
-    return shutil.which(codex_bin) is not None
+def load_json(path: Path):
+    return json.loads(path.read_text())
 
 
-def run_codex(prompt: str, *, codex_bin: str, cwd: Path) -> subprocess.CompletedProcess:
-    cmd = [codex_bin, "exec", "--full-auto", "--json", prompt]
-    return subprocess.run(cmd, cwd=cwd, text=True, capture_output=True, check=False)
+def skill_prompt() -> str:
+    return (SKILL_ROOT / "SKILL.md").read_text()
 
 
-def load_prompts(path: Path) -> List[Dict[str, str]]:
-    with path.open(newline="") as f:
-        reader = csv.DictReader(f)
-        return [row for row in reader]
+def contract_documents() -> dict[str, str]:
+    return {
+        "SPEC.md": (SKILL_ROOT / "references" / "SPEC.md").read_text(),
+        "suite-handoffs.md": (
+            SKILL_ROOT / "references" / "suite-handoffs.md"
+        ).read_text(),
+    }
 
 
-def run_eval_case(
-    *,
-    case_id: str,
-    prompt: str,
-    codex_bin: str,
-    skip_codex: bool,
-    test_cmd: str,
-    out_dir: Path,
-) -> Dict:
-    repo_dir, plan, source_hash = init_eval_repo()
-    plan_path = repo_dir / DEFAULT_PLAN_PATH
+def build_payload(case: dict) -> dict:
+    """Build one raw scenario packet without fixture identity or grader data."""
 
-    codex_result: Dict[str, str] = {}
+    scenario = {
+        key: value for key, value in case.items() if key not in {"id", "request"}
+    }
+    return {
+        "target_skill": "carve-changesets",
+        "skill_prompt": skill_prompt(),
+        "contract_documents": contract_documents(),
+        "request": case["request"],
+        "scenario": scenario,
+    }
+
+
+def run_executor(command: list[str], payload: dict) -> dict:
+    completed = subprocess.run(
+        command,
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if completed.returncode:
+        raise RuntimeError(
+            f"executor exited {completed.returncode}: {completed.stderr.strip()}"
+        )
+    try:
+        observed = json.loads(completed.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("executor did not return one JSON result") from error
+    if not isinstance(observed, dict):
+        raise RuntimeError("executor did not return one JSON object")
+    return observed
+
+
+def grade_forward(case_id: str, observed: dict, expected: dict) -> list[str]:
+    failures: list[str] = []
+    if observed.get("terminal_state") != expected.get("terminal_state"):
+        failures.append(
+            f"terminal_state: expected {expected.get('terminal_state')!r}, "
+            f"got {observed.get('terminal_state')!r}"
+        )
+    if observed.get("target_skill") != "carve-changesets":
+        failures.append(
+            "target_skill: expected 'carve-changesets', "
+            f"got {observed.get('target_skill')!r}"
+        )
+    observed_actions = set(observed.get("actions") or [])
+    missing = sorted(set(expected.get("required_actions") or []) - observed_actions)
+    if missing:
+        failures.append(f"missing actions: {', '.join(missing)}")
+    forbidden = sorted(set(expected.get("forbidden_actions") or []) & observed_actions)
+    if forbidden:
+        failures.append(f"forbidden actions: {', '.join(forbidden)}")
+    return [f"{case_id}: {failure}" for failure in failures]
+
+
+def evaluate_forward(
+    cases_path: Path, expectations_path: Path, command: list[str]
+) -> tuple[dict[str, dict], list[str]]:
+    cases = load_json(cases_path)
+    expectations = {item["case_id"]: item for item in load_json(expectations_path)}
+    if {case["id"] for case in cases} != set(expectations):
+        raise ValueError("forward case and expectation IDs differ")
+
+    observations: dict[str, dict] = {}
+    failures: list[str] = []
+    for case in cases:
+        observed = run_executor(command, build_payload(case))
+        observations[case["id"]] = observed
+        failures.extend(grade_forward(case["id"], observed, expectations[case["id"]]))
+    return observations, failures
+
+
+def run_integration_case(case: dict, *, test_cmd: str) -> dict:
+    repo_dir, _plan, source_hash = init_eval_repo()
     original_cwd = Path.cwd()
     try:
         os.chdir(repo_dir)
-        if not skip_codex:
-            if not codex_available(codex_bin):
-                raise RuntimeError(f"codex binary not found on PATH: {codex_bin}")
-            result = run_codex(prompt, codex_bin=codex_bin, cwd=repo_dir)
-            codex_result = {
-                "returncode": str(result.returncode),
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-            }
-        else:
-            codex_result = {"skipped": "true"}
-
         grade: GradeResult = grade_repo(
-            plan_path=plan_path,
+            plan_path=repo_dir / DEFAULT_PLAN_PATH,
             expected_source_hash=source_hash,
             test_cmd=test_cmd,
-            auto_create_chain=skip_codex,
+            auto_create_chain=bool(case.get("auto_create_chain", True)),
         )
-
-        case_out = {
-            "id": case_id,
-            "ok": grade.ok,
+        expected_checks = set(case.get("objective_checks") or [])
+        missing_checks = sorted(expected_checks - set(grade.checks))
+        failures = list(grade.failures)
+        if missing_checks:
+            failures.append("missing objective checks: " + ", ".join(missing_checks))
+        return {
+            "id": case["id"],
+            "ok": grade.ok and not missing_checks,
             "checks": grade.checks,
-            "failures": grade.failures,
-            "codex": codex_result,
+            "failures": failures,
         }
-        return case_out
     finally:
         os.chdir(original_cwd)
         cleanup_repo(repo_dir)
 
 
+def evaluate_integration(cases_path: Path, *, test_cmd: str) -> dict[str, dict]:
+    return {
+        case["id"]: run_integration_case(case, test_cmd=test_cmd)
+        for case in load_json(cases_path)
+    }
+
+
+def write_outputs(output_dir: Path | None, results: dict[str, dict]) -> None:
+    if output_dir is None:
+        return
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for case_id, result in results.items():
+        (output_dir / f"{case_id}.json").write_text(
+            json.dumps(result, indent=2, sort_keys=True) + "\n"
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run local evals for carve-changesets."
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cases", type=Path, default=DEFAULT_CASES)
+    parser.add_argument("--expectations", type=Path, default=DEFAULT_EXPECTATIONS)
+    parser.add_argument(
+        "--executor",
+        default=f"{shlex.quote(sys.executable)} {shlex.quote(str(DEFAULT_EXECUTOR))}",
+        help="Fresh-process evaluator command; receives result-blind JSON on stdin",
     )
     parser.add_argument(
-        "--prompts",
-        default=str(DEFAULT_PROMPTS_PATH),
-        help="Prompts CSV path",
-    )
-    parser.add_argument(
-        "--out-dir",
-        default=str(DEFAULT_OUT_DIR),
-        help="Directory to write eval results",
-    )
-    parser.add_argument("--codex-bin", default="codex", help="codex executable name")
-    parser.add_argument(
-        "--skip-codex",
+        "--integration-self-test",
         action="store_true",
-        help="Skip invoking codex and grade a deterministic baseline instead.",
+        help="Run only the deterministic helper integration self-test",
+    )
+    parser.add_argument(
+        "--integration-cases", type=Path, default=DEFAULT_INTEGRATION_CASES
     )
     parser.add_argument(
         "--test-cmd",
         default="python3 -c \"print('ok')\"",
-        help="Test command used by the grader's validate-chain step.",
+        help="Approved command used by the objective chain grader",
     )
+    parser.add_argument("--output-dir", type=Path)
     return parser
 
 
-def main(argv: List[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    if args.integration_self_test:
+        results = evaluate_integration(args.integration_cases, test_cmd=args.test_cmd)
+        failures = [
+            f"{case_id}: {failure}"
+            for case_id, result in results.items()
+            for failure in result["failures"]
+        ]
+        mode = "integration_self_test"
+    else:
+        results, failures = evaluate_forward(
+            args.cases, args.expectations, shlex.split(args.executor)
+        )
+        mode = "forward"
 
-    prompts_path = Path(args.prompts)
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    cases = load_prompts(prompts_path)
-    results: List[Dict] = []
-
-    for row in cases:
-        case_id = row.get("id", "case")
-        prompt = row.get("prompt", "").strip()
-        if not prompt:
-            results.append(
-                {"id": case_id, "ok": False, "failures": ["empty prompt"], "checks": []}
-            )
-            continue
-        try:
-            result = run_eval_case(
-                case_id=case_id,
-                prompt=prompt,
-                codex_bin=args.codex_bin,
-                skip_codex=args.skip_codex,
-                test_cmd=args.test_cmd,
-                out_dir=out_dir,
-            )
-        except Exception as exc:  # defensive guard for eval runs
-            result = {
-                "id": case_id,
-                "ok": False,
-                "checks": [],
-                "failures": [f"exception: {exc}"],
-            }
-        results.append(result)
-
-        (out_dir / f"{case_id}.json").write_text(json.dumps(result, indent=2) + "\n")
-
+    write_outputs(args.output_dir, results)
+    failed_ids = {item.split(":", 1)[0] for item in failures}
     summary = {
+        "mode": mode,
         "total": len(results),
-        "passed": sum(1 for r in results if r.get("ok")),
-        "failed": sum(1 for r in results if not r.get("ok")),
-        "results": results,
+        "passed": len(results) - len(failed_ids),
+        "failed": len(failed_ids),
+        "failures": failures,
     }
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-
-    print(json.dumps(summary, indent=2))
-    return 0 if summary["failed"] == 0 else 1
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

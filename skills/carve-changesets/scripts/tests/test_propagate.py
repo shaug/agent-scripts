@@ -39,7 +39,7 @@ class PushChainTests(unittest.TestCase):
 
         git_call.assert_not_called()
 
-    def test_push_chain_never_sends_base_or_source_to_force_push(self) -> None:
+    def test_issue_30_and_33_push_chain_never_pushes_base_or_source(self) -> None:
         repo_dir, plan = init_repo()
         remote_dir = None
         try:
@@ -278,7 +278,9 @@ class StatelessPropagationTests(unittest.TestCase):
             [call.args[0] for call in push.call_args_list],
         )
 
-    def test_cmd_merge_propagate_rehydrates_without_state_and_rebases(self) -> None:
+    def test_issue_33_combined_merge_then_propagate_rehydrates_and_rebases(
+        self,
+    ) -> None:
         self._run_combined("rebase", through_cli=True)
 
     def test_merge_propagate_supports_cherry_pick(self) -> None:

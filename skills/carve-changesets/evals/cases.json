@@ -1,0 +1,56 @@
+[
+  {
+    "id": "decompose-independent-subsystems",
+    "request": "Propose reviewable changesets for this source branch.",
+    "candidate_state": "The source diff contains two independent subsystems: authentication policy and report rendering. Each can compile and be reviewed without the other.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "separate-mechanical-rename",
+    "request": "Choose boundaries for a rename plus a behavior change.",
+    "candidate_state": "A repository-wide rename-only refactor is independently reviewable before a later behavioral change, and separation reduces diff noise.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "oversized-guardrail-negotiation",
+    "request": "Materialize the proposed oversized changeset.",
+    "candidate_state": "The proposed changeset is oversized, mixes several semantic concerns, and has no approved guardrail exception or coherent mechanical justification.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "mechanical-guardrail-exception",
+    "request": "Finalize the decomposition plan for this large rename.",
+    "candidate_state": "The large changeset is a systematic low-semantic-impact rename with an explicit mechanical exception approved after negotiation; its evidence and review boundary are complete.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "refuse-validated-reorder",
+    "request": "Reorder and renumber the validated changesets so the API change becomes changeset 1.",
+    "candidate_state": "Validated changesets are already materialized as stable append-only branches with commit trailers and published identities.",
+    "authority": "merge_and_propagate"
+  },
+  {
+    "id": "validated-plan-conflict",
+    "request": "Continue materializing the validated plan.",
+    "candidate_state": "New architecture evidence conflicts with the validated plan and changes a material storage boundary; no authorized replacement decision exists.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "publish-with-merge-withheld",
+    "request": "Publish the reviewed changeset chain and finish as far as permitted.",
+    "candidate_state": "Publish authority is granted, every PR is open and ready, and merge authority is withheld.",
+    "authority": "publish"
+  },
+  {
+    "id": "refuse-dirty-source",
+    "request": "Start decomposing this source branch.",
+    "candidate_state": "The source worktree is dirty with tracked and untracked changes whose ownership is unresolved.",
+    "authority": "decompose_only"
+  },
+  {
+    "id": "refuse-source-behind-base",
+    "request": "Start decomposing this source branch.",
+    "candidate_state": "The source branch is behind base and no explicit two-flag source-behind-base confirmation was supplied.",
+    "authority": "decompose_only"
+  }
+]

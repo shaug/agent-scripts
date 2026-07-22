@@ -58,7 +58,7 @@ class LiveValidationTests(unittest.TestCase):
             source_branch="feature/report", base_branch="main", cwd=self.repo
         )
 
-    def test_legitimate_propagation_validates_without_drift_diagnostics(self) -> None:
+    def test_issue_32_legitimate_propagation_has_no_stale_drift_warning(self) -> None:
         heads = self._materialize_equivalent_chain()
         helpers.run(self.repo, "git", "checkout", "feature/report-2")
         amended_message = self._stamp(2, detail="Refresh the propagated commit.")
@@ -92,7 +92,7 @@ class LiveValidationTests(unittest.TestCase):
         self.assertEqual("unchanged", result.source_status)
         self.assertEqual((), result.diagnostics)
 
-    def test_rewritten_mid_chain_branch_breaks_live_ancestry(self) -> None:
+    def test_issue_32_rewritten_mid_chain_branch_breaks_live_ancestry(self) -> None:
         self._materialize_equivalent_chain()
         chain = self._rehydrate()
         helpers.run(self.repo, "git", "checkout", "-b", "replacement", "main")
@@ -131,7 +131,7 @@ class LiveValidationTests(unittest.TestCase):
             "source_equivalence_mismatch", {item.code for item in result.errors}
         )
 
-    def test_advanced_source_is_distinct_from_different_source_history(self) -> None:
+    def test_issue_32_source_advance_is_distinct_from_history_mismatch(self) -> None:
         self._materialize_equivalent_chain()
         helpers.run(self.repo, "git", "checkout", "feature/report")
         (self.repo / "later.txt").write_text("later source work\n")

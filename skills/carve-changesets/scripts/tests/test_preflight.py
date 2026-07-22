@@ -64,7 +64,47 @@ class PreflightTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
-    def test_preflight_allows_source_behind_with_override(self) -> None:
+    def test_source_behind_rejects_allow_flag_without_confirmation(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            run(["git", "checkout", plan["base_branch"]], cwd=repo_dir)
+            (repo_dir / "base.txt").write_text("base-update\n")
+            run(["git", "add", "base.txt"], cwd=repo_dir)
+            commit(repo_dir, "base update")
+            with chdir(repo_dir):
+                with self.assertRaises(CommandError):
+                    preflight_mod.preflight(
+                        base=plan["base_branch"],
+                        source=plan["source_branch"],
+                        test_cmd="",
+                        skip_tests=True,
+                        skip_merge_check=True,
+                        allow_source_behind_base=True,
+                    )
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_source_behind_rejects_confirmation_flag_without_allowance(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            run(["git", "checkout", plan["base_branch"]], cwd=repo_dir)
+            (repo_dir / "base.txt").write_text("base-update\n")
+            run(["git", "add", "base.txt"], cwd=repo_dir)
+            commit(repo_dir, "base update")
+            with chdir(repo_dir):
+                with self.assertRaises(CommandError):
+                    preflight_mod.preflight(
+                        base=plan["base_branch"],
+                        source=plan["source_branch"],
+                        test_cmd="",
+                        skip_tests=True,
+                        skip_merge_check=True,
+                        confirm_source_behind_base=True,
+                    )
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_source_behind_allows_two_flag_override(self) -> None:
         repo_dir, plan = init_repo()
         try:
             run(["git", "checkout", plan["base_branch"]], cwd=repo_dir)
@@ -79,6 +119,7 @@ class PreflightTests(unittest.TestCase):
                     skip_tests=True,
                     skip_merge_check=True,
                     allow_source_behind_base=True,
+                    confirm_source_behind_base=True,
                 )
         finally:
             shutil.rmtree(repo_dir)
@@ -119,7 +160,7 @@ class PreflightTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
-    def test_preflight_never_executes_discovered_command(self) -> None:
+    def test_issue_30_preflight_never_executes_discovered_command(self) -> None:
         repo_dir, plan = init_repo()
         try:
             marker = repo_dir / "test-command-ran"

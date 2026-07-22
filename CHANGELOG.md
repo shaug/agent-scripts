@@ -4,9 +4,15 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-21 — Consolidated carve-changesets CLI and live contract
+## 2026-07-21 — Completed carve-changesets skill and verification suite
 
+- refactor: derive the eval action vocabulary from expectations
+- fix: require the two-part source freshness override
+  (`eb8612300d75d1483995677d75f54fe1a32b60d7`)
+- test: complete the carve-changesets verification suite
+  (`f669d322985c435daf9b0c7296889d8a3bdd270c`)
 - feat: package the carve-changesets skill
+  (`a8e19110380e048e0aaf85e820c114fe2a07cc7f`)
 - docs: define carve-changesets suite handoffs
   (`2df5136e2a7226666bc136e30905c2442a579c78`)
 - feat: add stateless changeset merge and propagation
