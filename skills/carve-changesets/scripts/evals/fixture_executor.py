@@ -8,25 +8,6 @@ import os
 import re
 import sys
 
-ACTION_VOCABULARY = (
-    "accept_mechanical_exception",
-    "diagnose_dirty_tree",
-    "diagnose_source_behind_base",
-    "document_exception_evidence",
-    "escalate_material_decision",
-    "preserve_validated_order",
-    "publish_without_merge",
-    "refuse_dirty_source",
-    "refuse_reorder_or_renumber",
-    "refuse_source_behind_base",
-    "request_guardrail_decision",
-    "separate_rename_from_behavior",
-    "split_by_subsystem",
-    "stop_for_oversized_changeset",
-    "stop_on_plan_conflict",
-    "withhold_merge",
-)
-
 
 def compact(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip().lower()

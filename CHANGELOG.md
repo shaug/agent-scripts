@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Completed carve-changesets skill and verification suite
 
+- refactor: derive the eval action vocabulary from expectations
 - fix: require the two-part source freshness override
+  (`eb8612300d75d1483995677d75f54fe1a32b60d7`)
 - test: complete the carve-changesets verification suite
   (`f669d322985c435daf9b0c7296889d8a3bdd270c`)
 - feat: package the carve-changesets skill

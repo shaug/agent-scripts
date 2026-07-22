@@ -140,11 +140,19 @@ class ForwardEvaluationTests(unittest.TestCase):
 
     def test_vocabulary_spam_cannot_pass_any_case(self) -> None:
         expectations = json.loads(self.expectations_text)
+        action_vocabulary = sorted(
+            {
+                action
+                for expected in expectations
+                for field in ("required_actions", "forbidden_actions")
+                for action in expected.get(field, [])
+            }
+        )
         for expected in expectations:
             observed = {
                 "target_skill": "carve-changesets",
                 "terminal_state": expected["terminal_state"],
-                "actions": list(EXECUTOR.ACTION_VOCABULARY),
+                "actions": action_vocabulary,
             }
             failures = RUNNER.grade_forward(expected["case_id"], observed, expected)
             self.assertTrue(
