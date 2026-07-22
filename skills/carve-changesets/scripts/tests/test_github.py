@@ -1,14 +1,29 @@
 from __future__ import annotations
 
+import json
+import os
 import shutil
 import subprocess
+import sys
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
-import github as github_mod
-from chain import create_chain
-from common import CommandError
-from legacy_helpers import chdir, commit, init_remote, init_repo, run
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+import github as github_mod  # noqa: E402
+from chain import create_chain  # noqa: E402
+from common import CommandError  # noqa: E402
+from legacy_helpers import (  # noqa: E402
+    chdir,
+    commit,
+    init_remote,
+    init_repo,
+    run,
+)
 
 
 class GithubTests(unittest.TestCase):
@@ -53,7 +68,7 @@ class GithubTests(unittest.TestCase):
             capture.call_args.args[0],
         )
 
-    def test_pr_edit_targets_explicit_number(self) -> None:
+    def test_issue_33_pr_edit_targets_explicit_number(self) -> None:
         with (
             mock.patch.object(
                 github_mod,
@@ -189,7 +204,69 @@ class GithubTests(unittest.TestCase):
             if remote_dir is not None:
                 shutil.rmtree(remote_dir.parent)
 
-    def test_pr_create_rejects_local_head_not_on_remote(self) -> None:
+    def test_non_dry_run_pr_create_executes_against_a_gh_stub(self) -> None:
+        repo_dir, plan = init_repo()
+        remote_dir = None
+        stub_dir = Path(tempfile.mkdtemp(prefix="carve-gh-stub-"))
+        try:
+            remote_dir = init_remote(repo_dir)
+            with chdir(repo_dir):
+                create_chain(plan)
+                run(["git", "push", "origin", "feature/test-1"], cwd=repo_dir)
+                head = run(
+                    ["git", "rev-parse", "feature/test-1"], cwd=repo_dir
+                ).stdout.strip()
+                body = github_mod.pr_body_for(
+                    plan, 1, len(plan["changesets"]), plan["changesets"][0]
+                )
+
+            stub = stub_dir / "gh"
+            log_path = stub_dir / "calls.jsonl"
+            stub.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, os, sys\n"
+                "with open(os.environ['GH_STUB_LOG'], 'a', encoding='utf-8') as f:\n"
+                "    f.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+                "if sys.argv[1:3] == ['pr', 'view']:\n"
+                "    print(os.environ['GH_STUB_VIEW'])\n"
+            )
+            stub.chmod(0o755)
+            created = {
+                "number": 95,
+                "url": "https://github.com/acme/widgets/pull/95",
+                "headRefOid": head,
+                "baseRefName": "main",
+                "body": body,
+            }
+            environment = {
+                "PATH": f"{stub_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+                "GH_STUB_LOG": str(log_path),
+                "GH_STUB_VIEW": json.dumps(created),
+            }
+            with (
+                chdir(repo_dir),
+                mock.patch.dict(os.environ, environment),
+                mock.patch.object(
+                    github_mod,
+                    "github_repo_for_remote",
+                    return_value="github.com/acme/widgets",
+                ),
+            ):
+                github_mod.pr_create(plan, indices=[1], dry_run=False, remote="origin")
+
+            calls = [json.loads(line) for line in log_path.read_text().splitlines()]
+            self.assertEqual(["auth", "status"], calls[0][:2])
+            create_call = next(call for call in calls if call[:2] == ["pr", "create"])
+            self.assertIn("--body-file", create_call)
+            self.assertNotIn("--body", create_call)
+            self.assertTrue(any(call[:2] == ["pr", "view"] for call in calls))
+        finally:
+            shutil.rmtree(repo_dir)
+            shutil.rmtree(stub_dir)
+            if remote_dir is not None:
+                shutil.rmtree(remote_dir.parent)
+
+    def test_issue_33_pr_create_rejects_local_head_not_on_remote(self) -> None:
         repo_dir, plan = init_repo()
         remote_dir = None
         try:

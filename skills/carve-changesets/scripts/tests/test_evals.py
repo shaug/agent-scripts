@@ -1,90 +1,188 @@
 from __future__ import annotations
 
+import importlib.util
+import json
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from evals.grader import grade_repo
-from evals.helpers import cleanup_repo, init_eval_repo
-from evals.runner import main as runner_main
-from legacy_helpers import chdir, commit, run
+SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from evals.grader import grade_repo  # noqa: E402
+from evals.helpers import cleanup_repo, init_eval_repo  # noqa: E402
+from legacy_helpers import chdir, commit, run  # noqa: E402
+
+SKILL_ROOT = Path(__file__).resolve().parents[2]
+RUNNER_PATH = SKILL_ROOT / "scripts" / "evals" / "runner.py"
+EXECUTOR_PATH = SKILL_ROOT / "scripts" / "evals" / "fixture_executor.py"
+
+RUNNER_SPEC = importlib.util.spec_from_file_location(
+    "carve_changesets_eval_runner", RUNNER_PATH
+)
+RUNNER = importlib.util.module_from_spec(RUNNER_SPEC)
+assert RUNNER_SPEC and RUNNER_SPEC.loader
+RUNNER_SPEC.loader.exec_module(RUNNER)
+
+EXECUTOR_SPEC = importlib.util.spec_from_file_location(
+    "carve_changesets_fixture_executor", EXECUTOR_PATH
+)
+EXECUTOR = importlib.util.module_from_spec(EXECUTOR_SPEC)
+assert EXECUTOR_SPEC and EXECUTOR_SPEC.loader
+EXECUTOR_SPEC.loader.exec_module(EXECUTOR)
 
 
 class EvalGraderTests(unittest.TestCase):
-    def test_grader_passes_on_deterministic_baseline(self) -> None:
-        repo_dir, plan, source_hash = init_eval_repo()
+    def test_objective_grader_passes_the_integration_fixture(self) -> None:
+        repo_dir, _plan, source_hash = init_eval_repo()
         try:
-            plan_path = repo_dir / ".carve-changesets/plan.json"
             with chdir(repo_dir):
                 result = grade_repo(
-                    plan_path=plan_path,
+                    plan_path=repo_dir / ".carve-changesets/plan.json",
                     expected_source_hash=source_hash,
                     test_cmd="python3 -c \"print('ok')\"",
                     auto_create_chain=True,
                 )
             self.assertTrue(result.ok, f"grader should pass: {result.failures}")
+            self.assertIn("equivalence", result.checks)
+            self.assertIn("source_hash_unchanged", result.checks)
         finally:
             cleanup_repo(repo_dir)
 
-    def test_grader_detects_source_branch_mutation(self) -> None:
-        repo_dir, plan, source_hash = init_eval_repo()
+    def test_objective_grader_detects_source_branch_mutation(self) -> None:
+        repo_dir, _plan, source_hash = init_eval_repo()
         try:
-            plan_path = repo_dir / ".carve-changesets/plan.json"
             with chdir(repo_dir):
-                # Mutate the source branch after recording its hash.
                 (repo_dir / "a.txt").write_text("mutated-source\n")
                 run(["git", "add", "a.txt"], cwd=repo_dir)
                 commit(repo_dir, "mutate source")
-
                 result = grade_repo(
-                    plan_path=plan_path,
+                    plan_path=repo_dir / ".carve-changesets/plan.json",
                     expected_source_hash=source_hash,
                     test_cmd="python3 -c \"print('ok')\"",
                     auto_create_chain=True,
                 )
-
             self.assertFalse(result.ok)
             self.assertTrue(
-                any("source_hash_unchanged" in failure for failure in result.failures),
-                f"expected source hash failure, got: {result.failures}",
+                any("source_hash_unchanged" in item for item in result.failures)
             )
         finally:
             cleanup_repo(repo_dir)
 
 
-class EvalRunnerTests(unittest.TestCase):
-    def test_prompts_use_only_the_consolidated_carve_interface(self) -> None:
-        prompts_path = Path(__file__).resolve().parents[1] / "evals" / "prompts.csv"
-        prompts = prompts_path.read_text()
-        self.assertIn("carve-changesets skill", prompts)
-        self.assertIn("scripts/cli.py", prompts)
-        self.assertIn(".carve-changesets/plan.json", prompts)
-        for stale in (
-            "prepare" + "-changesets",
-            ".prepare" + "-changesets",
-            "scripts/" + "*.py",
-        ):
-            self.assertNotIn(stale, prompts)
+class ForwardEvaluationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.cases = json.loads(RUNNER.DEFAULT_CASES.read_text())
+        cls.expectations_text = RUNNER.DEFAULT_EXPECTATIONS.read_text()
 
-    def test_runner_skip_codex_produces_passing_summary(self) -> None:
-        prompts_path = Path(__file__).resolve().parents[1] / "evals" / "prompts.csv"
-        out_dir = Path(tempfile.mkdtemp(prefix="pcs-eval-out-"))
-        try:
-            rc = runner_main(
-                [
-                    "--prompts",
-                    str(prompts_path),
-                    "--out-dir",
-                    str(out_dir),
-                    "--skip-codex",
-                ]
+    def test_cases_match_peer_shape_and_cover_required_judgment(self) -> None:
+        peer_shape = {
+            "id",
+            "request",
+            "tracker_state",
+            "authority",
+            "runtime_profile",
+            "capabilities",
+            "candidate_state",
+            "incoming_handoff",
+        }
+        expected_ids = {
+            "decompose-independent-subsystems",
+            "separate-mechanical-rename",
+            "oversized-guardrail-negotiation",
+            "mechanical-guardrail-exception",
+            "refuse-validated-reorder",
+            "validated-plan-conflict",
+            "publish-with-merge-withheld",
+            "refuse-dirty-source",
+            "refuse-source-behind-base",
+        }
+        self.assertEqual(expected_ids, {case["id"] for case in self.cases})
+        for case in self.cases:
+            self.assertIn("request", case)
+            self.assertIn("candidate_state", case)
+            self.assertLessEqual(set(case), peer_shape, case["id"])
+
+    def test_executor_payload_is_result_blind(self) -> None:
+        for case in self.cases:
+            payload = RUNNER.build_payload(case)
+            serialized = json.dumps(payload, sort_keys=True)
+            self.assertNotIn(case["id"], serialized)
+            self.assertNotIn("case_id", serialized)
+            self.assertNotIn("required_actions", serialized)
+            self.assertNotIn("forbidden_actions", serialized)
+            self.assertNotIn("terminal_state", serialized)
+            self.assertNotIn(self.expectations_text, serialized)
+
+    def test_forward_cases_execute_in_fresh_processes(self) -> None:
+        observations, failures = RUNNER.evaluate_forward(
+            RUNNER.DEFAULT_CASES,
+            RUNNER.DEFAULT_EXPECTATIONS,
+            [sys.executable, str(EXECUTOR_PATH)],
+        )
+        self.assertEqual([], failures)
+        self.assertEqual(len(self.cases), len(observations))
+        self.assertEqual(
+            len(self.cases),
+            len({result["executor_pid"] for result in observations.values()}),
+        )
+
+    def test_reference_executor_uses_the_supplied_contract(self) -> None:
+        payload = RUNNER.build_payload(self.cases[0])
+        payload["contract_documents"]["SPEC.md"] = ""
+        observed = RUNNER.run_executor([sys.executable, str(EXECUTOR_PATH)], payload)
+        self.assertEqual("blocked", observed["terminal_state"])
+        self.assertEqual([], observed["actions"])
+
+    def test_vocabulary_spam_cannot_pass_any_case(self) -> None:
+        expectations = json.loads(self.expectations_text)
+        for expected in expectations:
+            observed = {
+                "target_skill": "carve-changesets",
+                "terminal_state": expected["terminal_state"],
+                "actions": list(EXECUTOR.ACTION_VOCABULARY),
+            }
+            failures = RUNNER.grade_forward(expected["case_id"], observed, expected)
+            self.assertTrue(
+                any("forbidden actions" in failure for failure in failures),
+                expected["case_id"],
             )
-            self.assertEqual(rc, 0)
-            summary_path = out_dir / "summary.json"
-            self.assertTrue(summary_path.exists())
+
+    def test_integration_self_test_migrates_both_prompt_cases(self) -> None:
+        cases = json.loads(RUNNER.DEFAULT_INTEGRATION_CASES.read_text())
+        self.assertEqual(
+            {"chain-basic", "chain-compare"}, {case["id"] for case in cases}
+        )
+        results = RUNNER.evaluate_integration(
+            RUNNER.DEFAULT_INTEGRATION_CASES,
+            test_cmd="python3 -c \"print('ok')\"",
+        )
+        self.assertTrue(all(result["ok"] for result in results.values()), results)
+        for result in results.values():
+            self.assertIn("equivalence", result["checks"])
+            self.assertIn("validate_chain", result["checks"])
+
+    def test_runner_has_no_agent_cli_specific_dependency(self) -> None:
+        runner_source = RUNNER_PATH.read_text()
+        parser_help = RUNNER.build_parser().format_help()
+        self.assertIn("--executor", parser_help)
+        self.assertIn("--integration-self-test", parser_help)
+        self.assertNotIn("--skip-" + "codex", parser_help)
+        self.assertNotIn("run_" + "codex", runner_source)
+        self.assertNotIn("codex" + "_available", runner_source)
+
+    def test_runner_writes_results_only_when_requested(self) -> None:
+        output_dir = Path(tempfile.mkdtemp(prefix="carve-eval-output-"))
+        try:
+            rc = RUNNER.main(["--output-dir", str(output_dir)])
+            self.assertEqual(0, rc)
+            self.assertEqual(len(self.cases), len(list(output_dir.glob("*.json"))))
         finally:
-            shutil.rmtree(out_dir)
+            shutil.rmtree(output_dir)
 
 
 if __name__ == "__main__":

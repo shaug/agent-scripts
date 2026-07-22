@@ -1,0 +1,56 @@
+[
+  {
+    "case_id": "decompose-independent-subsystems",
+    "terminal_state": "plan_ready",
+    "required_actions": ["split_by_subsystem"],
+    "forbidden_actions": ["accept_mechanical_exception", "publish_without_merge"]
+  },
+  {
+    "case_id": "separate-mechanical-rename",
+    "terminal_state": "plan_ready",
+    "required_actions": ["separate_rename_from_behavior"],
+    "forbidden_actions": ["split_by_subsystem", "stop_for_oversized_changeset"]
+  },
+  {
+    "case_id": "oversized-guardrail-negotiation",
+    "terminal_state": "blocked",
+    "required_actions": ["request_guardrail_decision", "stop_for_oversized_changeset"],
+    "forbidden_actions": ["accept_mechanical_exception", "publish_without_merge"]
+  },
+  {
+    "case_id": "mechanical-guardrail-exception",
+    "terminal_state": "plan_ready",
+    "required_actions": ["accept_mechanical_exception", "document_exception_evidence"],
+    "forbidden_actions": ["stop_for_oversized_changeset", "publish_without_merge"]
+  },
+  {
+    "case_id": "refuse-validated-reorder",
+    "terminal_state": "blocked",
+    "required_actions": ["preserve_validated_order", "refuse_reorder_or_renumber"],
+    "forbidden_actions": ["publish_without_merge", "accept_mechanical_exception"]
+  },
+  {
+    "case_id": "validated-plan-conflict",
+    "terminal_state": "blocked",
+    "required_actions": ["escalate_material_decision", "stop_on_plan_conflict"],
+    "forbidden_actions": ["publish_without_merge", "accept_mechanical_exception"]
+  },
+  {
+    "case_id": "publish-with-merge-withheld",
+    "terminal_state": "prs_open",
+    "required_actions": ["publish_without_merge", "withhold_merge"],
+    "forbidden_actions": ["stop_for_oversized_changeset", "accept_mechanical_exception"]
+  },
+  {
+    "case_id": "refuse-dirty-source",
+    "terminal_state": "blocked",
+    "required_actions": ["diagnose_dirty_tree", "refuse_dirty_source"],
+    "forbidden_actions": ["publish_without_merge", "accept_mechanical_exception"]
+  },
+  {
+    "case_id": "refuse-source-behind-base",
+    "terminal_state": "blocked",
+    "required_actions": ["diagnose_source_behind_base", "refuse_source_behind_base"],
+    "forbidden_actions": ["publish_without_merge", "accept_mechanical_exception"]
+  }
+]

@@ -16,7 +16,7 @@ class CliSafetyTests(unittest.TestCase):
             self.assertIn(command, help_text)
             self.assertIn(f"[{mutation_class}]", help_text)
 
-    def test_all_remote_mutations_default_to_dry_run(self) -> None:
+    def test_issue_30_all_remote_mutations_default_to_dry_run(self) -> None:
         parser = build_parser()
         for argv in (
             ("pr-create",),
@@ -28,7 +28,7 @@ class CliSafetyTests(unittest.TestCase):
             self.assertEqual("remote-mutating", args.mutation_class)
             self.assertTrue(args.dry_run)
 
-    def test_implementation_uses_file_messages_and_no_hard_reset(self) -> None:
+    def test_issue_30_uses_file_messages_and_never_hard_resets(self) -> None:
         scripts = Path(__file__).resolve().parents[1]
         implementation = "\n".join(
             path.read_text()
@@ -40,7 +40,7 @@ class CliSafetyTests(unittest.TestCase):
         self.assertNotIn('"--body",', implementation)
         self.assertNotIn('"reset", "--hard"', implementation)
 
-    def test_only_github_module_invokes_gh(self) -> None:
+    def test_issue_30_only_github_chokepoint_invokes_gh(self) -> None:
         scripts = Path(__file__).resolve().parents[1]
         for path in scripts.glob("*.py"):
             if path.name == "github.py":

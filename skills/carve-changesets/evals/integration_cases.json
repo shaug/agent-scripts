@@ -1,0 +1,30 @@
+[
+  {
+    "id": "chain-basic",
+    "request": "Materialize and validate the known two-part fixture chain.",
+    "auto_create_chain": true,
+    "objective_checks": [
+      "clean_tree",
+      "plan_valid",
+      "source_hash_unchanged",
+      "create_chain",
+      "chain_exists",
+      "equivalence",
+      "validate_chain"
+    ]
+  },
+  {
+    "id": "chain-compare",
+    "request": "Prove the fixture chain reconstructs the immutable source.",
+    "auto_create_chain": true,
+    "objective_checks": [
+      "clean_tree",
+      "plan_valid",
+      "source_hash_unchanged",
+      "create_chain",
+      "chain_exists",
+      "equivalence",
+      "validate_chain"
+    ]
+  }
+]

@@ -87,6 +87,47 @@ class RehydrationTests(unittest.TestCase):
             ["main", "feature/report-1"], [item.base for item in chain.changesets]
         )
 
+    def test_edited_pr_prose_rehydrates_from_unchanged_metadata_block(self) -> None:
+        _, prs = self._materialize()
+        clone = self._fresh_clone()
+        edited = [
+            PullRequestRecord(
+                **{
+                    **pr.__dict__,
+                    "body": (
+                        "Reviewer-authored context.\n\n"
+                        + pr.body.replace(
+                            "Report API", "Improved report API explanation"
+                        )
+                    ),
+                }
+            )
+            for pr in prs
+        ]
+
+        chain = rehydrate_chain(
+            source_branch="feature/report", pull_requests=edited, cwd=clone
+        )
+
+        self.assertEqual([101, 102], [item.pr_number for item in chain.changesets])
+        self.assertEqual(
+            ["part-1", "part-2"], [item.metadata.slug for item in chain.changesets]
+        )
+
+    def test_contiguous_partial_chain_rehydrates_without_inventing_later_items(
+        self,
+    ) -> None:
+        heads, prs = self._materialize(indices=(1,))
+        clone = self._fresh_clone()
+
+        chain = rehydrate_chain(
+            source_branch="feature/report", pull_requests=prs, cwd=clone
+        )
+
+        self.assertEqual(1, len(chain.changesets))
+        self.assertEqual(heads[1], chain.changesets[0].head)
+        self.assertEqual(1, chain.changesets[0].metadata.index)
+
     def test_status_is_rendered_from_rehydration_without_local_files(self) -> None:
         _, prs = self._materialize()
         clone = self._fresh_clone()
@@ -117,7 +158,7 @@ class RehydrationTests(unittest.TestCase):
         self.assertEqual("part-2", parsed.slug)
         self.assertEqual(self.source_sha, parsed.source_sha)
 
-    def test_missing_branch_index_fails_closed(self) -> None:
+    def test_partial_chain_with_an_index_gap_fails_closed(self) -> None:
         self._materialize(indices=(1, 3))
         clone = self._fresh_clone()
 
@@ -126,7 +167,7 @@ class RehydrationTests(unittest.TestCase):
                 source_branch="feature/report", base_branch="main", cwd=clone
             )
 
-    def test_missing_commit_trailer_fails_closed(self) -> None:
+    def test_missing_required_commit_trailers_fail_closed(self) -> None:
         helpers.run(self.repo, "git", "checkout", "-b", "feature/report-1", "main")
         (self.repo / "plain.txt").write_text("plain\n")
         helpers.run(self.repo, "git", "add", "plain.txt")

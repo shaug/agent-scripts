@@ -119,7 +119,7 @@ class PreflightTests(unittest.TestCase):
         finally:
             shutil.rmtree(repo_dir)
 
-    def test_preflight_never_executes_discovered_command(self) -> None:
+    def test_issue_30_preflight_never_executes_discovered_command(self) -> None:
         repo_dir, plan = init_repo()
         try:
             marker = repo_dir / "test-command-ran"

@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-21 — Consolidated carve-changesets CLI and live contract
+## 2026-07-21 — Completed carve-changesets skill and verification suite
 
+- test: complete the carve-changesets verification suite
 - feat: package the carve-changesets skill
+  (`a8e19110380e048e0aaf85e820c114fe2a07cc7f`)
 - docs: define carve-changesets suite handoffs
   (`2df5136e2a7226666bc136e30905c2442a579c78`)
 - feat: add stateless changeset merge and propagation
