@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Completed carve-changesets and integrated ticket publication
 
+- fix: fail closed on invalid carved handoffs
 - feat: integrate carved ticket publication
+  (`54c67f7cd7ace3269eee4fe628f974b090a4d699`)
 - refactor: derive the eval action vocabulary from expectations
   (`e30b5f1021538d673eb931b2978287cfd21ae4ae`)
 - fix: require the two-part source freshness override

@@ -42,7 +42,7 @@ class ForwardEvaluationTests(unittest.TestCase):
             "worktree",
             "handoff",
         }
-        self.assertEqual(23, len(self.cases))
+        self.assertEqual(25, len(self.cases))
         for case in self.cases:
             self.assertEqual(required, set(case["artifacts"]), case["id"])
 
@@ -64,9 +64,9 @@ class ForwardEvaluationTests(unittest.TestCase):
             [sys.executable, str(EXECUTOR_PATH)],
         )
         self.assertEqual([], failures)
-        self.assertEqual(23, len(observations))
+        self.assertEqual(25, len(observations))
         process_ids = {result["executor_pid"] for result in observations.values()}
-        self.assertEqual(23, len(process_ids))
+        self.assertEqual(25, len(process_ids))
 
     def test_reference_executor_evaluates_the_supplied_skill_prompt(self):
         payload = RUNNER.build_payload(self.cases[2])
@@ -138,6 +138,14 @@ class ForwardEvaluationTests(unittest.TestCase):
         self.assertIn(
             "verify_full_stack_on_base",
             observations["implement-epic-verifies-stacked-child"]["actions"],
+        )
+        self.assertIn(
+            "name_missing_carve_changesets",
+            observations["missing-carve-changesets"]["actions"],
+        )
+        self.assertIn(
+            "reject_stale_or_malformed_result",
+            observations["stale-carved-result"]["actions"],
         )
 
 

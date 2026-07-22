@@ -97,6 +97,22 @@ def action_result(payload: dict) -> dict:
             "actions": ["fail_before_mutation", "name_missing_babysit_pr"],
         }
 
+    if artifacts["diff"].get("guardrail") == "oversized" and not capabilities.get(
+        "carve_changesets"
+    ):
+        return {
+            "target_skill": target,
+            "terminal_state": "blocked",
+            "actions": ["stop_before_publication", "name_missing_carve_changesets"],
+        }
+
+    if not handoff.get("result_well_formed", True) or handoff.get("result_stale"):
+        return {
+            "target_skill": target,
+            "terminal_state": "blocked",
+            "actions": ["reject_stale_or_malformed_result", "reread_live_pr"],
+        }
+
     if artifacts["diff"].get("guardrail") == "oversized":
         actions.append("record_guardrail_evidence")
         if handoff.get("rubric") == "ticket_split":
@@ -133,6 +149,25 @@ def action_result(payload: dict) -> dict:
                 ],
             }
         if handoff.get("carve_terminal") == "prs_open":
+            stack_count = handoff.get("stack_count")
+            if not (
+                pr.get("state") == "multiple_open"
+                and pr.get("mergeable") is True
+                and isinstance(stack_count, int)
+                and stack_count > 0
+                and handoff.get("topology") == "verified"
+                and handoff.get("closing_syntax") == "final_only"
+                and checks.get("status") == "success"
+                and reviews.get("per_changeset") == "clean"
+            ):
+                return {
+                    "target_skill": target,
+                    "terminal_state": "blocked",
+                    "actions": [
+                        "reject_stale_or_malformed_result",
+                        "reread_live_pr",
+                    ],
+                }
             return {
                 "target_skill": target,
                 "terminal_state": "ready_prs",
@@ -151,13 +186,6 @@ def action_result(payload: dict) -> dict:
             "target_skill": target,
             "terminal_state": "blocked",
             "actions": ["preserve_artifacts", "report_closed_without_merge"],
-        }
-
-    if not handoff.get("result_well_formed", True) or handoff.get("result_stale"):
-        return {
-            "target_skill": target,
-            "terminal_state": "blocked",
-            "actions": ["reject_stale_or_malformed_result", "reread_live_pr"],
         }
 
     if handoff.get("delegated"):

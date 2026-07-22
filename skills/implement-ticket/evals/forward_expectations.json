@@ -271,5 +271,19 @@
     "required_actions": ["verify_stack_topology", "verify_each_pr_gate", "verify_full_stack_on_base", "do_not_own_decomposition_mechanics", "refresh_graph_after_merged_only"],
     "target_skill": "implement-epic",
     "terminal_state": "mixed_ticket_results"
+  },
+  {
+    "case_id": "missing-carve-changesets",
+    "forbidden_actions": ["invoke_carve_changesets", "invoke_ready_to_merge", "invoke_merge_when_ready"],
+    "required_actions": ["stop_before_publication", "name_missing_carve_changesets"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "stale-carved-result",
+    "forbidden_actions": ["invoke_carve_changesets", "verify_stack_topology", "verify_each_pr_gate"],
+    "required_actions": ["reject_stale_or_malformed_result", "reread_live_pr"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
   }
 ]

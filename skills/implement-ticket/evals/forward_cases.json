@@ -412,5 +412,41 @@
       "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
       "handoff": {"result_well_formed": true, "stack_child_result": "all_merged", "stack_count": 3, "topology": "verified", "full_chain_on_base": true, "per_pr_gates": "verified"}
     }
+  },
+  {
+    "id": "missing-carve-changesets",
+    "target_skill": "implement-ticket",
+    "request": "Publish the authorized oversized G-330 candidate.",
+    "authority": {"merge": false, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-330", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed when the publication dependency is unavailable"},
+      "pr": {"state": "absent", "merged": false, "head": "head-330", "base": "base-1", "mergeable": null},
+      "diff": {"base": "base-1", "head": "head-330", "patch": "large coherent candidate", "resulting_tree": "tree-330", "guardrail": "oversized"},
+      "checks": {"status": "not_published", "items": []},
+      "reviews": {"initial": "clean", "head": "head-330", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g330", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": false, "result_well_formed": true, "rubric": "carve_coherent_branch"}
+    }
+  },
+  {
+    "id": "stale-carved-result",
+    "target_skill": "implement-ticket",
+    "request": "Accept the ready carved stack for G-331.",
+    "authority": {"merge": false, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-331", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "candidate-bound stack results"},
+      "pr": {"state": "multiple_open", "merged": false, "head": "stack-tip-331b", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-331b", "patch": "large coherent candidate", "resulting_tree": "tree-331b", "guardrail": "oversized"},
+      "checks": {"status": "success", "items": [{"pr": 1}, {"pr": 2}]},
+      "reviews": {"initial": "clean", "head": "head-331b", "per_changeset": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g331", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": false, "result_stale": true, "rubric": "carve_coherent_branch", "carve_terminal": "prs_open", "result_head": "stack-tip-331a"}
+    }
   }
 ]

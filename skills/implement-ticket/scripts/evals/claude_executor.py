@@ -56,6 +56,7 @@ ACTION_VOCABULARY = (
     "invoke_carve_changesets",
     "make_no_code_mutation",
     "name_missing_babysit_pr",
+    "name_missing_carve_changesets",
     "perform_no_mutation",
     "place_closing_syntax_final_pr_only",
     "preserve_artifacts",
