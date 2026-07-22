@@ -1,0 +1,35 @@
+{
+  "name": "agent-scripts",
+  "version": "0.1.0",
+  "description": "Install the complete agent-scripts implementation, review, PR-lifecycle, and changeset skill suite.",
+  "author": {
+    "name": "shaug",
+    "url": "https://github.com/shaug"
+  },
+  "homepage": "https://github.com/shaug/agent-scripts",
+  "repository": "https://github.com/shaug/agent-scripts",
+  "keywords": [
+    "agent-skills",
+    "code-review",
+    "github",
+    "pull-requests"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Scripts",
+    "shortDescription": "Implementation and review workflows",
+    "longDescription": "Install the dependency-closed suite for ticket and epic implementation, code review, PR babysitting, and changeset carving.",
+    "developerName": "shaug",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/shaug/agent-scripts",
+    "defaultPrompt": [
+      "Implement one ticket through review and merge.",
+      "Review this code change with the full suite.",
+      "Babysit this pull request until it is ready."
+    ]
+  }
+}

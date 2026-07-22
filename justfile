@@ -21,7 +21,7 @@ sync-contracts:
     echo "Synced $dest"; \
   done
 
-test:
+test: test-plugins
   @found=0; \
   for tests in {{skills_dir}}/*/scripts/tests; do \
     if [ -d "$tests" ]; then \
@@ -40,6 +40,9 @@ test:
 
 test-review-suite:
   python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'
+
+test-plugins:
+  python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
 test-babysit-pr:
   python3 -m unittest discover -s {{skills_dir}}/babysit-pr/scripts/tests -p 'test_*.py'
@@ -70,6 +73,9 @@ eval-carve-changesets-executor executor:
   python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py --executor "{{executor}}"
 
 validate-skills: lint-skills
+
+validate-plugins:
+  python3 scripts/validate_plugins.py
 
 fmt-py:
   @if command -v ruff >/dev/null 2>&1; then \
@@ -150,7 +156,7 @@ lint-skills:
     fi; \
   done
 
-lint: lint-py lint-md lint-skills
+lint: lint-py lint-md lint-skills validate-plugins
 
 format: fmt-py fmt-md
 

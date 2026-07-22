@@ -1,0 +1,16 @@
+{
+  "name": "agent-scripts",
+  "owner": {
+    "name": "shaug"
+  },
+  "metadata": {
+    "description": "Install the complete agent-scripts skill suite as one dependency-closed plugin."
+  },
+  "plugins": [
+    {
+      "name": "agent-scripts",
+      "source": "./",
+      "description": "Implementation, code-review, PR-lifecycle, and changeset workflows that install and run together."
+    }
+  ]
+}

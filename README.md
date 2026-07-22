@@ -2,6 +2,55 @@
 
 A personal monorepo for agent skills and supporting scripts.
 
+## Installation
+
+Install the plugin when you need any composed workflow. It packages all eight
+skills together so stable-name dependencies such as `implement-ticket`,
+`review-code-change`, and `babysit-pr` are available in the same fresh session.
+
+### Claude Code
+
+Add the repository marketplace, install the plugin, and start a fresh session:
+
+```text
+/plugin marketplace add shaug/agent-scripts
+/plugin install agent-scripts@agent-scripts
+```
+
+The equivalent non-interactive commands are:
+
+```bash
+claude plugin marketplace add shaug/agent-scripts
+claude plugin install agent-scripts@agent-scripts
+```
+
+### Codex
+
+Codex CLI 0.117 or newer can add the repository marketplace and install the same
+plugin:
+
+```bash
+codex plugin marketplace add shaug/agent-scripts
+codex plugin add agent-scripts@agent-scripts
+```
+
+The repository marketplace also appears in the Codex plugin browser. Start a
+fresh Codex task after installation so the complete skill set is loaded.
+
+### Individual skills
+
+Standalone-capable skills can still be installed independently:
+
+```bash
+npx skills add shaug/agent-scripts
+```
+
+Codex users can also invoke `$skill-installer` with this repository. Prefer the
+plugin for `implement-epic`, `implement-ticket`, `babysit-pr`,
+`review-code-change`, or `carve-changesets`: installing one of those entrypoints
+alone intentionally leaves required stable-name dependencies unavailable and
+causes the workflow to fail closed.
+
 ## Repository Layout
 
 - `skills/` — skill folders, each containing a `SKILL.md` and bundled resources

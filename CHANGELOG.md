@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-21 — Completed carve-changesets and integrated ticket publication
 
+- feat: package the workflow suite as a plugin
 - fix: fail closed on invalid carved handoffs
+  (`dc4f5c1f3e33c25ad6258f7365506bd33255ed82`)
 - feat: integrate carved ticket publication
   (`54c67f7cd7ace3269eee4fe628f974b090a4d699`)
 - refactor: derive the eval action vocabulary from expectations

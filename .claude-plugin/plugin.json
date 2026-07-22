@@ -1,0 +1,17 @@
+{
+  "name": "agent-scripts",
+  "version": "0.1.0",
+  "description": "Install the complete agent-scripts implementation, review, PR-lifecycle, and changeset skill suite.",
+  "author": {
+    "name": "shaug"
+  },
+  "homepage": "https://github.com/shaug/agent-scripts",
+  "repository": "https://github.com/shaug/agent-scripts",
+  "keywords": [
+    "agent-skills",
+    "code-review",
+    "github",
+    "pull-requests"
+  ],
+  "skills": "./skills/"
+}
