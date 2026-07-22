@@ -303,11 +303,17 @@ Publish authority does not permit merging, force-pushing any branch, changing
 the source or base branch, or speaking in review threads unless separately
 authorized.
 
+After publication, it permits delegating each exact changeset PR to `babysit-pr`
+with the `ready_to_merge` completion policy. Existing changeset candidate
+mutation and push authority may be passed through, but merge authority must be
+withheld and reply or thread-resolution authority remains separate.
+
 #### Merge-and-propagate
 
 Includes publish authority and additionally permits:
 
-- delegating each PR lifecycle to `babysit-pr` under an explicit merge policy;
+- delegating each PR lifecycle to `babysit-pr` with `merge_when_ready` and
+  passing through explicit merge authority without expansion;
 - merging a changeset PR only after every applicable gate passes;
 - updating downstream PR bases after an upstream merge; and
 - force-pushing with `--force-with-lease` only to downstream changeset branches
@@ -321,6 +327,9 @@ destructive data operations.
 The base branch must never be force-pushed under any authority.
 
 ### Suite seams
+
+The candidate packet, authority mapping, ownership transfer, and terminal-result
+protocol are defined in [suite-handoffs.md](suite-handoffs.md).
 
 `carve-changesets` uniquely owns:
 
