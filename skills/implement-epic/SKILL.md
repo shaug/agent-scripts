@@ -11,15 +11,16 @@ Orchestrate the live work graph. Delegate each selected child to
 ## Require the ticket skill
 
 Before an epic run, verify that `implement-ticket` is available, readable, and
-supports `ready_pr`, `merged`, `blocked`, and `requires_epic` terminal results.
-Return `blocked` before mutation when the dependency or result contract is
-missing or untrustworthy. Do not substitute a generic implementation agent,
-inline a copy of the ticket workflow, or weaken any gate.
+supports `ready_pr`, `ready_prs`, `merged`, `blocked`, and `requires_epic`
+terminal results. Return `blocked` before mutation when the dependency or result
+contract is missing or untrustworthy. Do not substitute a generic implementation
+agent, inline a copy of the ticket workflow, or weaken any gate.
 
 `implement-ticket` owns ticket readiness, isolated implementation, validation,
-`review-code-change`, PR state, remote gates, merge, tracker transition, per-PR
-cleanup, and terminal evidence. Do not invoke individual review lenses or
-`review-code-change` directly from this skill.
+`review-code-change`, publication-path selection, PR or stack state, remote
+gates, merge, tracker transition, per-candidate cleanup, and terminal evidence.
+Do not invoke individual review lenses, `review-code-change`, `babysit-pr`, or
+`carve-changesets` directly from this skill.
 
 ## Require compatible runtime capabilities
 
@@ -38,11 +39,12 @@ A compatible agentic runtime must be able to:
   taking ownership of local review.
 
 The portable dependency chain is `implement-epic` → `implement-ticket` →
-(`review-code-change`, `babysit-pr`), with `babysit-pr` → `review-code-change`
-after a head-changing fix. Verify `implement-ticket` directly and require its
-result to prove that its own dependencies and applicable capabilities were
-available. Do not make this skill invoke `review-code-change` or `babysit-pr`
-itself.
+(`review-code-change`, `babysit-pr`, `carve-changesets`), with
+`carve-changesets` → `babysit-pr` per changeset and `babysit-pr` →
+`review-code-change` after a head-changing fix. Verify `implement-ticket`
+directly and require its result to prove that its own dependencies and
+applicable capabilities were available. Do not make this skill invoke
+`review-code-change`, `babysit-pr`, or `carve-changesets` itself.
 
 Stop before child mutation with an explicit limitation when an applicable
 capability or dependency is unavailable. Product-specific discovery metadata
@@ -76,13 +78,17 @@ Before selecting work, discover or receive and verify:
 - serial execution by default, with parallel execution only when explicitly
   authorized and proven non-overlapping; and
 - authority for child execution, merge, manual transitions, graph edits,
-  follow-up creation, branch deletion, parent closeout, deployment, production
+  follow-up creation, decomposition of an oversized coherent candidate into a
+  stacked chain, branch deletion, parent closeout, deployment, production
   mutation, and destructive operations.
 
-Pass authority into `implement-ticket` without expansion. Ready-PR authority
-does not imply merge. Child merge authority does not imply parent closeout.
-Words such as `finish`, `complete`, or `end to end` do not independently grant
-merge, graph mutation, deployment, or closeout authority.
+Pass authority into `implement-ticket` without expansion. The
+`decompose oversized candidates into stacked changesets` grant is off by default
+and must be passed through verbatim; this skill gains no decomposition
+mechanics. Ready-PR authority does not imply merge. Child merge authority does
+not imply parent closeout. Words such as `finish`, `complete`, or `end to end`
+do not independently grant decomposition, merge, graph mutation, deployment, or
+closeout authority.
 
 Use this source order:
 
@@ -120,6 +126,13 @@ outcome exists in its authoritative repository, artifact registry, tracker, or
 environment. Treat canceled or not-planned blockers with missing required
 outcomes as unresolved.
 
+Prevent predictable oversizing here. When the live ticket already describes
+independently valuable and trackable parts too large for one child, route it to
+tracker-level decomposition before invoking `implement-ticket`; do not use
+`carve-changesets` to compensate for a known non-PR-sized child. The carved
+publication path is reserved for one coherent child whose completed
+implementation turns out materially larger than the live guardrails predicted.
+
 When multiple children are ready, prefer contracts and additive foundations
 before consumers or cutovers, then prefer the child that unlocks the most
 downstream work without widening scope. Do not absorb a missing sibling outcome
@@ -133,7 +146,8 @@ Invoke `implement-ticket` once with a concise handoff containing:
 - parent outcome and only the dependency/sibling evidence needed for safe
   independent shipping;
 - repository, PR host, base, and named specifications;
-- completion policy and every granted or withheld authority; and
+- completion policy and every granted or withheld authority;
+- the explicit decomposition grant or its explicit absence; and
 - any epic-level rollout or merge-order constraint that qualifies the child.
 
 The primary context may follow `implement-ticket` directly. A delegated worker,
@@ -153,8 +167,15 @@ transition, and cleanup evidence are internally consistent and match live state.
   current-candidate non-merge gate with only merge withheld. Do not count the
   child complete or unblock dependents that require merge. Continue only with
   another independently ready child when the requested scope permits it.
+- `ready_prs`: verify the reported PR count, ordered predecessor-base topology,
+  final-only closing syntax, per-PR candidate and non-merge gate evidence, and
+  whole-chain equivalence with the ticket candidate. Do not count the child
+  complete or unblock dependents that require merge.
 - `merged`: verify mainline and tracker evidence, then refresh the complete live
-  graph before any selection or completion claim.
+  graph before any selection or completion claim. For a stacked child, also
+  verify `all_merged`, every PR merge and propagation step, and full-chain
+  representation on the base. Do not reproduce decomposition or propagation
+  mechanics while verifying the result.
 - `blocked`: preserve the exact reason and partial artifacts. Never count it as
   complete. Select another independently ready child only when the requested
   scope permits; otherwise stop for the missing decision, outcome, or
@@ -206,7 +227,7 @@ Difficulty, ordinary CI wait time, or unrelated ready children are not blockers.
 ## Report the epic result
 
 Report the requested scope, each invoked ticket and its terminal state, merged
-and ready PRs, refreshed graph state, serial critical-path and parallel-ready
-work, parent acceptance and closeout evidence, intentionally deferred work, and
-one concrete next action. Never report a child or parent complete from stale or
-unverified evidence.
+and ready PRs or stacks, refreshed graph state, serial critical-path and
+parallel-ready work, parent acceptance and closeout evidence, intentionally
+deferred work, and one concrete next action. Never report a child or parent
+complete from stale or unverified evidence.

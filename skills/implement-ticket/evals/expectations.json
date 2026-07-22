@@ -98,5 +98,25 @@
     "case_id": "missing-asynchronous-wait",
     "terminal_state": "blocked",
     "required_actions": ["name asynchronous wait as unavailable", "perform no implementation mutation", "do not pretend CI or review gates passed"]
+  },
+  {
+    "case_id": "oversized-without-decomposition-authority",
+    "terminal_state": "blocked",
+    "required_actions": ["record live guardrail evidence", "stop before remote publication", "publish neither monolith nor stack", "request explicit operator authority"]
+  },
+  {
+    "case_id": "oversized-authorized-carved-stack",
+    "terminal_state": "ready_prs",
+    "required_actions": ["invoke carve-changesets with publish authority", "skip direct babysit-pr handoff", "verify ordered stack and per-PR gates", "put closing syntax on final PR only"]
+  },
+  {
+    "case_id": "oversized-ticket-split-rubric",
+    "terminal_state": "blocked",
+    "required_actions": ["recommend tracker-level decomposition", "honor the operator decision", "stop before remote publication", "do not invoke carve-changesets"]
+  },
+  {
+    "case_id": "mid-stack-material-redesign",
+    "terminal_state": "blocked",
+    "required_actions": ["preserve partial stack state", "report the invalidated merged changeset", "require product or architecture resolution", "do not rewrite merged history"]
   }
 ]

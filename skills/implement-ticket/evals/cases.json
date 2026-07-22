@@ -120,5 +120,30 @@
     "tracker_state": "G-41 is otherwise ready and requires asynchronous CI and review gates.",
     "authority": "merge_after_gates",
     "runtime_profile": "The runtime cannot poll, wait, or resume after asynchronous gates."
+  },
+  {
+    "id": "oversized-without-decomposition-authority",
+    "request": "Implement GitHub issue G-42 to a ready publication.",
+    "tracker_state": "G-42 is one coherent ticket, but its completed validated review-clean candidate exceeds the live carve-changesets cognitive-load guardrails.",
+    "authority": "ready_pr_only; decomposition authority absent"
+  },
+  {
+    "id": "oversized-authorized-carved-stack",
+    "request": "Implement GitHub issue G-43 as an authorized ready stack.",
+    "tracker_state": "G-43 remains one coherent deliverable; its validated review-clean candidate is oversized and the operator selects branch carving.",
+    "authority": "ready_pr_only plus decompose oversized candidates into stacked changesets",
+    "candidate_state": "carve-changesets returns prs_open for three correctly based, gated PRs with closing syntax only on the final PR"
+  },
+  {
+    "id": "oversized-ticket-split-rubric",
+    "request": "Implement GitHub issue G-44.",
+    "tracker_state": "The completed candidate is oversized because it contains three independently valuable and trackable outcomes.",
+    "authority": "ticket-management and decomposition authority granted; operator selects tracker-level ticket splitting"
+  },
+  {
+    "id": "mid-stack-material-redesign",
+    "request": "Finish the authorized carved stack for G-45.",
+    "authority": "merge_after_gates plus decompose oversized candidates into stacked changesets",
+    "candidate_state": "Changeset 1 is merged; material feedback on changeset 2 requires redesign that invalidates changeset 1."
   }
 ]

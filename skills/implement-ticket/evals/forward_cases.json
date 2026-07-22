@@ -322,5 +322,131 @@
       "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
       "handoff": {"ticket_results": ["ready_pr", "merged", "blocked"], "result_well_formed": true}
     }
+  },
+  {
+    "id": "oversized-without-decomposition-authority",
+    "target_skill": "implement-ticket",
+    "request": "Publish the completed G-323 candidate to readiness.",
+    "authority": {"merge": false, "decompose_oversized": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-323", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "one ticket per candidate"},
+      "pr": {"state": "absent", "merged": false, "head": "head-323", "base": "base-1", "mergeable": null},
+      "diff": {"base": "base-1", "head": "head-323", "patch": "large coherent candidate", "resulting_tree": "tree-323", "guardrail": "oversized"},
+      "checks": {"status": "not_published", "items": []},
+      "reviews": {"initial": "clean", "head": "head-323", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g323", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": false, "result_well_formed": true, "rubric": "carve_coherent_branch"}
+    }
+  },
+  {
+    "id": "oversized-authorized-carved-stack",
+    "target_skill": "implement-ticket",
+    "request": "Publish G-324 as an authorized ready carved stack without merging.",
+    "authority": {"merge": false, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-324", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "closing syntax only on final stack PR"},
+      "pr": {"state": "multiple_open", "merged": false, "head": "stack-tip-324", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-324", "patch": "large coherent candidate", "resulting_tree": "tree-324", "guardrail": "oversized"},
+      "checks": {"status": "success", "items": [{"pr": 1}, {"pr": 2}, {"pr": 3}]},
+      "reviews": {"initial": "clean", "head": "head-324", "per_changeset": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g324", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "rubric": "carve_coherent_branch", "carve_terminal": "prs_open", "stack_count": 3, "topology": "verified", "closing_syntax": "final_only"}
+    }
+  },
+  {
+    "id": "oversized-ticket-split-rubric",
+    "target_skill": "implement-ticket",
+    "request": "Publish the completed G-325 candidate.",
+    "authority": {"merge": false, "decompose_oversized": true, "ticket_management": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-325", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "split independently valuable outcomes at tracker level"},
+      "pr": {"state": "absent", "merged": false, "head": "head-325", "base": "base-1", "mergeable": null},
+      "diff": {"base": "base-1", "head": "head-325", "patch": "three independently valuable outcomes", "resulting_tree": "tree-325", "guardrail": "oversized"},
+      "checks": {"status": "not_published", "items": []},
+      "reviews": {"initial": "clean", "head": "head-325", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g325", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": false, "result_well_formed": true, "rubric": "ticket_split", "operator_decision": "split_ticket"}
+    }
+  },
+  {
+    "id": "mid-stack-material-redesign",
+    "target_skill": "implement-ticket",
+    "request": "Finish and merge the authorized G-326 carved stack.",
+    "authority": {"merge": true, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-326", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "never rewrite merged history"},
+      "pr": {"state": "partial_stack", "merged": false, "head": "stack-326-2", "base": "base-1", "mergeable": false},
+      "diff": {"base": "base-1", "head": "head-326", "patch": "large coherent candidate", "resulting_tree": "tree-326", "guardrail": "oversized"},
+      "checks": {"status": "blocked", "items": [{"pr": 1, "state": "merged"}, {"pr": 2, "state": "open"}]},
+      "reviews": {"initial": "clean", "items": [{"pr": 2, "material_redesign": true, "invalidates_merged_pr": 1}]},
+      "threads": {"items": [{"pr": 2, "unresolved": true}], "unresolved": 1},
+      "worktree": {"path": "/worktrees/g326", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "rubric": "carve_coherent_branch", "carve_terminal": "blocked", "mid_stack_redesign": true, "partial_stack": ["merged", "open", "unpublished"]}
+    }
+  },
+  {
+    "id": "implement-epic-verifies-stacked-child",
+    "target_skill": "implement-epic",
+    "request": "Consume the merged three-PR result for child G-328 in epic G-327.",
+    "authority": {"merge": true, "decompose_oversized": true},
+    "capabilities": {"implement_ticket": true, "babysit_pr": false, "carve_changesets": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-327", "state": "open", "whole_epic": true, "children": ["G-328", "G-329"]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic verifies ticket results without decomposition mechanics"},
+      "pr": {"state": "multiple_merged", "merged": true, "head": "stack-tip-328", "base": "base-2", "mergeable": null},
+      "diff": {"base": "base-2", "head": "stack-tip-328", "patch": "three changesets", "resulting_tree": "tree-328"},
+      "checks": {"status": "success", "items": [{"pr": 1}, {"pr": 2}, {"pr": 3}]},
+      "reviews": {"initial": "owned by ticket result", "per_changeset": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "stack_child_result": "all_merged", "stack_count": 3, "topology": "verified", "full_chain_on_base": true, "per_pr_gates": "verified"}
+    }
+  },
+  {
+    "id": "missing-carve-changesets",
+    "target_skill": "implement-ticket",
+    "request": "Publish the authorized oversized G-330 candidate.",
+    "authority": {"merge": false, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-330", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed when the publication dependency is unavailable"},
+      "pr": {"state": "absent", "merged": false, "head": "head-330", "base": "base-1", "mergeable": null},
+      "diff": {"base": "base-1", "head": "head-330", "patch": "large coherent candidate", "resulting_tree": "tree-330", "guardrail": "oversized"},
+      "checks": {"status": "not_published", "items": []},
+      "reviews": {"initial": "clean", "head": "head-330", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g330", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": false, "result_well_formed": true, "rubric": "carve_coherent_branch"}
+    }
+  },
+  {
+    "id": "stale-carved-result",
+    "target_skill": "implement-ticket",
+    "request": "Accept the ready carved stack for G-331.",
+    "authority": {"merge": false, "decompose_oversized": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-331", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "candidate-bound stack results"},
+      "pr": {"state": "multiple_open", "merged": false, "head": "stack-tip-331b", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-331b", "patch": "large coherent candidate", "resulting_tree": "tree-331b", "guardrail": "oversized"},
+      "checks": {"status": "success", "items": [{"pr": 1}, {"pr": 2}]},
+      "reviews": {"initial": "clean", "head": "head-331b", "per_changeset": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g331", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": false, "result_stale": true, "rubric": "carve_coherent_branch", "carve_terminal": "prs_open", "result_head": "stack-tip-331a"}
+    }
   }
 ]

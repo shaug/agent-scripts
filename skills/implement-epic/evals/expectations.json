@@ -88,5 +88,10 @@
     "case_id": "transitive-babysit-results",
     "workflow_state": "mixed_ticket_results",
     "required_actions": ["consume ready_pr merged and blocked unchanged", "do not invoke babysit-pr directly", "do not count ready_pr or blocked as merged", "refresh graph only after verified merged"]
+  },
+  {
+    "case_id": "verify-stacked-child-result",
+    "workflow_state": "stack_child_verified",
+    "required_actions": ["verify stack topology and every PR gate", "verify all_merged and full-chain representation on base", "do not invoke carve-changesets directly", "refresh graph before considering G-282"]
   }
 ]

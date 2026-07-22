@@ -6,6 +6,11 @@ evaluations, and result contract before delegation. If its delivered contract
 differs materially from this boundary, stop and reconcile ownership rather than
 copying lifecycle mechanics into `implement-ticket`.
 
+This reference applies only to the ordinary single-PR publication path. When the
+size gate selects a carved stack, use
+[the carve-changesets handoff](carve-changesets-handoff.md) and perform no
+direct `babysit-pr` handoff from `implement-ticket`.
+
 ## Responsibility boundary
 
 `implement-ticket` retains ticket resolution and readiness, epic routing,
@@ -26,10 +31,10 @@ handoff construction, result validation, and post-merge work.
 
 ## Pre-mutation dependency gate
 
-Every successful ticket run publishes a PR that must be reconciled. Verify
-`babysit-pr` and `review-code-change` by stable repository-owned name before
-creating a branch or worktree. Missing `babysit-pr` returns `blocked` before
-mutation; never download an external implementation at runtime, restore a
+Every successful ticket run publishes at least one PR that must be reconciled.
+Verify `babysit-pr` and `review-code-change` by stable repository-owned name
+before creating a branch or worktree. Missing `babysit-pr` returns `blocked`
+before mutation; never download an external implementation at runtime, restore a
 private copy of the old PR loop, or publish a PR that no owner will monitor.
 
 Whole-epic routing still happens before dependency invocation and returns

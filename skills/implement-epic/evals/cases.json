@@ -107,5 +107,11 @@
     "request": "Continue epic G-270 across three independently selected children.",
     "graph": "Each child is selected only when independently ready; implement-ticket owns all direct dependencies.",
     "ticket_results": ["G-271 ready_pr at the complete non-merge gate", "G-272 merged with verified mainline and transition evidence", "G-273 blocked with preserved artifacts"]
+  },
+  {
+    "id": "verify-stacked-child-result",
+    "request": "Continue epic G-280 after authorized child G-281 returns a three-PR carved result.",
+    "graph": "G-282 is blocked until G-281 is fully merged.",
+    "ticket_results": ["G-281 reports all_merged with three ordered PRs, per-PR gate evidence, propagation evidence, and full-chain representation on main"]
   }
 ]

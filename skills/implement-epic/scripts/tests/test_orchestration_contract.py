@@ -62,18 +62,25 @@ class ImplementEpicContractTests(unittest.TestCase):
     def test_dependency_chain_is_stable_and_acyclic(self):
         self.assertIn(
             "`implement-epic` → `implement-ticket` → "
-            "(`review-code-change`, `babysit-pr`)",
+            "(`review-code-change`, `babysit-pr`, `carve-changesets`)",
             self.contract,
         )
         self.assertIn(
-            "Do not make this skill invoke `review-code-change` or `babysit-pr` itself",
+            "Do not make this skill invoke `review-code-change`, `babysit-pr`, or "
+            "`carve-changesets` itself",
             self.contract,
         )
         self.assertIn("never recursively invoke this skill", self.contract)
 
     def test_child_terminal_states_are_stable(self):
-        for state in ("ready_pr", "merged", "blocked", "requires_epic"):
+        for state in ("ready_pr", "ready_prs", "merged", "blocked", "requires_epic"):
             self.assertIn(f"`{state}`", self.contract)
+
+    def test_epic_only_passes_authority_and_verifies_stack_results(self):
+        self.assertIn("off by default", self.contract)
+        self.assertIn("ordered predecessor-base topology", self.contract)
+        self.assertIn("full-chain representation on the base", self.contract)
+        self.assertIn("gains no decomposition mechanics", self.contract)
 
     def test_epic_does_not_own_lens_mechanics(self):
         self.assertNotIn("review-solution-simplicity", self.contract)
@@ -107,6 +114,10 @@ class ImplementEpicContractTests(unittest.TestCase):
             "missing-asynchronous-wait",
         ):
             self.assertEqual("blocked", self.expectations[case_id]["workflow_state"])
+        self.assertEqual(
+            "stack_child_verified",
+            self.expectations["verify-stacked-child-result"]["workflow_state"],
+        )
 
 
 if __name__ == "__main__":

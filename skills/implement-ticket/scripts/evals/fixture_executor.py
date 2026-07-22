@@ -28,12 +28,15 @@ def action_result(payload: dict) -> dict:
         "implement-ticket": (
             "`review-code-change` and `babysit-pr` are available",
             "Map `ready PR only` to `ready_to_merge`",
+            "`prs_open`",
+            "`ready_prs`",
             "Normal ticket execution never uses `watch_until_closed`",
         ),
         "implement-epic": (
             "Do not make this skill invoke",
-            "`review-code-change` or `babysit-pr`",
+            "`carve-changesets` itself",
             "`ready_pr`",
+            "`ready_prs`",
         ),
     }[target]
     if not all(compact(fragment) in prompt for fragment in required_contract):
@@ -55,6 +58,18 @@ def action_result(payload: dict) -> dict:
     actions = []
 
     if target == "implement-epic":
+        if handoff.get("stack_child_result"):
+            return {
+                "target_skill": target,
+                "terminal_state": "mixed_ticket_results",
+                "actions": [
+                    "verify_stack_topology",
+                    "verify_each_pr_gate",
+                    "verify_full_stack_on_base",
+                    "do_not_own_decomposition_mechanics",
+                    "refresh_graph_after_merged_only",
+                ],
+            }
         return {
             "target_skill": target,
             "terminal_state": "mixed_ticket_results",
@@ -82,11 +97,13 @@ def action_result(payload: dict) -> dict:
             "actions": ["fail_before_mutation", "name_missing_babysit_pr"],
         }
 
-    if pr.get("state") == "closed" and not pr.get("merged"):
+    if artifacts["diff"].get("guardrail") == "oversized" and not capabilities.get(
+        "carve_changesets"
+    ):
         return {
             "target_skill": target,
             "terminal_state": "blocked",
-            "actions": ["preserve_artifacts", "report_closed_without_merge"],
+            "actions": ["stop_before_publication", "name_missing_carve_changesets"],
         }
 
     if not handoff.get("result_well_formed", True) or handoff.get("result_stale"):
@@ -94,6 +111,81 @@ def action_result(payload: dict) -> dict:
             "target_skill": target,
             "terminal_state": "blocked",
             "actions": ["reject_stale_or_malformed_result", "reread_live_pr"],
+        }
+
+    if artifacts["diff"].get("guardrail") == "oversized":
+        actions.append("record_guardrail_evidence")
+        if handoff.get("rubric") == "ticket_split":
+            return {
+                "target_skill": target,
+                "terminal_state": "blocked",
+                "actions": actions
+                + [
+                    "route_to_tracker_split",
+                    "stop_before_publication",
+                    "do_not_invoke_carve_changesets",
+                ],
+            }
+        if not authority.get("decompose_oversized"):
+            return {
+                "target_skill": target,
+                "terminal_state": "blocked",
+                "actions": actions
+                + [
+                    "stop_before_publication",
+                    "do_not_publish_monolithic_pr",
+                    "do_not_invoke_carve_changesets",
+                ],
+            }
+        if handoff.get("mid_stack_redesign"):
+            return {
+                "target_skill": target,
+                "terminal_state": "blocked",
+                "actions": actions
+                + [
+                    "preserve_partial_stack",
+                    "report_mid_stack_redesign",
+                    "do_not_rewrite_merged_history",
+                ],
+            }
+        if handoff.get("carve_terminal") == "prs_open":
+            stack_count = handoff.get("stack_count")
+            if not (
+                pr.get("state") == "multiple_open"
+                and pr.get("mergeable") is True
+                and isinstance(stack_count, int)
+                and stack_count > 0
+                and handoff.get("topology") == "verified"
+                and handoff.get("closing_syntax") == "final_only"
+                and checks.get("status") == "success"
+                and reviews.get("per_changeset") == "clean"
+            ):
+                return {
+                    "target_skill": target,
+                    "terminal_state": "blocked",
+                    "actions": [
+                        "reject_stale_or_malformed_result",
+                        "reread_live_pr",
+                    ],
+                }
+            return {
+                "target_skill": target,
+                "terminal_state": "ready_prs",
+                "actions": actions
+                + [
+                    "invoke_carve_changesets",
+                    "skip_direct_babysit_handoff",
+                    "place_closing_syntax_final_pr_only",
+                    "verify_stack_topology",
+                    "verify_each_pr_gate",
+                ],
+            }
+
+    if pr.get("state") == "closed" and not pr.get("merged"):
+        return {
+            "target_skill": target,
+            "terminal_state": "blocked",
+            "actions": ["preserve_artifacts", "report_closed_without_merge"],
         }
 
     if handoff.get("delegated"):
