@@ -2,15 +2,16 @@
 
 Apply these gates to the complete initial ticket candidate. Repository
 instructions may add stricter requirements but must not silently weaken them.
-Delegate the published PR's continuing lifecycle to repository-owned
-`babysit-pr`; do not duplicate its CI, feedback, drift, post-fix review, or
-merge mechanics here.
+After review, select exactly one publication path. Delegate an ordinary PR's
+continuing lifecycle to repository-owned `babysit-pr`, or delegate an oversized
+candidate's entire stacked lifecycle to repository-owned `carve-changesets`. Do
+not duplicate either delegate's mechanics here.
 
 ## Initial bounded review loop
 
-Require repository-owned `review-code-change` before a PR can be handed to
-`babysit-pr`. Fail closed when it is missing or unreadable. Do not substitute
-another skill, a generic self-review, or an unreviewed path.
+Require repository-owned `review-code-change` before the publication size gate.
+Fail closed when it is missing or unreadable. Do not substitute another skill, a
+generic self-review, or an unreviewed path.
 
 Require every intended ticket change to be committed and the implementation
 worktree to be clean before review. If unrelated user artifacts prevent a clean
@@ -41,36 +42,43 @@ tractable, and ticket-scoped. Preserve deferred findings without expanding the
 PR. Reply with evidence when a finding no longer applies.
 
 After a material initial-review fix, run affected and required validation,
-commit and push the new head, rebuild the raw evidence packet, and follow the
-returned re-review instruction. Use at most three full fix/re-review cycles by
-default. A clean aggregate ends the initial loop. If material findings remain
-after the final cycle, keep the PR open and return `blocked` with unresolved
-evidence.
+commit the new head, rebuild the raw evidence packet, and follow the returned
+re-review instruction. Push only after the publication path is selected. Use at
+most three full fix/re-review cycles by default. A clean aggregate ends the
+initial loop. If material findings remain after the final cycle, preserve the
+candidate and return `blocked` with unresolved evidence.
 
-## Delegation gate
+## Publication and delegation gate
 
-Before invoking `babysit-pr`:
+Before invoking either delegate:
 
 - verify the initial review is clean for the exact live head and applicable
   base;
-- verify the PR identity, effective diff, resulting tree, validation, worktree,
-  ticket reference, and authority are internally consistent;
-- assemble every field required by
-  [the handoff contract](babysit-pr-handoff.md);
+- evaluate the exact candidate against the live `carve-changesets` guardrails
+  without duplicating their thresholds;
+- verify the selected single-PR or stack identity, effective diff, resulting
+  tree, validation, worktree, ticket reference, and authority are internally
+  consistent;
+- assemble every field required by the applicable
+  [babysit-pr](babysit-pr-handoff.md) or
+  [carve-changesets](carve-changesets-handoff.md) handoff contract;
 - map the completion policy without broadening authority; and
 - establish one exclusive mutating owner.
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
 mutation, stale identity, or unavailable required evidence as a failed gate. Do
-not claim `ready_pr` merely because a PR exists or an initial review is clean.
+not claim `ready_pr` or `ready_prs` merely because a PR or stack exists or an
+initial review is clean.
 
 ## Caller-side completion verification
 
-After `babysit-pr` returns, reread live GitHub state and apply the result
-mapping in [the handoff contract](babysit-pr-handoff.md). A `ready_pr` requires
-a validated current `ready_to_merge` result. A `merged` result requires
-independent remote merge, mainline, tracker-transition, dependency-refresh, and
-cleanup verification by `implement-ticket`.
+After the selected delegate returns, reread live GitHub state and apply the
+applicable [babysit-pr](babysit-pr-handoff.md) or
+[carve-changesets](carve-changesets-handoff.md) result mapping. A `ready_pr`
+requires a validated current `ready_to_merge` result. A `ready_prs` requires a
+validated current `prs_open` result. A `merged` result requires independent
+remote merge or `all_merged`, mainline, tracker-transition, dependency-refresh,
+and cleanup verification by `implement-ticket`.
 
 If the live head, base, PR state, ownership, or gate evidence differs from the
 result, reconcile the live candidate or fail closed. Never carry stale evidence

@@ -42,7 +42,7 @@ class ForwardEvaluationTests(unittest.TestCase):
             "worktree",
             "handoff",
         }
-        self.assertEqual(18, len(self.cases))
+        self.assertEqual(23, len(self.cases))
         for case in self.cases:
             self.assertEqual(required, set(case["artifacts"]), case["id"])
 
@@ -64,16 +64,13 @@ class ForwardEvaluationTests(unittest.TestCase):
             [sys.executable, str(EXECUTOR_PATH)],
         )
         self.assertEqual([], failures)
-        self.assertEqual(18, len(observations))
+        self.assertEqual(23, len(observations))
         process_ids = {result["executor_pid"] for result in observations.values()}
-        self.assertEqual(18, len(process_ids))
+        self.assertEqual(23, len(process_ids))
 
     def test_reference_executor_evaluates_the_supplied_skill_prompt(self):
         payload = RUNNER.build_payload(self.cases[2])
-        payload["skill_prompt"] = payload["skill_prompt"].replace(
-            "Map `ready PR only` to `ready_to_merge`",
-            "",
-        )
+        payload["skill_prompt"] = payload["skill_prompt"].replace("`ready_prs`", "")
         observed = RUNNER.run_executor(
             [sys.executable, str(EXECUTOR_PATH)],
             payload,
@@ -129,6 +126,18 @@ class ForwardEvaluationTests(unittest.TestCase):
         self.assertIn(
             "do_not_invoke_babysit_pr_directly",
             observations["implement-epic-consumes-ticket-results"]["actions"],
+        )
+        self.assertEqual(
+            "ready_prs",
+            observations["oversized-authorized-carved-stack"]["terminal_state"],
+        )
+        self.assertIn(
+            "route_to_tracker_split",
+            observations["oversized-ticket-split-rubric"]["actions"],
+        )
+        self.assertIn(
+            "verify_full_stack_on_base",
+            observations["implement-epic-verifies-stacked-child"]["actions"],
         )
 
 

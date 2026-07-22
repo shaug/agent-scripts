@@ -33,6 +33,9 @@ class ImplementTicketContractTests(unittest.TestCase):
         cls.linear = read(SKILL_ROOT / "references" / "linear.md")
         cls.gates = read(SKILL_ROOT / "references" / "review-and-merge-gates.md")
         cls.handoff = read(SKILL_ROOT / "references" / "babysit-pr-handoff.md")
+        cls.carve_handoff = read(
+            SKILL_ROOT / "references" / "carve-changesets-handoff.md"
+        )
         cls.result = read(SKILL_ROOT / "references" / "cleanup-and-result.md")
         cls.skill_compact = compact(cls.skill)
         cls.handoff_compact = compact(cls.handoff)
@@ -42,7 +45,13 @@ class ImplementTicketContractTests(unittest.TestCase):
             + read(SKILL_ROOT / "evals" / "expectations.json")
         )
         cls.all_contract = compact(
-            cls.skill + cls.github + cls.linear + cls.gates + cls.handoff + cls.result
+            cls.skill
+            + cls.github
+            + cls.linear
+            + cls.gates
+            + cls.handoff
+            + cls.carve_handoff
+            + cls.result
         )
         cls.cases = {
             item["id"]: item
@@ -61,7 +70,7 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertNotIn("OpenAI", self.eval_contract)
 
     def test_terminal_states_are_stable(self):
-        for state in ("ready_pr", "merged", "blocked", "requires_epic"):
+        for state in ("ready_pr", "ready_prs", "merged", "blocked", "requires_epic"):
             self.assertIn(state, self.skill)
             self.assertIn(state, self.result_compact)
 
@@ -93,8 +102,25 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("review-code-change", self.skill_compact)
         self.assertIn("babysit-pr", self.skill_compact)
         self.assertIn(
-            "`babysit-pr` must never invoke `implement-ticket`", self.skill_compact
+            "`babysit-pr` and `carve-changesets` must never invoke `implement-ticket`",
+            self.skill_compact,
         )
+        self.assertIn("carve-changesets", self.skill_compact)
+        self.assertIn(
+            "`carve-changesets` must never invoke `implement-epic`",
+            self.skill_compact,
+        )
+
+    def test_oversized_publication_contract_is_authority_gated(self):
+        contract = compact(self.skill + self.carve_handoff + self.result)
+        self.assertIn(
+            "`decompose oversized candidates into stacked changesets`", contract
+        )
+        self.assertIn("`prs_open` maps to `ready_prs`", contract)
+        self.assertIn("`all_merged` maps to `merged`", contract)
+        self.assertIn("final changeset PR", contract)
+        self.assertIn("The operator decides", contract)
+        self.assertNotIn("few hundred", contract)
 
     def test_instruction_file_naming_is_host_neutral(self):
         self.assertIn("CLAUDE.md", self.skill_compact)
@@ -125,6 +151,16 @@ class ImplementTicketContractTests(unittest.TestCase):
             "missing-asynchronous-wait",
         ):
             self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
+        self.assertEqual(
+            "blocked",
+            self.expectations["oversized-without-decomposition-authority"][
+                "terminal_state"
+            ],
+        )
+        self.assertEqual(
+            "ready_prs",
+            self.expectations["oversized-authorized-carved-stack"]["terminal_state"],
+        )
 
     def test_runtime_adapters_exist_for_both_products(self):
         metadata = read(SKILL_ROOT / "agents" / "openai.yaml")

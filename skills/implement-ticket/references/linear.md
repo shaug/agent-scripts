@@ -39,10 +39,13 @@ independently.
   unavailable, migration, compatibility, and rollout behavior.
 - Use the repository's required Linear reference in branch, commit, and PR
   metadata.
-- Keep one ticket per PR.
+- Keep one ticket per candidate. Publish it as one ordinary PR or one ordered
+  carved stack, with the Linear reference on every PR and any transition-causing
+  closing integration only on the final PR.
 - Update Linear status only when that workflow state was actually reached and
   the completion policy authorizes a manual transition.
-- After merge, verify the result on the base and the expected Linear transition.
+- After the ordinary merge or a verified `all_merged` stack result, verify the
+  complete result on the base and the expected Linear transition.
 - When the ticket is an epic child, reread affected native dependency
   relationships after transition and report newly unblocked work without
   selecting or mutating it.

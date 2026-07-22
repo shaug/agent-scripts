@@ -27,8 +27,10 @@ not-planned blockers with missing outcomes as unresolved.
 
 After a returned `merged` result, verify the GitHub issue transition and reread
 the complete parent/sub-issue/blocker graph before selecting another child or
-claiming completion. A `ready_pr` result does not satisfy a dependency that
-requires merge.
+claiming completion. A `ready_pr` or `ready_prs` result does not satisfy a
+dependency that requires merge. For a stacked `merged` result, verify the
+reported topology, every PR merge, and full-chain representation on the base
+without taking ownership of decomposition mechanics.
 
 When duplicate implementation paths exist, do not choose a competing path; pass
 the canonical ownership evidence into `implement-ticket` or return `blocked`

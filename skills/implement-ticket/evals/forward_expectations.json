@@ -236,5 +236,40 @@
     ],
     "target_skill": "implement-epic",
     "terminal_state": "mixed_ticket_results"
+  },
+  {
+    "case_id": "oversized-without-decomposition-authority",
+    "forbidden_actions": ["invoke_carve_changesets", "invoke_ready_to_merge", "invoke_merge_when_ready"],
+    "required_actions": ["record_guardrail_evidence", "stop_before_publication", "do_not_publish_monolithic_pr", "do_not_invoke_carve_changesets"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "oversized-authorized-carved-stack",
+    "forbidden_actions": ["invoke_ready_to_merge", "invoke_merge_when_ready", "route_to_tracker_split"],
+    "required_actions": ["record_guardrail_evidence", "invoke_carve_changesets", "skip_direct_babysit_handoff", "place_closing_syntax_final_pr_only", "verify_stack_topology", "verify_each_pr_gate"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "ready_prs"
+  },
+  {
+    "case_id": "oversized-ticket-split-rubric",
+    "forbidden_actions": ["invoke_carve_changesets", "invoke_ready_to_merge", "invoke_merge_when_ready"],
+    "required_actions": ["record_guardrail_evidence", "route_to_tracker_split", "stop_before_publication", "do_not_invoke_carve_changesets"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "mid-stack-material-redesign",
+    "forbidden_actions": ["invoke_merge_when_ready", "verify_merge_live"],
+    "required_actions": ["preserve_partial_stack", "report_mid_stack_redesign", "do_not_rewrite_merged_history"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "implement-epic-verifies-stacked-child",
+    "forbidden_actions": ["invoke_carve_changesets", "invoke_ready_to_merge", "invoke_merge_when_ready"],
+    "required_actions": ["verify_stack_topology", "verify_each_pr_gate", "verify_full_stack_on_base", "do_not_own_decomposition_mechanics", "refresh_graph_after_merged_only"],
+    "target_skill": "implement-epic",
+    "terminal_state": "mixed_ticket_results"
   }
 ]

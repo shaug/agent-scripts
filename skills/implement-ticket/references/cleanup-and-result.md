@@ -3,26 +3,27 @@
 Verify remote, mainline, tracker, and local state before deleting anything or
 returning a terminal handoff.
 
-## Safe per-PR cleanup
+## Safe per-candidate cleanup
 
-01. Confirm the PR is merged remotely.
+01. Confirm the ordinary PR or every carved-stack PR is merged remotely.
 02. Fetch and prune the remote.
-03. Confirm the branch result is represented on the verified base. Use ancestry
-    first and patch equivalence after squash or rebase when needed.
-04. Map the exact ticket worktree, local branch, upstream, PR branch, recorded
-    PR head, and base branch. Never rely on the current directory or a
-    branch-name guess.
+03. Confirm the ordinary branch or complete stack result is represented on the
+    verified base. Use ancestry first and patch equivalence after squash or
+    rebase when needed.
+04. Map the exact ticket worktree, source and published branches, upstreams, PR
+    heads, and base branch. Never rely on the current directory or a branch-name
+    guess.
 05. Inspect tracked, staged, unstaged, untracked, and ignored state in that
     exact worktree. Classify ignored and untracked paths as reproducible output
     or non-reproducible/user-created data. Preserve credentials, `.env` files,
     local databases, and all non-reproducible artifacts.
-06. Confirm the local branch has no commits absent from its pushed PR branch.
-    When the remote branch is gone, compare it with the recorded PR head.
-07. If the pushed branch exists, confirm it did not advance beyond the recorded
-    PR head and that the recorded result is represented on the base.
+06. Confirm each local published branch has no commits absent from its pushed PR
+    branch. When a remote branch is gone, compare it with the recorded PR head.
+07. If a pushed branch exists, confirm it did not advance beyond the recorded PR
+    head and that the recorded result is represented on the base.
 08. Remove only a clean disposable worktree. Never force removal.
-09. Delete only the verified merged local feature branch, then its remote
-    feature branch when policy and authority permit.
+09. Delete only verified merged local feature branches, then their remote
+    branches when policy and authority permit.
 10. Prune worktree metadata and verify the intended path and branches are gone.
 
 Stop cleanup and report exact dirty paths, ignored paths, unique commits, or
@@ -33,7 +34,8 @@ branches, ignored files, untracked files, and user edits.
 
 After merge, verify:
 
-- the remote base advanced or otherwise contains the merged result;
+- the remote base advanced or otherwise contains the complete ordinary or
+  stacked result;
 - the implemented behavior and tests exist on the base;
 - the owning tracker transitioned the ticket as expected;
 - for an epic child, affected native dependency relationships were reread after
@@ -50,14 +52,19 @@ unblocked work. Report newly ready work only as context.
 Return a concise documented handoff. Do not require a machine-readable schema
 unless the caller has one. Include every applicable field:
 
-- `terminal_state`: `ready_pr`, `merged`, `blocked`, or `requires_epic`;
+- `terminal_state`: `ready_pr`, `ready_prs`, `merged`, `blocked`, or
+  `requires_epic`;
 - ticket identity, tracker, repository, PR host, and base identity;
-- branch, worktree, candidate head, and PR identity when created;
+- branch, worktree, candidate head, publication path, and PR or ordered stack
+  identity when created;
 - completion policy and the authority actually used;
 - focused and full validation commands, outcomes, and limitations;
 - initial `review-code-change` verdict and reviewed candidate identity;
 - `babysit-pr` policy, terminal state, returned candidate identity, authority
   used, mutation ownership, and independently verified live-state match;
+- for a stack, `carve-changesets` source identity, guardrail and operator
+  decision, authority, terminal state, ordered PR topology, equivalence,
+  propagation, closing-syntax placement, and verified live-state match;
 - applicable CI, human, connector, comment, formal-review, and thread state;
 - merge, mainline, ticket transition, and cleanup state;
 - deferred findings and intentionally unperformed work; and
@@ -86,11 +93,17 @@ still-current open and mergeable PR. Every applicable non-merge gate must pass;
 the only withheld action is merge. Do not list ordinary pending CI or review as
 a remaining gate on a terminal `ready_pr`.
 
-For `merged`, require a verified `babysit-pr: merged` result plus the
-independent mainline, tracker-transition, dependency-refresh, and cleanup checks
-above. A `closed` babysitter result becomes `blocked` with
-`PR closed without merge` and preserves local artifacts unless another canonical
-completion is proven.
+For `ready_prs`, require a verified `carve-changesets: prs_open` result for the
+still-current ordered stack. Every PR must be open, correctly based, mergeable,
+and at its applicable non-merge gate; whole-chain equivalence and final-only
+closing syntax must be verified. The only withheld actions are merge and
+propagation. Do not list ordinary pending CI or review as a remaining gate.
+
+For `merged`, require a verified `babysit-pr: merged` or
+`carve-changesets: all_merged` result plus the independent mainline,
+tracker-transition, dependency-refresh, and cleanup checks above. A `closed`
+babysitter result becomes `blocked` with `PR closed without merge` and preserves
+local artifacts unless another canonical completion is proven.
 
 For `requires_epic`, require all of:
 

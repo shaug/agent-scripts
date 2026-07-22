@@ -25,8 +25,10 @@ prerequisite outcomes. Treat canceled or not-planned blockers with missing
 outcomes as unresolved.
 
 After `implement-ticket` returns `merged`, verify the expected Linear transition
-and reread the complete epic relationship state. Do not treat `ready_pr` as a
-completed child or unblock a dependent that requires merge.
+and reread the complete epic relationship state. For a stacked result, also
+verify every PR merge and full-chain representation on the base. Do not treat
+`ready_pr` or `ready_prs` as a completed child or unblock a dependent that
+requires merge.
 
 ## Separate tracker and PR host
 

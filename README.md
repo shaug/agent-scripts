@@ -16,9 +16,10 @@ Current reusable agent skills:
   explicitly authorized completion policy
 - `skills/implement-ticket` — implement exactly one standalone ticket or named
   epic child through isolated execution and initial repository-owned review,
-  delegate the published PR lifecycle to `babysit-pr`, then verify tracker,
-  mainline, and cleanup outcomes; this is the canonical owner of generic
-  single-ticket execution rules consumed by `implement-epic`
+  publish one ordinary PR through `babysit-pr` or an explicitly authorized
+  carved stack through `carve-changesets`, then verify tracker, mainline, and
+  cleanup outcomes; this is the canonical owner of generic single-ticket
+  execution rules consumed by `implement-epic`
 - `skills/implement-epic` — traverse live GitHub or Linear epic graphs and
   delegate each selected child to `implement-ticket`, then refresh graph state
   and verify separately authorized epic closeout
@@ -40,8 +41,12 @@ The composed implementation dependency chain is:
 implement-epic
 └── implement-ticket
     ├── review-code-change          # initial candidate review
-    └── babysit-pr                  # published PR lifecycle
-        └── review-code-change      # after a head-changing fix
+    ├── babysit-pr                  # ordinary single-PR lifecycle
+    │   └── review-code-change      # after a head-changing fix
+    └── carve-changesets            # authority-gated oversized path
+        ├── review-code-change      # each exact changeset
+        └── babysit-pr              # each changeset PR lifecycle
+            └── review-code-change  # after a head-changing fix
 
 carve-changesets
 ├── review-code-change              # direct per-changeset review
