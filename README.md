@@ -22,6 +22,9 @@ Current reusable agent skills:
 - `skills/implement-epic` — traverse live GitHub or Linear epic graphs and
   delegate each selected child to `implement-ticket`, then refresh graph state
   and verify separately authorized epic closeout
+- `skills/carve-changesets` — recompose a review-ready source branch into a
+  stateless chain, review each changeset through `review-code-change`, and
+  delegate each published PR lifecycle to `babysit-pr`
 - `skills/review-code-change` — orchestrate the repository-owned review lenses
   into one evidence-bound, deduplicated verdict
 - `skills/prepare-changesets` — decompose a large, review-ready branch into a
@@ -41,6 +44,11 @@ implement-epic
     ├── review-code-change          # initial candidate review
     └── babysit-pr                  # published PR lifecycle
         └── review-code-change      # after a head-changing fix
+
+carve-changesets
+├── review-code-change              # direct per-changeset review
+└── babysit-pr                      # each published PR lifecycle
+    └── review-code-change          # after a head-changing fix
 ```
 
 Compatible runtimes may provide named subagents or equivalent isolated
