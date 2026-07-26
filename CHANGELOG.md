@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the result-blind review replay evaluator
 
+- fix: skip the recipe-execution tests when `just` is absent
 - feat: record the evaluated skill closure with every run
+  (`b605051a7385dd310b0eff9dbf14c10dda87c633`)
 - docs: record the measured smoke evaluation and its variance
   (`87ec303d949301c908c3a29cb220bed22d44c775`)
 - fix: evaluate the target skill's whole declared closure

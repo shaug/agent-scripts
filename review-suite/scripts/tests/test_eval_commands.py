@@ -176,17 +176,24 @@ class DocumentationContractTests(unittest.TestCase):
 
 
 class RecipeExecutionTests(unittest.TestCase):
-    """Run the recipes through `just` when it is installed."""
+    """Run the recipes through `just` when it is installed.
+
+    CI does not install `just`, so this class must skip cleanly there. An absent
+    executable makes `subprocess.run` raise rather than return a status, so the
+    probe has to catch `OSError`; checking only the return code turns a missing
+    `just` into an erroring `setUpClass` instead of a skip.
+    """
 
     @classmethod
     def setUpClass(cls):
-        if (
-            subprocess.run(
+        try:
+            completed = subprocess.run(
                 ["just", "--version"], capture_output=True, check=False
-            ).returncode
-            != 0
-        ):
-            raise unittest.SkipTest("just is not installed")
+            )
+        except OSError as error:
+            raise unittest.SkipTest(f"just is unavailable: {error}") from error
+        if completed.returncode != 0:
+            raise unittest.SkipTest("just is present but not runnable")
 
     def just(self, *args):
         return subprocess.run(
