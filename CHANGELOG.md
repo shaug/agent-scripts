@@ -6,7 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the result-blind review replay evaluator
 
+- fix: close the replay evaluator's review-gate gaps
+- fix: stop misattributing review failures in the replay evaluator
+  (`c06b06ca862d9136045ffbb52d361bedf7eadc39`)
 - feat: add the result-blind review replay evaluator
+  (`d8d97bc6a54e540ee189b1e1ff47ae6937542f37`)
 
 ## 2026-07-25 — Added coordinator-neutral delegated ticket execution
 

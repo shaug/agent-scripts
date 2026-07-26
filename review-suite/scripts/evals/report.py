@@ -82,8 +82,12 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
     # is among the most consequential instabilities a reviewer can show, so it
     # must not be excluded just because a blocked review is not graded.
     answered = [a for a in attempts if a["status"] in protocol.VALID_OUTCOME_STATUSES]
+    # A blocked attempt is ungraded, and `None` keeps it distinguishable from a
+    # graded attempt that matched nothing. Collapsing both to the empty set
+    # would report a run that refused a verdict and a run that answered and
+    # found nothing as being in perfect agreement.
     matched_sets = [
-        tuple(sorted((a.get("grade") or {}).get("matched_root_cause_ids") or ()))
+        tuple(sorted(a["grade"]["matched_root_cause_ids"])) if a.get("grade") else None
         for a in answered
     ]
 

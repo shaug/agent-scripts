@@ -234,6 +234,13 @@ def load_corpus(root: Path | None = None) -> Corpus:
     if not (root / "reviewer" / REVIEWER_PROMPT).is_file():
         raise CorpusError(f"missing {root / 'reviewer' / REVIEWER_PROMPT}")
 
+    # Enforced here rather than only in the audit entrypoint: the runner is the
+    # one command that spends money, so a prompt hinting at an expected verdict
+    # must stop it before a single process is launched.
+    prompt_hits = prompt_errors(root)
+    if prompt_hits:
+        raise CorpusError("; ".join(prompt_hits))
+
     declared = list(index["cases"])
     if len(set(declared)) != len(declared):
         raise CorpusError("corpus.json: duplicate case id(s)")

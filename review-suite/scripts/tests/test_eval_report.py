@@ -170,6 +170,24 @@ class MetricTests(unittest.TestCase):
             {"subject-one": 2}, aggregate["stability"]["per_case_stability_denominator"]
         )
 
+    def test_blocking_is_not_agreement_with_answering_and_finding_nothing(self):
+        """A refused verdict and a zero-match answer are different behaviours.
+
+        Both contribute no matched root causes, so collapsing them to the same
+        empty set would report the pair as perfectly stable on findings even
+        though verdict stability correctly reports 0.5.
+        """
+        aggregate = report.aggregate(
+            [
+                attempt("subject-one", 1, status="blocked"),
+                attempt("subject-one", 2, grade=grade(matched_ids=())),
+            ],
+            configuration=CONFIGURATION,
+        )
+        self.assertEqual(0.5, aggregate["stability"]["mean_verdict_stability"])
+        self.assertEqual(0.5, aggregate["stability"]["mean_finding_stability"])
+        self.assertEqual(2, aggregate["stability"]["stability_denominator"])
+
     def test_every_stability_figure_publishes_its_denominator(self):
         aggregate = report.aggregate(
             [

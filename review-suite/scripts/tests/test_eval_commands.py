@@ -23,17 +23,32 @@ AUDIT_COMMAND = "audit-review-corpus"
 EVAL_COMMAND = "eval-review-suite"
 
 
-def recipes(text: str) -> dict[str, str]:
-    """Split a justfile into recipe name -> its dependency and body text."""
-    found: dict[str, str] = {}
+#: `name param1 param2: dep1 dep2` - parameters precede the colon, dependencies
+#: follow it. Keeping the three apart matters: deriving dependencies by
+#: re-splitting a joined string silently yields nothing for `test: test-plugins`,
+#: which would make the paid-path guard below inert.
+RECIPE_HEADER = re.compile(r"^([a-z][a-z0-9-]*)((?:\s+[a-z0-9-]+)*)\s*:(.*)$")
+
+
+def recipes(text: str) -> dict[str, dict[str, object]]:
+    """Parse a justfile into {name: {parameters, dependencies, body}}."""
+    found: dict[str, dict[str, object]] = {}
     name = None
     for line in text.splitlines():
-        match = re.match(r"^([a-z][a-z0-9-]*)\s*([^:]*):(.*)$", line)
-        if match and not line.startswith((" ", "\t")):
-            name = match.group(1)
-            found[name] = f"{match.group(2)}:{match.group(3)}\n"
-        elif name and (line.startswith((" ", "\t")) or not line.strip()):
-            found[name] += line + "\n"
+        indented = line.startswith((" ", "\t"))
+        if ":=" in line and not indented:
+            name = None  # a top-level assignment, not a recipe
+            continue
+        header = None if indented else RECIPE_HEADER.match(line)
+        if header:
+            name = header.group(1)
+            found[name] = {
+                "parameters": header.group(2).split(),
+                "dependencies": header.group(3).split(),
+                "body": "",
+            }
+        elif name and (indented or not line.strip()):
+            found[name]["body"] += line + "\n"
         else:
             name = None
     return found
@@ -49,46 +64,81 @@ class JustfileContractTests(unittest.TestCase):
             self.assertIn(name, self.recipes)
 
     def test_the_evaluation_recipe_takes_one_executor_argument(self):
-        header = self.recipes[EVAL_COMMAND].splitlines()[0]
-        self.assertIn("executor:", header)
-        self.assertIn('--executor "{{executor}}"', self.recipes[EVAL_COMMAND])
+        self.assertEqual(["executor"], self.recipes[EVAL_COMMAND]["parameters"])
+        self.assertIn('--executor "{{executor}}"', self.recipes[EVAL_COMMAND]["body"])
 
     def test_the_deterministic_recipes_take_no_argument(self):
         for name in (TEST_COMMAND, AUDIT_COMMAND):
             with self.subTest(recipe=name):
-                self.assertEqual(":", self.recipes[name].splitlines()[0].strip())
+                self.assertEqual([], self.recipes[name]["parameters"])
+
+    def test_the_justfile_parser_sees_real_dependencies(self):
+        """Guard the guard: an empty closure would make the check below inert."""
+        self.assertEqual(["test-plugins"], self.recipes["test"]["dependencies"])
+        self.assertEqual(["test", "lint"], self.recipes["check"]["dependencies"])
+        self.assertEqual(
+            ["lint-py", "lint-md", "lint-skills", "validate-plugins"],
+            self.recipes["lint"]["dependencies"],
+        )
 
     def test_test_runs_the_review_suite_tests(self):
-        self.assertIn("review-suite/scripts/tests", self.recipes["test"])
+        self.assertIn("review-suite/scripts/tests", self.recipes["test"]["body"])
 
-    def test_no_quality_gate_can_reach_the_paid_command(self):
-        """`test`, `lint`, and `check` must never spend money."""
-        reachable = set()
+    def _quality_gate_closure(self) -> set[str]:
+        reachable: set[str] = set()
         frontier = ["test", "lint", "check"]
         while frontier:
             name = frontier.pop()
             if name in reachable or name not in self.recipes:
                 continue
             reachable.add(name)
-            dependencies, _, _ = self.recipes[name].partition(":")
-            body = self.recipes[name]
-            frontier.extend(dependencies.split())
+            recipe = self.recipes[name]
+            frontier.extend(recipe["dependencies"])
             frontier.extend(
-                candidate for candidate in self.recipes if f"just {candidate}" in body
+                candidate
+                for candidate in self.recipes
+                if f"just {candidate}" in recipe["body"]
             )
+        return reachable
+
+    def test_the_quality_gate_closure_reaches_every_transitive_recipe(self):
+        """A closure that stops at the seeds would prove nothing."""
+        reachable = self._quality_gate_closure()
+        for name in (
+            "test",
+            "lint",
+            "check",
+            "test-plugins",
+            "lint-py",
+            "lint-md",
+            "lint-skills",
+            "validate-plugins",
+        ):
+            with self.subTest(recipe=name):
+                self.assertIn(name, reachable)
+
+    def test_no_quality_gate_can_reach_the_paid_command(self):
+        """`test`, `lint`, and `check` must never spend money."""
+        reachable = self._quality_gate_closure()
         self.assertNotIn(EVAL_COMMAND, reachable)
         for name in sorted(reachable):
             with self.subTest(recipe=name):
-                self.assertNotIn(EVAL_COMMAND, self.recipes[name])
-                self.assertNotIn("evals/runner.py", self.recipes[name])
-                self.assertNotIn("claude_executor.py", self.recipes[name])
+                recipe = self.recipes[name]
+                self.assertNotIn(EVAL_COMMAND, recipe["dependencies"])
+                for forbidden in (
+                    EVAL_COMMAND,
+                    "evals/runner.py",
+                    "claude_executor",
+                ):
+                    self.assertNotIn(forbidden, recipe["body"])
 
     def test_the_recipes_point_at_the_canonical_scripts(self):
         self.assertIn(
-            "review-suite/scripts/evals/audit_corpus.py", self.recipes[AUDIT_COMMAND]
+            "review-suite/scripts/evals/audit_corpus.py",
+            self.recipes[AUDIT_COMMAND]["body"],
         )
         self.assertIn(
-            "review-suite/scripts/evals/runner.py", self.recipes[EVAL_COMMAND]
+            "review-suite/scripts/evals/runner.py", self.recipes[EVAL_COMMAND]["body"]
         )
 
 

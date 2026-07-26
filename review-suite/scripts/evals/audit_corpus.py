@@ -5,7 +5,8 @@ Checks, in order:
 
 1. corpus index, expectation, and provenance schemas;
 2. cross-field expectation semantics and packet validity agreement;
-3. reviewer/private separation, orphaned files, and reviewer-prompt wording;
+3. reviewer/private separation, orphaned files, and reviewer-prompt wording
+   (all inherited from `corpus.load_corpus`, which the runner shares);
 4. case identifiers and reviewer-visible filenames for outcome-revealing
    tokens; and
 5. the complete executor request that each case would produce, structurally
@@ -35,7 +36,9 @@ def audit(corpus_root: Path | None) -> list[str]:
     except corpus.CorpusError as error:
         return [str(error)]
 
-    errors = list(corpus.prompt_errors(loaded.root))
+    # `load_corpus` already rejected an outcome-hinting reviewer prompt, so
+    # every caller inherits that gate from one place.
+    errors: list[str] = []
     if loaded.grader_version != grader.GRADER_VERSION:
         errors.append(
             f"corpus grader_version {loaded.grader_version!r} does not match the "
