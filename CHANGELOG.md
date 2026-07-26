@@ -6,7 +6,10 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-25 — Added coordinator-neutral delegated ticket execution
 
+- fix: pin CI to the established Ruff rule set so dependency drift cannot
+  redefine the repository-wide lint gate
 - feat: add a versioned delegated-execution contract for `implement-ticket`
+  (`b53efa674e929c181bdaac63ff0306cb756386db`)
 
 ## 2026-07-21 — Completed carve-changesets and integrated ticket publication
 
