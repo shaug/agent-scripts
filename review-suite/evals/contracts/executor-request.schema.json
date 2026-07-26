@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/executor-request.schema.json",
+  "title": "Review replay executor request",
+  "description": "The complete result-blind payload written to one fresh executor process on stdin. Every property is reviewer-visible by contract; nothing here may reveal an expected outcome.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "target_skill",
+    "target_skill_digest",
+    "skill_prompt",
+    "contract_documents",
+    "instructions",
+    "packet",
+    "run"
+  ],
+  "properties": {
+    "protocol_version": {"const": "1.0"},
+    "target_skill": {"type": "string", "minLength": 1},
+    "target_skill_digest": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "skill_prompt": {"type": "string", "minLength": 1},
+    "contract_documents": {"type": "object"},
+    "instructions": {"type": "string", "minLength": 1},
+    "packet": {"type": "object"},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_ref",
+        "run_number",
+        "suite_commit",
+        "corpus_version",
+        "candidate",
+        "started_at"
+      ],
+      "properties": {
+        "case_ref": {"type": "string", "pattern": "^c-[0-9a-f]{8}$"},
+        "run_number": {},
+        "suite_commit": {"type": "string", "minLength": 1},
+        "corpus_version": {"type": "string", "minLength": 1},
+        "started_at": {"type": "string", "minLength": 1},
+        "candidate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["head_sha", "comparison_base_sha"],
+          "properties": {
+            "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "comparison_base_sha": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

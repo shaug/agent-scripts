@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/session",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a",
+    "comparison_base_sha": "2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/session.py b/session.py\n--- a/session.py\n+++ b/session.py\n@@ -29,2 +29,3 @@ class Session:\n     def refresh(self):\n-        self.expires_at = now() + WINDOW\n+        self.expires_at = self.issued_at + WINDOW\n+        audit.write_entry(self.id, \"refresh\")\ndiff --git a/audit.py b/audit.py\n--- a/audit.py\n+++ b/audit.py\n@@ -6,2 +6,3 @@ def write_entry(subject, action):\n     record = {\"subject\": subject, \"action\": action}\n+    record[\"source\"] = \"session\"\n     store.append(record)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Let an operator extend an active session and record that it happened.",
+    "acceptance_criteria": [
+      "Refreshing an active session keeps it usable for a further full window.",
+      "Every refresh is recorded so an operator can reconstruct it later."
+    ],
+    "non_goals": [
+      "Change how a session is first issued."
+    ],
+    "preserved_behaviors": [
+      "An abandoned session still lapses after one window."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Audit rules",
+        "location": "AGENTS.md",
+        "summary": "Every state change is recorded."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Session lifecycle",
+        "location": "docs/sessions.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Session tests",
+        "location": "tests/test_session.py"
+      },
+      {
+        "label": "Audit writer",
+        "location": "audit.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "session tests",
+      "command": "pytest tests/test_session.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "9 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "121 passed"
+    }
+  ],
+  "context": {
+    "operational": [
+      "Sessions are held in one process and are not shared."
+    ]
+  }
+}

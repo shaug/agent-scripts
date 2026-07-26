@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/catalog",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a",
+    "comparison_base_sha": "6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b6b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/catalog.py b/catalog.py\n--- a/catalog.py\n+++ b/catalog.py\n@@ -8,2 +8,2 @@ def parse_feed(payload):\n def import_feed(payload):\n-    return [normalize(row) for row in parse_feed(payload)]\n+    return [normalize(row) for row in parse_feed(payload) if row.sku]\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Skip catalog rows that arrive without a stock identifier.",
+    "acceptance_criteria": [
+      "A row with no stock identifier is not imported.",
+      "Every other row is imported exactly as before."
+    ],
+    "non_goals": [
+      "Change how a stock identifier is generated upstream."
+    ],
+    "preserved_behaviors": [
+      "Row order is preserved for imported rows."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [],
+    "nearby_patterns": [
+      {
+        "label": "Feed tests",
+        "location": "tests/test_catalog.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "catalog tests",
+      "command": "pytest tests/test_catalog.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "3 passed"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/ledger",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+    "comparison_base_sha": "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/ledger.py b/ledger.py\n--- a/ledger.py\n+++ b/ledger.py\n@@ -12,2 +12,2 @@ def available(account):\n def can_charge(account, amount):\n-    return amount <= available(account)\n+    return amount < available(account)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Refuse a charge that would overdraw an account.",
+    "acceptance_criteria": [
+      "A charge equal to the available balance succeeds.",
+      "A charge above the available balance is refused."
+    ],
+    "non_goals": [
+      "Introduce an overdraft product."
+    ],
+    "preserved_behaviors": [
+      "Holds continue to reduce the available balance."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Money handling",
+        "location": "AGENTS.md",
+        "summary": "Amounts are integer cents."
+      }
+    ],
+    "named_documents": [],
+    "nearby_patterns": [
+      {
+        "label": "Charge limit tests",
+        "location": "tests/test_ledger.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "ledger tests",
+      "command": "pytest tests/test_ledger.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "48 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "Balances and holds are stored as integer cents."
+    ]
+  }
+}

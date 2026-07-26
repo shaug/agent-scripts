@@ -41,6 +41,18 @@ test: test-plugins
 test-review-suite:
   python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'
 
+# Validate the replay corpus: schemas, cross-field expectation semantics,
+# reviewer/private separation, provenance shape, outcome-revealing names, and
+# the complete executor payload. Never launches a model.
+audit-review-corpus:
+  python3 review-suite/scripts/evals/audit_corpus.py
+
+# Result-blind replay evaluation through an explicit real-runtime executor.
+# Deliberately excluded from `test`, `lint`, and `check`: this is the only
+# review-suite command that may spend money.
+eval-review-suite executor:
+  python3 review-suite/scripts/evals/runner.py --executor "{{executor}}"
+
 test-plugins:
   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 

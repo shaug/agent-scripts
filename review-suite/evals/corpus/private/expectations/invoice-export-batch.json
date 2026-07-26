@@ -1,0 +1,17 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "invoice-export-batch",
+  "packet_valid": true,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.invoice-helper-naming",
+      "description": "Observing that the pre-existing helper name is terse is a real but non-material remark, not a defect this candidate introduced.",
+      "equivalent_formulations": [
+        "the batch helper name predates this change",
+        "terse pre-existing helper name"
+      ]
+    }
+  ]
+}

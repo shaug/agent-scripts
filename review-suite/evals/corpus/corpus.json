@@ -1,0 +1,14 @@
+{
+  "corpus_version": "0.1-protocol-proof",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-code-change",
+  "cases": [
+    "ledger-charge-limit",
+    "session-token-refresh",
+    "invoice-export-batch",
+    "webhook-retry-queue",
+    "pricing-tier-lookup",
+    "catalog-import-feed"
+  ]
+}

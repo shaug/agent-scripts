@@ -1,0 +1,22 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "webhook-retry-queue",
+  "packet_valid": true,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.webhook-redelivery-idempotence",
+      "requirement": "A given delivery changes downstream state at most once.",
+      "trigger": "the upstream sender delivers the same identifier twice",
+      "consequence": "downstream totals drift upward every time a delivery repeats",
+      "surface": "webhook.py:handle",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "retries without a de-duplication key",
+        "a redelivered event is applied more than once",
+        "the retry loop is not idempotent"
+      ]
+    }
+  ],
+  "accepted_non_findings": []
+}

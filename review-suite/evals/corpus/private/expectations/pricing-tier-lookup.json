@@ -1,0 +1,35 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "pricing-tier-lookup",
+  "packet_valid": true,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.pricing-edge-selection",
+      "requirement": "A quantity that sits exactly on a tier ceiling is quoted in that tier.",
+      "trigger": "a quote asks for exactly the published ceiling quantity",
+      "consequence": "the customer is quoted from the next tier up",
+      "surface": "pricing.py:select_tier",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "picks the wrong tier edge",
+        "wrong tier at the edge",
+        "ceiling is treated as exclusive"
+      ]
+    },
+    {
+      "id": "rc.pricing-stale-table",
+      "requirement": "An updated tier table is used by later quotes.",
+      "trigger": "an operator edits the table while the service keeps running",
+      "consequence": "quotes keep using the table captured when the process started",
+      "surface": "pricing.py:select_tier",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "caches the stale tier table",
+        "serves a stale table",
+        "reads the table captured at import time"
+      ]
+    }
+  ],
+  "accepted_non_findings": []
+}

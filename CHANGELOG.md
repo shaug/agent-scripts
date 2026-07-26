@@ -4,10 +4,14 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-26 — Added the result-blind review replay evaluator
+
+- feat: add the result-blind review replay evaluator
+
 ## 2026-07-25 — Added coordinator-neutral delegated ticket execution
 
 - fix: pin CI to the established Ruff rule set so dependency drift cannot
-  redefine the repository-wide lint gate
+  redefine the repository-wide lint gate (`901dc3596207a88b6c8edcf548b5be3151ca7ab2`)
 - feat: add a versioned delegated-execution contract for `implement-ticket`
   (`b53efa674e929c181bdaac63ff0306cb756386db`)
 

@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/invoice",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a",
+    "comparison_base_sha": "3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/invoice.py b/invoice.py\n--- a/invoice.py\n+++ b/invoice.py\n@@ -50,3 +50,3 @@ def _bx(rows, size):\n def export(rows):\n-    for group in _bx(rows, 100):\n+    for group in _bx(rows, EXPORT_BATCH_SIZE):\n         yield render(group)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Make the invoice export batch size configurable.",
+    "acceptance_criteria": [
+      "The export batch size comes from configuration instead of a literal.",
+      "The rendered output for a given set of rows is unchanged."
+    ],
+    "non_goals": [
+      "Change the rendered invoice format."
+    ],
+    "preserved_behaviors": [
+      "Rows are exported in their original order."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Configuration",
+        "location": "AGENTS.md",
+        "summary": "Tunables live in settings."
+      }
+    ],
+    "named_documents": [],
+    "nearby_patterns": [
+      {
+        "label": "Existing tunables",
+        "location": "settings.py"
+      },
+      {
+        "label": "Export tests",
+        "location": "tests/test_invoice.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "invoice tests",
+      "command": "pytest tests/test_invoice.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "14 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "203 passed"
+    }
+  ],
+  "context": {
+    "operational": [
+      "EXPORT_BATCH_SIZE defaults to 100, matching the previous literal."
+    ]
+  }
+}
