@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the result-blind review replay evaluator
 
+- feat: record the evaluated skill closure with every run
 - docs: record the measured smoke evaluation and its variance
+  (`87ec303d949301c908c3a29cb220bed22d44c775`)
 - fix: evaluate the target skill's whole declared closure
   (`62a9ed8fab166c7d380724e426449f0585714b07`)
 - docs: pin the recorded smoke evaluation to its run

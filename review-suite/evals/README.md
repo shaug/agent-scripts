@@ -217,6 +217,12 @@ across unlike cases would report disagreement between cases as instability
 within one, and dropping `blocked` attempts would report a reviewer that refuses
 a verdict on one run and issues one on the next as perfectly stable.
 
+The report's `configuration` block states what was run: executor command, target
+skill, its declared dependencies, the exact closure document list, the closure
+digest, suite commit, corpus and grader versions, run count, and the timeout and
+output limits. Each attempt repeats the target, its dependencies, and the
+digest, so a per-attempt record is self-describing without its report.
+
 The report encodes no success threshold and returns no pass/fail judgement.
 
 `--artifact-dir` retains raw executor output. It is opt-in, and
@@ -244,13 +250,22 @@ This directory proves the protocol, the grading interface, the contamination
 controls, and the failure taxonomy. It deliberately does not curate a
 representative scored corpus, calibrate the grader, or capture a v1 baseline.
 
-### Measured smoke evaluation
+### Protocol smoke evaluation
+
+> **This run proves the protocol end to end and nothing else.** It is not
+> evidence of reviewer capability, review quality, or cost, and must not be
+> cited as any of those here or downstream. Its numbers are here to show that
+> the fields exist, are populated, and are internally consistent — that an
+> attempt is classified, graded, and recorded with identity, usage, and latency.
+> One run per case cannot measure a stochastic reviewer, and no cost envelope
+> follows from it.
 
 One run per case through the bundled Claude adapter, recorded at suite commit
 `62a9ed8fab166c7d380724e426449f0585714b07`, target `review-code-change` with
-digest `9b2805f14cdd6158`, model `claude-opus-4-6[1m]`, corpus version
-`0.1-protocol-proof`, grader version `1.0`. This is one recorded observation,
-not a baseline:
+declared closure `review-solution-simplicity`, `review-correctness`,
+`review-code-simplicity` and digest `9b2805f14cdd6158`, model
+`claude-opus-4-6[1m]`, corpus version `0.1-protocol-proof`, grader version
+`1.0`:
 
 - 6 attempts, 6 valid protocol outcomes, 0 evaluation failures, all 6 graded;
 - 5 of 6 verdicts matched. `catalog-import-feed` returned `changes_required`
@@ -261,17 +276,17 @@ not a baseline:
   giving `false_positive_rate` 0.1667 over 6;
 - `material_finding_recall` 0.0 over the 4 attempts with expected root causes;
   `false_clean_rate` 0.0 over 4;
-- 1.03 USD total reported cost, 191,422 input tokens, 8,051 output tokens, 33.0
-  s mean latency, 59.9 s maximum.
+- usage and latency were populated rather than dropped: 191,422 input tokens,
+  8,051 output tokens, 1.03 USD reported, 33.0 s mean and 59.9 s maximum
+  latency, and a model identity on every attempt.
 
-**Do not read single-run verdicts as capability.** The immediately preceding run
-of this same configuration returned `blocked` on `catalog-import-feed` — the
-correct answer — while this one returned a merge verdict. That case is the least
-stable of the six and it is the one that tests refusal on incomplete evidence,
-which is the behaviour the surrounding work most needs to measure. At one run
-per case, nothing here distinguishes capability from variance: every stability
-figure above rests on a denominator of 1. Use `--runs N` before drawing any
-conclusion.
+The verdicts above are demonstrably not repeatable. The immediately preceding
+run of this same configuration returned `blocked` on `catalog-import-feed` — the
+correct answer — while this one returned a merge verdict. That case is the one
+testing refusal on incomplete evidence, which is the behaviour the surrounding
+work most needs to measure, and it flipped between two consecutive runs. Every
+stability figure here rests on a denominator of 1. Use `--runs N`, and read the
+result as a measurement only once the denominator supports it.
 
 ### Limitations for whoever curates the scored corpus
 
@@ -280,20 +295,20 @@ conclusion.
   not recognize is therefore reported as a partial match needing adjudication,
   not as a false positive. Calibration must decide how those are scored.
 - The shipped formulations were written before any real run and were not tuned
-  afterwards, which is why recall is 0.0 above while 5 of 6 verdicts were right.
-  That is the conservative behaviour this interface is meant to have, and direct
-  evidence that grader calibration is required before any recall number means
-  anything.
+  afterwards, which is why recall is 0.0 above. That is the conservative
+  behaviour this interface is meant to have, and it means grader calibration is
+  required before any recall number means anything.
 - Completeness of the evaluated skill closure is load-bearing, not incidental.
   Earlier revisions omitted first the orchestration protocol and then the three
   lens skills that `review-code-change` requires; each omission changed observed
   behaviour on the incomplete-evidence case. Any change to what a payload
-  carries is a change to what is being measured, and starts a new stratum. The
-  closure's size also sets the cost floor: it is 8 documents and about 41,600
-  characters here, and the run above spent 191,422 input tokens across 6
-  attempts.
+  carries is a change to what is being measured, and starts a new stratum. Every
+  run records its closure's membership and digest so a stratum can state what it
+  evaluated.
 - The choice of scored target, the strata to compare, and the cost envelope to
-  preregister all follow from that closure and are deliberately left open.
+  preregister all follow from that closure and are deliberately left open. Size
+  the envelope from a preregistered run of the chosen closure; do not
+  extrapolate it from the protocol smoke run above.
 - `expectation.schema.json` requires a `severity` on every root cause that no
   metric currently consumes. Either score severity agreement or drop the
   requirement; do not assume it is being measured.

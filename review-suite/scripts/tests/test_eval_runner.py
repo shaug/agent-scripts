@@ -94,6 +94,32 @@ class EvaluationTests(unittest.TestCase):
                 self.assertIsNotNone(attempt["started_at"])
                 self.assertIsNotNone(attempt["finished_at"])
 
+    def test_the_run_records_which_closure_was_sent(self):
+        """A digest proves two runs matched; it cannot say what they contained.
+
+        A stratum has to be able to state which skills it evaluated, so the
+        closure's membership is recorded and not just hashed.
+        """
+        attempts, configuration = self.evaluate()
+        loaded = corpus.load_corpus()
+        expected = list(loaded.target_skill_dependencies)
+        self.assertEqual(expected, configuration["target_skill_dependencies"])
+        self.assertEqual(loaded.target_skill, configuration["target_skill"])
+        documents = configuration["target_skill_documents"]
+        self.assertEqual(sorted(documents), documents)
+        self.assertIn(f"{loaded.target_skill}/SKILL.md", documents)
+        for dependency in expected:
+            with self.subTest(dependency=dependency):
+                self.assertIn(f"{dependency}/SKILL.md", documents)
+        for attempt in attempts:
+            with self.subTest(case=attempt["case_id"]):
+                self.assertEqual(loaded.target_skill, attempt["target_skill"])
+                self.assertEqual(expected, attempt["target_skill_dependencies"])
+                self.assertEqual(
+                    configuration["target_skill_digest"],
+                    attempt["target_skill_digest"],
+                )
+
     def test_only_valid_review_results_are_graded(self):
         attempts, _ = self.evaluate()
         for attempt in attempts:

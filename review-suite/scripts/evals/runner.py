@@ -265,9 +265,13 @@ def evaluate(
             f"corpus grader_version {loaded.grader_version!r} does not match the "
             f"shipped grader {grader.GRADER_VERSION!r}"
         )
-    skill_prompt = target_skill_prompt(
+    # Keep the closure's exact membership, not just its digest: a digest proves
+    # two runs sent the same text but cannot say what that text was, and a
+    # baseline stratum has to be able to state which skills it evaluated.
+    closure = target_skill_documents(
         loaded.target_skill, loaded.target_skill_dependencies
     )
+    skill_prompt = render_skill_prompt(loaded.target_skill, closure)
     documents = contract_documents()
     commit = suite_commit()
     forced_simulation = is_bundled_fixture_executor(command)
@@ -323,6 +327,10 @@ def evaluate(
                 max_output_bytes=max_output_bytes,
                 forced_simulation=forced_simulation,
             )
+            attempt["target_skill"] = loaded.target_skill
+            attempt["target_skill_dependencies"] = list(
+                loaded.target_skill_dependencies
+            )
             if attempt["status"] in protocol.GRADABLE_STATUSES:
                 attempt["grade"] = grader.grade(
                     case.expectation, (response or {})["result"]
@@ -336,6 +344,8 @@ def evaluate(
         "corpus_version": loaded.corpus_version,
         "grader_version": loaded.grader_version,
         "target_skill": loaded.target_skill,
+        "target_skill_dependencies": list(loaded.target_skill_dependencies),
+        "target_skill_documents": sorted(closure),
         "target_skill_digest": protocol.prompt_digest(skill_prompt),
         "suite_commit": commit,
         "runs_per_case": runs,
