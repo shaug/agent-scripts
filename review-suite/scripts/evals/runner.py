@@ -48,11 +48,45 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def target_skill_documents(target_skill: str) -> dict[str, str]:
+    """Return the target skill's complete reviewer-visible text.
+
+    A skill's `SKILL.md` is not the whole skill: `review-code-change` instructs
+    the reviewer to read `references/orchestration-protocol.md`, which owns the
+    lens decision table, deduplication, and verdict aggregation. An executor is
+    told to reason only from what it is given, so omitting a mandated reference
+    would measure a reviewer working from a partial definition of its own job.
+
+    The bundled `references/review-suite/` mirror is excluded: `contract_documents`
+    already supplies those files from their canonical location.
+    """
+    root = TARGET_SKILL_ROOT / target_skill
+    skill_md = root / "SKILL.md"
+    if not skill_md.is_file():
+        raise ConfigurationError(f"missing target skill prompt {skill_md}")
+    documents = {"SKILL.md": skill_md.read_text()}
+    references = root / "references"
+    if references.is_dir():
+        for path in sorted(references.rglob("*.md")):
+            relative = path.relative_to(root)
+            if "review-suite" in relative.parts:
+                continue
+            documents[relative.as_posix()] = path.read_text()
+    return documents
+
+
 def target_skill_prompt(target_skill: str) -> str:
-    path = TARGET_SKILL_ROOT / target_skill / "SKILL.md"
-    if not path.is_file():
-        raise ConfigurationError(f"missing target skill prompt {path}")
-    return path.read_text()
+    """Render the skill and every mandated reference as one prompt.
+
+    `prompt_digest` hashes this string, so the recorded `target_skill_digest`
+    changes whenever any part of the evaluated skill text changes - which is the
+    whole point of pinning it across baseline strata.
+    """
+    documents = dict(target_skill_documents(target_skill))
+    sections = [documents.pop("SKILL.md")]
+    for name, text in sorted(documents.items()):
+        sections.append(f"\n\n## Skill reference: {name}\n\n{text}")
+    return "".join(sections)
 
 
 def contract_documents() -> dict[str, str]:
@@ -194,33 +228,48 @@ def evaluate(
     commit = suite_commit()
     forced_simulation = is_bundled_fixture_executor(command)
 
+    def build(case: corpus.Case, run_number: int) -> dict[str, Any]:
+        return protocol.build_request(
+            case_id=case.case_id,
+            target_skill=loaded.target_skill,
+            skill_prompt=skill_prompt,
+            contract_documents=documents,
+            instructions=case.instructions,
+            packet=case.packet,
+            run_number=run_number,
+            suite_commit=commit,
+            corpus_version=loaded.corpus_version,
+            started_at=_now(),
+        )
+
+    def refuse_if_contaminated(case: corpus.Case, request: dict[str, Any]) -> None:
+        contamination = protocol.audit_request(
+            request,
+            case_id=case.case_id,
+            expectation=case.expectation,
+            provenance=case.provenance,
+        )
+        if contamination:
+            raise corpus.CorpusError(
+                f"{case.case_id}: contaminated request: " + "; ".join(contamination)
+            )
+
+    # Audit every case before launching anything. A per-request check alone
+    # would let a contaminated last case bill a real review for every earlier
+    # case and then discard the whole run, which contradicts the rule that a
+    # contaminated case fails before executor launch. Nothing `audit_request`
+    # inspects varies by run, so one request per case settles it.
+    for case in loaded.cases:
+        refuse_if_contaminated(case, build(case, 1))
+
     attempts: list[dict[str, Any]] = []
     for case in loaded.cases:
         for run_number in range(1, runs + 1):
-            request = protocol.build_request(
-                case_id=case.case_id,
-                target_skill=loaded.target_skill,
-                skill_prompt=skill_prompt,
-                contract_documents=documents,
-                instructions=case.instructions,
-                packet=case.packet,
-                run_number=run_number,
-                suite_commit=commit,
-                corpus_version=loaded.corpus_version,
-                started_at=_now(),
-            )
-            # Contamination is checked per request, immediately before launch,
-            # so a payload can never reach an executor unaudited.
-            contamination = protocol.audit_request(
-                request,
-                case_id=case.case_id,
-                expectation=case.expectation,
-                provenance=case.provenance,
-            )
-            if contamination:
-                raise corpus.CorpusError(
-                    f"{case.case_id}: contaminated request: " + "; ".join(contamination)
-                )
+            request = build(case, run_number)
+            # Kept as defence in depth: the pre-flight pass above is what
+            # guarantees the ordering, this re-check guarantees that the exact
+            # payload handed to a process was audited.
+            refuse_if_contaminated(case, request)
 
             attempt, response, stdout, stderr = run_attempt(
                 command,

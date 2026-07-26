@@ -241,28 +241,90 @@ class EvaluationTests(unittest.TestCase):
             self.evaluate(corpus_root=root)
         self.assertIn("names verdict or severity word", str(caught.exception))
 
+    def _contaminate(self, root: Path, case_id: str) -> None:
+        expectation = json.loads(
+            (root / "private" / "expectations" / f"{case_id}.json").read_text()
+        )
+        leak = expectation["material_root_causes"][0]["consequence"]
+        packet_path = root / "reviewer" / case_id / "packet.json"
+        packet = json.loads(packet_path.read_text())
+        packet["change_contract"]["non_goals"].append(leak)
+        packet_path.write_text(json.dumps(packet, indent=2))
+
+    def _counting_executor(self) -> tuple[str, Path]:
+        """An executor that records every launch, so spend can be asserted."""
+        log = self.temp / "launches.log"
+        script = self.temp / "counting_executor.py"
+        script.write_text(
+            "#!/usr/bin/env python3\n"
+            "import sys\n"
+            f"open({str(log)!r}, 'a').write('launch\\n')\n"
+            "sys.stdin.read()\n"
+            "sys.stdout.write('{}')\n"
+        )
+        return f"{sys.executable} {script}", log
+
     def test_a_contaminated_corpus_stops_before_any_launch(self):
+        """Contamination anywhere must refuse before the first launch.
+
+        Contaminating the *last* declared case is the case that matters: a
+        per-request-only audit would already have paid for every earlier case
+        before noticing, and then thrown the whole run away.
+        """
+        import shlex
+
         root = self.temp / "corpus"
         shutil.copytree(corpus.DEFAULT_CORPUS, root)
         index = json.loads((root / "corpus.json").read_text())
-        case_id = next(
+        eligible = [
             item
             for item in index["cases"]
             if json.loads(
                 (root / "private" / "expectations" / f"{item}.json").read_text()
             )["material_root_causes"]
+        ]
+        self.assertTrue(eligible)
+        last_contaminatable = eligible[-1]
+        self.assertNotEqual(
+            index["cases"][0],
+            last_contaminatable,
+            "the corpus must let this test contaminate a non-first case",
         )
-        expectation = json.loads(
-            (root / "private" / "expectations" / f"{case_id}.json").read_text()
+        self._contaminate(root, last_contaminatable)
+
+        command, log = self._counting_executor()
+        with self.assertRaises(corpus.CorpusError) as caught:
+            runner.evaluate(
+                shlex.split(command),
+                corpus_root=root,
+                runs=1,
+                timeout=60.0,
+                max_output_bytes=runner.DEFAULT_MAX_OUTPUT_BYTES,
+                artifact_dir=None,
+            )
+        self.assertIn("contaminated request", str(caught.exception))
+        self.assertFalse(
+            log.exists(), "an executor was launched before contamination was refused"
         )
-        packet_path = root / "reviewer" / case_id / "packet.json"
-        packet = json.loads(packet_path.read_text())
-        packet["change_contract"]["non_goals"].append(
-            expectation["material_root_causes"][0]["consequence"]
-        )
-        packet_path.write_text(json.dumps(packet, indent=2))
+
+    def test_a_contaminated_first_case_also_stops_before_any_launch(self):
+        import shlex
+
+        root = self.temp / "corpus"
+        shutil.copytree(corpus.DEFAULT_CORPUS, root)
+        index = json.loads((root / "corpus.json").read_text())
+        self._contaminate(root, index["cases"][0])
+        command, log = self._counting_executor()
         with self.assertRaises(corpus.CorpusError):
-            self.evaluate(corpus_root=root)
+            runner.evaluate(
+                shlex.split(command),
+                corpus_root=root,
+                runs=1,
+                timeout=60.0,
+                max_output_bytes=runner.DEFAULT_MAX_OUTPUT_BYTES,
+                artifact_dir=None,
+            )
+        self.assertFalse(log.exists())
 
     def test_artifacts_are_written_only_when_requested(self):
         self.evaluate()

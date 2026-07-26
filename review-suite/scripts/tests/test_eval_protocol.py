@@ -62,6 +62,44 @@ class RequestTests(unittest.TestCase):
             request["target_skill_digest"],
         )
 
+    def test_the_payload_carries_every_mandated_skill_reference(self):
+        """A skill is not just its SKILL.md.
+
+        `review-code-change` instructs the reviewer to read its orchestration
+        protocol, and the executor is told to reason only from what it is given,
+        so a mandated reference that never reaches the payload would measure a
+        reviewer working from a partial definition of its own job.
+        """
+        documents = runner.target_skill_documents("review-code-change")
+        self.assertIn("SKILL.md", documents)
+        self.assertIn("references/orchestration-protocol.md", documents)
+        prompt = runner.target_skill_prompt("review-code-change")
+        for name, text in documents.items():
+            with self.subTest(document=name):
+                self.assertIn(text.strip(), prompt)
+        request = build_request(self.case, skill_prompt=prompt)
+        self.assertIn("references/orchestration-protocol.md", request["skill_prompt"])
+
+    def test_the_bundled_contract_mirror_is_not_sent_twice(self):
+        documents = runner.target_skill_documents("review-code-change")
+        self.assertEqual([], [name for name in documents if "review-suite" in name])
+        # It is supplied once, from its canonical location.
+        self.assertIn("CONTRACT.md", runner.contract_documents())
+
+    def test_the_skill_digest_tracks_every_document_it_pins(self):
+        documents = runner.target_skill_documents("review-code-change")
+        baseline = protocol.prompt_digest(
+            runner.target_skill_prompt("review-code-change")
+        )
+        for name in documents:
+            with self.subTest(document=name):
+                edited = dict(documents)
+                edited[name] += "\n\nAn additional sentence.\n"
+                sections = [edited.pop("SKILL.md")]
+                for other, text in sorted(edited.items()):
+                    sections.append(f"\n\n## Skill reference: {other}\n\n{text}")
+                self.assertNotEqual(baseline, protocol.prompt_digest("".join(sections)))
+
     def test_case_reference_is_opaque(self):
         request = build_request(self.case)
         self.assertNotEqual(self.case.case_id, request["run"]["case_ref"])

@@ -200,15 +200,42 @@ This directory proves the protocol, the grading interface, the contamination
 controls, and the failure taxonomy. It deliberately does not curate a
 representative scored corpus, calibrate the grader, or capture a v1 baseline.
 
-Two limitations are worth stating plainly for whoever curates that corpus:
+### Measured smoke evaluation
+
+One run per case through the bundled Claude adapter, at the commit that
+introduced this directory. Reported verbatim rather than summarized, because
+these are the numbers the corpus work inherits:
+
+- 6 attempts, 6 valid protocol outcomes, 0 evaluation failures;
+- every verdict matched its expectation: 5 graded verdicts matched, and the
+  incomplete-evidence case correctly returned `blocked`, which is a valid review
+  and so is counted in stability but not graded;
+- 6 findings reported, all 6 referred for adjudication because none matched a
+  shipped formulation, giving `material_finding_recall` 0.0 over the 4 attempts
+  with expected root causes;
+- `false_positive_rate` 0.0 over 5, `false_clean_rate` 0.0 over 4;
+- 0.75 USD total reported cost, 28.0 s mean latency, 41.0 s maximum.
+
+Every stability figure rests on a denominator of 1 per case, so it records only
+that a single run happened, not run-to-run agreement.
+
+### Limitations for whoever curates the scored corpus
 
 - Surface matching is file-level, because a private root cause names a function
   while a finding names a line. A finding in the right file that the grader does
   not recognize is therefore reported as a partial match needing adjudication,
   not as a false positive. Calibration must decide how those are scored.
 - The shipped formulations were written before any real run and were not tuned
-  afterwards. A smoke evaluation through the bundled Claude adapter produced
-  correct verdicts on every case while matching no formulation, so every finding
-  was referred for adjudication. That is the conservative behaviour this
-  interface is meant to have, and it is direct evidence that grader calibration
-  is required before any recall number means anything.
+  afterwards, which is why recall is 0.0 above while every verdict was right.
+  That is the conservative behaviour this interface is meant to have, and direct
+  evidence that grader calibration is required before any recall number means
+  anything.
+- Completeness of the evaluated skill text is load-bearing, not incidental. An
+  earlier revision passed only `SKILL.md` and omitted the orchestration protocol
+  that `review-code-change` instructs its reviewer to read; on the same corpus
+  and adapter, that reviewer answered `changes_required` on the
+  incomplete-evidence case instead of `blocked`. Any change to what a payload
+  carries is a change to what is being measured, and starts a new stratum.
+- `expectation.schema.json` requires a `severity` on every root cause that no
+  metric currently consumes. Either score severity agreement or drop the
+  requirement; do not assume it is being measured.
