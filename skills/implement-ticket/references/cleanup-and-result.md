@@ -50,7 +50,9 @@ unblocked work. Report newly ready work only as context.
 ## Result fields
 
 Return a concise documented handoff. Do not require a machine-readable schema
-unless the caller has one. Include every applicable field:
+unless the caller supplies the versioned delegated-execution contract. In that
+mode, validate the structured result against both its schema and invocation
+before return. Otherwise include every applicable field:
 
 - `terminal_state`: `ready_pr`, `ready_prs`, `merged`, `blocked`, or
   `requires_epic`;
@@ -96,8 +98,11 @@ a remaining gate on a terminal `ready_pr`.
 For `ready_prs`, require a verified `carve-changesets: prs_open` result for the
 still-current ordered stack. Every PR must be open, correctly based, mergeable,
 and at its applicable non-merge gate; whole-chain equivalence and final-only
-closing syntax must be verified. The only withheld actions are merge and
-propagation. Do not list ordinary pending CI or review as a remaining gate.
+closing syntax must be verified. Report each exact base ref, base SHA, head ref,
+and head SHA so the first PR starts at the candidate base, each later PR starts
+at the prior PR head, and the final PR head equals the candidate. The only
+withheld actions are merge and propagation. Do not list ordinary pending CI or
+review as a remaining gate.
 
 For `merged`, require a verified `babysit-pr: merged` or
 `carve-changesets: all_merged` result plus the independent mainline,
@@ -115,3 +120,10 @@ For `requires_epic`, require all of:
 
 If the incoming handoff already contains the same marker, return `blocked` with
 `routing cycle detected` rather than another `requires_epic` result.
+
+For delegated execution, a blocked result distinguishes `none`, `local`, and
+`published` implementation state. Published state includes the verified remote
+URL, full ref, exact head, and publication topology and is transferable. Local
+state is explicitly non-transferable and includes the reason publication could
+not safely occur. Never substitute a workspace path or local-only SHA for a
+durable handoff.
