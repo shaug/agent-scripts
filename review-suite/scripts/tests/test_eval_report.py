@@ -24,7 +24,13 @@ def attempt(
     simulation=False,
     duration=1.0,
     usage=None,
+    verdict=None,
 ):
+    if verdict is None:
+        if status == "blocked":
+            verdict = "blocked"
+        elif grade:
+            verdict = grade["observed_verdict"]
     return {
         "case_id": case_id,
         "case_ref": protocol.case_ref(case_id),
@@ -34,6 +40,7 @@ def attempt(
         "simulation": simulation,
         "duration_seconds": duration,
         "usage": usage,
+        "verdict": verdict,
         "grade": grade,
     }
 
@@ -147,6 +154,50 @@ class MetricTests(unittest.TestCase):
         )
         self.assertEqual(0.5, aggregate["stability"]["mean_verdict_stability"])
         self.assertEqual(0.5, aggregate["stability"]["mean_finding_stability"])
+
+    def test_a_reviewer_that_alternates_blocking_is_not_reported_as_stable(self):
+        """Refusing a verdict on one run and giving one on the next is unstable."""
+        aggregate = report.aggregate(
+            [
+                attempt("subject-one", 1, status="blocked"),
+                attempt("subject-one", 2, grade=grade()),
+            ],
+            configuration=CONFIGURATION,
+        )
+        self.assertEqual(0.5, aggregate["stability"]["mean_verdict_stability"])
+        self.assertEqual(0.5, aggregate["stability"]["mean_finding_stability"])
+        self.assertEqual(
+            {"subject-one": 2}, aggregate["stability"]["per_case_stability_denominator"]
+        )
+
+    def test_every_stability_figure_publishes_its_denominator(self):
+        aggregate = report.aggregate(
+            [
+                attempt("subject-one", 1, grade=grade()),
+                attempt("subject-one", 2, status="timeout"),
+                attempt("subject-two", 1, status="blocked"),
+            ],
+            configuration=CONFIGURATION,
+        )
+        # The timed-out attempt produced no review, so it is outside stability;
+        # the blocked one produced a valid review, so it is inside it.
+        self.assertEqual(2, aggregate["stability"]["stability_denominator"])
+        self.assertEqual(
+            {"subject-one": 1, "subject-two": 1},
+            aggregate["stability"]["per_case_stability_denominator"],
+        )
+
+    def test_a_consistently_blocking_reviewer_is_reported_as_stable(self):
+        aggregate = report.aggregate(
+            [
+                attempt("subject-one", 1, status="blocked"),
+                attempt("subject-one", 2, status="blocked"),
+            ],
+            configuration=CONFIGURATION,
+        )
+        self.assertEqual(1.0, aggregate["stability"]["mean_verdict_stability"])
+        self.assertEqual(2, aggregate["stability"]["stability_denominator"])
+        self.assertEqual(0, aggregate["graded_attempts"])
 
     def test_unique_finding_contribution_names_root_causes_only_some_runs_found(self):
         aggregate = report.aggregate(

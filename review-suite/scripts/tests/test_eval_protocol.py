@@ -172,6 +172,65 @@ class ContaminationTests(unittest.TestCase):
             any("case_ref exposes the case identifier" in e for e in errors)
         )
 
+    def test_a_leak_is_caught_whatever_characters_it_contains(self):
+        """JSON escaping must not hide a leak.
+
+        `json.dumps` escapes non-ASCII to `\\uXXXX`, newlines to `\\n`, and
+        quotes to `\\"`, so searching a serialized payload silently misses
+        exactly the characters human-authored expectation prose uses.
+        """
+        case = self._case_with_root_causes()
+        for label, leak in (
+            ("em dash", "the equal case — silently refused"),
+            ("curly apostrophe", "the operator’s charge is refused"),
+            ("line break", "the charge is refused\nfor the exact balance"),
+            ("double quote", 'a charge of "exactly the balance" is refused'),
+            ("non-latin", "残高と同額の請求"),
+        ):
+            with self.subTest(label=label):
+                expectation = copy.deepcopy(case.expectation)
+                expectation["material_root_causes"][0]["consequence"] = leak
+                request = build_request(case)
+                request["packet"] = copy.deepcopy(case.packet)
+                request["packet"]["change_contract"]["goal"] += f" {leak}"
+                errors = protocol.audit_request(
+                    request,
+                    case_id=case.case_id,
+                    expectation=expectation,
+                    provenance=case.provenance,
+                )
+                self.assertTrue(
+                    any("private expectation text" in error for error in errors),
+                    f"{label} leak went undetected: {errors}",
+                )
+
+    def test_a_rewrapped_leak_is_still_caught(self):
+        case = self._case_with_root_causes()
+        leak = case.expectation["material_root_causes"][0]["consequence"]
+        request = build_request(case)
+        request["packet"] = copy.deepcopy(case.packet)
+        request["packet"]["change_contract"]["goal"] += " " + leak.replace(" ", "\n  ")
+        errors = protocol.audit_request(
+            request,
+            case_id=case.case_id,
+            expectation=case.expectation,
+            provenance=case.provenance,
+        )
+        self.assertTrue(any("private expectation text" in error for error in errors))
+
+    def test_a_leak_hidden_in_an_object_key_is_caught(self):
+        case = self._case_with_root_causes()
+        leak = case.expectation["material_root_causes"][0]["consequence"]
+        request = build_request(case)
+        request["contract_documents"] = {leak: "irrelevant body"}
+        errors = protocol.audit_request(
+            request,
+            case_id=case.case_id,
+            expectation=case.expectation,
+            provenance=case.provenance,
+        )
+        self.assertTrue(any("private expectation text" in error for error in errors))
+
     def test_audit_inspects_nested_payload_text(self):
         """A leak buried inside the packet must be caught, not just top level."""
         case = self._case_with_root_causes()
@@ -312,6 +371,48 @@ class ResponseClassificationTests(unittest.TestCase):
             blocked_case.packet, json.dumps(response)
         )
         self.assertEqual(("blocked", ""), (status, detail))
+
+    def test_a_merge_verdict_on_an_incomplete_packet_is_a_review_result(self):
+        """A wrong answer on a deliberately incomplete packet is a wrong answer.
+
+        The packet's own defect belongs to the case, not to the executor, so it
+        must not be reported as an evaluation failure - that would drop the one
+        behaviour a `packet_valid: false` case exists to measure.
+        """
+        blocked_case = next(
+            item
+            for item in self.corpus.cases
+            if item.expectation["packet_valid"] is False
+        )
+        self.assertTrue(protocol.VALIDATOR.validate_packet(blocked_case.packet))
+        candidate = {
+            "head_sha": blocked_case.packet["candidate"]["head_sha"],
+            "comparison_base_sha": blocked_case.packet["candidate"][
+                "comparison_base_sha"
+            ],
+        }
+        for verdict in ("clean", "changes_required"):
+            with self.subTest(verdict=verdict):
+                response = self._valid_response(verdict)
+                response["result"]["candidate"] = candidate
+                status, _, detail = protocol.classify_response(
+                    blocked_case.packet, json.dumps(response)
+                )
+                self.assertEqual(("review_result", ""), (status, detail))
+
+    def test_a_reply_defect_is_still_malformed_on_an_incomplete_packet(self):
+        blocked_case = next(
+            item
+            for item in self.corpus.cases
+            if item.expectation["packet_valid"] is False
+        )
+        response = self._valid_response()
+        response["result"]["candidate"] = {"head_sha": "9" * 40}
+        status, _, detail = protocol.classify_response(
+            blocked_case.packet, json.dumps(response)
+        )
+        self.assertEqual("malformed_output", status)
+        self.assertIn("result", detail)
 
     def test_result_bound_to_another_candidate_is_malformed(self):
         response = self._valid_response()

@@ -76,7 +76,17 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
     graded = [a for a in attempts if a["status"] in protocol.GRADABLE_STATUSES]
     grades = [a["grade"] for a in graded if a.get("grade")]
     recalls = [g["recall"] for g in grades if g["recall"] is not None]
-    matched_sets = [tuple(sorted(g["matched_root_cause_ids"])) for g in grades]
+
+    # Stability spans every attempt that produced a valid review, including a
+    # `blocked` one. Refusing a verdict on one run and issuing one on the next
+    # is among the most consequential instabilities a reviewer can show, so it
+    # must not be excluded just because a blocked review is not graded.
+    answered = [a for a in attempts if a["status"] in protocol.VALID_OUTCOME_STATUSES]
+    matched_sets = [
+        tuple(sorted((a.get("grade") or {}).get("matched_root_cause_ids") or ()))
+        for a in answered
+    ]
+
     union: set[str] = set()
     intersection: set[str] | None = None
     for grade_record in grades:
@@ -93,8 +103,9 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
         "mean_recall": statistics.fmean(recalls) if recalls else None,
         "union_root_cause_ids": sorted(union),
         "intersection_root_cause_ids": sorted(intersection or set()),
-        "verdict_stability": _modal_share([g["observed_verdict"] for g in grades]),
+        "verdict_stability": _modal_share([a["verdict"] for a in answered]),
         "finding_stability": _modal_share(matched_sets),
+        "stability_denominator": len(answered),
         "false_clean_attempts": sum(1 for g in grades if g["false_clean"]),
         "false_alarm_attempts": sum(1 for g in grades if g["false_alarm"]),
         "false_positive_attempts": sum(
@@ -185,11 +196,20 @@ def aggregate(
             "mean_finding_stability": _mean_of(
                 [summary["finding_stability"] for summary in per_case]
             ),
+            # Published beside every value, as the quality rates are, so a
+            # consumer can see how many attempts each figure rests on.
+            "stability_denominator": sum(
+                summary["stability_denominator"] for summary in per_case
+            ),
             "per_case_verdict_stability": {
                 summary["case_id"]: summary["verdict_stability"] for summary in per_case
             },
             "per_case_finding_stability": {
                 summary["case_id"]: summary["finding_stability"] for summary in per_case
+            },
+            "per_case_stability_denominator": {
+                summary["case_id"]: summary["stability_denominator"]
+                for summary in per_case
             },
         },
         "failures": failures,

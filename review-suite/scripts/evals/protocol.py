@@ -17,7 +17,9 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +46,11 @@ ATTEMPT_STATUSES = (
 #: Statuses that report an evaluation failure rather than a review outcome.
 EVALUATION_FAILURE_STATUSES = ATTEMPT_STATUSES[:6]
 
-#: Only a valid, candidate-bound review result is graded against expectations.
+#: Statuses in which the executor returned a valid, candidate-bound review.
+VALID_OUTCOME_STATUSES = ("blocked", "review_result")
+
+#: Only a merge verdict is graded against expectations; a `blocked` review
+#: refuses to give one, so there is nothing to score it against.
 GRADABLE_STATUSES = ("review_result",)
 
 #: Request keys the protocol permits, at the top level and inside `run`.
@@ -198,6 +204,29 @@ def blind_strings(expectation: dict[str, Any], provenance: dict[str, Any]) -> li
     return [item for item in strings if item]
 
 
+def _string_leaves(value: Any) -> Iterator[str]:
+    """Yield every string in a payload, including object keys."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            yield str(key)
+            yield from _string_leaves(child)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _string_leaves(item)
+
+
+def _collapse(text: str) -> str:
+    """Fold case and whitespace so a re-wrapped leak still matches."""
+    return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _contains(haystack: list[str], needle: str) -> bool:
+    collapsed = _collapse(needle)
+    return bool(collapsed) and any(collapsed in leaf for leaf in haystack)
+
+
 def audit_request(
     request: dict[str, Any],
     *,
@@ -236,11 +265,17 @@ def audit_request(
         if run.get("case_ref") != case_ref(case_id):
             errors.append("payload run case_ref is not the opaque case reference")
 
-    serialized = json.dumps(request, sort_keys=True).lower()
-    if case_id.lower() in serialized:
+    # Textual containment is checked against the payload's real string values,
+    # not its JSON serialization. `json.dumps` escapes every non-ASCII
+    # character to `\uXXXX`, newlines to `\n`, and quotes to `\"`, so
+    # searching the serialized form silently misses any private string
+    # containing an em dash, a curly quote, a line break, or a quotation
+    # mark - exactly the characters human-authored expectation prose uses.
+    haystack = [_collapse(leaf) for leaf in _string_leaves(request)]
+    if _contains(haystack, case_id):
         errors.append(f"payload contains the case identifier {case_id!r}")
     for blind in blind_strings(expectation, provenance):
-        if blind.lower() in serialized:
+        if _contains(haystack, blind):
             errors.append(f"payload contains private expectation text {blind!r}")
     return errors
 
@@ -314,7 +349,17 @@ def classify_response(
             f"{outcome} cannot carry verdict {verdict!r}",
         )
 
-    pair_errors = VALIDATOR.validate_pair(packet, result)
+    # Judge the reply, never the packet. `corpus.load_case` already established
+    # and asserted each packet's validity, so a packet defect at this point is
+    # a deliberate property of the case, not news about the executor. Billing it
+    # to the executor would classify a reviewer that wrongly issues a merge
+    # verdict on incomplete evidence as an evaluation failure, which drops the
+    # one behaviour a `packet_valid: false` case exists to measure.
+    pair_errors = [
+        error
+        for error in VALIDATOR.validate_pair(packet, result)
+        if not error.startswith("packet: ")
+    ]
     if pair_errors:
         return "malformed_output", response, "; ".join(pair_errors)
 

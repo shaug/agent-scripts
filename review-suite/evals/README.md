@@ -101,9 +101,19 @@ The first six are evaluation failures. They are reported separately, are never
 graded, and can never appear as a clean review. A malformed review result is an
 evaluation failure, not a missed finding.
 
-Only `review_result` attempts are graded. The runner's exit status reports
-evaluation integrity, never review quality: `0` when every attempt produced a
-valid outcome, `1` when any attempt failed the protocol, `2` when the
+Classification judges the reply, never the packet. `corpus.py` has already
+established each packet's validity before anything launches, so a packet defect
+is a deliberate property of the case rather than news about the executor, and it
+is never charged to the executor. That matters for a `packet_valid: false` case:
+a reviewer that wrongly issues a merge verdict on incomplete evidence is
+classified `review_result` and graded as the wrong answer it is, instead of
+disappearing into `malformed_output`.
+
+Only `review_result` attempts are graded, because a `blocked` review declines to
+give a merge verdict and so has nothing to score against. A `blocked` attempt is
+still a valid review and still counts toward stability. The runner's exit status
+reports evaluation integrity, never review quality: `0` when every attempt
+produced a valid outcome, `1` when any attempt failed the protocol, `2` when the
 configuration or corpus was rejected before any launch.
 
 ## Corpus and expectation contract
@@ -169,8 +179,15 @@ and `--baseline-report` refuses to write a file for it.
 aggregate report, which represents material-finding recall, false-clean rate,
 false-positive rate, false-alarm rate, unique finding contribution, verdict and
 finding stability, every failure-status rate, latency, and whatever usage and
-cost the executor reported. Every rate is published with its denominator so a
-small run count is not mistaken for a precise capability measurement.
+cost the executor reported. Every rate and every stability figure is published
+with its denominator so a small run count is not mistaken for a precise
+capability measurement.
+
+Stability spans every attempt that produced a valid review, `blocked` ones
+included, and is computed per case before being averaged. Pooling verdicts
+across unlike cases would report disagreement between cases as instability
+within one, and dropping `blocked` attempts would report a reviewer that refuses
+a verdict on one run and issues one on the next as perfectly stable.
 
 The report encodes no success threshold and returns no pass/fail judgement.
 

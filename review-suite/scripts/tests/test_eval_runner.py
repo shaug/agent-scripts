@@ -168,6 +168,60 @@ class EvaluationTests(unittest.TestCase):
         attempts, _ = self.evaluate(max_output_bytes=10)
         self.assertEqual({"output_too_large"}, {a["status"] for a in attempts})
 
+    def test_a_merge_verdict_on_an_incomplete_packet_is_graded_not_failed(self):
+        """The measured behaviour of a `packet_valid: false` case must be scored.
+
+        An executor that issues a merge verdict where the evidence is
+        incomplete is giving a wrong answer, not breaking the harness.
+        """
+        always_gating = self.temp / "always_gating_executor.py"
+        always_gating.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, sys\n"
+            "request = json.load(sys.stdin)\n"
+            "finding = {\n"
+            '    "id": "correctness.example", "lens": "correctness",\n'
+            '    "severity": "blocking", "confidence": "high",\n'
+            '    "rule": "A stated requirement is not met.",\n'
+            '    "evidence": [{"location": "a.py:1", "detail": "Demonstrated."}],\n'
+            '    "concern": "c", "impact": "i", "proposed_change": "p",\n'
+            '    "expected_effect": "e",\n'
+            "}\n"
+            "json.dump({\n"
+            '    "protocol_version": request["protocol_version"],\n'
+            '    "outcome": "review_result", "simulation": False,\n'
+            '    "executor": {"name": "always-gating"},\n'
+            '    "result": {\n'
+            '        "schema_version": "1.0", "lens": "aggregate",\n'
+            '        "candidate": request["run"]["candidate"],\n'
+            '        "verdict": "changes_required", "findings": [finding],\n'
+            '        "blocking_reasons": [],\n'
+            "    },\n"
+            "}, sys.stdout)\n"
+        )
+        import shlex
+
+        attempts, _ = runner.evaluate(
+            shlex.split(f"{sys.executable} {always_gating}"),
+            corpus_root=None,
+            runs=1,
+            timeout=60.0,
+            max_output_bytes=runner.DEFAULT_MAX_OUTPUT_BYTES,
+            artifact_dir=None,
+        )
+        blocked_case = next(
+            case
+            for case in corpus.load_corpus().cases
+            if case.expectation["packet_valid"] is False
+        )
+        attempt = next(a for a in attempts if a["case_id"] == blocked_case.case_id)
+        self.assertEqual("review_result", attempt["status"])
+        self.assertIsNotNone(attempt["grade"])
+        self.assertFalse(attempt["grade"]["verdict_match"])
+        self.assertEqual("blocked", attempt["grade"]["expected_verdict"])
+        self.assertEqual("changes_required", attempt["grade"]["observed_verdict"])
+        self.assertNotIn(attempt["status"], protocol.EVALUATION_FAILURE_STATUSES)
+
     def test_a_contaminated_corpus_stops_before_any_launch(self):
         root = self.temp / "corpus"
         shutil.copytree(corpus.DEFAULT_CORPUS, root)
