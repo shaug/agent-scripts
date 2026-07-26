@@ -202,22 +202,28 @@ representative scored corpus, calibrate the grader, or capture a v1 baseline.
 
 ### Measured smoke evaluation
 
-One run per case through the bundled Claude adapter, at the commit that
-introduced this directory. Reported verbatim rather than summarized, because
-these are the numbers the corpus work inherits:
+One run per case through the bundled Claude adapter, recorded at suite commit
+`69748be5bda5a8638b2e6ddef6ea8a13e12589a9` against corpus version
+`0.1-protocol-proof` and grader version `1.0`. This is one recorded observation,
+not a baseline, and the only later change to this directory is the paragraph you
+are reading, which no payload carries:
 
 - 6 attempts, 6 valid protocol outcomes, 0 evaluation failures;
-- every verdict matched its expectation: 5 graded verdicts matched, and the
+- every verdict matched its expectation: all 5 graded verdicts matched, and the
   incomplete-evidence case correctly returned `blocked`, which is a valid review
-  and so is counted in stability but not graded;
-- 6 findings reported, all 6 referred for adjudication because none matched a
+  and so counts toward stability but is not graded;
+- 7 findings reported, all 7 referred for adjudication because none matched a
   shipped formulation, giving `material_finding_recall` 0.0 over the 4 attempts
   with expected root causes;
 - `false_positive_rate` 0.0 over 5, `false_clean_rate` 0.0 over 4;
-- 0.75 USD total reported cost, 28.0 s mean latency, 41.0 s maximum.
+- 0.76 USD total reported cost, 30.4 s mean latency, 39.7 s maximum.
 
-Every stability figure rests on a denominator of 1 per case, so it records only
-that a single run happened, not run-to-run agreement.
+Treat the verdicts as the stable part and the counts as the variable part. Two
+runs of this configuration produced identical per-case verdicts, while the
+finding count moved between 6 and 7 and mean latency between 28 s and 30 s.
+Every stability figure above rests on a denominator of 1 per case, so it records
+only that one run happened, not run-to-run agreement; use `--runs N` to measure
+that.
 
 ### Limitations for whoever curates the scored corpus
 

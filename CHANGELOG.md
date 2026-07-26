@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the result-blind review replay evaluator
 
+- docs: pin the recorded smoke evaluation to its run
 - fix: complete the evaluated skill text and the audit ordering
+  (`69748be5bda5a8638b2e6ddef6ea8a13e12589a9`)
 - fix: close the replay evaluator's review-gate gaps
   (`7b6e4766a2b7ad9d448476277fe9935a894840a3`)
 - fix: stop misattributing review failures in the replay evaluator
