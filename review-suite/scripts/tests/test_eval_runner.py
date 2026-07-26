@@ -385,7 +385,9 @@ class CommandLineTests(unittest.TestCase):
         (root / "corpus.json").write_text(json.dumps(index, indent=2))
         completed = run_runner("--executor", fixture_command(), "--corpus", str(root))
         self.assertEqual(2, completed.returncode)
-        self.assertIn("missing target skill prompt", completed.stderr)
+        # Caught while loading the corpus, before any prompt is assembled.
+        self.assertIn("missing declared skill", completed.stderr)
+        self.assertIn("review-nothing-at-all", completed.stderr)
 
     def test_a_simulated_run_cannot_write_a_baseline_report(self):
         baseline = self.temp / "baseline.json"
@@ -520,6 +522,97 @@ class RealRuntimeAdapterTests(unittest.TestCase):
         self.assertEqual(0, code, stderr)
         status, _, _ = protocol.classify_response(self.case.packet, stdout)
         self.assertEqual("runtime_failure", status)
+
+    def _envelope_stub(self, envelope_body: str) -> Path:
+        """A stub `claude` that echoes the candidate and a chosen envelope."""
+        return self._stub(
+            "#!/usr/bin/env python3\n"
+            "import json, sys\n"
+            "prompt = sys.stdin.read()\n"
+            "candidate = json.loads(prompt.strip().splitlines()[-1])\n"
+            "result = {\n"
+            '    "schema_version": "1.0", "lens": "aggregate",\n'
+            '    "candidate": candidate, "verdict": "clean",\n'
+            '    "findings": [], "blocking_reasons": [],\n'
+            "}\n"
+            f"envelope = {envelope_body}\n"
+            'envelope["result"] = json.dumps(result)\n'
+            "json.dump(envelope, sys.stdout)\n"
+        )
+
+    def test_cached_prompt_tokens_are_counted_as_input(self):
+        """Headless output reports most prompt tokens as cache, not input.
+
+        A real 16456-token prompt reported `input_tokens: 2` with the rest under
+        cache creation and cache read, so totalling only `input_tokens` published
+        an input count wrong by three orders of magnitude - the number a frozen
+        cost envelope would rest on.
+        """
+        stub = self._envelope_stub(
+            '{"usage": {"input_tokens": 2, "cache_creation_input_tokens": 5657,'
+            ' "cache_read_input_tokens": 10797, "output_tokens": 4},'
+            ' "total_cost_usd": 0.0409,'
+            ' "modelUsage": {"stub-model-1": {"inputTokens": 2}}}'
+        )
+        code, stdout, stderr = self._invoke(stub)
+        self.assertEqual(0, code, stderr)
+        status, response, _ = protocol.classify_response(self.case.packet, stdout)
+        self.assertEqual("review_result", status)
+        self.assertEqual(16456, response["usage"]["input_tokens"])
+        self.assertEqual(4, response["usage"]["output_tokens"])
+        self.assertEqual(0.0409, response["usage"]["cost_usd"])
+
+    def test_the_model_is_read_from_the_model_usage_mapping(self):
+        """`modelUsage` is a mapping keyed by model id, never a string."""
+        stub = self._envelope_stub(
+            '{"usage": {"input_tokens": 1, "output_tokens": 1},'
+            ' "total_cost_usd": 0.01,'
+            ' "modelUsage": {"claude-stub-4-6[1m]": {"inputTokens": 1}}}'
+        )
+        code, stdout, stderr = self._invoke(stub)
+        self.assertEqual(0, code, stderr)
+        _, response, _ = protocol.classify_response(self.case.packet, stdout)
+        self.assertEqual("claude-stub-4-6[1m]", response["executor"]["model"])
+
+    def test_a_plain_model_string_still_wins(self):
+        stub = self._envelope_stub(
+            '{"model": "explicit-model", "usage": {"output_tokens": 1},'
+            ' "total_cost_usd": 0.01,'
+            ' "modelUsage": {"ignored-model": {"inputTokens": 1}}}'
+        )
+        code, stdout, stderr = self._invoke(stub)
+        self.assertEqual(0, code, stderr)
+        _, response, _ = protocol.classify_response(self.case.packet, stdout)
+        self.assertEqual("explicit-model", response["executor"]["model"])
+
+    def test_an_attempt_without_model_identity_is_a_runtime_failure(self):
+        """Required identity: refuse rather than record a nameless model."""
+        stub = self._envelope_stub(
+            '{"usage": {"output_tokens": 1}, "total_cost_usd": 0.01}'
+        )
+        completed = subprocess.run(
+            [sys.executable, str(CLAUDE_EXECUTOR), "--claude-bin", str(stub)],
+            input=json.dumps(self.request),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        status, _, detail = protocol.classify_response(
+            self.case.packet, completed.stdout
+        )
+        self.assertEqual("runtime_failure", status)
+        self.assertIn("no model identity", detail)
+
+    def test_an_explicit_model_flag_satisfies_identity(self):
+        stub = self._envelope_stub(
+            '{"usage": {"output_tokens": 1}, "total_cost_usd": 0.01}'
+        )
+        code, stdout, stderr = self._invoke(stub)
+        self.assertEqual(0, code, stderr)
+        status, response, _ = protocol.classify_response(self.case.packet, stdout)
+        self.assertEqual("review_result", status)
+        self.assertEqual("stub-model", response["executor"]["model"])
 
     def test_the_adapter_prompt_stays_result_blind(self):
         from evals import claude_executor

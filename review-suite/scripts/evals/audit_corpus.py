@@ -45,7 +45,9 @@ def audit(corpus_root: Path | None) -> list[str]:
             f"shipped grader {grader.GRADER_VERSION!r}"
         )
     try:
-        skill_prompt = runner.target_skill_prompt(loaded.target_skill)
+        skill_prompt = runner.target_skill_prompt(
+            loaded.target_skill, loaded.target_skill_dependencies
+        )
     except runner.ConfigurationError as error:
         return errors + [str(error)]
 

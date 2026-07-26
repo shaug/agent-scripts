@@ -24,6 +24,7 @@ import shlex
 import subprocess
 import sys
 import time
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,45 +49,86 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def target_skill_documents(target_skill: str) -> dict[str, str]:
-    """Return the target skill's complete reviewer-visible text.
-
-    A skill's `SKILL.md` is not the whole skill: `review-code-change` instructs
-    the reviewer to read `references/orchestration-protocol.md`, which owns the
-    lens decision table, deduplication, and verdict aggregation. An executor is
-    told to reason only from what it is given, so omitting a mandated reference
-    would measure a reviewer working from a partial definition of its own job.
+def _skill_documents(skill: str) -> dict[str, str]:
+    """One skill's reviewer-visible Markdown, namespaced by skill name.
 
     The bundled `references/review-suite/` mirror is excluded: `contract_documents`
     already supplies those files from their canonical location.
     """
-    root = TARGET_SKILL_ROOT / target_skill
+    root = TARGET_SKILL_ROOT / skill
     skill_md = root / "SKILL.md"
     if not skill_md.is_file():
         raise ConfigurationError(f"missing target skill prompt {skill_md}")
-    documents = {"SKILL.md": skill_md.read_text()}
+    documents = {f"{skill}/SKILL.md": skill_md.read_text()}
     references = root / "references"
     if references.is_dir():
         for path in sorted(references.rglob("*.md")):
             relative = path.relative_to(root)
             if "review-suite" in relative.parts:
                 continue
-            documents[relative.as_posix()] = path.read_text()
+            documents[f"{skill}/{relative.as_posix()}"] = path.read_text()
     return documents
 
 
-def target_skill_prompt(target_skill: str) -> str:
-    """Render the skill and every mandated reference as one prompt.
+def target_skill_documents(
+    target_skill: str, dependencies: Sequence[str] = ()
+) -> dict[str, str]:
+    """Return the target skill's declared dependency closure as text.
+
+    A skill's `SKILL.md` is not the whole skill, in two distinct ways.
+
+    It links references that it instructs the reviewer to read - for
+    `review-code-change`, `references/orchestration-protocol.md`, which owns the
+    lens decision table, deduplication, and verdict aggregation.
+
+    It also declares sibling skills it cannot work without: `review-code-change`
+    requires `review-solution-simplicity`, `review-correctness`, and
+    `review-code-simplicity` to be available and readable, and mandates an
+    aggregate `blocked` result naming any that are missing. An executor is told
+    to reason only from what it is given, so a target whose contract requires
+    siblings can only be evaluated when those siblings are in the payload.
+    Omitting them inverts the measurement: a reviewer that correctly refuses for
+    missing dependencies is scored wrong on every case that expects a merge
+    verdict, so recall moves the wrong way as the reviewer becomes more
+    compliant.
+
+    The corpus declares the closure so a target can be swapped without changing
+    this code. Which target a scored corpus should measure, and the cost envelope
+    that follows from its closure, are corpus-composition decisions.
+    """
+    documents = _skill_documents(target_skill)
+    for dependency in dependencies:
+        if dependency == target_skill:
+            raise ConfigurationError(f"{target_skill} declares itself as a dependency")
+        documents.update(_skill_documents(dependency))
+    return documents
+
+
+def render_skill_prompt(target_skill: str, documents: Mapping[str, str]) -> str:
+    """Lay out a skill closure as one prompt, target first and clearly named.
+
+    Every section is labelled, including the target's own `SKILL.md`: once a
+    payload carries several skills, a reviewer has to be able to tell which one
+    it is being asked to execute and which are its dependencies.
+    """
+    remaining = dict(documents)
+    lead = f"{target_skill}/SKILL.md"
+    sections = [f"## Target skill: {lead}\n\n{remaining.pop(lead)}"]
+    for name, text in sorted(remaining.items()):
+        sections.append(f"\n\n## Skill reference: {name}\n\n{text}")
+    return "".join(sections)
+
+
+def target_skill_prompt(target_skill: str, dependencies: Sequence[str] = ()) -> str:
+    """Render the target skill and its whole declared closure as one prompt.
 
     `prompt_digest` hashes this string, so the recorded `target_skill_digest`
     changes whenever any part of the evaluated skill text changes - which is the
     whole point of pinning it across baseline strata.
     """
-    documents = dict(target_skill_documents(target_skill))
-    sections = [documents.pop("SKILL.md")]
-    for name, text in sorted(documents.items()):
-        sections.append(f"\n\n## Skill reference: {name}\n\n{text}")
-    return "".join(sections)
+    return render_skill_prompt(
+        target_skill, target_skill_documents(target_skill, dependencies)
+    )
 
 
 def contract_documents() -> dict[str, str]:
@@ -223,7 +265,9 @@ def evaluate(
             f"corpus grader_version {loaded.grader_version!r} does not match the "
             f"shipped grader {grader.GRADER_VERSION!r}"
         )
-    skill_prompt = target_skill_prompt(loaded.target_skill)
+    skill_prompt = target_skill_prompt(
+        loaded.target_skill, loaded.target_skill_dependencies
+    )
     documents = contract_documents()
     commit = suite_commit()
     forced_simulation = is_bundled_fixture_executor(command)

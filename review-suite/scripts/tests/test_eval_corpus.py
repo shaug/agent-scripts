@@ -245,6 +245,36 @@ class MutatedCorpusTests(unittest.TestCase):
         self._write_expectation(case_id, expectation)
         self.assertAuditFails("packet:")
 
+    def test_a_missing_declared_dependency_fails(self):
+        index = self._index()
+        index["target_skill_dependencies"].append("review-nothing-at-all")
+        self._write_index(index)
+        self.assertAuditFails("missing declared skill")
+
+    def test_a_missing_target_skill_fails(self):
+        index = self._index()
+        index["target_skill"] = "review-nothing-at-all"
+        self._write_index(index)
+        self.assertAuditFails("missing declared skill")
+
+    def test_a_target_listing_itself_as_a_dependency_fails(self):
+        index = self._index()
+        index["target_skill_dependencies"].append(index["target_skill"])
+        self._write_index(index)
+        self.assertAuditFails("lists itself as a dependency")
+
+    def test_duplicate_declared_dependencies_fail(self):
+        index = self._index()
+        index["target_skill_dependencies"].append(index["target_skill_dependencies"][0])
+        self._write_index(index)
+        self.assertAuditFails("duplicate target_skill_dependencies")
+
+    def test_an_absent_dependency_declaration_fails(self):
+        index = self._index()
+        del index["target_skill_dependencies"]
+        self._write_index(index)
+        self.assertAuditFails("target_skill_dependencies")
+
     def test_grader_version_drift_fails(self):
         index = self._index()
         index["grader_version"] = "0.0"

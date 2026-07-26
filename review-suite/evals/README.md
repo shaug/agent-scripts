@@ -22,7 +22,7 @@ review-suite/evals/
 │   ├── expectation.schema.json         private material root causes
 │   └── provenance.schema.json          origin and retention authority
 ├── corpus/
-│   ├── corpus.json                     versions plus the case identifiers
+│   ├── corpus.json                     versions, target closure, case ids
 │   ├── reviewer/PROMPT.md              shared reviewer instructions
 │   ├── reviewer/<case>/packet.json     reviewer-visible artifacts
 │   ├── private/expectations/<case>.json
@@ -78,6 +78,34 @@ text, the reviewer-visible instructions, the raw review packet, the bundled
 review contracts, and public run metadata: an opaque case reference, the run
 number, the suite commit, the corpus version, the exact candidate and
 comparison-base identity, and a start timestamp.
+
+### The evaluated skill is a closure, not a file
+
+`corpus.json` declares `target_skill` plus `target_skill_dependencies`, and the
+payload ships that whole closure: each skill's `SKILL.md` and every Markdown
+file under its `references/`, excluding the bundled `review-suite/` mirror that
+`contract_documents` already supplies canonically. Every section is labelled,
+and the target's own `SKILL.md` is labelled `## Target skill:` so a reviewer can
+tell which skill it is being asked to execute.
+
+This is load-bearing rather than tidy. `review-code-change` instructs its
+reviewer to verify that `review-solution-simplicity`, `review-correctness`, and
+`review-code-simplicity` are available and readable, and to return an aggregate
+`blocked` result naming any that are missing. An executor is told to reason only
+from what it is given. Ship the target alone and a fully compliant reviewer must
+refuse every case, so recall and false-clean rates move the *wrong* way as the
+reviewer becomes *more* compliant — the measurement inverts. An earlier revision
+had exactly that defect, and on the same corpus and adapter its reviewer
+answered `changes_required` on the incomplete-evidence case where the complete
+closure correctly answers `blocked`.
+
+`target_skill_digest` hashes the rendered closure, so it changes when any part
+of any included skill changes. Loading fails closed when a declared skill is
+absent, duplicated, or names the target itself.
+
+Which target a *scored* corpus should measure, which strata it contains, and the
+cost envelope that follows from the closure's size are corpus-composition
+decisions and are deliberately not settled here.
 
 The request never carries expected findings, private labels, prior conclusions,
 suspected issues, implementation transcripts, or the case name.
@@ -193,6 +221,22 @@ The report encodes no success threshold and returns no pass/fail judgement.
 
 `--artifact-dir` retains raw executor output. It is opt-in, and
 `review-suite/evals/artifacts/` is excluded from git.
+
+### Usage accounting
+
+An adapter reports `input_tokens`, `output_tokens`, and `cost_usd`. Two details
+of the Claude adapter generalize to any cached runtime and matter to anyone
+freezing a cost envelope:
+
+- Input tokens total every input-side field the runtime reports, including cache
+  creation and cache read. Under prompt caching the uncached `input_tokens`
+  residue is tiny — a measured 16,456-token prompt reported `input_tokens: 2` —
+  so counting only that field understates real input by orders of magnitude.
+- Model identity is required, not optional. Headless output carries no top-level
+  `model` string; it reports `modelUsage` as a mapping keyed by model id. The
+  adapter resolves the model from that mapping, falls back to `--model`, and
+  returns `runtime_failure` rather than recording an attempt that cannot name
+  the model that answered, because a stratum without a model is not comparable.
 
 ## Scope and known limitations
 

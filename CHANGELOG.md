@@ -6,20 +6,23 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the result-blind review replay evaluator
 
+- fix: evaluate the target skill's whole declared closure
 - docs: pin the recorded smoke evaluation to its run
+  (`f00ce2db80ed3a7bed6afb4962cf0bb5a68390fe`)
 - fix: complete the evaluated skill text and the audit ordering
-  (`69748be5bda5a8638b2e6ddef6ea8a13e12589a9`)
+  (`67efd94339034674de6ca250f2b03e4a0213fc8b`)
 - fix: close the replay evaluator's review-gate gaps
-  (`7b6e4766a2b7ad9d448476277fe9935a894840a3`)
+  (`6ef8e25ce2e0183ef270111549660461493da5f4`)
 - fix: stop misattributing review failures in the replay evaluator
-  (`c06b06ca862d9136045ffbb52d361bedf7eadc39`)
+  (`e46184d6e856199fe0792d43e7f6e0c5a86e131f`)
 - feat: add the result-blind review replay evaluator
-  (`d8d97bc6a54e540ee189b1e1ff47ae6937542f37`)
+  (`8f0e9d646ec4e959d7adc7448f5fc7a82f4334d8`)
 
 ## 2026-07-25 — Added coordinator-neutral delegated ticket execution
 
 - fix: pin CI to the established Ruff rule set so dependency drift cannot
-  redefine the repository-wide lint gate (`901dc3596207a88b6c8edcf548b5be3151ca7ab2`)
+  redefine the repository-wide lint gate
+  (`901dc3596207a88b6c8edcf548b5be3151ca7ab2`)
 - feat: add a versioned delegated-execution contract for `implement-ticket`
   (`b53efa674e929c181bdaac63ff0306cb756386db`)
 

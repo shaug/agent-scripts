@@ -104,19 +104,62 @@ def run_claude(
     return extract_json_object(result_text), envelope
 
 
+#: Every input-side token field the runtime reports. Under prompt caching the
+#: uncached `input_tokens` count is a tiny residue - a real prompt carrying the
+#: skill closure, the contracts, and a packet reports almost all of its tokens
+#: as cache creation or cache read. Totalling only `input_tokens` understated a
+#: measured 16456-token prompt as 2, so the cost envelope a baseline freezes
+#: must be built from all three.
+INPUT_TOKEN_FIELDS = (
+    "input_tokens",
+    "cache_creation_input_tokens",
+    "cache_read_input_tokens",
+)
+
+
+def _number(value: Any) -> float | int | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value
+
+
+def model_from(envelope: dict[str, Any]) -> str | None:
+    """Resolve the model identity the runtime actually used.
+
+    Headless output carries no top-level `model` string; it reports
+    `modelUsage` as a mapping keyed by model identifier. Treating that mapping as
+    a string silently dropped model identity from every recorded attempt, which
+    would make a frozen baseline stratum incomparable.
+    """
+    model = envelope.get("model")
+    if isinstance(model, str) and model.strip():
+        return model
+    usage_by_model = envelope.get("modelUsage")
+    if isinstance(usage_by_model, dict):
+        names = sorted(str(name) for name in usage_by_model if str(name).strip())
+        if names:
+            # More than one model can contribute to a single turn; record all.
+            return ",".join(names)
+    return None
+
+
 def usage_from(envelope: dict[str, Any]) -> dict[str, Any] | None:
     """Map whatever usage the runtime reported into the protocol shape."""
     reported = envelope.get("usage") or {}
     usage: dict[str, Any] = {}
-    for source, target in (
-        ("input_tokens", "input_tokens"),
-        ("output_tokens", "output_tokens"),
-    ):
-        value = reported.get(source)
-        if isinstance(value, (int, float)) and not isinstance(value, bool):
-            usage[target] = value
-    cost = envelope.get("total_cost_usd")
-    if isinstance(cost, (int, float)) and not isinstance(cost, bool):
+    if isinstance(reported, dict):
+        input_values = [
+            value
+            for value in (_number(reported.get(field)) for field in INPUT_TOKEN_FIELDS)
+            if value is not None
+        ]
+        if input_values:
+            usage["input_tokens"] = sum(input_values)
+        output = _number(reported.get("output_tokens"))
+        if output is not None:
+            usage["output_tokens"] = output
+    cost = _number(envelope.get("total_cost_usd"))
+    if cost is not None:
         usage["cost_usd"] = cost
     return usage or None
 
@@ -142,9 +185,24 @@ def respond(request: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
             "failure": {"reason": str(error)},
         }
 
-    model = envelope.get("model") or envelope.get("modelUsage")
-    if isinstance(model, str):
-        executor["model"] = model
+    # Required identity, so fail closed rather than record an attempt that
+    # cannot say which model answered. `--model` is an acceptable source; a
+    # silently absent model is not.
+    resolved_model = model_from(envelope) or args.model
+    if not resolved_model:
+        return {
+            "protocol_version": protocol.PROTOCOL_VERSION,
+            "outcome": "runtime_failure",
+            "simulation": False,
+            "executor": executor,
+            "failure": {
+                "reason": (
+                    "the runtime reported no model identity; refusing to record "
+                    "an attempt that cannot name the model that answered"
+                )
+            },
+        }
+    executor["model"] = resolved_model
     response: dict[str, Any] = {
         "protocol_version": protocol.PROTOCOL_VERSION,
         "outcome": "blocked" if result.get("verdict") == "blocked" else "review_result",

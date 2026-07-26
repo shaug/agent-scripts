@@ -91,6 +91,7 @@ class Corpus:
     corpus_version: str
     grader_version: str
     target_skill: str
+    target_skill_dependencies: tuple[str, ...]
     cases: tuple[Case, ...]
 
 
@@ -248,11 +249,25 @@ def load_corpus(root: Path | None = None) -> Corpus:
     if orphans:
         raise CorpusError("corpus.json: " + "; ".join(orphans))
 
+    # The declared closure must resolve before anything launches: shipping a
+    # target whose required siblings are absent would grade a compliant reviewer
+    # wrong for correctly refusing to review without them.
+    dependencies = tuple(index["target_skill_dependencies"])
+    if len(set(dependencies)) != len(dependencies):
+        raise CorpusError("corpus.json: duplicate target_skill_dependencies")
+    if index["target_skill"] in dependencies:
+        raise CorpusError("corpus.json: target_skill lists itself as a dependency")
+    for skill in (index["target_skill"], *dependencies):
+        path = protocol.REPOSITORY_ROOT / "skills" / skill / "SKILL.md"
+        if not path.is_file():
+            raise CorpusError(f"corpus.json: missing declared skill {path}")
+
     return Corpus(
         root=root,
         corpus_version=index["corpus_version"],
         grader_version=index["grader_version"],
         target_skill=index["target_skill"],
+        target_skill_dependencies=dependencies,
         cases=tuple(load_case(root, case_id) for case_id in declared),
     )
 

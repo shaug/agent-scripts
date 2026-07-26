@@ -62,6 +62,54 @@ class RequestTests(unittest.TestCase):
             request["target_skill_digest"],
         )
 
+    def test_the_payload_carries_every_skill_the_target_declares_required(self):
+        """A target that must verify siblings cannot be evaluated without them.
+
+        `review-code-change` mandates an aggregate `blocked` result naming any
+        missing lens skill, so omitting one would score a compliant reviewer
+        wrong on every case expecting a merge verdict.
+        """
+        loaded = corpus.load_corpus()
+        declared = set(loaded.target_skill_dependencies)
+        skills_root = protocol.REPOSITORY_ROOT / "skills"
+        installed = {path.name for path in skills_root.iterdir() if path.is_dir()}
+        target_text = (skills_root / loaded.target_skill / "SKILL.md").read_text()
+        required = {
+            name
+            for name in installed
+            if name != loaded.target_skill and name in target_text
+        }
+        self.assertTrue(required, "the target names no sibling skill at all")
+        self.assertEqual(
+            set(),
+            required - declared,
+            "the target's SKILL.md names skills absent from the declared closure",
+        )
+        prompt = runner.target_skill_prompt(
+            loaded.target_skill, loaded.target_skill_dependencies
+        )
+        for name in declared:
+            with self.subTest(dependency=name):
+                self.assertIn(f"{name}/SKILL.md", prompt)
+                self.assertIn(
+                    (skills_root / name / "SKILL.md").read_text().strip(), prompt
+                )
+
+    def test_a_self_sufficient_target_needs_no_closure(self):
+        prompt = runner.target_skill_prompt("review-correctness")
+        self.assertIn("review-correctness/SKILL.md", prompt)
+        self.assertNotIn("review-code-change/SKILL.md", prompt)
+
+    def test_a_target_cannot_declare_itself_as_a_dependency(self):
+        with self.assertRaises(runner.ConfigurationError):
+            runner.target_skill_documents("review-code-change", ["review-code-change"])
+
+    def test_a_missing_declared_dependency_fails_closed(self):
+        with self.assertRaises(runner.ConfigurationError):
+            runner.target_skill_documents(
+                "review-code-change", ["review-nothing-at-all"]
+            )
+
     def test_the_payload_carries_every_mandated_skill_reference(self):
         """A skill is not just its SKILL.md.
 
@@ -71,14 +119,19 @@ class RequestTests(unittest.TestCase):
         reviewer working from a partial definition of its own job.
         """
         documents = runner.target_skill_documents("review-code-change")
-        self.assertIn("SKILL.md", documents)
-        self.assertIn("references/orchestration-protocol.md", documents)
+        self.assertIn("review-code-change/SKILL.md", documents)
+        self.assertIn(
+            "review-code-change/references/orchestration-protocol.md", documents
+        )
         prompt = runner.target_skill_prompt("review-code-change")
         for name, text in documents.items():
             with self.subTest(document=name):
                 self.assertIn(text.strip(), prompt)
         request = build_request(self.case, skill_prompt=prompt)
-        self.assertIn("references/orchestration-protocol.md", request["skill_prompt"])
+        self.assertIn(
+            "review-code-change/references/orchestration-protocol.md",
+            request["skill_prompt"],
+        )
 
     def test_the_bundled_contract_mirror_is_not_sent_twice(self):
         documents = runner.target_skill_documents("review-code-change")
@@ -95,10 +148,12 @@ class RequestTests(unittest.TestCase):
             with self.subTest(document=name):
                 edited = dict(documents)
                 edited[name] += "\n\nAn additional sentence.\n"
-                sections = [edited.pop("SKILL.md")]
-                for other, text in sorted(edited.items()):
-                    sections.append(f"\n\n## Skill reference: {other}\n\n{text}")
-                self.assertNotEqual(baseline, protocol.prompt_digest("".join(sections)))
+                self.assertNotEqual(
+                    baseline,
+                    protocol.prompt_digest(
+                        runner.render_skill_prompt("review-code-change", edited)
+                    ),
+                )
 
     def test_case_reference_is_opaque(self):
         request = build_request(self.case)
