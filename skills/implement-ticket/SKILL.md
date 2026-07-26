@@ -33,6 +33,9 @@ create a third shared workflow abstraction.
   oversized, and again before transferring candidate ownership.
 - Always read [cleanup and result](references/cleanup-and-result.md) before a
   merge or terminal handoff.
+- When a caller supplies delegated-execution input, read and follow the
+  [delegated execution contract](references/delegated-execution/CONTRACT.md)
+  before any mutation.
 
 For cross-system work, record which system owns issue status, dependency state,
 source code, pull requests, checks, reviews, and merge. Never substitute a
@@ -111,6 +114,40 @@ disclosed consequence of authorized merge, not as an independently requested
 manual transition. State that consequence before publication or merge. Do not
 use automatic closing syntax when its effect conflicts with the resolved
 completion policy.
+
+## Honor delegated execution when supplied
+
+Delegated execution is optional. Standalone behavior remains the default.
+
+When a caller supplies a delegated invocation:
+
+1. Validate it with the bundled delegated-execution validator before mutation.
+   Reject unsupported versions, unknown fields, excluded terminal states, or an
+   unusable checkpoint command.
+2. Treat its authority as an additional ceiling. It may narrow the ordinary
+   operating contract but never widen repository, user, host, or provider
+   authority.
+3. Run the caller's checkpoint command immediately before every action in the
+   contract's consequential-mutation vocabulary. Supply the exact current ticket
+   observation, candidate identity, sequence, and continuation token. Start at
+   exactly one greater than the invocation's `last_sequence`. Perform only the
+   one allowed action, rotate to the returned token, and retain every consumed
+   allowance for the terminal `authority_used` report.
+4. Immediately after every candidate push or advancement, verify the full remote
+   ref and exact SHA, then run `candidate_published`. Do not continue until the
+   caller acknowledges that exact SHA.
+5. If a checkpoint is denied, unavailable, malformed, ambiguous, or mismatched,
+   stop the proposed action and return `blocked`. Preserve already-published
+   implementation as a transferable handoff even when publication
+   acknowledgement failed. A denial preserves the prior sequence and token.
+6. Validate the terminal result against the invocation and the caller's durable
+   ledger tail. Never return stale checkpoint state, a state the caller
+   excluded, or a claim that a local-only candidate is transferable. A material
+   ticket observation change blocks this invocation; reevaluation starts a fresh
+   one.
+
+The checkpoint command is the coordinator boundary. Do not infer its product,
+contact a server on its behalf, or add coordinator-specific behavior.
 
 After applying the whole-epic scope guard, and before creating a branch,
 worktree, or other implementation state for a ticket, verify that both

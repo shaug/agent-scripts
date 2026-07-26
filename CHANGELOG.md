@@ -4,9 +4,17 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-25 — Added coordinator-neutral delegated ticket execution
+
+- fix: pin CI to the established Ruff rule set so dependency drift cannot
+  redefine the repository-wide lint gate
+- feat: add a versioned delegated-execution contract for `implement-ticket`
+  (`b53efa674e929c181bdaac63ff0306cb756386db`)
+
 ## 2026-07-21 — Completed carve-changesets and integrated ticket publication
 
 - feat: package the workflow suite as a plugin
+  (`b7ec1b593b9d211cd91101d94d0406c355b2ecd7`)
 - fix: fail closed on invalid carved handoffs
   (`dc4f5c1f3e33c25ad6258f7365506bd33255ed82`)
 - feat: integrate carved ticket publication

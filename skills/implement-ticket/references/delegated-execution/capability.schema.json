@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Scripts delegated implement-ticket capability manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "contract",
+    "invocation_schema",
+    "checkpoint_request_schema",
+    "checkpoint_response_schema",
+    "result_schema",
+    "validator",
+    "terminal_states",
+    "checkpoint_phases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "agent-scripts.implement-ticket/capability-manifest/v1"
+    },
+    "id": {
+      "const": "agent-scripts.implement-ticket/delegated-execution/v1"
+    },
+    "contract": {
+      "const": "CONTRACT.md"
+    },
+    "invocation_schema": {
+      "const": "invocation.schema.json"
+    },
+    "checkpoint_request_schema": {
+      "const": "checkpoint-request.schema.json"
+    },
+    "checkpoint_response_schema": {
+      "const": "checkpoint-response.schema.json"
+    },
+    "result_schema": {
+      "const": "result.schema.json"
+    },
+    "validator": {
+      "const": "validate.py"
+    },
+    "terminal_states": {
+      "type": "array",
+      "const": [
+        "ready_pr",
+        "ready_prs",
+        "merged",
+        "blocked",
+        "requires_epic"
+      ]
+    },
+    "checkpoint_phases": {
+      "type": "array",
+      "const": [
+        "pre_external_mutation",
+        "candidate_published"
+      ]
+    }
+  }
+}

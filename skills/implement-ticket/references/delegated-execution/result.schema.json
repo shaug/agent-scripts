@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Scripts delegated implement-ticket terminal result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "capability",
+    "invocation_id",
+    "terminal_state",
+    "ticket",
+    "repository",
+    "implementation_state",
+    "candidate",
+    "handoff",
+    "checkpoint",
+    "validation",
+    "reviews",
+    "feedback",
+    "authority_used",
+    "unresolved_obligations",
+    "blocking_reason",
+    "next_action"
+  ],
+  "properties": {
+    "schema": {
+      "const": "agent-scripts.implement-ticket/delegated-result/v1"
+    },
+    "capability": {
+      "const": "agent-scripts.implement-ticket/delegated-execution/v1"
+    },
+    "invocation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "terminal_state": {
+      "enum": [
+        "ready_pr",
+        "ready_prs",
+        "merged",
+        "blocked",
+        "requires_epic"
+      ]
+    },
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "id", "url", "observation"],
+      "properties": {
+        "provider": {
+          "enum": ["github", "linear"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "base_ref", "base_sha"],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base_ref": {
+          "type": "string",
+          "pattern": "^refs/.+$"
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        }
+      }
+    },
+    "implementation_state": {
+      "enum": ["none", "local", "published"]
+    },
+    "candidate": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "remote_url",
+        "remote_ref",
+        "base_sha",
+        "head_sha",
+        "publication"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "remote_url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "remote_ref": {
+          "type": "string",
+          "pattern": "^refs/.+$"
+        },
+        "base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "head_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "publication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "pull_requests"],
+          "properties": {
+            "kind": {
+              "enum": ["ordinary", "stack"]
+            },
+            "pull_requests": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "url",
+                  "base_ref",
+                  "base_sha",
+                  "head_ref",
+                  "head_sha",
+                  "state"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "base_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "base_sha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40,64}$"
+                  },
+                  "head_ref": {
+                    "type": "string",
+                    "pattern": "^refs/.+$"
+                  },
+                  "head_sha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40,64}$"
+                  },
+                  "state": {
+                    "enum": ["open", "merged"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transferable", "reason"],
+      "properties": {
+        "transferable": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["last_sequence", "continuation_token"],
+      "properties": {
+        "last_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "continuation_token": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "validation": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation"
+      }
+    },
+    "feedback": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["unresolved_material_count", "candidate_sha", "observed_at"],
+      "properties": {
+        "unresolved_material_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidate_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "authority_used": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/action"
+      }
+    },
+    "unresolved_obligations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blocking_reason": {
+      "type": ["string", "null"]
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "action": {
+      "enum": [
+        "repository.candidate.create",
+        "repository.candidate.push",
+        "pull_request.create",
+        "pull_request.update",
+        "review.reply",
+        "review.resolve",
+        "ticket.update",
+        "ticket.dependencies.update",
+        "ticket.followup.create",
+        "changeset.carve",
+        "pull_request.merge",
+        "repository.branch.delete",
+        "deployment.execute",
+        "production.mutate",
+        "destructive.execute"
+      ]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "outcome", "candidate_sha", "observed_at"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "enum": ["passed", "failed", "unavailable"]
+        },
+        "candidate_sha": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
