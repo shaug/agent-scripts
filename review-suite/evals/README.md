@@ -18,7 +18,7 @@ review-suite/evals/
 ├── contracts/                          versioned evaluator schemas
 │   ├── executor-request.schema.json    the complete result-blind payload
 │   ├── executor-response.schema.json   the single reply an executor returns
-│   ├── corpus.schema.json              corpus version metadata and case list
+│   ├── corpus.schema.json              versions, target closure, case list
 │   ├── expectation.schema.json         private material root causes
 │   └── provenance.schema.json          origin and retention authority
 ├── corpus/
@@ -94,10 +94,10 @@ reviewer to verify that `review-solution-simplicity`, `review-correctness`, and
 `blocked` result naming any that are missing. An executor is told to reason only
 from what it is given. Ship the target alone and a fully compliant reviewer must
 refuse every case, so recall and false-clean rates move the *wrong* way as the
-reviewer becomes *more* compliant — the measurement inverts. An earlier revision
-had exactly that defect, and on the same corpus and adapter its reviewer
-answered `changes_required` on the incomplete-evidence case where the complete
-closure correctly answers `blocked`.
+reviewer becomes *more* compliant — the measurement inverts. Earlier revisions
+had exactly that defect. Supplying the closure removes the inversion; it does
+not by itself make any single case answer correctly, and the recorded runs below
+show that case still varying between runs.
 
 `target_skill_digest` hashes the rendered closure, so it changes when any part
 of any included skill changes. Loading fails closed when a declared skill is
@@ -247,27 +247,31 @@ representative scored corpus, calibrate the grader, or capture a v1 baseline.
 ### Measured smoke evaluation
 
 One run per case through the bundled Claude adapter, recorded at suite commit
-`69748be5bda5a8638b2e6ddef6ea8a13e12589a9` against corpus version
-`0.1-protocol-proof` and grader version `1.0`. This is one recorded observation,
-not a baseline, and the only later change to this directory is the paragraph you
-are reading, which no payload carries:
+`62a9ed8fab166c7d380724e426449f0585714b07`, target `review-code-change` with
+digest `9b2805f14cdd6158`, model `claude-opus-4-6[1m]`, corpus version
+`0.1-protocol-proof`, grader version `1.0`. This is one recorded observation,
+not a baseline:
 
-- 6 attempts, 6 valid protocol outcomes, 0 evaluation failures;
-- every verdict matched its expectation: all 5 graded verdicts matched, and the
-  incomplete-evidence case correctly returned `blocked`, which is a valid review
-  and so counts toward stability but is not graded;
-- 7 findings reported, all 7 referred for adjudication because none matched a
-  shipped formulation, giving `material_finding_recall` 0.0 over the 4 attempts
-  with expected root causes;
-- `false_positive_rate` 0.0 over 5, `false_clean_rate` 0.0 over 4;
-- 0.76 USD total reported cost, 30.4 s mean latency, 39.7 s maximum.
+- 6 attempts, 6 valid protocol outcomes, 0 evaluation failures, all 6 graded;
+- 5 of 6 verdicts matched. `catalog-import-feed` returned `changes_required`
+  where `blocked` was expected — a merge verdict on a packet whose required
+  full-scope validation evidence is absent;
+- 8 findings reported. 7 were referred for adjudication because none matched a
+  shipped formulation, and 1 was recorded as an unexpected gating finding,
+  giving `false_positive_rate` 0.1667 over 6;
+- `material_finding_recall` 0.0 over the 4 attempts with expected root causes;
+  `false_clean_rate` 0.0 over 4;
+- 1.03 USD total reported cost, 191,422 input tokens, 8,051 output tokens, 33.0
+  s mean latency, 59.9 s maximum.
 
-Treat the verdicts as the stable part and the counts as the variable part. Two
-runs of this configuration produced identical per-case verdicts, while the
-finding count moved between 6 and 7 and mean latency between 28 s and 30 s.
-Every stability figure above rests on a denominator of 1 per case, so it records
-only that one run happened, not run-to-run agreement; use `--runs N` to measure
-that.
+**Do not read single-run verdicts as capability.** The immediately preceding run
+of this same configuration returned `blocked` on `catalog-import-feed` — the
+correct answer — while this one returned a merge verdict. That case is the least
+stable of the six and it is the one that tests refusal on incomplete evidence,
+which is the behaviour the surrounding work most needs to measure. At one run
+per case, nothing here distinguishes capability from variance: every stability
+figure above rests on a denominator of 1. Use `--runs N` before drawing any
+conclusion.
 
 ### Limitations for whoever curates the scored corpus
 
@@ -276,16 +280,20 @@ that.
   not recognize is therefore reported as a partial match needing adjudication,
   not as a false positive. Calibration must decide how those are scored.
 - The shipped formulations were written before any real run and were not tuned
-  afterwards, which is why recall is 0.0 above while every verdict was right.
+  afterwards, which is why recall is 0.0 above while 5 of 6 verdicts were right.
   That is the conservative behaviour this interface is meant to have, and direct
   evidence that grader calibration is required before any recall number means
   anything.
-- Completeness of the evaluated skill text is load-bearing, not incidental. An
-  earlier revision passed only `SKILL.md` and omitted the orchestration protocol
-  that `review-code-change` instructs its reviewer to read; on the same corpus
-  and adapter, that reviewer answered `changes_required` on the
-  incomplete-evidence case instead of `blocked`. Any change to what a payload
-  carries is a change to what is being measured, and starts a new stratum.
+- Completeness of the evaluated skill closure is load-bearing, not incidental.
+  Earlier revisions omitted first the orchestration protocol and then the three
+  lens skills that `review-code-change` requires; each omission changed observed
+  behaviour on the incomplete-evidence case. Any change to what a payload
+  carries is a change to what is being measured, and starts a new stratum. The
+  closure's size also sets the cost floor: it is 8 documents and about 41,600
+  characters here, and the run above spent 191,422 input tokens across 6
+  attempts.
+- The choice of scored target, the strata to compare, and the cost envelope to
+  preregister all follow from that closure and are deliberately left open.
 - `expectation.schema.json` requires a `severity` on every root cause that no
   metric currently consumes. Either score severity agreement or drop the
   requirement; do not assume it is being measured.
