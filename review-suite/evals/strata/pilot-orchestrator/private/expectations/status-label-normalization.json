@@ -1,0 +1,64 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "status-label-normalization",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.retained-ready-flag-on-inactive-status",
+      "requirement": "A record that lands on an inactive status does not carry `flag:ready`, and no consumer observes a record whose flags contradict its status.",
+      "trigger": "Migrating a legacy record that already carries `flag:ready` onto an inactive status such as `deferred`.",
+      "surface": "_normalize_flags",
+      "consequence": "The early return for an inactive status removes only `flag:draft`, so a pre-existing `flag:ready` survives beside an inactive status. The scheduler admits on `flag:ready` alone and runs concurrently with the migration, so a deferred record becomes runnable. Roughly 12% of the legacy set carries both flags, so this is the common shape rather than an edge case.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "`flag:ready` is not removed for an inactive status",
+        "the early return leaves `flag:ready` in place",
+        "a deferred record can keep `flag:ready`",
+        "the scheduler can pick up an inactive record",
+        "flags contradict the canonical status"
+      ]
+    },
+    {
+      "id": "rc.tests-omit-the-migrating-shape",
+      "requirement": "A regression test must exercise the input shape the change is about, not only the shapes that were already correct.",
+      "trigger": "Reading the added tests to decide whether the migration is covered.",
+      "surface": "tests/test_normalize.py",
+      "consequence": "Every added test starts from a record that does not already carry `flag:ready`, so the inactive-status test passes for the wrong reason: the flag was never there to remove. The one shape the change exists to fix - both flags present, landing inactive - is untested, which is why a green suite says nothing about the defect above.",
+      "severity": "strong_recommendation",
+      "equivalent_formulations": [
+        "no test starts from a record that already carries `flag:ready`",
+        "the inactive-status test passes for the wrong reason",
+        "the both-flags shape is untested",
+        "the tests never exercise a record with `flag:ready` already set"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.unrelated-report-sort",
+      "description": "The `summarize` sort in registry/report.py is unrelated to the migration. Worth noting as scope drift; it is not a defect, and the packet's preserved-behaviour list keeps the tuple shape.",
+      "equivalent_formulations": [
+        "the report sort is unrelated to this change",
+        "sorting rows is scope drift"
+      ]
+    },
+    {
+      "id": "anf.no-op-scheduler-hunk",
+      "description": "The scheduler hunk changes nothing; its before and after lines are identical. Real, and worth pointing out as diff noise, but it is not a behavioural defect.",
+      "equivalent_formulations": [
+        "the scheduler hunk is a no-op",
+        "the scheduler diff changes nothing"
+      ]
+    },
+    {
+      "id": "anf.migration-dry-run-not-run",
+      "description": "The migration dry run is recorded as not run. The packet says so explicitly and it is the honest state of the evidence, so noting it is reasonable. It is a validation limitation rather than a separate root cause, and it does not make the packet incomplete.",
+      "equivalent_formulations": [
+        "the migration dry run was not run",
+        "the only check that reads real legacy records is absent"
+      ]
+    }
+  ]
+}

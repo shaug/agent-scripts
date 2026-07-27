@@ -1,16 +1,16 @@
 {
   "adjudication_required": [],
-  "attempts": 3,
+  "attempts": 5,
   "baseline_eligible": true,
   "configuration": {
     "artifacts_retained": true,
     "cases": 1,
-    "corpus_version": "1.1-pilot-code-simplicity",
+    "corpus_version": "1.3-pilot-code-simplicity",
     "executor": "python3 review-suite/scripts/evals/claude_executor.py",
     "grader_version": "1.0",
     "max_output_bytes": 4000000,
-    "runs_per_case": 3,
-    "suite_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+    "runs_per_case": 5,
+    "suite_commit": "16b77e447dbcc844edd8f3fb58728d96826e177c",
     "target_skill": "review-code-simplicity",
     "target_skill_dependencies": [],
     "target_skill_digest": "a6187d8971eaef24",
@@ -29,32 +29,32 @@
     "spawn_failure_rate": 0.0,
     "timeout_rate": 0.0
   },
-  "graded_attempts": 3,
+  "graded_attempts": 5,
   "grader_version": "1.0",
   "latency": {
-    "count": 3,
-    "max_seconds": 14.965433417353779,
-    "mean_seconds": 13.427382861574491,
-    "min_seconds": 12.56160541716963,
-    "p50_seconds": 12.755109750200063
+    "count": 5,
+    "max_seconds": 16.773228792008013,
+    "mean_seconds": 12.84428822491318,
+    "min_seconds": 9.155616583768278,
+    "p50_seconds": 12.735041291918606
   },
   "per_case": [
     {
-      "attempts": 3,
+      "attempts": 5,
       "case_id": "rollback-guidance-render",
       "expected_root_cause_ids": [
         "rc.unsupported-emitted-subcommand"
       ],
       "false_alarm_attempts": 0,
-      "false_clean_attempts": 3,
+      "false_clean_attempts": 5,
       "false_positive_attempts": 0,
       "finding_stability": 1.0,
-      "graded_attempts": 3,
+      "graded_attempts": 5,
       "intersection_root_cause_ids": [],
       "mean_recall": 0.0,
-      "stability_denominator": 3,
+      "stability_denominator": 5,
       "statuses": {
-        "review_result": 3
+        "review_result": 5
       },
       "union_root_cause_ids": [],
       "verdict_stability": 1.0
@@ -64,12 +64,12 @@
   "quality": {
     "false_alarm_denominator": 0,
     "false_alarm_rate": null,
-    "false_clean_denominator": 3,
+    "false_clean_denominator": 5,
     "false_clean_rate": 1.0,
-    "false_positive_denominator": 3,
+    "false_positive_denominator": 5,
     "false_positive_rate": 0.0,
     "material_finding_recall": 0.0,
-    "recall_attempts": 3,
+    "recall_attempts": 5,
     "unique_finding_contribution": []
   },
   "report_version": "1.0",
@@ -81,20 +81,20 @@
       "rollback-guidance-render": 1.0
     },
     "per_case_stability_denominator": {
-      "rollback-guidance-render": 3
+      "rollback-guidance-render": 5
     },
     "per_case_verdict_stability": {
       "rollback-guidance-render": 1.0
     },
-    "stability_denominator": 3
+    "stability_denominator": 5
   },
   "usage": {
     "available": true,
-    "reporting_attempts_cost_usd": 3,
-    "reporting_attempts_input_tokens": 3,
-    "reporting_attempts_output_tokens": 3,
-    "total_cost_usd": 0.15965025,
-    "total_input_tokens": 77073.0,
-    "total_output_tokens": 1418.0
+    "reporting_attempts_cost_usd": 5,
+    "reporting_attempts_input_tokens": 5,
+    "reporting_attempts_output_tokens": 5,
+    "total_cost_usd": 0.2087365,
+    "total_input_tokens": 131360.0,
+    "total_output_tokens": 2161.0
   }
 }

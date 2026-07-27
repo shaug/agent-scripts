@@ -31,6 +31,7 @@
         "properties": {
           "id": {"type": "string", "pattern": "^probe\\.[a-z0-9][a-z0-9-]*$"},
           "kind": {
+            "description": "Which grading boundary this probe exercises. The calibration test asserts a required outcome per kind, so a kind is a claim about behaviour rather than a label. `surface_token_collision` records a measured limit rather than a boundary that holds: a wrong gating finding whose location merely shares a normalised token with the root cause's surface is referred instead of charged.",
             "enum": [
               "observed",
               "paraphrase",
@@ -38,6 +39,7 @@
               "duplicate_report",
               "partial_claim",
               "plausible_false_positive",
+              "surface_token_collision",
               "accepted_non_finding"
             ]
           },

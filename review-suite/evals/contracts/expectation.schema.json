@@ -14,10 +14,23 @@
     "accepted_non_findings"
   ],
   "properties": {
-    "expectation_version": {"const": "1.0"},
-    "case_id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
-    "packet_valid": {"type": "boolean"},
-    "expected_verdict": {"enum": ["clean", "changes_required", "blocked"]},
+    "expectation_version": {
+      "const": "1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "packet_valid": {
+      "type": "boolean"
+    },
+    "expected_verdict": {
+      "enum": [
+        "clean",
+        "changes_required",
+        "blocked"
+      ]
+    },
     "material_root_causes": {
       "type": "array",
       "items": {
@@ -33,16 +46,39 @@
           "equivalent_formulations"
         ],
         "properties": {
-          "id": {"type": "string", "pattern": "^rc\\.[a-z0-9][a-z0-9-]*$"},
-          "requirement": {"type": "string", "minLength": 1},
-          "trigger": {"type": "string", "minLength": 1},
-          "surface": {"type": "string", "minLength": 1},
-          "consequence": {"type": "string", "minLength": 1},
-          "severity": {"enum": ["blocking", "strong_recommendation"]},
+          "id": {
+            "type": "string",
+            "pattern": "^rc\\.[a-z0-9][a-z0-9-]*$"
+          },
+          "requirement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "surface": {
+            "type": "string",
+            "minLength": 1
+          },
+          "consequence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "enum": [
+              "blocking",
+              "strong_recommendation"
+            ]
+          },
           "equivalent_formulations": {
             "type": "array",
             "minItems": 1,
-            "items": {"type": "string", "minLength": 1}
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }
@@ -52,17 +88,34 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "description", "equivalent_formulations"],
+        "required": [
+          "id",
+          "description",
+          "equivalent_formulations"
+        ],
         "properties": {
-          "id": {"type": "string", "pattern": "^anf\\.[a-z0-9][a-z0-9-]*$"},
-          "description": {"type": "string", "minLength": 1},
+          "id": {
+            "type": "string",
+            "pattern": "^anf\\.[a-z0-9][a-z0-9-]*$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
           "equivalent_formulations": {
             "type": "array",
             "minItems": 1,
-            "items": {"type": "string", "minLength": 1}
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
       }
+    },
+    "calibrated": {
+      "description": "True when every equivalent formulation here was checked against prose a real reviewer actually returned, and a calibration set under review-suite/evals/calibration/ pins that behaviour. False when the formulations were written before any run existed and have never been confronted with real prose - in which case this case's recall is a statement about the expectation, not about the reviewer. Absent on a case that predates calibration. A scored case must be true: an uncalibrated expectation reports 0.0 recall against a correct reviewer, which is measured behaviour rather than a hypothesis.",
+      "type": "boolean"
     }
   }
 }

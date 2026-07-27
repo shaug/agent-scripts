@@ -79,12 +79,28 @@ class CalibrationSetTests(unittest.TestCase):
                     self.assertEqual(expectations[0], other)
 
     def test_every_scored_case_is_calibrated(self):
-        """A scored case without calibration would report an unmeasured rate."""
+        """A scored case without calibration reports its expectation, not a rate.
+
+        Measured twice, on two independent pilot cases: an uncalibrated
+        expectation returns recall 0.0 against a reviewer that found the defect
+        on every attempt. A scored stratum built on one would publish that as a
+        capability figure.
+        """
         for root in corpus.corpus_roots():
             loaded = corpus.load_corpus(root)
             if not loaded.scored:
                 continue
             for case in loaded.cases:
+                with self.subTest(stratum=root.name, case_id=case.case_id):
+                    self.assertIn(case.case_id, self.sets)
+                    self.assertIs(True, case.expectation.get("calibrated"))
+
+    def test_a_calibrated_expectation_ships_a_calibration_set(self):
+        """`calibrated: true` is a claim the calibration set has to back."""
+        for root in corpus.corpus_roots():
+            for case in corpus.load_corpus(root).cases:
+                if not case.expectation.get("calibrated"):
+                    continue
                 with self.subTest(stratum=root.name, case_id=case.case_id):
                     self.assertIn(case.case_id, self.sets)
 
@@ -105,6 +121,31 @@ class CalibratedGradingTests(unittest.TestCase):
             "comparison_base_sha": candidate["comparison_base_sha"],
         }
         return grader.grade(case.expectation, calibration.probe_result(probe, identity))
+
+    def test_every_probe_demonstrates_what_its_kind_claims(self):
+        """A kind is a claim about grading behaviour, not a label.
+
+        Asserted against the real grader rather than against the calibration
+        set's own `expect` block, so a set cannot certify a boundary by
+        declaring the outcome it happens to get.
+        """
+        for case_id, calibration_set in self.sets.items():
+            for probe in calibration_set.probes:
+                required, must_charge = calibration.PROBE_KIND_CONTRACT[probe["kind"]]
+                with self.subTest(case_id=case_id, probe=probe["id"]):
+                    graded = self._grade(case_id, probe)
+                    observed = {
+                        record["classification"] for record in graded["findings"]
+                    }
+                    self.assertEqual(required, observed)
+                    self.assertEqual(
+                        must_charge, bool(graded["false_positive_finding_ids"])
+                    )
+                    if probe["kind"] in {"observed", "paraphrase"}:
+                        self.assertEqual(1.0, graded["recall"])
+                    if probe["kind"] == "duplicate_report":
+                        self.assertEqual(1, len(graded["matched_root_cause_ids"]))
+                        self.assertEqual(1, len(graded["duplicate_finding_ids"]))
 
     def test_every_probe_receives_its_calibrated_classification(self):
         for case_id, calibration_set in self.sets.items():
@@ -163,6 +204,20 @@ class StratumLabellingTests(unittest.TestCase):
                 self.assertNotEqual(
                     "connector-review", (loaded.stratum or {}).get("ground_truth")
                 )
+
+    def test_a_scored_stratum_must_grade_its_own_target(self):
+        """A stratum whose expectations target another lens cannot be scored.
+
+        Grading a contract-faithful lens against another lens's root cause is a
+        corpus defect, not a reviewer miss, and would invalidate the stratum.
+        """
+        for root in corpus.corpus_roots():
+            loaded = corpus.load_corpus(root)
+            if loaded.stratum is None:
+                continue
+            with self.subTest(stratum=root.name):
+                if loaded.scored:
+                    self.assertTrue(loaded.stratum["grading_is_signal"])
 
     def test_no_pilot_case_is_also_a_scored_case(self):
         """Calibrating on a case that is also scored would fit the answer."""

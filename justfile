@@ -50,8 +50,14 @@ audit-review-corpus:
 # Result-blind replay evaluation through an explicit real-runtime executor.
 # Deliberately excluded from `test`, `lint`, and `check`: this is the only
 # review-suite command that may spend money.
-eval-review-suite executor:
-  python3 review-suite/scripts/evals/runner.py --executor "{{executor}}"
+#
+# Extra arguments are forwarded to the runner, because a stratum is not
+# reachable without them: `--corpus` defaults to the protocol-proof corpus and
+# `--runs` to 1, so a frozen per-stratum configuration cannot be executed by
+# naming an executor alone. The exact per-stratum invocations are recorded in
+# review-suite/evals/baseline/v1/frozen-configuration.json.
+eval-review-suite executor *args:
+  python3 review-suite/scripts/evals/runner.py --executor "{{executor}}" {{args}}
 
 test-plugins:
   python3 -m unittest discover -s scripts/tests -p 'test_*.py'

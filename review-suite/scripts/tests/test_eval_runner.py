@@ -358,6 +358,24 @@ class EvaluationTests(unittest.TestCase):
         self.evaluate(artifact_dir=self.temp / "artifacts")
         self.assertTrue(any((self.temp / "artifacts").iterdir()))
 
+    def test_a_run_refuses_to_overwrite_retained_artifacts(self):
+        """Retained output is evidence a committed record may already cite.
+
+        An artifact is named for its case and run number only, so re-running a
+        stratum into the same directory replaces it. Refused before any attempt
+        launches, because raising afterwards would already have spent money on
+        the one command that can.
+        """
+        artifacts = self.temp / "artifacts"
+        self.evaluate(artifact_dir=artifacts)
+        retained = {path: path.read_text() for path in sorted(artifacts.iterdir())}
+        with self.assertRaises(runner.ConfigurationError) as raised:
+            self.evaluate(artifact_dir=artifacts)
+        self.assertIn("would be overwritten", str(raised.exception))
+        self.assertEqual(
+            retained, {path: path.read_text() for path in sorted(artifacts.iterdir())}
+        )
+
 
 class CommandLineTests(unittest.TestCase):
     def setUp(self):

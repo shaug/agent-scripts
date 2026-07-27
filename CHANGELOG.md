@@ -4,12 +4,9 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Froze the v1 baseline configuration and calibrated the grader
+## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 
 - feat: add baseline strata, grader calibration, and the frozen v1 record
-
-## 2026-07-26 — Added the result-blind review replay evaluator
-
 - fix: skip the recipe-execution tests when `just` is absent
   (`f544aa0c19d97dd4f1aabd7dfab3df08b2ee6a6b`)
 - feat: record the evaluated skill closure with every run

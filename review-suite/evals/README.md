@@ -36,6 +36,7 @@ review-suite/evals/
 │   ├── frozen-configuration.json       the immutable configuration
 │   ├── COST-CEILING-PROPOSAL.md        per-stratum ceiling, from pilot numbers
 │   ├── CALIBRATION.md                  what was calibrated, and from what
+│   ├── ADJUDICATION-PLAN.md            how two independent adjudications can hold
 │   ├── SOURCING.md                     ground truth, sanitization, batches
 │   ├── LIMITATIONS.md                  explicit inputs to interpretation
 │   └── pilot/<stratum>.report.json     the unscored pilot's compact reports
@@ -81,7 +82,11 @@ Calibration probes every boundary: paraphrase, overlapping symptom, duplicate
 report, partial claim, plausible false positive, and accepted non-finding.
 
 See [`baseline/v1/CALIBRATION.md`](baseline/v1/CALIBRATION.md) for what was
-calibrated, what it measured before and after, and what remains un-adjudicated.
+calibrated, what it measured before and after, and what remains un-adjudicated,
+and [`baseline/v1/ADJUDICATION-PLAN.md`](baseline/v1/ADJUDICATION-PLAN.md) for
+how the two-independent-adjudication gate can honestly be satisfied — including
+why a blind agent context sharing a model family with the evaluated reviewer is
+not a legitimate second adjudicator for whether a defect is materially real.
 
 ## Commands
 

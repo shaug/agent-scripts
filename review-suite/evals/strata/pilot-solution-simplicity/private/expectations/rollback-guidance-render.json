@@ -2,6 +2,7 @@
   "expectation_version": "1.0",
   "case_id": "rollback-guidance-render",
   "packet_valid": true,
+  "calibrated": true,
   "expected_verdict": "changes_required",
   "material_root_causes": [
     {

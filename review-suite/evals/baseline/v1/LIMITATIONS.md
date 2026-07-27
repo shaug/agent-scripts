@@ -61,9 +61,20 @@ demonstrated both halves of what that means:
   found the real root cause and every run scored `partial`, because the
   formulations had been written before any real prose existed. Recall was 0.0
   while the reviewer was, in fact, correct on all three runs.
-- **After calibration** against the observed prose, three fresh runs at the
+- **After calibration** against the observed prose, five fresh attempts at the
   frozen version scored recall 1.0 with zero false positives and zero
   adjudication referrals.
+- **Confirmed independently on a second case.** `status-label-normalization` is
+  carried by the orchestrator pilot stratum and deliberately left uncalibrated
+  as a control. Over five attempts it scored recall **0.0** with **nine
+  adjudication referrals**, while verdict stability was 1.0 and the reviewer
+  gated the change on every attempt. Two cases, ten attempts, one conclusion: an
+  uncalibrated expectation reports a number about itself.
+
+That is now a machine-readable property rather than a caution. Every expectation
+carries a `calibrated` flag, and a test refuses a scored case that is not
+calibrated or that ships no calibration set. **Read the flag before reading any
+recall figure.**
 
 The generalisation limit is real: a future run that phrases the same finding a
 fifth way — "export is not among the registered subcommands" — matches none of
@@ -72,20 +83,51 @@ the four shipped formulations and would be referred for adjudication. Read
 semantic matcher, or a standing adjudication queue, is a candidate mechanism for
 whoever owns v2.
 
-## 4. A root cause's `surface` must name a symbol, not a path prefix
+## 4. The false-positive rate is only partly measurable, and stays that way
 
-Surface matching is token-level and file-level. Calibration found that a surface
-written as `storectl/guidance.py render_rollback_guidance` shares the token
-`storectl` with essentially every location in the packet, which made a
-deliberately wrong gating finding at an unrelated file score `partial` instead
-of being charged as a false positive. **With a broad surface, the false-positive
-rate is not measurable**, because nearly every wrong finding is referred instead
-of counted.
+`grader.py` counts a surface hit when the finding's location shares **one**
+normalised token with the root cause's `surface`. A finding that hits the
+surface but matches no formulation is `partial`, and a `partial` is referred for
+adjudication rather than charged as a false positive. So a wrong gating finding
+is only ever charged when its location shares **no** word with the surface.
 
-Narrowing the surface to `render_rollback_guidance` restored the boundary. Any
-stratum populated later must write surfaces as the smallest identifying symbol,
-and its calibration set must include a `plausible_false_positive` probe that
-actually classifies as `unexpected`.
+Calibration measured both halves of this on the pilot case, whose surface is now
+the symbol `render_rollback_guidance`, tokenising to
+`{render, rollback, guidance}`:
+
+| wrong gating finding located at          | classified   | charged as a false positive      |
+| ---------------------------------------- | ------------ | -------------------------------- |
+| `storectl/cli.py`                        | `unexpected` | **yes**                          |
+| `storectl/guidance.py`                   | `partial`    | no — token `guidance`            |
+| `tests/test_guidance.py`                 | `partial`    | no — token `guidance`            |
+| `storectl/guidance.py:render_apply_plan` | `partial`    | no — tokens `render`, `guidance` |
+
+Writing the surface as a path prefix was worse —
+`storectl/guidance.py render_rollback_guidance` also collides on `storectl`,
+which appears in nearly every location in the packet — and narrowing it to the
+symbol shrank the unchargeable region. **It did not remove it.** The locations
+that remain unchargeable are the changed file, its test, and its untouched
+neighbours, which is exactly where a real reviewer is most likely to point.
+
+Consequences, and they are not cosmetic:
+
+- **`false_positive_rate` is a lower bound, not a rate.** It counts only wrong
+  gating findings that share no word with any root-cause surface.
+  `frozen-configuration.json` records it as partially measurable rather than
+  measured, and #59 must not read it as a measured rate.
+- Any stratum populated later must still write surfaces as the smallest
+  identifying symbol, and its calibration set must carry a
+  `plausible_false_positive` probe that genuinely classifies `unexpected` and
+  charges a false positive. The calibration test asserts that outcome per probe
+  kind rather than accepting the set's own claim.
+- The `surface_token_collision` probe in the shipped calibration set pins the
+  residual gap in place, so it stays visible instead of being rediscovered.
+
+The one-token rule is `grader.match_strength`, which is #50 infrastructure this
+ticket's non-goals forbid repairing. Requiring every surface token instead of
+any is a small change with a real trade-off — it would turn some correct
+findings that name only part of a surface into misses — so it is **escalated to
+#59 as a candidate preregistered v2 gate**, not recorded here as solved.
 
 ## 5. An expectation is target-specific
 
@@ -100,6 +142,16 @@ The rule this yields for the scored strata: expectations must be authored for
 the lens the stratum targets. Sharing one case list across strata with different
 targets would grade contract-faithful reviewers as wrong and invalidate the
 affected stratum.
+
+Because the two lens pilot reports are committed and machine-readable, and they
+do carry `material_finding_recall: 0.0` and `false_clean_rate: 1.0`, the caveat
+is also recorded where a reader reaches them rather than only here: each
+mismatched corpus declares `stratum.grading_is_signal: false`, a test forbids a
+scored stratum from declaring it false, `frozen-configuration.json` annotates
+each pilot report entry, and `pilot/README.md` sits beside the reports. **Do not
+quote the recall or false-clean figure from
+`pilot-solution-simplicity.report.json` or
+`pilot-code-simplicity.report.json`.**
 
 ## 6. Severity is required but not measured
 
@@ -124,12 +176,40 @@ root cause, accepted non-finding, severity, and allowed formulation, and it is
 not presented as satisfying it. See [CALIBRATION.md](CALIBRATION.md) for exactly
 what has and has not been adjudicated.
 
+[ADJUDICATION-PLAN.md](ADJUDICATION-PLAN.md) proposes how the gate can honestly
+be satisfied, and reaches one conclusion worth surfacing here: a fresh blind
+agent context is a legitimate second adjudicator for whether a minimized case is
+faithful and whether a formulation is well drawn, but **not** for whether a
+defect is materially real when it shares a model family with the reviewer being
+measured. Those errors are correlated, so two such adjudications are not two
+independent observations, and recall would rise without the reviewer improving.
+Where a minimized reproduction can be made to run, an executable oracle is a
+stronger second adjudication than any opinion — the corpus already identifies
+one case adjudicated exactly that way, by CI. The simplicity strata have no
+oracle at all and need human adjudication.
+
+A third open decision is recorded there: **neither identified clean-control
+candidate is an adjudicated clean review.** Until the owner settles what a clean
+control must be, the false-alarm rate has no honest denominator.
+
 ## 9. Cost figures are runtime-reported, and cache-sensitive
 
 Cost comes from what the runtime reports, not from an independent meter. The
 pilot also showed per-attempt cost varying three- to fourfold within a stratum
 purely from prompt-cache state. Any cost figure is a report about one run's
 caching behaviour as much as about the work done.
+
+Two further measurements bear on any cost figure quoted from here:
+
+- **Cost tracks output volume, not packet size.** The orchestrator stratum's
+  larger packet raised input tokens 2.9% and raised cache-read cost 28% and mean
+  latency 45%, because mean output grew 44%. A case's cost therefore depends on
+  how much a reviewer has to say about it, which tracks the number of findings
+  it warrants. A stratum's cost is not predictable from its packet sizes alone.
+- **Reported input tokens include runtime-side prompt overhead.** The same
+  case's reported input drifted across batches — 32,507, then 32,955, then
+  33,166 — with the payload unchanged. Treat within-batch differences as
+  measurements and absolute counts as approximate.
 
 ## 10. A stratum boundary is not a rounding difference
 

@@ -49,6 +49,24 @@ REQUIRED_PROBE_KINDS = frozenset(
     }
 )
 
+#: What each kind must actually demonstrate, as (classifications, must charge a
+#: false positive). Coverage alone is not calibration: a set could ship a
+#: `plausible_false_positive` probe whose own expectation declares `partial` with
+#: no false positive charged, and pass a test that only checks the kind exists.
+#: Given that a surface hit needs one shared token, that is the path of least
+#: resistance for any wrong finding inside the changed file, so the required
+#: outcome is asserted here rather than left to the set's own claim.
+PROBE_KIND_CONTRACT: dict[str, tuple[frozenset[str], bool]] = {
+    "observed": (frozenset({"matched"}), False),
+    "paraphrase": (frozenset({"matched"}), False),
+    "overlapping_symptom": (frozenset({"partial"}), False),
+    "duplicate_report": (frozenset({"matched", "duplicate"}), False),
+    "partial_claim": (frozenset({"partial"}), False),
+    "plausible_false_positive": (frozenset({"unexpected"}), True),
+    "surface_token_collision": (frozenset({"partial"}), False),
+    "accepted_non_finding": (frozenset({"accepted"}), False),
+}
+
 
 class CalibrationError(ValueError):
     """Raised when a calibration set cannot be trusted to calibrate anything."""

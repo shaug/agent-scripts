@@ -71,6 +71,19 @@ not carry it.
 | sanitization           | Rewritten against a fictional `storectl` CLI. No source identifier, path, symbol, prose, or diff copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.                                                          |
 | retention authority    | Public repository, owner-authored review, no third-party or customer material.                                                                                                                                                                             |
 
+### `status-label-normalization` — pilot, unscored, deliberately uncalibrated
+
+| field                  | value                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| strata                 | `pilot-orchestrator` only, so the case shared with the lens strata stays byte-identical across all three                                                                                                                                                                                                                                                                                                                                                                      |
+| source                 | `shaug/atelier` pull request 278, review comment 2861937742, authored by the repository owner. Public.                                                                                                                                                                                                                                                                                                                                                                        |
+| adjudication           | The reviewer required the change; the follow-up reply (comment 2861947492) names the implementing commit and the regression coverage added for the exact migration shape. Accepted, not deferred.                                                                                                                                                                                                                                                                             |
+| failure shape retained | A normalization step drops one legacy flag and returns early for an inactive status, leaving a second legacy flag that contradicts the canonical status, with a live consumer that admits work on that flag alone. The added tests all start from records that never carried the second flag, so the one shape the change exists to fix is untested.                                                                                                                          |
+| origin                 | `minimized_reproduction`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| sanitization           | Rewritten against a fictional record registry. No source identifier, path, symbol, prose, or diff copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.                                                                                                                                                                                                                                                                            |
+| retention authority    | Public repository, owner-authored review, no third-party or customer material.                                                                                                                                                                                                                                                                                                                                                                                                |
+| why it exists          | Two purposes. Its packet is materially larger than the other pilot case, which separates the fixed cost of a stratum's skill closure from the variable cost of the packet — the measurement behind the cost-ceiling proposal. And it is **deliberately left uncalibrated** (`calibrated: false`) as the control for what an uncalibrated expectation reports: recall 0.0 over five attempts with nine adjudication referrals, while the reviewer gated the change every time. |
+
 ## Cases excluded, and why
 
 | candidate                                                   | class it would have served | why excluded                                                                                                                                                                                                         |
@@ -86,12 +99,12 @@ listed below with the ground truth already identified for it.
 
 The scored corpus is populated in evidence-preserving batches rather than in one
 change. This batch delivers the strata layout, the per-stratum pilot envelope,
-the grader calibration machinery and its first calibrated case, the
-contamination audit over every corpus, the frozen configuration, and the
-cost-ceiling proposal. The scored case population follows, one stratum per
-batch, because each scored case needs individual sourcing, minimization, and
-independent adjudication judgement, and fifteen of those in one change would not
-be reviewable.
+the grader calibration machinery with one calibrated case and one deliberately
+uncalibrated control, the contamination audit over every corpus, the frozen
+configuration, and the cost-ceiling proposal. The scored case population
+follows, one stratum per batch, because each scored case needs individual
+sourcing, minimization, and independent adjudication judgement, and fifteen of
+those in one change would not be reviewable.
 
 The candidate ground truth below was identified while sourcing this batch and is
 recorded so the evidence is not lost. Each still requires the adjudication trail
@@ -141,3 +154,7 @@ split-write case all do.
 - Retention authority is recorded per case, and a case whose authority could not
   be established would be excluded before scoring rather than minimized into the
   corpus.
+- Nothing here is adjudicated twice yet. Which of these candidates a second
+  adjudication is expected to *disagree* with, and which source dispositions are
+  too ambiguous to use without re-verification, is recorded in
+  [ADJUDICATION-PLAN.md](ADJUDICATION-PLAN.md) rather than smoothed over here.

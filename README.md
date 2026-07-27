@@ -228,8 +228,9 @@ discovers every one of them.
 The frozen v1 baseline record lives in `review-suite/evals/baseline/v1/`: the
 immutable configuration, the unscored pilot's per-stratum cost and latency
 envelope, a per-stratum cost-ceiling proposal built from those numbers, the
-grader calibration and adjudication record, the ground-truth sourcing and
-sanitization record, and the baseline limitations.
+grader calibration and adjudication record, a plan for satisfying the
+two-independent-adjudication gate, the ground-truth sourcing and sanitization
+record, and the baseline limitations.
 
 Two things are deliberately still outstanding, and the configuration record says
 so rather than implying otherwise: the scored strata are declared but not
