@@ -8,7 +8,7 @@
     {
       "id": "rc.gateway-abstracts-a-pure-function-with-one-implementation",
       "requirement": "The service tier should call the concrete function it needs directly unless a demonstrated reason requires indirection.",
-      "trigger": "Reading `SetupPathGateway` and `SetupDependencies` next to the function they wrap.",
+      "trigger": "Reading `SetupPathGateway`, `SetupDependencies`, and the changed constructor next to the function they wrap.",
       "surface": "SetupPathGateway",
       "consequence": "A gateway class, a dependency-bag class, and a constructor wiring both are introduced to indirect a pure function that has one production implementation and no I/O to isolate. The sibling service in the same package calls the same kind of function directly and is tested by monkeypatching, so the abstraction buys nothing the existing pattern does not already provide and makes this service's construction path materially harder to follow than its neighbour's.",
       "severity": "blocking",

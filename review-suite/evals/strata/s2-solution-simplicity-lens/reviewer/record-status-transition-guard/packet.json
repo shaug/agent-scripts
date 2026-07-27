@@ -33,7 +33,7 @@
       {
         "label": "Deferred-by-default rules",
         "location": "AGENTS.md",
-        "summary": "A creation script that relies on deferred-by-default semantics must not leave a newly created record in its default runnable state when the deferred transition fails. Fail closed: retry, and if the transition still cannot be applied, remove the record from the runnable pool entirely."
+        "summary": "A creation script that leaves a new record in its runnable-by-default state must not exit before an intended non-runnable status actually takes effect. Fail closed: retry, and if the status still cannot be applied, remove the record from the runnable pool entirely rather than leaving it there."
       }
     ],
     "named_documents": [

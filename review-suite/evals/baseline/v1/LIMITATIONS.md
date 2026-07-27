@@ -546,3 +546,33 @@ reach. It was never a rule against a private, human-facing provenance record
 describing its own real source, and applying it there would make provenance
 unable to do the one job it exists for: letting a later reader verify where a
 case actually came from.
+
+## 24. Sanitization must sweep every reviewer-visible field, not only the diff and its formulations
+
+The third review cycle on this batch found the sanitization fix (items 21-23)
+had covered the diff and the grader's `equivalent_formulations`, and still
+missed two other places the same real prose and real domain nouns reached a
+reviewer-visible packet: `sources.repository_instructions[].summary` reused the
+real reviewer's own phrasing ("abstract away the calls it needs to make",
+"deferred-by-default semantics") almost verbatim, and one packet's
+`change_contract` kept the real source's own domain noun (`enlistment`) in three
+fields the earlier pass never touched.
+
+The same cycle also found a fourth packet (`setup-service-path-gateway`) carried
+a no-op diff line — an identical `-`/`+` pair — that made its before-state
+impossible: the pre-image called a zero-argument constructor while the very next
+line inside the same hunk already referenced a dependency that constructor could
+not have had. This defect predates every sanitization commit; it was present in
+the very first draft and simply went unnoticed until a cycle checked the diff's
+internal coherence rather than its wording.
+
+Both are now fixed. The lesson generalizes past this specific batch: **a
+minimization or a rename must be swept across the whole packet - goal,
+acceptance criteria, non-goals, preserved behaviors, repository instructions,
+named documents, nearby patterns, and context - not only the diff and the
+formulations that happen to be the field a grader reads.** A packet has many
+prose fields, and a real term or a real reviewer's sentence can hide in any of
+them. Nothing mechanical catches this today; it took three independent review
+passes on one four-case stratum to find every instance, which is itself evidence
+that curation discipline alone is not a durable defense and a future population
+batch should expect the same scrutiny.
