@@ -1,0 +1,29 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "env-inventory-bullet-format",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.bullet-blocks-instead-of-a-table",
+      "description": "A reviewer may observe that documenting each variable as its own block is far more verbose than a compact table would be for the same three facts. This is the finding this case is built from, and it was adjudicated NOT material: the packet states that a table with a long consumers cell previously produced malformed rows under the repository's line-wrap formatter, so the per-item form is required for formatter stability and diff-friendliness rather than a stylistic preference. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "this is far more verbose than a table would be",
+        "bullet blocks repeat the same three fields three times",
+        "a compact table would say the same thing in less space",
+        "this looks like unnecessary verbosity for three facts",
+        "one entry per variable instead of a compact row"
+      ]
+    },
+    {
+      "id": "anf.repeated-owner-field-value",
+      "description": "Every entry repeats `owner: scheduler` verbatim. Worth noting as a candidate for a shared preamble; the packet's acceptance criteria require every variable to state its own owner explicitly rather than inherit one from context.",
+      "equivalent_formulations": [
+        "the owner field is the same value every time",
+        "this could state the owner once instead of per entry"
+      ]
+    }
+  ]
+}

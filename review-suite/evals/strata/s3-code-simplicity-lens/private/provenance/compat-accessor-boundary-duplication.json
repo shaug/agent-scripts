@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "compat-accessor-boundary-duplication",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 630, review comment 2906875752, authored by the repository owner, responding to an earlier review comment on the same thread (2906745973) that raised the typeless-seam concern this change resolves. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional registry runtime. Retains only the shape of the adjudicated exchange: two compatibility accessors with identical bodies are kept apart because they serve two independently scheduled untouched callers at the true migration boundary, rather than merged into one helper. No source identifier, path, symbol, prose, or diff was copied.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 630 review comment 2906875752, the accepted response to the typeless-seam concern raised in 2906745973: the compatibility boundary was moved to the true downstream edge rather than removed.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for whether apparent duplication is justified by a migration boundary. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the two callers are on independently scheduled migration paths, which is a concrete reason rather than an assumption that duplication is always fine. Residual risk for the owner: a reviewer could reasonably ask whether the two schedules could still share one function with two call sites rather than two functions with one body each - a smaller version of the same question this case's own accepted non-finding already raises and tolerates."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "metrics-label-formatting-duplication",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 410, review comment 2870262209, authored by the repository owner and accepted in commit f631cb0, read at the local-implementation level: the same review comment that motivated this batch's solution-simplicity case also observed the repeated argument-threading pattern as a local reuse defect. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional metrics exporter, a different subject from the registry-client case this same source PR also grounds in `s2-solution-simplicity-lens`, so the two cases do not read as the same scenario twice. Retains only the local failure shape the comment also raised: a formatting expression a shared helper already implements is re-derived inline in new code rather than reused, compounding an existing copy rather than resolving it. No source identifier, path, symbol, prose, or diff was copied.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 410 review comment 2870262209, accepted in commit f631cb0, read at the local-implementation level rather than the whole-solution level this same comment grounds in s2: the repeated argument-threading pattern the reviewer flagged is a local reuse defect independent of the architectural over-engineering question.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for a local-reuse judgement like this. Recommended adjudication: MATERIAL. The packet states the shared formatter already exists in the same module and that a fourth exporter is already planned, which makes the compounding cost concrete rather than hypothetical. Residual risk for the owner: this case and s2's `registry-client-layering` trace to the same source PR and comment, read at two different levels (whole-design versus local-implementation); the owner should confirm this reuse is the deliberate, recorded kind rather than an unintended duplicate sample of one real finding across two strata."
+  }
+}

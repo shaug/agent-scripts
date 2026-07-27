@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "metrics-label-formatting-duplication",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.label-expression-copied-into-two-new-functions",
+      "requirement": "When a new function needs formatting behaviour a shared helper already implements, call the helper rather than re-deriving the same expression inline.",
+      "trigger": "Adding a second and third exporter next to an existing one that already has the same duplication.",
+      "surface": "export_latency",
+      "consequence": "A helper that already produces exactly this label string exists in the same module, and the diff adds two more inline copies of its expression rather than calling it - compounding a duplication that already existed in `export_error_rate` rather than resolving it. A change to the label format now has to be made in three functions instead of one, and the packet states a fourth exporter is already planned.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "this re-derives the label expression instead of calling the shared formatter",
+        "the label format is now duplicated in three places",
+        "call format_sample_point instead of repeating its expression",
+        "each new exporter copies the same formatting logic inline",
+        "this compounds an existing duplication rather than fixing it"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.existing-error-rate-duplication-untouched",
+      "description": "`export_error_rate`'s own inline copy predates this diff and is not touched by it. A reviewer may note that fixing it too would be an improvement; the packet's non-goals do not require this diff to correct pre-existing code it does not otherwise touch.",
+      "equivalent_formulations": [
+        "the existing error rate exporter still has the same duplication",
+        "this diff does not fix the pre-existing copy"
+      ]
+    }
+  ]
+}

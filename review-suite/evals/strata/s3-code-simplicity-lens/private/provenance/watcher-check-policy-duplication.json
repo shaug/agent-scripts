@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "watcher-check-policy-duplication",
+  "origin": "repository_history",
+  "retention_authority": "This repository's own delivery history: commit 93516194388116f4841fc191a8c78c191d0da5b1, whose message records that the code-simplicity lens itself flagged the last remaining inline copy of the failed-check policy, and that the same duplication class had twice before produced self-contradictory watcher states. Public, owner-authored, no retention question.",
+  "sanitization": "Rewritten from scratch against a fictional watch-tool subject rather than this suite's own PR-watching code, so the case cannot be recognised as or confused with this repository's own implementation. Retains only the failure shape: a policy predicate duplicated at one remaining call site after a shared predicate was introduced, with a real history of that duplication class causing drift. No source identifier, path, symbol, prose, or diff was copied.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "This repository's commit 93516194388116f4841fc191a8c78c191d0da5b1: the code-simplicity lens found and this fix resolved the duplication, with the drift history stated in the commit message.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for a local-complexity judgement like this. Recommended adjudication: MATERIAL. The packet states two other call sites already use the shared predicate and that this exact duplication class had already caused real drift twice, which are concrete, checkable facts rather than a stylistic preference for less code. Residual risk for the owner: the severity is recorded as strong_recommendation rather than blocking, since the packet shows no currently observed drift, only a stated history of it; a reviewer could reasonably argue for blocking severity given that history, and the owner should decide which is right."
+  }
+}

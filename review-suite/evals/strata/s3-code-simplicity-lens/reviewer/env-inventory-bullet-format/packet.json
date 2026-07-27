@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/worker-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "9a1f6c30bd847e219c05873ae14092d78bf6ce31",
+    "comparison_base_sha": "3e70c81f4952b6ad0e837d61c9a4f5820ed7fb3c",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/docs/env-inventory.md b/docs/env-inventory.md\n--- a/docs/env-inventory.md\n+++ b/docs/env-inventory.md\n@@ -0,0 +1,22 @@\n+# Runtime Environment Variable Inventory\n+\n+This inventory documents every runtime environment variable a launched worker\n+process may see.\n+\n+## `WORKER_POOL_SIZE`\n+\n+- owner: scheduler\n+- consumers: worker/startup.py, worker/pool.py\n+- class: tuning\n+\n+## `WORKER_LOG_LEVEL`\n+\n+- owner: scheduler\n+- consumers: worker/startup.py, worker/logging.py\n+- class: observability\n+\n+## `WORKER_RETRY_BUDGET`\n+\n+- owner: scheduler\n+- consumers: worker/retry.py\n+- class: tuning\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Document the runtime environment variables a launched worker process may see, in a format that survives the repository's Markdown formatter.",
+    "acceptance_criteria": [
+      "Every documented variable states its owner, consumers, and class.",
+      "The document formats cleanly under the repository's Markdown formatter with no malformed rows."
+    ],
+    "non_goals": [
+      "Change which variables exist.",
+      "Change the formatter's own rules."
+    ],
+    "preserved_behaviors": [
+      "No other documentation file is affected."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Markdown formatting rules",
+        "location": "AGENTS.md",
+        "summary": "Documentation must format cleanly and stay diff-friendly under the repository's Markdown formatter and line-wrap width."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Formatter configuration",
+        "location": "docs/formatting.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "An existing inventory using a compact table",
+        "location": "docs/build-flags-inventory.md"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "markdown format check",
+      "command": "mdformat --check --wrap 80 docs/env-inventory.md",
+      "scope": "focused",
+      "status": "passed",
+      "result": "1 file already formatted"
+    },
+    {
+      "name": "full lint",
+      "command": "just lint",
+      "scope": "full",
+      "status": "passed",
+      "result": "pass"
+    }
+  ],
+  "context": {
+    "data": [
+      "A Markdown table with a long `consumers` cell (more than one file path) previously produced malformed rows when the repository's line-wrap formatter re-wrapped the cell content.",
+      "The existing compact-table inventory named in nearby patterns predates the wrap-width rule and is not re-formatted by this change."
+    ],
+    "operational": [
+      "This document is regenerated and diffed on every release, so formatter stability directly affects review noise."
+    ]
+  }
+}

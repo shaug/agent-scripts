@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/watch-tools",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "6d8f2b409ac57e3d1408f296c73ed85a1b6704ce",
+    "comparison_base_sha": "8b923ac4e01f76d59a20c187e6b304dfe9821a53",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/watcher/status.py b/watcher/status.py\n--- a/watcher/status.py\n+++ b/watcher/status.py\n@@ -1058,13 +1058,9 @@ def candidate_is_clear(checks_summary, failed_runs, failed_jobs, new_review_items):\n     if not checks_summary[\"all_terminal\"]:\n         return False\n-    if checks_summary[\"failed_count\"] > 0 or checks_summary[\"pending_count\"] > 0:\n+    if checks_summary[\"pending_count\"] > 0:\n         return False\n-    if int(checks_summary.get(\"cancelled_count\") or 0) > 0:\n+    if has_failed_checks(checks_summary, failed_runs, failed_jobs):\n         return False\n-    # Cancelled or failed workflow runs can exist while every check bucket\n-    # looks terminal and green; a clear candidate requires both views clean.\n-    if failed_runs or failed_jobs:\n-        return False\n     if new_review_items:\n         return False\n     return True\ndiff --git a/tests/test_status.py b/tests/test_status.py\n--- a/tests/test_status.py\n+++ b/tests/test_status.py\n@@ -20,1 +20,10 @@ def test_candidate_is_clear_rejects_pending_checks():\n     assert not candidate_is_clear(pending_summary(), [], [], [])\n+\n+\n+def test_candidate_is_clear_uses_the_shared_failed_check_predicate():\n+    summary = terminal_summary(cancelled_count=1)\n+    assert not candidate_is_clear(summary, [], [], [])\n+\n+\n+def test_candidate_is_clear_still_rejects_a_failed_workflow_run(monkeypatch):\n+    assert not candidate_is_clear(terminal_summary(), [\"run-1\"], [], [])\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Route the last inline copy of the failed-check policy through the shared `has_failed_checks` predicate that two other agreement sites already use.",
+    "acceptance_criteria": [
+      "`candidate_is_clear` uses the shared predicate instead of its own inline conditions for cancelled and failed checks.",
+      "Existing pass/fail behaviour is unchanged."
+    ],
+    "non_goals": [
+      "Change what `has_failed_checks` itself considers a failure.",
+      "Change the pending-check condition."
+    ],
+    "preserved_behaviors": [
+      "A pending check still rejects the candidate.",
+      "A clean, fully-terminal candidate with no new review items is still accepted."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Shared-policy rules",
+        "location": "AGENTS.md",
+        "summary": "A policy predicate with more than one call site must have exactly one implementation. An inline copy at a remaining call site is a defect once the shared version exists, not a stylistic choice."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Watcher clear-candidate contract",
+        "location": "docs/watcher-contract.md"
+      },
+      {
+        "label": "Shared failed-check predicate",
+        "location": "watcher/policy.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Two call sites already using the shared predicate",
+        "location": "watcher/reconcile.py"
+      },
+      {
+        "label": "Status tests",
+        "location": "tests/test_status.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "status tests",
+      "command": "pytest tests/test_status.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "9 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "211 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`has_failed_checks(checks_summary, failed_runs, failed_jobs)` already exists in `watcher/policy.py` and is already called from two other agreement sites in `watcher/reconcile.py`.",
+      "This inline copy in `candidate_is_clear` predates the shared predicate and was never migrated when the predicate was introduced.",
+      "The same duplication class previously caused two separate incidents where one call site's copy drifted from another's and produced a self-contradictory clear/not-clear result for the same candidate."
+    ],
+    "operational": [
+      "`candidate_is_clear` is the gate a merge automation checks before acting, so a wrong answer here is user-visible."
+    ]
+  }
+}
