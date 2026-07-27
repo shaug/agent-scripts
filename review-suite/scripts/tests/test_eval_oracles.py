@@ -143,6 +143,28 @@ class OracleCoverageTests(unittest.TestCase):
                     self.assertEqual("oracle", adjudication["second"])
                     self.assertTrue(adjudication["first"].strip())
 
+    def test_a_scored_stratum_records_a_second_adjudication_for_every_case(self):
+        """Fail closed on `scored`, not on whether the record happens to exist.
+
+        The guard below only fires when a case already declares an adjudication,
+        so a later batch could ship scored cases with none at all and pass
+        everything. This is the check that makes the adjudication plan's promise
+        true: a stratum may not be scored while any of its cases lacks a recorded
+        second adjudication.
+        """
+        for root in corpus.corpus_roots():
+            loaded = corpus.load_corpus(root)
+            if not loaded.scored:
+                continue
+            for case in loaded.cases:
+                with self.subTest(stratum=root.name, case_id=case.case_id):
+                    adjudication = case.provenance.get("adjudication")
+                    self.assertIsNotNone(
+                        adjudication,
+                        "a scored case must record how it was adjudicated",
+                    )
+                    self.assertIn(adjudication["second"], {"oracle", "owner_required"})
+
     def test_a_case_without_an_oracle_routes_to_the_owner(self):
         """`owner_required` is the only honest alternative to an oracle.
 

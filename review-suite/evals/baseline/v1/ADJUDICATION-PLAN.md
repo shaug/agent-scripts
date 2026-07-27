@@ -157,8 +157,9 @@ clean candidate.
 **Owner still required for:** every case in `s2-solution-simplicity-lens` and
 `s3-code-simplicity-lens`. "This is over-engineered" and "this complexity is
 requirement-justified" have no executable form, so those cases will declare
-`owner_required`, and a test holds them to that rather than letting them claim
-two adjudications they do not have.
+`owner_required`. Two tests hold them to it: a stratum may not declare `scored`
+while any of its cases lacks a recorded second adjudication, and a case that
+ships no oracle may not record anything other than `owner_required`.
 
 ### The three limits of what was settled
 

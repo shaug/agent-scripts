@@ -379,3 +379,46 @@ formulations do not use. No mechanical check can catch that, because the packet
 is supposed to describe the change. It is a curation judgement, and the oracle
 is the backstop — a case whose defect is spelled out in its own packet will
 still fail its oracle if the stated root cause is not the real cause.
+
+## 17. An oracle is a hand transcription of its packet, with no mechanical link
+
+Limitation 15 says an oracle adjudicates a requirement rather than a diff. There
+is a second, sharper gap in the same mechanism, and this corpus demonstrated it.
+
+An oracle's `candidate()` is written by hand to mirror the packet's diff.
+Nothing checks that it does. Review found a case where the diff's corrective
+action was guarded on the wrong side of a negation — so the diff's own added
+test could not have passed, while the packet recorded that suite as green — and
+**the oracle passed anyway**, because it modelled only the two decision
+predicates and never the action the test asserts. The packet was corrected, and
+that oracle now exercises the corrective action too, but the general hole is
+unchanged: an oracle can agree with a packet that says something different.
+
+So an oracle raises the floor without closing it. It proves a requirement is
+violated and that correcting the stated cause fixes it; it does not prove the
+reproduction it runs is the reproduction the reviewer will read. Two habits
+follow, and neither is automatable today:
+
+- read a packet's own added tests as claims that must be *satisfiable* against
+  its own diff, since a packet asserting a green suite it cannot have is
+  inconsistent evidence a contract-faithful reviewer may refuse; and
+- write the oracle from the packet's *acceptance criteria and its tests
+  together*, not from the criteria alone.
+
+A mechanical link — generating one from the other, or applying the diff and
+running its tests — would close it, and is a candidate v2 mechanism for #59
+rather than something this ticket should invent.
+
+## 18. Diff validity is now gated, and was not before
+
+Every packet's diff must parse as a patch. That was asserted only for the
+original protocol-proof corpus, so malformed hunk headers shipped in every
+stratum added afterwards: eleven of the seventeen packets in this repository
+failed `git apply --numstat` when first checked.
+
+It matters more for a scored stratum than it looks. A packet whose diff is not a
+valid patch is internally inconsistent evidence, and a reviewer that refuses a
+merge verdict on it is behaving correctly under its own contract — which a
+scored run would then record as a verdict mismatch, charging the reviewer for a
+curation defect. All seventeen now parse, and the check runs across every corpus
+rather than one.

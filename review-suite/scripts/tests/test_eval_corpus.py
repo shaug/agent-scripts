@@ -64,16 +64,24 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(protocol.PROTOCOL_VERSION, index["protocol_version"])
 
     def test_every_case_diff_is_a_parseable_patch(self):
-        for case in self.corpus.cases:
-            with self.subTest(case=case.case_id):
-                completed = subprocess.run(
-                    ["git", "apply", "--numstat"],
-                    input=case.packet["candidate"]["diff"]["content"],
-                    capture_output=True,
-                    check=False,
-                    text=True,
-                )
-                self.assertEqual(0, completed.returncode, completed.stderr)
+        """Across every shipped corpus, not just the default one.
+
+        A packet whose diff is not a valid patch is internally inconsistent
+        evidence, and a contract-faithful reviewer may refuse a merge verdict on
+        it - which a scored stratum would then grade as a mismatch. Covering only
+        the default corpus let malformed hunk headers ship in every stratum.
+        """
+        for root in corpus.corpus_roots():
+            for case in corpus.load_corpus(root).cases:
+                with self.subTest(stratum=root.name, case=case.case_id):
+                    completed = subprocess.run(
+                        ["git", "apply", "--numstat"],
+                        input=case.packet["candidate"]["diff"]["content"],
+                        capture_output=True,
+                        check=False,
+                        text=True,
+                    )
+                    self.assertEqual(0, completed.returncode, completed.stderr)
 
     def test_the_corpus_covers_every_grading_situation_it_must_prove(self):
         verdicts = {case.expectation["expected_verdict"] for case in self.corpus.cases}

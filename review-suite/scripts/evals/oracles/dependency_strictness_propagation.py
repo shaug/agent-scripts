@@ -19,6 +19,7 @@ class Record:
     status: str = "open"
     merge_marker: bool = False
     target_ref: str | None = None
+    reopened: bool = False
 
 
 def _integration_proven(record: Record, *, require_target_proof: bool = False) -> bool:
@@ -57,10 +58,23 @@ class _Corrected:
         )
 
 
+def _reconcile_closed(subject, records):
+    """The candidate's loop, transcribed: reopen what is not proven integrated."""
+    for record in records:
+        if not subject.reconcile_decides_integrated(record):
+            record.reopened = True
+    return records
+
+
 def _check(subject) -> bool:
     abandoned = Record(status="closed", merge_marker=True, target_ref=None)
     landed = Record(status="closed", merge_marker=True, target_ref="refs/heads/main")
     open_record = Record(status="open", merge_marker=True, target_ref=None)
+    # Exercise the corrective action the packet's own added test asserts, not
+    # only the predicates. Modelling the predicates alone let a diff whose
+    # action guard was inverted - so that its stated test could never pass -
+    # satisfy this oracle.
+    _reconcile_closed(subject, [abandoned, landed, open_record])
     return (
         # The two decision paths must agree on the closed record.
         subject.reconcile_decides_integrated(abandoned)
@@ -71,6 +85,9 @@ def _check(subject) -> bool:
         and subject.dependency_decides_integrated(landed) is True
         # An open record keeps the permissive behaviour the contract preserves.
         and subject.dependency_decides_integrated(open_record) is True
+        # The abandoned record is the one the reconcile pass must reopen.
+        and abandoned.reopened is True
+        and landed.reopened is False
     )
 
 

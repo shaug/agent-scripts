@@ -1,8 +1,9 @@
 """Executable oracles: a second, machine adjudication of a case's materiality.
 
-Loading is explicit rather than implicit. `oracle_module` resolves a case
-identifier to its module so a missing oracle is a clear absence rather than an
-import error, because most cases legitimately have none.
+Loading is explicit rather than implicit. `load` resolves a case identifier to
+its module, and `case_ids` reports only the oracles that actually ship, so a case
+with no oracle is a clear absence rather than an import error. Most cases in the
+simplicity strata will legitimately have none.
 """
 
 from __future__ import annotations

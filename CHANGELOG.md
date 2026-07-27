@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the correctness stratum, and recovered carved suffixes
 
+- fix: make every packet diff a valid patch, and gate the adjudication record
 - fix: stop a grader formulation being quotable from its own packet
+  (`fa772a7d770bd3d07f3fdd9bdc45a0c237b1d14e`)
 - docs: record the batch-2 delivery, the clean-control standard, and its limits
   (`e83da75687f06ec9ff6a82df5ac4845c6e6fb23f`)
 - feat: adjudicate the correctness cases by executable oracle

@@ -10,7 +10,7 @@
     "diff": {
       "format": "unified_diff",
       "complete": true,
-      "content": "diff --git a/harness/tests/test_attempts.py b/harness/tests/test_attempts.py\n--- a/harness/tests/test_attempts.py\n+++ b/harness/tests/test_attempts.py\n@@ -30,3 +30,14 @@ def test_each_attempt_is_recorded():\n     assert len(records) == 2\n+\n+\n+def test_every_attempt_runs_in_its_own_process():\n+    records = run_attempts(runs=2, artifact_dir=ARTIFACTS)\n+    names = set()\n+    for path in ARTIFACTS.glob(\"*.stdout.json\"):\n+        names.add(json.loads(path.read_text())[\"executor\"][\"name\"])\n+    # The bundled executor reports a stable name; process freshness is proven by\n+    # the driver spawning one subprocess per attempt.\n+    assert names == {\"bundled-executor\"}\n+    assert len(records) == len(list(ARTIFACTS.iterdir()))\n"
+      "content": "diff --git a/harness/tests/test_attempts.py b/harness/tests/test_attempts.py\n--- a/harness/tests/test_attempts.py\n+++ b/harness/tests/test_attempts.py\n@@ -30,1 +30,12 @@ def test_each_attempt_is_recorded():\n     assert len(records) == 2\n+\n+\n+def test_every_attempt_runs_in_its_own_process():\n+    records = run_attempts(runs=2, artifact_dir=ARTIFACTS)\n+    names = set()\n+    for path in ARTIFACTS.glob(\"*.stdout.json\"):\n+        names.add(json.loads(path.read_text())[\"executor\"][\"name\"])\n+    # The bundled executor reports a stable name; process freshness is proven by\n+    # the driver spawning one subprocess per attempt.\n+    assert names == {\"bundled-executor\"}\n+    assert len(records) == len(list(ARTIFACTS.iterdir()))\n"
     }
   },
   "change_contract": {
