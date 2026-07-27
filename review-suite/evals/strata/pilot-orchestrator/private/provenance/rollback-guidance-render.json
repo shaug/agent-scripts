@@ -1,0 +1,9 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "rollback-guidance-render",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 492, review comment 2882160198, authored by the repository owner. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional `storectl` CLI. Retains only the failure shape: rendered operator guidance emits a subcommand the tool does not register, and the accompanying test asserts the rendered shape rather than command validity. Carries no business logic, no domain identifier, no customer context, no credential, and no hidden reasoning from the source repository. No source text was copied.",
+  "recorded_at": "2026-07-26",
+  "notes": "Pilot case. Deliberately disjoint from every scored stratum: it exists to size the per-stratum cost and latency envelope and is never graded into the baseline. The identical case is carried by every pilot corpus so the declared skill closure is the only variable between pilot strata."
+}

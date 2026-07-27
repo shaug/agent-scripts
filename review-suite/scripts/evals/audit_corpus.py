@@ -79,16 +79,28 @@ def audit(corpus_root: Path | None) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--corpus", type=Path, default=None)
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=None,
+        help=(
+            "audit one corpus directory; by default every corpus this "
+            "repository ships is audited, so a stratum added later is gated "
+            "without changing this command"
+        ),
+    )
     args = parser.parse_args(argv)
 
-    errors = audit(args.corpus)
+    roots = [args.corpus] if args.corpus else corpus.corpus_roots()
+    errors: list[str] = []
+    for root in roots:
+        errors.extend(f"{root.name}: {error}" for error in audit(root))
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
         print(f"corpus audit failed with {len(errors)} error(s)", file=sys.stderr)
         return 1
-    print("corpus audit passed")
+    print(f"corpus audit passed for {len(roots)} corpus(es)")
     return 0
 
 

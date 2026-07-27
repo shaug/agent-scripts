@@ -1,0 +1,195 @@
+{
+  "record_version": "1.0",
+  "status": "incomplete_pending_owner_preregistration",
+  "status_detail": "Every value an implementing run can fix is fixed below. Two values cannot come from an implementing context and are therefore null: the per-stratum cost ceiling, which must be preregistered by the repository owner before any scored output is examined because a scored run spends real money, and the independent adjudication of each private expectation, which one context cannot supply both sides of. No scored run may launch until both are present. Freezing everything else now is what makes the remaining inputs a decision rather than a negotiation.",
+  "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+  "v1_review_behaviour_commit_note": "The pre-v2 review-suite commit whose behaviour a scored baseline must evaluate. This candidate modifies no file under skills/ and no v1 contract, so the evaluated closure text is identical at every commit on this branch: all three closure digests recorded below and in every pilot report are unchanged from this commit. The digest, not the commit, is the load-bearing pin - a commit can move without the evaluated text changing, and the evaluated text cannot change without the digest moving.",
+  "pilot_suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
+  "pilot_suite_commit_note": "The commit the committed pilot reports record, and the tree the recorded pilot batch actually ran from. The corpora it evaluated are present at that commit, so the batch is reproducible from it. Later commits on this branch change records only and leave every payload byte-identical. Earlier superseded batches ran from uncommitted trees and are cited by their corpus version and closure digest rather than by a commit, because no commit reproduces them.",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "calibration_version": "1.0",
+  "runtime": {
+    "adapter": "review-suite/scripts/evals/claude_executor.py",
+    "adapter_version": "1.0",
+    "executor_command": "python3 review-suite/scripts/evals/claude_executor.py",
+    "runtime": "claude",
+    "runtime_cli_version": "2.1.92",
+    "model": "claude-opus-4-6[1m]",
+    "model_identity_source": "resolved from the runtime's reported modelUsage on every attempt; an attempt that cannot name its model is recorded as a runtime failure rather than a result",
+    "stratum_rule": "a change of runtime, runtime version, or model creates a new stratum and must never be compared with this one"
+  },
+  "execution": {
+    "runs_per_case": 5,
+    "runs_per_case_rationale": "A denominator of one cannot measure a stochastic reviewer, and this suite has already observed the same configuration return `blocked` on one attempt and a merge verdict on the next for the case that tests refusal on incomplete evidence. Five is the smallest count that makes a per-case verdict-stability figure mean anything. Measured at five runs per case, the pilot observed verdict stability 1.0 and finding stability 1.0 on every case, so five did not surface instability on these packets - a statement about these packets, not a licence to reduce the count. The instability #50 observed was on a refusal-on-incomplete-evidence case, a class no scored stratum here contains.",
+    "timeout_seconds": 300,
+    "timeout_rationale": "Worst latency in any committed pilot report, and the worst in any retained per-attempt record, is 51.2 s - on the orchestrator stratum's larger packet. 300 s is roughly 5.9 times that. No pilot attempt across this ticket's 72 attempts timed out, and none came within a factor of five of the limit. Latency is not carried in a raw stdout record, so a figure from a superseded batch whose per-attempt records were not retained under the artifact path is not re-derivable and is not relied on here.",
+    "retry_policy": "none",
+    "retry_policy_rationale": "A failed attempt is recorded as an evaluation failure and never retried. Retrying would silently replace an unstable attempt with a luckier one and would bias every stability figure toward agreement.",
+    "max_output_bytes": 4000000,
+    "process_isolation": "one fresh executor process per attempt",
+    "cost_ceiling_exhaustion_policy": "Exceeding a stratum's preregistered ceiling stops further runs in that stratum and records an incomplete baseline for it. Repetitions are never reduced after outputs are visible.",
+    "artifact_retention": "Raw executor output is retained outside git at review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>/<case>.run-<n>.stdout.json, with the run's per-attempt records beside it at <stratum>/<commit>-<corpus_version>.attempts.jsonl. The commit and corpus version are in the path deliberately: an artifact name carries only the case and run number, so re-running a stratum into an unscoped directory silently replaces output a committed record may already cite, which happened once and cost a calibration source run. Before launching any attempt the runner refuses a run that would overwrite a retained raw stdout artifact, so the failure costs nothing. That check covers the raw records specifically; the per-attempt, report, and baseline-report paths are still written unconditionally, and are protected only because the frozen invocation gives them the same <commit>-<corpus_version> stem, so the raw-artifact collision fires first. Widening the guard to every output path is recorded as a deferred finding rather than done here.",
+    "invocation_template": "just eval-review-suite '<executor command>' --corpus review-suite/evals/strata/<stratum> --runs <runs> --timeout <timeout> --artifact-dir review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>.attempts.jsonl --report-out <path>",
+    "invocation_note": "The recipe forwards extra arguments to the runner. Naming an executor alone is not the frozen configuration: --corpus defaults to the protocol-proof corpus and --runs to 1, so the abbreviated command silently evaluates a different corpus once."
+  },
+  "strata": [
+    {
+      "id": "s1-correctness-orchestrator",
+      "state": "declared_unpopulated",
+      "target_skill": "review-code-change",
+      "target_skill_dependencies": [
+        "review-solution-simplicity",
+        "review-correctness",
+        "review-code-simplicity"
+      ],
+      "closure_documents": 8,
+      "closure_digest_at_this_commit": "9b2805f14cdd6158",
+      "ground_truth": "human-review and repository-history",
+      "planned_cases": 7,
+      "planned_case_classes": [
+        "multi-file contract or untouched-consumer propagation failure",
+        "concurrency, retry, idempotency, transaction, or data-integrity failure",
+        "validation gap where passing tests did not exercise the changed risk",
+        "two clean correctness controls",
+        "two adjudicated rejected, deferred, speculative, or polish-only findings as negative controls"
+      ],
+      "envelope_source": "pilot-orchestrator",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 9.0,
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s1-correctness-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s1-correctness-orchestrator.report.json",
+      "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
+      "expected_spend_usd": 3.33,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.2021,
+      "all_cold_worst_case_usd": 7.07
+    },
+    {
+      "id": "s2-solution-simplicity-lens",
+      "state": "declared_unpopulated",
+      "target_skill": "review-solution-simplicity",
+      "target_skill_dependencies": [],
+      "closure_documents": 2,
+      "closure_digest_at_this_commit": "6257ee4448b15874",
+      "ground_truth": "human-review",
+      "planned_cases": 4,
+      "planned_case_classes": [
+        "two demonstrated whole-solution over-engineering cases",
+        "two requirement-justified near-miss controls"
+      ],
+      "envelope_source": "pilot-solution-simplicity",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 3.0,
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s2-solution-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s2-solution-simplicity-lens.report.json",
+      "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
+      "expected_spend_usd": 0.82,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.1094,
+      "all_cold_worst_case_usd": 2.19
+    },
+    {
+      "id": "s3-code-simplicity-lens",
+      "state": "declared_unpopulated",
+      "target_skill": "review-code-simplicity",
+      "target_skill_dependencies": [],
+      "closure_documents": 2,
+      "closure_digest_at_this_commit": "a6187d8971eaef24",
+      "ground_truth": "human-review",
+      "planned_cases": 4,
+      "planned_case_classes": [
+        "two demonstrated local code-complexity or reuse cases",
+        "two behaviour-clarifying or non-material near-miss controls"
+      ],
+      "envelope_source": "pilot-code-simplicity",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 3.0,
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s3-code-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s3-code-simplicity-lens.report.json",
+      "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
+      "expected_spend_usd": 0.93,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.1116,
+      "all_cold_worst_case_usd": 2.23
+    },
+    {
+      "id": "connector-escape",
+      "state": "deferred_not_satisfied",
+      "target_skill": null,
+      "ground_truth": "connector-review",
+      "deferral_reason": "No connector review history is available to this repository under acceptable third-party authority and disclosure terms. Connector-escape recall is not measured by this baseline and must not be inferred from any human-review figure.",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": null
+    }
+  ],
+  "metrics_to_report": [
+    "per-case and aggregate material-finding recall, with denominators",
+    "false-clean rate, with denominator",
+    "false-positive rate, with denominator",
+    "false-alarm rate, with denominator",
+    "unique finding contribution per case",
+    "per-case and mean verdict stability, with denominators",
+    "per-case and mean finding stability, with denominators",
+    "every failure-status rate: spawn_failure, timeout, runtime_failure, output_too_large, malformed_output, protocol_mismatch, blocked",
+    "latency count, mean, p50, min, max",
+    "reported usage: input tokens, output tokens, cost in USD, with the number of attempts reporting each",
+    "adjudication referrals, per case and per run",
+    "confidence and uncertainty appropriate to the observed run count; no point estimate is presented as exact model capability"
+  ],
+  "metrics_not_available": [
+    {
+      "metric": "aggregate verdict-accuracy rate",
+      "detail": "The per-attempt grade records `verdict_match`, but the aggregate report has no verdict-accuracy figure, and only `review_result` attempts are graded at all. A case whose expected verdict is `blocked` therefore enters no quality denominator: when the reviewer correctly refuses, the attempt is classified `blocked` and never graded. This was raised twice during the evaluator's own review and deliberately deferred.",
+      "consequence_for_this_baseline": "No scored stratum declared above expects a `blocked` verdict, so the gap does not silently drop a scored case. That is a composition decision, not a repair: adding a refusal-on-incomplete-evidence case class to any scored stratum requires the metric first."
+    },
+    {
+      "metric": "severity agreement",
+      "detail": "`expectation.schema.json` requires a `severity` on every root cause that no metric consumes. Severity agreement is not measured and must not be assumed."
+    },
+    {
+      "metric": "false-positive rate, as a rate",
+      "detail": "The grader counts a surface hit when a finding's location shares one normalised token with a root cause's surface, and a surface hit without a formulation match is referred for adjudication rather than charged. A wrong gating finding is therefore only charged when its location shares no word with any root-cause surface. Measured on the pilot case: a wrong gating finding at storectl/cli.py is charged, while the same finding at storectl/guidance.py, at tests/test_guidance.py, or at the untouched render_apply_plan is only referred.",
+      "consequence_for_this_baseline": "Read `false_positive_rate` as a lower bound, never as a measured rate. The unchargeable region is the changed file, its test, and its neighbours, which is where a real reviewer is most likely to point. Narrowing a surface from a path to a symbol shrinks the region and does not remove it. The one-token rule is grader behaviour this ticket may not change, so it is escalated to #59 as a candidate preregistered v2 gate; the probe.surface-token-collision calibration probe keeps the gap visible."
+    }
+  ],
+  "pending_owner_inputs": [
+    "A per-stratum cost ceiling, preregistered before any scored output is examined. Proposals, and the pilot arithmetic behind them, are in COST-CEILING-PROPOSAL.md.",
+    "Two independent adjudications for each material root cause, accepted non-finding, severity, and allowed equivalent formulation, from genuinely separate parties, with disagreements resolved in a recorded note. ADJUDICATION-PLAN.md assesses what the source review threads can and cannot supply, where a blind agent context is and is not a legitimate second adjudicator, and every case where the two adjudications are expected to disagree.",
+    "A decision on what a clean correctness control must be. Neither identified candidate is an adjudicated clean review, and until the standard is settled the false-alarm rate has no honest denominator. See ADJUDICATION-PLAN.md section 4."
+  ],
+  "pilot_reports": [
+    {
+      "report": "pilot/pilot-orchestrator.report.json",
+      "stratum": "pilot-orchestrator",
+      "quality_block_is_signal": true,
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator --attempts-out review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-orchestrator.report.json",
+      "quality_block_caveat": "The aggregate recall of 0.5 is the mean of two cases that differ in one respect only: rollback-guidance-render is calibrated and scored recall 1.0 on all five attempts, while status-label-normalization is deliberately left uncalibrated as a control and scored recall 0.0 on all five, with ten adjudication referrals, while the reviewer gated the change every time. Do not read 0.5 as a capability figure; read the per-case block, and read each case's expectation `calibrated` flag first.",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator.attempts.jsonl"
+    },
+    {
+      "report": "pilot/pilot-solution-simplicity.report.json",
+      "stratum": "pilot-solution-simplicity",
+      "quality_block_is_signal": false,
+      "quality_block_caveat": "DO NOT QUOTE this report's material_finding_recall (0.0) or false_clean_rate (1.0) as a reviewer quality figure. This corpus carries the orchestrator stratum's case byte for byte, so that the declared skill closure is the only variable between pilot strata, and the expectation is a correctness root cause authored for that target. A simplicity lens returning clean on a correctness defect is behaving exactly as its contract requires, so the recorded miss is a target mismatch, not a reviewer failure. The corpus declares stratum.grading_is_signal false for this reason. Only payload size, latency, cost, and protocol outcomes are signals here.",
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-solution-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity --attempts-out review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-solution-simplicity.report.json",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity.attempts.jsonl"
+    },
+    {
+      "report": "pilot/pilot-code-simplicity.report.json",
+      "stratum": "pilot-code-simplicity",
+      "quality_block_is_signal": false,
+      "quality_block_caveat": "DO NOT QUOTE this report's material_finding_recall (0.0) or false_clean_rate (1.0) as a reviewer quality figure. This corpus carries the orchestrator stratum's case byte for byte, so that the declared skill closure is the only variable between pilot strata, and the expectation is a correctness root cause authored for that target. A simplicity lens returning clean on a correctness defect is behaving exactly as its contract requires, so the recorded miss is a target mismatch, not a reviewer failure. The corpus declares stratum.grading_is_signal false for this reason. Only payload size, latency, cost, and protocol outcomes are signals here.",
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-code-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity --attempts-out review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-code-simplicity.report.json",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity.attempts.jsonl"
+    }
+  ],
+  "controlled_artifacts": {
+    "raw_output": "review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>/<case>.run-<n>.stdout.json",
+    "per_attempt_records": "review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>.attempts.jsonl",
+    "in_git": false,
+    "detail": "The committed compact reports carry every metric, denominator, and identity a consumer needs. The retained per-attempt records are what a per-attempt figure quoted from a record - a single attempt's cost, token count, or latency - is re-derived from, and they are referenced by the path identity above."
+  },
+  "baseline_limitations_record": "LIMITATIONS.md",
+  "adjudication_plan": "ADJUDICATION-PLAN.md"
+}

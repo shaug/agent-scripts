@@ -23,11 +23,16 @@ AUDIT_COMMAND = "audit-review-corpus"
 EVAL_COMMAND = "eval-review-suite"
 
 
-#: `name param1 param2: dep1 dep2` - parameters precede the colon, dependencies
-#: follow it. Keeping the three apart matters: deriving dependencies by
-#: re-splitting a joined string silently yields nothing for `test: test-plugins`,
-#: which would make the paid-path guard below inert.
-RECIPE_HEADER = re.compile(r"^([a-z][a-z0-9-]*)((?:\s+[a-z0-9-]+)*)\s*:(.*)$")
+#: `name param1 *variadic: dep1 dep2` - parameters precede the colon,
+#: dependencies follow it. Keeping the three apart matters: deriving dependencies
+#: by re-splitting a joined string silently yields nothing for
+#: `test: test-plugins`, which would make the paid-path guard below inert.
+#:
+#: A parameter may carry just's `*` or `+` variadic prefix. Without that, a
+#: variadic recipe matches nothing at all and every assertion about it becomes a
+#: `KeyError` rather than a failure - including the paid-path guard, which would
+#: stop seeing the one recipe that can spend money.
+RECIPE_HEADER = re.compile(r"^([a-z][a-z0-9-]*)((?:\s+[*+]?[a-z0-9-]+)*)\s*:(.*)$")
 
 
 def recipes(text: str) -> dict[str, dict[str, object]]:
@@ -63,9 +68,19 @@ class JustfileContractTests(unittest.TestCase):
         for name in (TEST_COMMAND, AUDIT_COMMAND, EVAL_COMMAND):
             self.assertIn(name, self.recipes)
 
-    def test_the_evaluation_recipe_takes_one_executor_argument(self):
-        self.assertEqual(["executor"], self.recipes[EVAL_COMMAND]["parameters"])
+    def test_the_evaluation_recipe_takes_an_executor_and_forwards_the_rest(self):
+        """The executor stays required; runner options must reach the runner.
+
+        A recipe taking only an executor cannot execute a frozen per-stratum
+        configuration at all: `--corpus` defaults to the protocol-proof corpus
+        and `--runs` to 1, so the documented command would silently evaluate the
+        wrong corpus once.
+        """
+        self.assertEqual(
+            ["executor", "*args"], self.recipes[EVAL_COMMAND]["parameters"]
+        )
         self.assertIn('--executor "{{executor}}"', self.recipes[EVAL_COMMAND]["body"])
+        self.assertIn("{{args}}", self.recipes[EVAL_COMMAND]["body"])
 
     def test_the_deterministic_recipes_take_no_argument(self):
         for name in (TEST_COMMAND, AUDIT_COMMAND):

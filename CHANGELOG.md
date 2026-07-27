@@ -4,9 +4,19 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-26 — Added the result-blind review replay evaluator
+## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 
+- fix: reconcile every recorded figure with its retained artifact
+- fix: attribute the pilot to a reproducible commit and correct the records
+  (`3a8388d42e355e4bc9731b98b6dcd42ffd13ff2f`)
+- feat: report the stratum a run evaluated
+  (`2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e`)
+- fix: make the frozen baseline record auditable, and measure the envelope
+  (`f7787dcba681db1de079f57ce1f2f2941e0923b2`)
+- feat: add baseline strata, grader calibration, and the frozen v1 record
+  (`16b77e447dbcc844edd8f3fb58728d96826e177c`)
 - fix: skip the recipe-execution tests when `just` is absent
+  (`f544aa0c19d97dd4f1aabd7dfab3df08b2ee6a6b`)
 - feat: record the evaluated skill closure with every run
   (`b605051a7385dd310b0eff9dbf14c10dda87c633`)
 - docs: record the measured smoke evaluation and its variance

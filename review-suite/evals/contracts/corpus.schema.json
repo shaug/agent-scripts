@@ -23,6 +23,33 @@
       "type": "array",
       "items": {"type": "string", "minLength": 1}
     },
+    "stratum": {
+      "description": "Which baseline stratum this corpus is. A stratum is the unit of valid comparison: two corpora whose target skill, dependency closure, runtime, or ground-truth kind differ are unlike strata and must never be reported as one figure. Absent on a corpus that predates stratum labelling.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "ground_truth", "scored", "grading_is_signal", "purpose"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+        "ground_truth": {
+          "description": "Where this stratum's expected outcomes actually came from. `human-review` is adjudicated human review of a real candidate. `repository-history` is this suite's own adjudicated delivery history, including a defect that survived a review verdict and was caught by a later gate. `connector-review` is adjudicated connector review output, which no shipped stratum currently has. `synthetic` is a hand-written case that no real review ever adjudicated, and can never stand in for any of the others.",
+          "enum": [
+            "human-review",
+            "repository-history",
+            "connector-review",
+            "synthetic"
+          ]
+        },
+        "scored": {
+          "description": "True when this corpus contributes to the reported baseline. A pilot corpus is false: it exists to size the envelope and must stay disjoint from the scored cases.",
+          "type": "boolean"
+        },
+        "grading_is_signal": {
+          "description": "False when this corpus's expectations were authored for a different target than the one it declares, so its graded output says nothing about reviewer quality. A lens that returns clean on a correctness root cause is behaving exactly as contracted, and grading that as a miss is a target mismatch rather than a reviewer failure. A scored stratum must be true; a corpus reusing another target's case to isolate payload size must be false, and its recall and false-clean figures must never be quoted.",
+          "type": "boolean"
+        },
+        "purpose": {"type": "string", "minLength": 1}
+      }
+    },
     "cases": {
       "type": "array",
       "minItems": 1,

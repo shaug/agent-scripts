@@ -239,14 +239,48 @@ def run_attempt(
     return attempt, response, stdout, stderr
 
 
+def _artifact_stem(case_id: str, run_number: int) -> str:
+    return f"{case_id}.run-{run_number}"
+
+
 def _write_artifacts(
     artifact_dir: Path, attempt: dict[str, Any], stdout: str, stderr: str
 ) -> None:
-    name = f"{attempt['case_id']}.run-{attempt['run_number']}"
+    name = _artifact_stem(attempt["case_id"], attempt["run_number"])
     artifact_dir.mkdir(parents=True, exist_ok=True)
     (artifact_dir / f"{name}.stdout.json").write_text(stdout)
     if stderr:
         (artifact_dir / f"{name}.stderr.txt").write_text(stderr)
+
+
+def refuse_to_overwrite_artifacts(
+    artifact_dir: Path, loaded: corpus.Corpus, runs: int
+) -> None:
+    """Fail before launch when a run would destroy retained raw output.
+
+    Retained executor output is a controlled artifact: a calibrated formulation
+    cites the raw attempt it was drawn from, and an aggregate report cites the
+    attempts behind its figures. The artifact name carries the case and run
+    number but not the corpus version, so re-running a stratum into the same
+    directory silently replaced the very output an earlier record cited - which
+    happened once, and cost a calibration source run.
+
+    Checked here rather than at write time on purpose. Raising after the first
+    attempt would already have spent money, and this is the one command that can.
+    """
+    collisions = [
+        artifact_dir / f"{_artifact_stem(case.case_id, run_number)}.stdout.json"
+        for case in loaded.cases
+        for run_number in range(1, runs + 1)
+    ]
+    existing = [path for path in collisions if path.exists()]
+    if existing:
+        raise ConfigurationError(
+            f"{len(existing)} retained artifact(s) would be overwritten, starting "
+            f"with {existing[0]}. Retained output is evidence a committed record "
+            f"may already cite. Pass a distinct --artifact-dir, for example one "
+            f"scoped by corpus version ({loaded.corpus_version})."
+        )
 
 
 def evaluate(
@@ -310,6 +344,9 @@ def evaluate(
     for case in loaded.cases:
         refuse_if_contaminated(case, build(case, 1))
 
+    if artifact_dir is not None:
+        refuse_to_overwrite_artifacts(artifact_dir, loaded, runs)
+
     attempts: list[dict[str, Any]] = []
     for case in loaded.cases:
         for run_number in range(1, runs + 1):
@@ -348,6 +385,23 @@ def evaluate(
         "target_skill_documents": sorted(closure),
         "target_skill_digest": protocol.prompt_digest(skill_prompt),
         "suite_commit": commit,
+        # The stratum the corpus declares, carried verbatim. A report that names
+        # its target and closure but not its stratum cannot say which ground
+        # truth its expectations came from, whether it is scored, or whether its
+        # grading is a signal at all - so those properties would survive only as
+        # prose in some other file, and a report quoted on its own would silently
+        # lose them. `None` on a corpus that predates stratum labelling.
+        "stratum": loaded.stratum,
+        # Derived from the attempts rather than declared, because a stratum
+        # without a model identity is not comparable with any other. More than
+        # one model in this list means the run spans strata.
+        "executor_models": sorted(
+            {
+                model
+                for attempt in attempts
+                if (model := (attempt.get("executor") or {}).get("model"))
+            }
+        ),
         "runs_per_case": runs,
         "cases": len(loaded.cases),
         "timeout_seconds": timeout,

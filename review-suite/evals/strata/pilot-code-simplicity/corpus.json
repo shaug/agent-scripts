@@ -1,0 +1,17 @@
+{
+  "corpus_version": "1.3-pilot-code-simplicity",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-code-simplicity",
+  "target_skill_dependencies": [],
+  "stratum": {
+    "id": "pilot-code-simplicity",
+    "ground_truth": "human-review",
+    "scored": false,
+    "grading_is_signal": false,
+    "purpose": "Size the cost and latency envelope for a stratum targeting the self-sufficient code-simplicity lens. Unscored. Its expectations were authored for the orchestrator target, so its graded output is a target-mismatch artefact and not a quality signal; only its payload size, latency, cost, and protocol outcomes are."
+  },
+  "cases": [
+    "rollback-guidance-render"
+  ]
+}

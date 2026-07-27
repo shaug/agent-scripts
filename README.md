@@ -219,9 +219,28 @@ python3 review-suite/scripts/evals/runner.py \
   --runs 5 --report-out out/report.json
 ```
 
-Corpus curation, grader calibration, and the frozen v1 baseline are separate
-follow-up work; this evaluator supplies only the synthetic cases needed to prove
-the protocol.
+Cases are grouped into **strata** under `review-suite/evals/strata/`. A stratum
+is the unit of valid comparison — same target skill, same declared dependency
+closure, same runtime and model, same kind of ground truth — and each directory
+is a complete corpus declaring its own target. `just audit-review-corpus`
+discovers every one of them.
+
+The frozen v1 baseline record lives in `review-suite/evals/baseline/v1/`: the
+immutable configuration, the unscored pilot's per-stratum cost and latency
+envelope, a per-stratum cost-ceiling proposal built from those numbers, the
+grader calibration and adjudication record, a plan for satisfying the
+two-independent-adjudication gate, the ground-truth sourcing and sanitization
+record, and the baseline limitations.
+
+Two things are deliberately still outstanding, and the configuration record says
+so rather than implying otherwise: the scored strata are declared but not
+populated, and no scored run may launch until the repository owner preregisters
+a per-stratum cost ceiling and each private expectation has two independent
+adjudications. Read
+[the limitations record](review-suite/evals/baseline/v1/LIMITATIONS.md) before
+quoting any figure — in particular, **the connector stratum is deferred, not
+satisfied**, so connector-escape recall has never been measured and no
+human-review figure may be reported as a connector figure.
 
 ## Prerequisites
 

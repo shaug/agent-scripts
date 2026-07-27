@@ -1,0 +1,249 @@
+{
+  "adjudication_required": [
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "corr.inactive-ready-retained",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "corr.missing-dual-flag-test",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "flag-ready-retained-on-inactive",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "no-test-for-dual-flag-inactive",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "inactive-retains-ready-flag",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "missing-dual-flag-test",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "corr.inactive-ready-retained",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "corr.missing-dual-flag-test",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "ready-flag-retained-on-inactive",
+      "reason": "partial",
+      "run_number": 5
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "missing-dual-flag-test",
+      "reason": "partial",
+      "run_number": 5
+    }
+  ],
+  "attempts": 10,
+  "baseline_eligible": true,
+  "configuration": {
+    "artifacts_retained": true,
+    "cases": 2,
+    "corpus_version": "1.3-pilot-orchestrator",
+    "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
+    "grader_version": "1.0",
+    "max_output_bytes": 4000000,
+    "runs_per_case": 5,
+    "stratum": {
+      "grading_is_signal": true,
+      "ground_truth": "human-review",
+      "id": "pilot-orchestrator",
+      "purpose": "Size the cost and latency envelope for a stratum whose target is the orchestrator, whose payload therefore carries its three required lens skills. Carries two cases of materially different packet size so the fixed cost of the closure can be separated from the variable cost of the packet. Unscored.",
+      "scored": false
+    },
+    "suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
+    "target_skill": "review-code-change",
+    "target_skill_dependencies": [
+      "review-solution-simplicity",
+      "review-correctness",
+      "review-code-simplicity"
+    ],
+    "target_skill_digest": "9b2805f14cdd6158",
+    "target_skill_documents": [
+      "review-code-change/SKILL.md",
+      "review-code-change/references/orchestration-protocol.md",
+      "review-code-simplicity/SKILL.md",
+      "review-code-simplicity/references/code-simplicity-rubric.md",
+      "review-correctness/SKILL.md",
+      "review-correctness/references/correctness-rubric.md",
+      "review-solution-simplicity/SKILL.md",
+      "review-solution-simplicity/references/solution-simplicity-rubric.md"
+    ],
+    "timeout_seconds": 300.0
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 10,
+  "grader_version": "1.0",
+  "latency": {
+    "count": 10,
+    "max_seconds": 51.17633504094556,
+    "mean_seconds": 38.692721895687285,
+    "min_seconds": 31.838742708787322,
+    "p50_seconds": 36.32987822918221
+  },
+  "per_case": [
+    {
+      "attempts": 5,
+      "case_id": "rollback-guidance-render",
+      "expected_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "mean_recall": 1.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "verdict_stability": 1.0
+    },
+    {
+      "attempts": 5,
+      "case_id": "status-label-normalization",
+      "expected_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 0,
+    "false_alarm_rate": null,
+    "false_clean_denominator": 10,
+    "false_clean_rate": 0.0,
+    "false_positive_denominator": 10,
+    "false_positive_rate": 0.0,
+    "material_finding_recall": 0.5,
+    "recall_attempts": 10,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 1.0,
+    "per_case_finding_stability": {
+      "rollback-guidance-render": 1.0,
+      "status-label-normalization": 1.0
+    },
+    "per_case_stability_denominator": {
+      "rollback-guidance-render": 5,
+      "status-label-normalization": 5
+    },
+    "per_case_verdict_stability": {
+      "rollback-guidance-render": 1.0,
+      "status-label-normalization": 1.0
+    },
+    "stability_denominator": 10
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 10,
+    "reporting_attempts_input_tokens": 10,
+    "reporting_attempts_output_tokens": 10,
+    "total_cost_usd": 0.8376845,
+    "total_input_tokens": 329530.0,
+    "total_output_tokens": 16721.0
+  }
+}

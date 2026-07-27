@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/storectl",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "7c1d5e2a9b40f38617d4c5a2e08b96f31d7a4c02",
+    "comparison_base_sha": "2f9a6b18c3d47e05a1b8f26d904c7e3a5b81d6f4",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/storectl/guidance.py b/storectl/guidance.py\n--- a/storectl/guidance.py\n+++ b/storectl/guidance.py\n@@ -14,6 +14,17 @@ def render_apply_plan(plan):\n     return \"\\n\".join(lines)\n+\n+\n+def render_rollback_guidance(store_root):\n+    \"\"\"Return the operator commands that undo an applied migration.\"\"\"\n+    return [\n+        f\"storectl export --all > {store_root}.backup.json\",\n+        f\"storectl import {store_root}.backup.json\",\n+        f\"rm -f {store_root}.backup.json\",\n+    ]\ndiff --git a/tests/test_guidance.py b/tests/test_guidance.py\n--- a/tests/test_guidance.py\n+++ b/tests/test_guidance.py\n@@ -31,3 +31,9 @@ def test_render_apply_plan_lists_every_step():\n     assert len(render_apply_plan(plan)) > 0\n+\n+\n+def test_render_rollback_guidance_emits_three_steps():\n+    commands = render_rollback_guidance(\"/srv/store\")\n+    assert len(commands) == 3\n+    assert all(command.strip() for command in commands)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Give operators a copy-pasteable rollback procedure after an applied migration.",
+    "acceptance_criteria": [
+      "The rendered guidance is a runnable sequence of `storectl` commands.",
+      "Every emitted command exists in the installed `storectl` interface.",
+      "The guidance names the store root the operator actually migrated."
+    ],
+    "non_goals": [
+      "Perform the rollback automatically.",
+      "Change how the apply plan itself is rendered."
+    ],
+    "preserved_behaviors": [
+      "`render_apply_plan` output is unchanged."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Operator guidance rules",
+        "location": "AGENTS.md",
+        "summary": "Emitted operator commands must be runnable against the installed CLI; never document a subcommand the tool does not expose."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "storectl CLI reference",
+        "location": "docs/storectl-cli.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Apply-plan renderer",
+        "location": "storectl/guidance.py"
+      },
+      {
+        "label": "Guidance tests",
+        "location": "tests/test_guidance.py"
+      },
+      {
+        "label": "Command surface the CLI actually registers",
+        "location": "storectl/cli.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "guidance tests",
+      "command": "pytest tests/test_guidance.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "7 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "212 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`storectl/cli.py` registers exactly these subcommands: `apply`, `dump`, `import`, `info`, `migrate`, `status`.",
+      "The store root is an operator-supplied filesystem path."
+    ],
+    "operational": [
+      "Operators copy this guidance directly into a shell during an incident."
+    ]
+  }
+}

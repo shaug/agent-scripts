@@ -1,0 +1,45 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "rollback-guidance-render",
+  "packet_valid": true,
+  "calibrated": true,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.unsupported-emitted-subcommand",
+      "requirement": "Every emitted command exists in the installed `storectl` interface.",
+      "trigger": "An operator copies the first rendered line into a shell during a rollback.",
+      "surface": "render_rollback_guidance",
+      "consequence": "The documented rollback fails at its first step, because the registered command surface has no `export` subcommand, so the operator has no backup before running the destructive step.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "`storectl export` does not exist in the installed CLI",
+        "`storectl export`, which is not a registered subcommand",
+        "there is no `export` subcommand",
+        "the `export` subcommand does not exist"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.unquoted-store-root",
+      "description": "The rendered commands interpolate the store root without shell quoting. Real, but the packet states the path is operator supplied at the shell they are already in, and the change contract does not claim shell-safe rendering.",
+      "equivalent_formulations": [
+        "the store root is not shell quoted",
+        "path interpolation is unquoted",
+        "without shell quoting"
+      ]
+    },
+    {
+      "id": "anf.test-asserts-shape-only",
+      "description": "The added test asserts the command count rather than command validity. Worth saying, and it is the reason the defect survived a green suite, but it restates the root cause rather than adding a second one.",
+      "equivalent_formulations": [
+        "`len(commands) == 3`",
+        "does not verify that the emitted subcommands are valid",
+        "does not assert on the actual subcommand names",
+        "checks structural properties",
+        "checks count and non-emptiness"
+      ]
+    }
+  ]
+}

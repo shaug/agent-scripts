@@ -1,0 +1,338 @@
+{
+  "calibration_version": "1.0",
+  "case_id": "rollback-guidance-render",
+  "grader_version": "1.0",
+  "source": "probe.observed-root-cause and probe.accepted-non-finding are the two findings of run 1 verbatim, byte for byte, from the retained artifact review-suite/evals/artifacts/pilot-orchestrator/1.1-pilot-orchestrator/rollback-guidance-render.run-1.stdout.json, produced at corpus version 1.1-pilot-orchestrator, model claude-opus-4-6[1m], suite commit 16560d807c66076fcbf3f00d3a87f543c6ae2458. That run is the post-calibration validation run, so this prose is not prose the shipped formulations were fitted to. The formulations were drawn from an earlier run at corpus version 1.0-pilot-orchestrator whose raw output is no longer retained; CALIBRATION.md records that loss and the fix. The remaining probes are constructed variants that probe one grading boundary each. No scored output was observed.",
+  "probes": [
+    {
+      "id": "probe.observed-root-cause",
+      "kind": "observed",
+      "note": "The gating finding a real reviewer returned, verbatim. Before calibration this scored `partial`, because the shipped formulations were written before any real prose existed.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "concern": "The rollback guidance emits `storectl export`, which is not a registered subcommand. Operators copying this guidance during an incident will receive a command-not-found error. The installed CLI exposes `dump`, not `export`.",
+          "confidence": "high",
+          "evidence": [
+            {
+              "detail": "Emits `storectl export --all > {store_root}.backup.json`.",
+              "location": "storectl/guidance.py \u2014 render_rollback_guidance, line 1 of returned list"
+            },
+            {
+              "detail": "`storectl/cli.py` registers exactly these subcommands: `apply`, `dump`, `import`, `info`, `migrate`, `status`. There is no `export` subcommand.",
+              "location": "review packet context.data"
+            },
+            {
+              "detail": "AGENTS.md rule: emitted operator commands must be runnable against the installed CLI; never document a subcommand the tool does not expose.",
+              "location": "review packet sources.repository_instructions"
+            }
+          ],
+          "expected_effect": "All emitted commands correspond to registered `storectl` subcommands, satisfying acceptance criterion 2 and the repository instruction.",
+          "id": "corr.nonexistent-export-subcommand",
+          "impact": "The rollback procedure fails on the first command, leaving the operator without a working recovery path during an incident.",
+          "lens": "correctness",
+          "proposed_change": "Replace `storectl export --all` with the corresponding registered subcommand (likely `storectl dump --all`, given the registered surface) so the emitted guidance is runnable.",
+          "rule": "Every emitted command exists in the installed `storectl` interface (acceptance criterion 2); repository instructions: never document a subcommand the tool does not expose.",
+          "severity": "blocking"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.nonexistent-export-subcommand": "matched"
+        },
+        "matched_root_cause_ids": [
+          "rc.unsupported-emitted-subcommand"
+        ],
+        "recall": 1.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": []
+      }
+    },
+    {
+      "id": "probe.paraphrase",
+      "kind": "paraphrase",
+      "note": "Same root cause, different wording, different finding id and surface spelling. A grader that only recognises the observed sentence would miss this.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "id": "corr.rollback-first-step-unrunnable",
+          "lens": "correctness",
+          "severity": "blocking",
+          "confidence": "high",
+          "rule": "Emitted operator commands must be runnable against the installed CLI.",
+          "evidence": [
+            {
+              "location": "render_rollback_guidance, returned list element 0",
+              "detail": "Comparing the rendered command against the registered command surface in the packet context: there is no `export` subcommand."
+            }
+          ],
+          "concern": "The backup step of the rollback procedure names a subcommand the tool never registers, so the sequence cannot be executed from the top.",
+          "impact": "An operator following the guidance during an incident proceeds to the destructive step with no backup taken.",
+          "proposed_change": "Render the backup step using a registered subcommand.",
+          "expected_effect": "Every rendered step is executable against the shipped CLI.",
+          "location": "storectl/guidance.py"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.rollback-first-step-unrunnable": "matched"
+        },
+        "matched_root_cause_ids": [
+          "rc.unsupported-emitted-subcommand"
+        ],
+        "recall": 1.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": []
+      }
+    },
+    {
+      "id": "probe.overlapping-symptom",
+      "kind": "overlapping_symptom",
+      "note": "Describes the same symptom - the rollback does not complete - at the right surface without identifying the cause. It must not earn recall, and it must not be charged as a false positive either; it is exactly the case adjudication exists for.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "id": "corr.rollback-procedure-unreliable",
+          "lens": "correctness",
+          "severity": "blocking",
+          "confidence": "high",
+          "rule": "Operator guidance must describe a procedure that completes.",
+          "evidence": [
+            {
+              "location": "storectl/guidance.py:render_rollback_guidance",
+              "detail": "The three rendered steps are treated as a sequence, but nothing in the change proves the sequence completes."
+            }
+          ],
+          "concern": "Operators cannot complete the documented rollback. The procedure is presented as authoritative without any evidence that it works end to end.",
+          "impact": "A rollback attempted from this guidance may leave the store in an unknown state.",
+          "proposed_change": "Prove the rendered procedure completes before presenting it to operators.",
+          "expected_effect": "The guidance is only emitted once it is known to work.",
+          "location": "storectl/guidance.py:render_rollback_guidance"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.rollback-procedure-unreliable": "partial"
+        },
+        "matched_root_cause_ids": [],
+        "recall": 0.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": [
+          "corr.rollback-procedure-unreliable"
+        ]
+      }
+    },
+    {
+      "id": "probe.duplicate-report",
+      "kind": "duplicate_report",
+      "note": "One root cause reported twice must earn recall once. Counting the second report again would inflate recall for a reviewer that merely repeats itself.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "concern": "The rollback guidance emits `storectl export`, which is not a registered subcommand. Operators copying this guidance during an incident will receive a command-not-found error. The installed CLI exposes `dump`, not `export`.",
+          "confidence": "high",
+          "evidence": [
+            {
+              "detail": "Emits `storectl export --all > {store_root}.backup.json`.",
+              "location": "storectl/guidance.py \u2014 render_rollback_guidance, line 1 of returned list"
+            },
+            {
+              "detail": "`storectl/cli.py` registers exactly these subcommands: `apply`, `dump`, `import`, `info`, `migrate`, `status`. There is no `export` subcommand.",
+              "location": "review packet context.data"
+            },
+            {
+              "detail": "AGENTS.md rule: emitted operator commands must be runnable against the installed CLI; never document a subcommand the tool does not expose.",
+              "location": "review packet sources.repository_instructions"
+            }
+          ],
+          "expected_effect": "All emitted commands correspond to registered `storectl` subcommands, satisfying acceptance criterion 2 and the repository instruction.",
+          "id": "corr.nonexistent-export-subcommand",
+          "impact": "The rollback procedure fails on the first command, leaving the operator without a working recovery path during an incident.",
+          "lens": "correctness",
+          "proposed_change": "Replace `storectl export --all` with the corresponding registered subcommand (likely `storectl dump --all`, given the registered surface) so the emitted guidance is runnable.",
+          "rule": "Every emitted command exists in the installed `storectl` interface (acceptance criterion 2); repository instructions: never document a subcommand the tool does not expose.",
+          "severity": "blocking"
+        },
+        {
+          "id": "corr.export-not-registered-again",
+          "lens": "correctness",
+          "severity": "blocking",
+          "confidence": "high",
+          "rule": "Every emitted command exists in the installed `storectl` interface.",
+          "evidence": [
+            {
+              "location": "storectl/guidance.py:render_rollback_guidance",
+              "detail": "Restating the same defect from the returned list: the `export` subcommand does not exist."
+            }
+          ],
+          "concern": "The rendered backup command uses `export`, and the `export` subcommand does not exist in the registered surface.",
+          "impact": "Same consequence as the finding above: the rollback cannot start.",
+          "proposed_change": "Use a registered subcommand for the backup step.",
+          "expected_effect": "The backup step runs.",
+          "location": "storectl/guidance.py:render_rollback_guidance"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.nonexistent-export-subcommand": "matched",
+          "corr.export-not-registered-again": "duplicate"
+        },
+        "matched_root_cause_ids": [
+          "rc.unsupported-emitted-subcommand"
+        ],
+        "recall": 1.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": []
+      }
+    },
+    {
+      "id": "probe.partial-claim-wrong-surface",
+      "kind": "partial_claim",
+      "note": "Names the root cause in prose but points at the command registry instead of the renderer, and asks for the opposite change. Partially correct, so it is referred rather than credited or punished.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "id": "corr.cli-surface-incomplete",
+          "lens": "correctness",
+          "severity": "strong_recommendation",
+          "confidence": "high",
+          "rule": "The registered command surface should cover documented operations.",
+          "evidence": [
+            {
+              "location": "storectl/cli.py",
+              "detail": "The registry is the reason the guidance cannot run: the `export` subcommand does not exist."
+            }
+          ],
+          "concern": "The command registry is missing an export operation that operators are expected to have.",
+          "impact": "Operators have no export path at all.",
+          "proposed_change": "Register an export subcommand.",
+          "expected_effect": "Operators gain an export path.",
+          "location": "storectl/cli.py"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.cli-surface-incomplete": "partial"
+        },
+        "matched_root_cause_ids": [],
+        "recall": 0.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": [
+          "corr.cli-surface-incomplete"
+        ]
+      }
+    },
+    {
+      "id": "probe.plausible-false-positive",
+      "kind": "plausible_false_positive",
+      "note": "A gating finding about a real-sounding but unevidenced concern at a surface sharing no token with the root cause. This is charged as a false positive, and it is the only region in which the false-positive rate is measurable at all - see the surface_token_collision probe below.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "id": "corr.cli-registry-hardcoded",
+          "lens": "correctness",
+          "severity": "blocking",
+          "confidence": "high",
+          "rule": "Command registration should not be duplicated across modules.",
+          "evidence": [
+            {
+              "location": "storectl/cli.py",
+              "detail": "The registered subcommand list is enumerated in the packet context rather than derived at runtime."
+            }
+          ],
+          "concern": "The set of subcommands appears to be maintained by hand, so it can drift from what the tool actually dispatches.",
+          "impact": "A future subcommand may be dispatchable without appearing in the registry.",
+          "proposed_change": "Derive the registered surface from the dispatch table.",
+          "expected_effect": "The registry cannot drift from dispatch.",
+          "location": "storectl/cli.py"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.cli-registry-hardcoded": "unexpected"
+        },
+        "matched_root_cause_ids": [],
+        "recall": 0.0,
+        "false_positive_finding_ids": [
+          "corr.cli-registry-hardcoded"
+        ],
+        "adjudication_finding_ids": []
+      }
+    },
+    {
+      "id": "probe.surface-token-collision",
+      "kind": "surface_token_collision",
+      "note": "The measured limit of the false-positive boundary, kept in the calibration set so it cannot be forgotten. A surface hit needs only ONE shared normalised token, so this equally wrong gating finding - aimed at render_apply_plan, the untouched function above the change - is referred rather than charged, purely because `guidance` appears in both locations. The same is true of any wrong finding in the changed file or its test, which is where a real reviewer is most likely to point. Narrowing the surface from a path to a symbol shrank this region; it did not remove it. Requiring every surface token instead of any would, but that is grader behaviour this ticket may not change: see LIMITATIONS.md item 4.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "id": "corr.apply-plan-renderer-untested",
+          "lens": "correctness",
+          "severity": "blocking",
+          "confidence": "high",
+          "rule": "Every rendered operator string should be covered by a behavioural test.",
+          "evidence": [
+            {
+              "location": "storectl/guidance.py:render_apply_plan",
+              "detail": "The untouched apply-plan renderer above the change has no assertion on the text it produces."
+            }
+          ],
+          "concern": "The apply-plan renderer, which this change does not touch, produces operator-facing text with no behavioural coverage.",
+          "impact": "An unrelated future edit to the apply plan could ship a broken plan.",
+          "proposed_change": "Add assertions for the apply-plan renderer's output.",
+          "expected_effect": "Both renderers are covered.",
+          "location": "storectl/guidance.py:render_apply_plan"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.apply-plan-renderer-untested": "partial"
+        },
+        "matched_root_cause_ids": [],
+        "recall": 0.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": [
+          "corr.apply-plan-renderer-untested"
+        ]
+      }
+    },
+    {
+      "id": "probe.accepted-non-finding",
+      "kind": "accepted_non_finding",
+      "note": "The second finding of the same real attempt, verbatim. Real and worth saying, but it restates why the defect survived a green suite rather than adding a second root cause, so it is tolerated instead of counted as a false positive.",
+      "verdict": "changes_required",
+      "findings": [
+        {
+          "concern": "The test counts commands and checks they are non-empty but never verifies the subcommand tokens against the actual CLI surface. The nonexistent `export` subcommand passes this test uncaught.",
+          "confidence": "high",
+          "evidence": [
+            {
+              "detail": "Asserts only `len(commands) == 3` and that each command is non-blank. Does not inspect the subcommand token of any emitted string.",
+              "location": "tests/test_guidance.py \u2014 test_render_rollback_guidance_emits_three_steps"
+            },
+            {
+              "detail": "\"Every emitted command exists in the installed `storectl` interface.\"",
+              "location": "review packet change_contract.acceptance_criteria[1]"
+            }
+          ],
+          "expected_effect": "The test catches the current `export` bug and guards against future guidance that references nonexistent subcommands.",
+          "id": "corr.test-does-not-verify-subcommands",
+          "impact": "The acceptance criterion that every emitted command is runnable is untested; future renames or typos in guidance output will not be caught by the test suite.",
+          "lens": "correctness",
+          "proposed_change": "Assert that each emitted command begins with a registered `storectl` subcommand (e.g. check that the subcommand token after `storectl` is in the set `{apply, dump, import, info, migrate, status}`), or at minimum assert the expected subcommand strings appear.",
+          "rule": "Tests must prove acceptance criteria \u2014 specifically that every emitted command exists in the installed CLI interface (acceptance criterion 2).",
+          "severity": "strong_recommendation"
+        }
+      ],
+      "expect": {
+        "classifications": {
+          "corr.test-does-not-verify-subcommands": "accepted"
+        },
+        "matched_root_cause_ids": [],
+        "recall": 0.0,
+        "false_positive_finding_ids": [],
+        "adjudication_finding_ids": []
+      }
+    }
+  ]
+}

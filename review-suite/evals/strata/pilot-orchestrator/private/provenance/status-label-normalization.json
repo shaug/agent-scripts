@@ -1,0 +1,9 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "status-label-normalization",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 278, review comment 2861937742, authored by the repository owner and accepted in the follow-up reply 2861947492 which names the implementing commit. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional record registry. Retains only the failure shape: a normalization step drops one legacy flag and returns early for an inactive status, leaving a second legacy flag that contradicts the canonical status, with a live consumer that admits on that flag alone. Carries no business logic, no domain identifier, no customer context, no credential, and no hidden reasoning from the source repository. No source text was copied.",
+  "recorded_at": "2026-07-26",
+  "notes": "Pilot case, never scored. Added specifically to measure how per-attempt cost and latency respond to packet size: its packet is materially larger than the other pilot case, so the two together separate the fixed cost of a stratum's skill closure from the variable cost of the packet. It is carried only by pilot-orchestrator, so the shared case remains byte-identical across all three pilot strata."
+}
