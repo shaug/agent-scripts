@@ -34,21 +34,24 @@ independently.
 
 ## PR linkage and transition
 
-- Treat the live Linear issue body as the scope contract.
+- Treat the live Linear issue body as the scope and acceptance contract.
 - Preserve exact product rules such as timing, timezone, idempotency, skip,
-  unavailable, migration, compatibility, and rollout behavior.
+  unavailable, migration, compatibility, rollout, and verification behavior.
 - Use the repository's required Linear reference in branch, commit, and PR
   metadata.
 - Keep one ticket per candidate. Publish it as one ordinary PR or one ordered
-  carved stack, with the Linear reference on every PR and any transition-causing
-  closing integration only on the final PR.
-- Update Linear status only when that workflow state was actually reached and
-  the completion policy authorizes a manual transition.
-- After the ordinary merge or a verified `all_merged` stack result, verify the
-  complete result on the base and the expected Linear transition.
+  carved stack. Allow an integration-driven completion transition only when all
+  required acceptance can pass before merge; otherwise use a non-transitioning
+  reference and close manually after post-merge evidence passes.
+- Update or reopen Linear status only when that workflow state was actually
+  reached, the criterion-specific ledger passes, and the completion policy
+  authorizes the transition. A completed state is not acceptance evidence.
+- After the ordinary merge or verified `all_merged` result, verify the complete
+  result on the base and run every required post-merge acceptance item with
+  separately granted environment and deployment authority.
 - When the ticket is an epic child, reread affected native dependency
-  relationships after transition and report newly unblocked work without
-  selecting or mutating it.
+  relationships only after acceptance and the transition pass, then report newly
+  unblocked work without selecting or mutating it.
 
 Do not close or verify the parent epic. Report newly unblocked downstream work
 without selecting it.

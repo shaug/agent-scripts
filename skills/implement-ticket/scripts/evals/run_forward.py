@@ -81,14 +81,50 @@ def grade(case_id: str, observed: dict, expected: dict) -> list[str]:
             f"target_skill: expected {expected.get('target_skill')!r}, "
             f"got {observed.get('target_skill')!r}"
         )
+    if "acceptance_statuses" in expected:
+        ledger = observed.get("acceptance_ledger") or []
+        criteria = [
+            entry.get("criterion") for entry in ledger if isinstance(entry, dict)
+        ]
+        duplicates = sorted(
+            {criterion for criterion in criteria if criteria.count(criterion) > 1}
+        )
+        if duplicates:
+            failures.append(
+                "acceptance_ledger: duplicate criteria " + ", ".join(duplicates)
+            )
+        observed_statuses = {
+            entry.get("criterion"): entry.get("status")
+            for entry in ledger
+            if isinstance(entry, dict) and isinstance(entry.get("criterion"), str)
+        }
+        if observed_statuses != expected["acceptance_statuses"]:
+            failures.append(
+                "acceptance_statuses: expected "
+                f"{expected['acceptance_statuses']!r}, got {observed_statuses!r}"
+            )
     return [f"{case_id}: {failure}" for failure in failures]
 
 
-def evaluate(cases_path: Path, expectations_path: Path, command: list[str]):
+def evaluate(
+    cases_path: Path,
+    expectations_path: Path,
+    command: list[str],
+    target_skill: str | None = None,
+):
     cases = load_json(cases_path)
     expectations = {item["case_id"]: item for item in load_json(expectations_path)}
     if {case["id"] for case in cases} != set(expectations):
         raise ValueError("forward case and expectation IDs differ")
+    if target_skill:
+        cases = [case for case in cases if case["target_skill"] == target_skill]
+        expectations = {
+            case_id: expected
+            for case_id, expected in expectations.items()
+            if expected["target_skill"] == target_skill
+        }
+        if not cases:
+            raise ValueError(f"no forward cases target {target_skill}")
 
     observations = {}
     failures = []
@@ -109,6 +145,11 @@ def parse_args():
         default=f"{shlex.quote(sys.executable)} {shlex.quote(str(DEFAULT_EXECUTOR))}",
         help="Fresh-process evaluator command; receives one result-blind JSON packet on stdin",
     )
+    parser.add_argument(
+        "--target-skill",
+        choices=("implement-ticket", "implement-epic"),
+        help="Run only cases targeting one skill after validating the full corpus",
+    )
     parser.add_argument("--output-dir", type=Path)
     return parser.parse_args()
 
@@ -116,7 +157,9 @@ def parse_args():
 def main() -> int:
     args = parse_args()
     command = shlex.split(args.executor)
-    observations, failures = evaluate(args.cases, args.expectations, command)
+    observations, failures = evaluate(
+        args.cases, args.expectations, command, target_skill=args.target_skill
+    )
 
     if args.output_dir:
         args.output_dir.mkdir(parents=True, exist_ok=True)

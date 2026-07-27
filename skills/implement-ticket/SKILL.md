@@ -92,16 +92,19 @@ Use this default authority matrix unless the user or repository is stricter:
   branch push, PR creation or update, evidence-based review replies, and
   resolution of fully addressed threads;
 - `merge after gates` additionally permits merging this ticket's ordinary PR or
-  carved stack and safely deleting its verified merged feature branches;
-- `merge plus manual transition` additionally permits the explicitly requested
-  status or close transition for this ticket only;
+  carved stack and safely deleting its verified merged feature branches, but it
+  does not permit deployment, post-merge verification, or tracker transition;
+- `merge plus manual transition` additionally permits only the explicitly
+  requested status, reopen, or close transition for this ticket after its
+  acceptance evidence passes;
 - `decompose oversized candidates into stacked changesets` permits an oversized
   but coherent ticket candidate to be transferred to `carve-changesets`; it is
   off by default and is independent of every completion policy;
 - ticket-body edits, dependency mutations, and follow-up creation require
   explicit ticket-management authority; and
-- deployment, production mutation, destructive data operations, and parent
-  closure always require separate explicit authority.
+- deployment, production mutation, destructive data operations, parent closeout,
+  and post-merge verification in a protected environment always require their
+  own explicit authority.
 
 Do not infer decomposition, merge, issue-close, parent-close, deployment, or
 production authority from words such as `implement`, `finish`, `complete`, or
@@ -109,11 +112,47 @@ production authority from words such as `implement`, `finish`, `complete`, or
 stack. When decomposition authority is absent, never silently publish an
 oversized monolith or silently carve it.
 
-Treat an automatic ticket transition caused by the selected closing syntax as a
-disclosed consequence of authorized merge, not as an independently requested
-manual transition. State that consequence before publication or merge. Do not
-use automatic closing syntax when its effect conflicts with the resolved
-completion policy.
+Treat an automatic ticket transition caused by closing syntax as a disclosed
+consequence only when explicit tracker-transition authority exists and every
+required acceptance item can pass before merge. Without tracker-transition
+authority, or when any required item is post-merge, use a non-closing reference
+and leave the tracker open. Transition it manually only after the evidence
+passes and close authority is available. A closed state caused by `Fixes`, a
+merged PR, or another automation is delivery state, not acceptance proof.
+
+## Build the acceptance evidence ledger
+
+Before readiness, merge, tracker transition, or a completion claim, inventory
+every ticket-authored acceptance criterion and required verification item. Do
+not add browser, deployment, authenticated, integration, manual, visual, or
+full-system gates that the ticket does not require.
+
+Record one evidence entry per criterion or required verification item in the
+existing packet/result style. Each entry includes:
+
+- the criterion text or stable identity and whether it is required;
+- its required evidence category and whether it applies pre-merge or post-merge;
+- the exact candidate SHA or deployed SHA it evaluates;
+- the environment and URL when relevant;
+- the concrete source, such as command output, CI job, deployment run, browser
+  observation, screenshot, geometry/computed-layout observation, or tracker
+  comment; and
+- `pass`, `fail`, or `missing`.
+
+Evidence satisfies an item only when its category matches the authored
+requirement and its candidate, deployment, and environment are current.
+Functional browser behavior, URL stability, DOM content, and clean console
+output do not satisfy an explicit visual-layout requirement without a screenshot
+or geometry/computed-layout observation. Reject stale candidate or deployment
+SHAs and wrong-environment evidence.
+
+All required pre-merge entries must pass before `ready_pr`, `ready_prs`, or a
+merge. Required post-merge entries may remain `missing` through an authorized
+merge only when the PR used non-closing syntax; afterward report delivery as
+merged but return `blocked` with acceptance pending until every required entry
+passes. A required unavailable manual or protected-environment check is a
+blocker, not a caveat on success. `merged` is reserved for merged delivery,
+complete acceptance evidence, and the authorized tracker transition.
 
 ## Honor delegated execution when supplied
 
@@ -122,8 +161,11 @@ Delegated execution is optional. Standalone behavior remains the default.
 When a caller supplies a delegated invocation:
 
 1. Validate it with the bundled delegated-execution validator before mutation.
-   Reject unsupported versions, unknown fields, excluded terminal states, or an
-   unusable checkpoint command.
+   Reject unsupported versions, unknown fields, excluded terminal states, an
+   unusable checkpoint command, duplicate or unstructured acceptance
+   requirements, or a missing explicit starting-deployment snapshot (`null` when
+   none applies). A starting deployment must identify both its candidate and
+   deployed SHA.
 2. Treat its authority as an additional ceiling. It may narrow the ordinary
    operating contract but never widen repository, user, host, or provider
    authority.
@@ -136,12 +178,18 @@ When a caller supplies a delegated invocation:
 4. Immediately after every candidate push or advancement, verify the full remote
    ref and exact SHA, then run `candidate_published`. Do not continue until the
    caller acknowledges that exact SHA.
-5. If a checkpoint is denied, unavailable, malformed, ambiguous, or mismatched,
+5. When deployment-based acceptance is required, after merge and after any
+   authorized deployment, reread the authoritative deployment and run
+   `deployment_observed` with the exact candidate, deployed SHA, environment,
+   and URL. Continue only when the caller acknowledges a live deployment
+   observation bound to that candidate.
+6. If a checkpoint is denied, unavailable, malformed, ambiguous, or mismatched,
    stop the proposed action and return `blocked`. Preserve already-published
-   implementation as a transferable handoff even when publication
+   implementation as a transferable handoff even when publication or deployment
    acknowledgement failed. A denial preserves the prior sequence and token.
-6. Validate the terminal result against the invocation and the caller's durable
-   ledger tail. Never return stale checkpoint state, a state the caller
+7. Validate the terminal result against the invocation, the caller's durable
+   ledger tail, and its latest verified deployment observation when deployment
+   evidence is required. Never return stale checkpoint state, a state the caller
    excluded, or a claim that a local-only candidate is transferable. A material
    ticket observation change blocks this invocation; reevaluation starts a fresh
    one.
@@ -221,13 +269,15 @@ or implementing children.
 
 Proceed only when the selected ticket:
 
-- is open and is not already implemented, superseded, or represented by a
-  canonical open or merged PR or branch;
+- is open, or was auto-closed while required acceptance remains missing, and is
+  not already accepted, superseded, or represented by a canonical implementation
+  owned elsewhere;
 - has no unresolved native blocker;
 - has every required closed-blocker outcome verified in its authoritative
   repository, artifact registry, tracker, or environment;
 - has a clear observable goal, acceptance criteria, non-goals, preserved
-  behavior, and required verification;
+  behavior, required verification, and enough detail to classify each evidence
+  item as pre-merge or post-merge;
 - contains no unresolved product, data, authorization, migration, destructive,
   or architecture decision;
 - represents one coherent candidate that is expected to fit one reviewable PR,
@@ -243,9 +293,11 @@ unimplemented sibling is required; never absorb that sibling into this PR.
 When an open canonical PR or branch already owns the ticket, return `blocked`
 with its identity and require explicit ownership transfer before modifying it;
 do not report another worker's candidate as this run's `ready_pr` or
-`ready_prs`. When a merged PR or stack is verified on the base and the ticket is
-already complete, return `merged` with that evidence without creating new
-implementation state.
+`ready_prs`. When a merged PR or stack is verified on the base, return `merged`
+without new implementation state only if the criterion-specific acceptance
+ledger is current and complete and the tracker transition is correct. Otherwise
+report merged delivery with acceptance pending and continue only within the
+available post-merge verification and tracker authority.
 
 When ticket editing is authorized, make an unclear ticket implementation-ready
 and re-read it. Otherwise stop with the missing decision rather than
@@ -294,9 +346,12 @@ Discover commands from repository instructions and tooling. Run:
 4. integration tests with documented real dependencies; and
 5. required build, packaging, or manual checks.
 
-Report commands and exact outcomes. Distinguish bootstrap or environment
-failures from feature failures. Do not claim completion while required
-validation is failing or unavailable.
+Report commands and exact outcomes. Add each ticket-required check to the
+acceptance ledger with its evidence category, candidate or deployed SHA,
+environment, source, and status. Distinguish bootstrap or environment failures
+from feature failures. Do not claim completion while required validation or
+acceptance evidence is failing, missing, unavailable, stale, or
+category-mismatched.
 
 ### 4. Run bounded repository-owned review
 
@@ -358,12 +413,15 @@ to its merge-and-propagate boundary and `all_merged`. `implement-ticket`
 performs no direct `babysit-pr` handoff, watcher, retry, feedback, fix, or merge
 loop for any stack PR. Exactly one watcher owner exists per PR.
 
-In either path, describe the ticket-wide outcome, important non-goals, and
-actual validation. Use the owning tracker's correct closing syntax on the one
-ordinary PR or only on the final changeset PR. Intermediate stack PRs use a
-non-closing reference and must remain behaviorally safe under the
-`carve-changesets` equivalence contract. Verify the ticket transition only after
-the ordinary PR merges or `carve-changesets` returns `all_merged`.
+In either path, describe the ticket-wide outcome, important non-goals, actual
+validation, and acceptance-ledger state. Use closing syntax on the one ordinary
+PR or final changeset PR only when explicit tracker-transition authority exists
+and every required acceptance item can pass before merge. Without that
+authority, or when any required item is post-merge, use `Refs #<issue>`,
+`Supports #<issue>`, or the tracker's established non-closing equivalent on all
+PRs. Transition the ticket manually only after the ledger passes and transition
+authority exists. Intermediate stack PRs always use a non-closing reference and
+remain behaviorally safe under the `carve-changesets` equivalence contract.
 
 Normal ticket execution never uses `watch_until_closed`. Ordinary pending CI or
 review time is not a blocker; retain task ownership through the selected
@@ -372,12 +430,33 @@ user-help-required condition occurs.
 
 Validate the returned identity and evidence against live GitHub state. After an
 authorized ordinary merge or `all_merged`, independently verify remote merge
-state, complete mainline representation, and the owning tracker's ticket
-transition before cleanup. A mid-stack material redesign that invalidates an
-earlier merged changeset returns `blocked`; never paper it over by mutating
-merged history. For an epic child, reread affected native dependency
-relationships and report newly unblocked work without selecting or mutating it.
-Never close or verify a parent epic from this skill.
+state and complete mainline representation, then run every required post-merge
+acceptance item with the separately granted environment and deployment
+authority. If any item is missing, failed, unavailable, stale, or bound to the
+wrong SHA/environment, return `blocked` with merged delivery preserved and keep
+the ticket open.
+
+If closing automation already transitioned the ticket while required evidence
+remains missing, do not treat the closed state as proof. Reopen it when manual
+transition authority permits; otherwise return `blocked` and name the missing
+reopen authority. Close manually only after the ledger passes and close
+authority exists. If merge delivery and acceptance pass but tracker-transition
+authority is absent, preserve the merged candidate, keep the tracker open, and
+return `blocked` naming that authority gap. A mid-stack material redesign that
+invalidates an earlier merged changeset returns `blocked`; never paper it over
+by mutating merged history. For an epic child, reread affected native dependency
+relationships only after acceptance and the ticket transition pass, and report
+newly unblocked work without selecting or mutating it. Never close or verify a
+parent epic from this skill.
+
+## Revalidate escaped acceptance defects
+
+When a ticket was supposedly complete and is reopened for an escaped acceptance
+defect, require a focused corrective ticket, a regression test at the escaped
+boundary, and revalidation of the full affected customer journey. The journey
+scope comes from the escaped behavior and authored requirements; do not impose
+unrelated full-system testing. Rebuild the affected acceptance entries against
+the corrective candidate or deployment before reclosure.
 
 ## Stop conditions
 
@@ -385,11 +464,12 @@ Stop and return `blocked` when:
 
 - ticket scope and native relationships conflict materially;
 - implementation requires an unresolved product or architecture choice;
-- a prerequisite outcome, authority, credential, approval, or required
-  infrastructure is missing;
+- a prerequisite outcome, authority, credential, approval, required
+  infrastructure, or required acceptance evidence is missing;
 - correctness would materially exceed one-ticket scope;
 - review feedback requires redesigning the ticket; or
-- required validation remains unavailable after documented bootstrap attempts.
+- required validation or acceptance evidence remains unavailable after
+  documented bootstrap attempts.
 
 Difficulty, a long test suite, ordinary CI wait time, or independently ready
 sibling work is not a blocker.
@@ -400,20 +480,23 @@ Follow [cleanup and result](references/cleanup-and-result.md). Return exactly
 one terminal state:
 
 - `ready_pr`: the ticket's one ordinary PR is open and mergeable at the reported
-  candidate, every applicable current-candidate non-merge gate has passed, merge
-  was withheld, and this run owns or was explicitly handed ownership of the
-  candidate;
-- `ready_prs`: the ticket's carved stack is open with verified topology and
-  every PR at its applicable non-merge gate, merge was withheld, and
-  `carve-changesets` returned current-candidate `prs_open` evidence;
-- `merged`: either the ordinary PR is verified on the base or the full carved
-  stack is verified there after `all_merged`; in both cases the ticket
-  transition and authorized cleanup are verified;
+  candidate, every required pre-merge acceptance entry and applicable
+  current-candidate non-merge gate has passed, merge was withheld, and this run
+  owns or was explicitly handed ownership of the candidate;
+- `ready_prs`: the ticket's carved stack is open with verified topology, every
+  required pre-merge acceptance entry and per-PR non-merge gate has passed,
+  merge was withheld, and `carve-changesets` returned current-candidate
+  `prs_open` evidence;
+- `merged`: the ordinary PR or full carved stack is verified on the base, every
+  required pre-merge and post-merge acceptance entry passes for the current
+  candidate/deployment and environment, and the authorized ticket transition and
+  cleanup are verified;
 - `blocked`: give one concrete blocking reason and next action, preserving any
-  partial artifacts; or
+  partial or merged delivery artifacts and identifying acceptance-pending state;
+  or
 - `requires_epic`: no mutation occurred and the handoff names `implement-epic`
   with its stable routing marker.
 
-When this ticket is an epic child, report newly unblocked downstream work after
-merge but do not select or implement it. Never claim whole-epic acceptance or
-close a parent.
+When this ticket is an epic child, report newly unblocked downstream work only
+after the child acceptance ledger and authorized tracker transition pass; do not
+select or implement it. Never claim whole-epic acceptance or close a parent.

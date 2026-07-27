@@ -71,6 +71,10 @@ test-implement-ticket:
 eval-implement-ticket:
   python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py
 
+# Run only implement-epic packets from the shared result-blind corpus.
+eval-implement-epic:
+  python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py \
+    --target-skill implement-epic
 # Real-runtime forward evaluation; requires the `claude` CLI on PATH.
 eval-implement-ticket-claude:
   python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py \

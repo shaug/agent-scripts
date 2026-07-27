@@ -75,20 +75,23 @@ Before selecting work, discover or receive and verify:
 - named architecture, design, contract, migration, and rollout documents;
 - completion policy: ready PRs only, merge children after gates, or merge plus
   separately authorized epic closeout;
+- each child and parent acceptance criterion, required verification item,
+  pre/post-merge stage, and criterion-specific evidence ledger;
 - serial execution by default, with parallel execution only when explicitly
   authorized and proven non-overlapping; and
-- authority for child execution, merge, manual transitions, graph edits,
-  follow-up creation, decomposition of an oversized coherent candidate into a
-  stacked chain, branch deletion, parent closeout, deployment, production
-  mutation, and destructive operations.
+- authority for child execution, merge, post-merge verification, manual
+  transitions, graph edits, follow-up creation, decomposition of an oversized
+  coherent candidate into a stacked chain, branch deletion, parent closeout,
+  deployment, production mutation, and destructive operations.
 
 Pass authority into `implement-ticket` without expansion. The
 `decompose oversized candidates into stacked changesets` grant is off by default
 and must be passed through verbatim; this skill gains no decomposition
 mechanics. Ready-PR authority does not imply merge. Child merge authority does
-not imply parent closeout. Words such as `finish`, `complete`, or `end to end`
-do not independently grant decomposition, merge, graph mutation, deployment, or
-closeout authority.
+not imply deployment, post-merge verification, child tracker transition, or
+parent closeout. Words such as `finish`, `complete`, or `end to end` do not
+independently grant decomposition, merge, graph mutation, deployment,
+verification, or closeout authority.
 
 Use this source order:
 
@@ -108,9 +111,10 @@ blocker requires user input.
 
 ### 1. Refresh live state
 
-- Read every in-scope epic and its current children.
+- Read every in-scope epic and its current children, including closed children.
 - Read native parent, sub-issue, `blockedBy`, and `blocking` relationships.
-- Read dispositions and delivered outcomes of closed blockers.
+- Read dispositions, delivered outcomes, and criterion-specific acceptance
+  ledgers for every required child and closed blocker.
 - Inspect existing branches and open or merged PRs before selecting a child.
 - Separate the serial critical-path recommendation from other parallel-ready
   work.
@@ -120,8 +124,13 @@ list, label, or previous loop iteration when native relationships are available.
 
 ### 2. Select one child
 
-Select an open, in-scope, PR-sized child only when native graph state shows no
-open blocker. At the graph boundary, verify that every required closed-blocker
+Select an in-scope, PR-sized child only when native graph state shows no open
+blocker and the child is either open or was auto-closed while required
+acceptance remains missing. Route that auto-closed child through
+`implement-ticket`, passing its closeout state and granted or withheld reopen
+authority so the ticket workflow can reopen it when authorized or report the
+authority blocker. Do not select an accepted, superseded, or otherwise terminal
+closed child. At the graph boundary, verify that every required closed-blocker
 outcome exists in its authoritative repository, artifact registry, tracker, or
 environment. Treat canceled or not-planned blockers with missing required
 outcomes as unresolved.
@@ -161,34 +170,42 @@ material overlap.
 
 Do not trust a reported result until ticket identity, repository, base,
 branch/worktree, candidate, PR, validation, review, remote-gate, merge,
-transition, and cleanup evidence are internally consistent and match live state.
+delivery, criterion-specific acceptance, transition, and cleanup evidence are
+internally consistent and match live state.
 
-- `ready_pr`: verify the candidate is open, mergeable, and at the complete
-  current-candidate non-merge gate with only merge withheld. Do not count the
-  child complete or unblock dependents that require merge. Continue only with
-  another independently ready child when the requested scope permits it.
+- `ready_pr`: verify the candidate is open, mergeable, at the complete
+  current-candidate non-merge gate, and has every required pre-merge acceptance
+  entry passing. Do not count the child complete or unblock dependents that
+  require merge or acceptance.
 - `ready_prs`: verify the reported PR count, ordered predecessor-base topology,
-  final-only closing syntax, per-PR candidate and non-merge gate evidence, and
-  whole-chain equivalence with the ticket candidate. Do not count the child
-  complete or unblock dependents that require merge.
-- `merged`: verify mainline and tracker evidence, then refresh the complete live
-  graph before any selection or completion claim. For a stacked child, also
-  verify `all_merged`, every PR merge and propagation step, and full-chain
+  correct closing/non-closing syntax, per-PR candidate and non-merge gate
+  evidence, passing required pre-merge entries, and whole-chain equivalence. Do
+  not count the child complete or unblock dependents that require merge or
+  acceptance.
+- `merged`: verify mainline, the child's complete current acceptance ledger, and
+  tracker evidence before refreshing the graph. For a stacked child, also verify
+  `all_merged`, every PR merge and propagation step, and full-chain
   representation on the base. Do not reproduce decomposition or propagation
   mechanics while verifying the result.
-- `blocked`: preserve the exact reason and partial artifacts. Never count it as
-  complete. Select another independently ready child only when the requested
-  scope permits; otherwise stop for the missing decision, outcome, or
-  capability.
+- `blocked`: preserve the exact reason and partial artifacts, including a merged
+  delivery whose post-merge acceptance is pending. Never count it as complete. A
+  verified merge, delivery, or tracker transition still requires a complete
+  graph refresh before any next selection; acceptance separately determines
+  which dependency edges are satisfied. Select another independently ready child
+  only when the refreshed graph and requested scope permit; otherwise stop for
+  the missing decision, outcome, evidence, authority, or capability.
 - `requires_epic`: treat it as an invalid child selection or malformed handoff.
   Stop or refresh and resolve scope; never recursively invoke this skill, bounce
   back to `implement-ticket`, or flatten the returned epic into the child.
 
 ### 5. Refresh or stop at the requested boundary
 
-After every verified merge or tracker transition, reread the native graph. Do
-not reuse an earlier ready set. Report newly unblocked work even when the
-requested boundary has been reached.
+After every verified merge, delivery, or tracker transition, reread the complete
+native graph regardless of the ticket terminal state. Then separately determine
+which edges are satisfied by delivery and which require complete acceptance. A
+merged delivery with pending acceptance remains incomplete, but its graph-state
+change must still inform the next ready set. Do not reuse an earlier ready set.
+Report newly unblocked work even when the requested boundary has been reached.
 
 For one named child, stop after that child's completion policy. For a named
 subset, process only that subset in dependency order. Do not implement unnamed
@@ -200,15 +217,31 @@ eligible or a genuine blocker remains.
 Follow [epic closeout](references/closeout.md). Close a parent only with
 explicit parent-close authority and current evidence that:
 
-- every required child and blocker outcome is satisfied;
-- every required PR result is represented on the base;
-- parent acceptance criteria hold against resulting behavior;
+- every required child's criterion-specific acceptance ledger is complete and
+  current, regardless of its native state;
+- every required blocker outcome is satisfied;
+- every required PR result is represented on the current remote base;
+- the parent's own acceptance ledger passes against resulting behavior;
+- current-main representation and the exact deployed SHA are verified whenever
+  deployment is required;
+- explicit visual-layout requirements have screenshot or
+  geometry/computed-layout evidence rather than functional browser evidence
+  alone;
 - required clean-main, documentation, migration, compatibility, rollout, and
   cleanup checks pass; and
 - the epic-wide late-feedback sweep has no undispositioned material finding.
 
-Validate and close each epic separately before an umbrella parent. A nearly
-complete graph is not complete.
+Validate and close each epic separately before an umbrella parent. "All
+implementation PRs merged" and "all native children closed" are delivery and
+administrative milestones, not epic acceptance.
+
+## Reclose escaped epics proportionally
+
+When an epic was reopened for an escaped acceptance defect, require a focused
+corrective child, a regression test at the escaped boundary, and renewed
+evidence for the full affected customer journey before reclosure. A merged
+corrective PR alone is insufficient. Revalidate only the affected journey and
+requirements; do not impose unrelated full-system testing.
 
 ## Stop conditions
 
@@ -219,6 +252,8 @@ Stop and report `blocked` when:
 - a product, architecture, migration, destructive, or authorization decision is
   unresolved;
 - delegated mutation ownership or returned evidence is ambiguous;
+- a child or parent has missing, failed, unavailable, stale, wrong-environment,
+  or category-mismatched required acceptance evidence;
 - epic-wide validation or late feedback shows a required unresolved gap; or
 - parent closeout lacks authority.
 
@@ -226,8 +261,9 @@ Difficulty, ordinary CI wait time, or unrelated ready children are not blockers.
 
 ## Report the epic result
 
-Report the requested scope, each invoked ticket and its terminal state, merged
-and ready PRs or stacks, refreshed graph state, serial critical-path and
-parallel-ready work, parent acceptance and closeout evidence, intentionally
-deferred work, and one concrete next action. Never report a child or parent
-complete from stale or unverified evidence.
+Report the requested scope, each invoked ticket and its delivery, acceptance,
+and terminal state, merged and ready PRs or stacks, refreshed graph state,
+serial critical-path and parallel-ready work, child and parent acceptance
+ledgers, closeout evidence, intentionally deferred work, and one concrete next
+action. Never report a child or parent complete from tracker state, stale
+verification, or delivery evidence alone.

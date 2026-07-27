@@ -59,7 +59,10 @@ conclusions.
 Immediately before delegation, reread the live PR and verify all of:
 
 - ticket identity, owning tracker, observable goal, acceptance criteria,
-  non-goals, and allowed fix scope;
+  required verification items, non-goals, and allowed fix scope;
+- the criterion-specific acceptance ledger, including every required pre-merge
+  entry passing for the supplied head and every post-merge entry identified as
+  caller-owned follow-up;
 - repository instructions and named architecture, design, contract, migration,
   and rollout documents;
 - GitHub repository and PR identity;
@@ -77,8 +80,8 @@ Immediately before delegation, reread the live PR and verify all of:
 - mutation, push, retry, reply, resolution, draft/ready transition, merge, and
   branch-deletion authorities;
 - exclusive mutation ownership or read-only status; and
-- correct tracker reference or closing behavior and the transition expected on
-  merge.
+- tracker reference/closing behavior chosen from the acceptance stage, including
+  any caller-owned post-merge verification and manual transition.
 
 The babysitter must reject stale or conflicting repository, PR, head, base,
 branch, worktree, scope, or ownership identity. Use this documented shape
@@ -89,25 +92,28 @@ without adding a larger mandatory schema unless tests demonstrate a need.
 - `ready PR only` invokes `babysit-pr` with `ready_to_merge`; merge authority is
   withheld.
 - `merge after gates` invokes it with `merge_when_ready` and passes merge
-  authority.
+  authority. Post-merge acceptance and tracker transition remain caller-owned.
 - `merge plus manual transition` also uses `merge_when_ready`; the separately
-  authorized manual transition stays with `implement-ticket` after merge
-  verification.
+  authorized verification and manual transition stay with `implement-ticket`
+  after merge verification.
 - Normal ticket execution never uses `watch_until_closed`.
 
 Pass authority through without expansion. Ready-PR authority permits babysitting
 to readiness and evidence-based ticket-scoped repair, but not merge. Merge
-authority does not imply human-authored communication, tracker mutation, branch
-deletion, deployment, production mutation, or parent closure. Preserve stricter
-repository communication and thread-resolution rules.
+authority does not imply human-authored communication, tracker mutation,
+post-merge verification, deployment, branch deletion, production mutation, or
+parent closure. Preserve stricter repository communication and thread-resolution
+rules.
 
 ## Candidate and review integrity
 
-The supplied initial review is reusable only for its exact head and applicable
-base. A babysitter-authored or external head change invalidates head-bound
-evidence. `babysit-pr` must then run affected and required validation, commit
-and push any authorized fix, invoke fresh repository-owned `review-code-change`
-with raw current evidence, and rebuild every invalidated remote gate.
+The supplied initial review and pre-merge acceptance evidence are reusable only
+for their exact head and applicable base. A babysitter-authored or external head
+change invalidates affected head-bound entries. `babysit-pr` must then run
+affected and required validation, commit and push any authorized fix, invoke
+fresh repository-owned `review-code-change` with raw current evidence, and
+rebuild invalidated pre-merge and remote gates. It reports post-merge acceptance
+as caller-owned work rather than attempting it.
 
 Never pass expected findings, implementation transcripts, or prior reviewer
 conclusions into a fresh review. A missing, malformed, stale, blocked, or
@@ -120,10 +126,13 @@ branch/worktree, policy, ownership, validation, review, CI, feedback, gate, and
 merge evidence before mapping:
 
 - `ready_to_merge` maps to `ready_pr` only when the exact PR remains open and
-  mergeable, every applicable current-candidate non-merge gate passes, merge was
-  withheld, and ownership is consistent.
-- `merged` maps to `merged` only after independent remote merge, mainline
-  representation, tracker transition, dependency refresh, and cleanup checks.
+  mergeable, every required pre-merge acceptance entry and applicable
+  current-candidate non-merge gate passes, merge was withheld, and ownership is
+  consistent.
+- `merged` maps to `merged` only after the caller independently verifies remote
+  merge, mainline representation, complete post-merge acceptance, tracker
+  transition, dependency refresh, and cleanup. Until then it is merged delivery,
+  not accepted ticket completion.
 - `closed` maps to `blocked` with `PR closed without merge`; preserve local
   artifacts unless another canonical merged implementation is independently
   proven complete.

@@ -118,6 +118,63 @@ class ImplementEpicContractTests(unittest.TestCase):
             "stack_child_verified",
             self.expectations["verify-stacked-child-result"]["workflow_state"],
         )
+        for case_id in (
+            "closed-children-missing-manual-browser",
+            "reopened-correction-missing-journey-revalidation",
+        ):
+            self.assertEqual(
+                "closeout_blocked", self.expectations[case_id]["workflow_state"]
+            )
+        self.assertEqual(
+            "epic_closed",
+            self.expectations["authorized-full-epic-closeout"]["workflow_state"],
+        )
+
+    def test_verified_delivery_refreshes_graph_even_when_acceptance_blocks(self):
+        self.assertIn(
+            "After every verified merge, delivery, or tracker transition",
+            self.skill,
+        )
+        for adapter in (self.github, self.linear):
+            self.assertIn("regardless of the returned terminal state", adapter)
+            self.assertIn("complete current acceptance ledger", adapter)
+        self.assertIn("merged delivery with acceptance pending", self.github)
+        self.assertIn("merged delivery with acceptance pending", self.linear)
+
+    def test_closeout_requires_child_and_parent_acceptance_ledgers(self):
+        self.assertIn("complete native child and blocker graph", self.contract)
+        self.assertIn("criterion-specific acceptance ledger", self.contract)
+        self.assertIn("parent's own ledger", self.contract)
+        self.assertIn("current-main representation", self.contract)
+        self.assertIn("exact deployed SHA", self.contract)
+        self.assertIn("functional browser checks alone are insufficient", self.contract)
+
+    def test_delivery_and_acceptance_are_reported_separately(self):
+        self.assertIn(
+            '"all native children closed" are delivery and administrative milestones, not epic acceptance',
+            self.contract,
+        )
+        self.assertIn("Keep the parent open", self.contract)
+        self.assertIn("Parent-close authority is separate", self.contract)
+
+    def test_auto_closed_incomplete_child_routes_through_ticket_recovery(self):
+        self.assertIn(
+            "auto-closed while required acceptance remains missing", self.contract
+        )
+        self.assertIn(
+            "Route that auto-closed child through `implement-ticket`", self.contract
+        )
+        self.assertIn("granted or withheld reopen authority", self.contract)
+        self.assertIn(
+            "Do not select an accepted, superseded, or otherwise terminal closed child",
+            self.contract,
+        )
+
+    def test_reopened_epic_requires_affected_journey_revalidation(self):
+        self.assertIn("focused corrective child", self.contract)
+        self.assertIn("regression test at the escaped boundary", self.contract)
+        self.assertIn("full affected customer journey", self.contract)
+        self.assertIn("do not impose unrelated full-system testing", self.contract)
 
 
 if __name__ == "__main__":

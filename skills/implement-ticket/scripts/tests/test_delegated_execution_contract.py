@@ -30,8 +30,8 @@ def load_validator() -> ModuleType:
 
 def invocation() -> dict[str, object]:
     return {
-        "schema": "agent-scripts.implement-ticket/delegated-invocation/v1",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v1",
+        "schema": "agent-scripts.implement-ticket/delegated-invocation/v2",
+        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "ticket": {
             "provider": "github",
@@ -76,6 +76,19 @@ def invocation() -> dict[str, object]:
             "blocked",
             "requires_epic",
         ],
+        "acceptance_requirements": [
+            {
+                "criterion": "Automated regression suite passes",
+                "required": True,
+                "evidence_category": "automated_test",
+                "stage": "pre_merge",
+                "identity": "candidate",
+                "environment": "local",
+                "url": None,
+                "source": "just test",
+            }
+        ],
+        "starting_deployment": None,
         "checkpoint": {
             "command": ["example-coordinator", "checkpoint"],
             "last_sequence": 0,
@@ -111,8 +124,8 @@ def candidate(kind: str = "ordinary") -> dict[str, object]:
 def result() -> dict[str, object]:
     source = invocation()
     return {
-        "schema": "agent-scripts.implement-ticket/delegated-result/v1",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v1",
+        "schema": "agent-scripts.implement-ticket/delegated-result/v2",
+        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "terminal_state": "ready_pr",
         "ticket": source["ticket"],
@@ -122,6 +135,13 @@ def result() -> dict[str, object]:
             "base_sha": SHA_A,
         },
         "implementation_state": "published",
+        "tracker_transition": {
+            "provider": "github",
+            "ticket_id": "123",
+            "mode": "none",
+            "state": "open",
+            "observed_at": "2026-07-25T12:11:30Z",
+        },
         "candidate": candidate(),
         "handoff": {"transferable": True, "reason": None},
         "checkpoint": {
@@ -154,18 +174,51 @@ def result() -> dict[str, object]:
             "repository.candidate.push",
             "pull_request.create",
         ],
+        "acceptance_evidence": [
+            {
+                "criterion": "Automated regression suite passes",
+                "required": True,
+                "evidence_category": "automated_test",
+                "stage": "pre_merge",
+                "candidate_sha": SHA_B,
+                "deployed_sha": None,
+                "environment": "local",
+                "url": None,
+                "source": "just test",
+                "status": "pass",
+            }
+        ],
         "unresolved_obligations": [],
         "blocking_reason": None,
         "next_action": "Caller may accept the ready PR",
     }
 
 
+def record_tracker_transition(
+    value: dict[str, object],
+    source: dict[str, object] | None = None,
+    mode: str = "manual",
+) -> None:
+    """Record tracker closure and the authority action that enabled it."""
+    value["tracker_transition"] = {
+        "provider": value["ticket"]["provider"],
+        "ticket_id": value["ticket"]["id"],
+        "mode": mode,
+        "state": "closed",
+        "observed_at": "2026-07-25T12:12:00Z",
+    }
+    action = "ticket.update" if mode == "manual" else "tracker.auto_close.authorize"
+    value["authority_used"].append(action)
+    if source is not None:
+        source["authority"]["allow"].append(action)
+
+
 def checkpoint_request(phase: str = "pre_external_mutation") -> dict[str, object]:
     published_candidate = candidate()
     published_candidate.pop("publication")
     return {
-        "schema": "agent-scripts.implement-ticket/checkpoint-request/v1",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v1",
+        "schema": "agent-scripts.implement-ticket/checkpoint-request/v2",
+        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "continuation_token": "token-1",
         "sequence": 2,
@@ -173,13 +226,14 @@ def checkpoint_request(phase: str = "pre_external_mutation") -> dict[str, object
         "action": "repository.candidate.push",
         "ticket_observation": "sha256:ticket",
         "candidate": published_candidate,
+        "deployment": None,
         "proposed_effect": "Publish the exact candidate",
     }
 
 
 def checkpoint_response() -> dict[str, object]:
     return {
-        "schema": "agent-scripts.implement-ticket/checkpoint-response/v1",
+        "schema": "agent-scripts.implement-ticket/checkpoint-response/v2",
         "invocation_id": "run-123",
         "request_sequence": 2,
         "prior_continuation_token": "token-1",
@@ -187,6 +241,7 @@ def checkpoint_response() -> dict[str, object]:
         "decision": "allow",
         "reason": None,
         "acknowledged_candidate_sha": None,
+        "observed_deployment": None,
     }
 
 
@@ -201,7 +256,7 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         manifest = json.loads((CONTRACT_ROOT / "capability.json").read_text())
         self.assertEqual([], self.validator.validate("capability", manifest))
         self.assertIn(
-            "agent-scripts.implement-ticket/delegated-execution/v1",
+            "agent-scripts.implement-ticket/delegated-execution/v2",
             (CONTRACT_ROOT / "CONTRACT.md").read_text(),
         )
 
@@ -258,6 +313,36 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         self.assertIn(
             "$.acknowledged_candidate_sha: does not match published candidate",
             self.validator.validate_checkpoint_exchange(request, response),
+        )
+
+    def test_deployment_observation_requires_caller_verified_candidate_binding(
+        self,
+    ) -> None:
+        request = checkpoint_request("deployment_observed")
+        request["action"] = "deployment.execute"
+        request["deployment"] = {
+            "candidate_sha": SHA_B,
+            "deployed_sha": SHA_C,
+            "environment": "production",
+            "url": "https://example.test",
+        }
+        response = checkpoint_response()
+        response["observed_deployment"] = copy.deepcopy(request["deployment"])
+
+        self.assertEqual(
+            [], self.validator.validate_checkpoint_exchange(request, response)
+        )
+
+        response["observed_deployment"]["candidate_sha"] = SHA_A
+        self.assertIn(
+            "$.observed_deployment: does not match caller-verified deployment",
+            self.validator.validate_checkpoint_exchange(request, response),
+        )
+
+        request["deployment"]["candidate_sha"] = SHA_A
+        self.assertIn(
+            "$.deployment.candidate_sha: does not match candidate",
+            self.validator.validate("checkpoint-request", request),
         )
 
     def test_checkpoint_identity_and_token_must_match(self) -> None:
@@ -392,6 +477,152 @@ class DelegatedExecutionContractTest(unittest.TestCase):
             errors,
         )
 
+    def test_checkpoint_tail_accepts_live_candidate_bound_deployment(self) -> None:
+        source = invocation()
+        source["validation"] = ["just test"]
+        source["desired_outcome"] = "merged"
+        source["accepted_terminal_states"].append("merged")
+        source["acceptance_requirements"].append(
+            {
+                "criterion": "Production deployment smoke passes",
+                "required": True,
+                "evidence_category": "deployed_integration",
+                "stage": "post_merge",
+                "identity": "deployment",
+                "environment": "production",
+                "url": "https://example.test",
+                "source": "production smoke run",
+            }
+        )
+        value = result()
+        value["terminal_state"] = "merged"
+        record_tracker_transition(value, source)
+        value["candidate"]["publication"]["pull_requests"][0]["state"] = "merged"
+        value["acceptance_evidence"].append(
+            {
+                "criterion": "Production deployment smoke passes",
+                "required": True,
+                "evidence_category": "deployed_integration",
+                "stage": "post_merge",
+                "candidate_sha": None,
+                "deployed_sha": SHA_C,
+                "environment": "production",
+                "url": "https://example.test",
+                "source": "production smoke run",
+                "status": "pass",
+            }
+        )
+        observed_deployment = {
+            "candidate_sha": SHA_B,
+            "deployed_sha": SHA_C,
+            "environment": "production",
+            "url": "https://example.test",
+        }
+        observed_tracker = copy.deepcopy(value["tracker_transition"])
+        consumed_authority = list(value["authority_used"])
+
+        self.assertEqual(
+            [],
+            self.validator.validate_result_checkpoint_state(
+                source,
+                value,
+                4,
+                "token-4",
+                observed_deployment,
+                observed_tracker,
+                consumed_authority,
+            ),
+        )
+
+        unauthorized = copy.deepcopy(source)
+        unauthorized["authority"]["allow"].remove("ticket.update")
+        self.assertIn(
+            "$.authority_used: exceeds invocation: ticket.update",
+            self.validator.validate_result_checkpoint_state(
+                unauthorized,
+                value,
+                4,
+                "token-4",
+                observed_deployment,
+                observed_tracker,
+                consumed_authority,
+            ),
+        )
+
+        unverified_tracker = copy.deepcopy(observed_tracker)
+        unverified_tracker["observed_at"] = "2026-07-25T12:13:00Z"
+        self.assertIn(
+            "$.tracker_transition: does not match caller-observed tracker state",
+            self.validator.validate_result_checkpoint_state(
+                source,
+                value,
+                4,
+                "token-4",
+                observed_deployment,
+                unverified_tracker,
+                consumed_authority,
+            ),
+        )
+
+        no_transition_authority = copy.deepcopy(value)
+        no_transition_authority["authority_used"].remove("ticket.update")
+        self.assertIn(
+            "$.authority_used: manual tracker transition requires ticket.update",
+            self.validator.validate_result_checkpoint_state(
+                source,
+                no_transition_authority,
+                4,
+                "token-4",
+                observed_deployment,
+                observed_tracker,
+                no_transition_authority["authority_used"],
+            ),
+        )
+
+        automatic_source = copy.deepcopy(source)
+        automatic_source["authority"]["allow"].remove("ticket.update")
+        automatic_source["authority"]["allow"].append("tracker.auto_close.authorize")
+        automatic = copy.deepcopy(value)
+        automatic["tracker_transition"]["mode"] = "automatic"
+        automatic["authority_used"].remove("ticket.update")
+        automatic["authority_used"].append("tracker.auto_close.authorize")
+        automatic_tracker = copy.deepcopy(automatic["tracker_transition"])
+        self.assertEqual(
+            [],
+            self.validator.validate_result_checkpoint_state(
+                automatic_source,
+                automatic,
+                4,
+                "token-4",
+                observed_deployment,
+                automatic_tracker,
+                automatic["authority_used"],
+            ),
+        )
+        self.assertIn(
+            "$.observed_tracker: merged requires caller observation",
+            self.validator.validate_result_checkpoint_state(
+                source,
+                value,
+                4,
+                "token-4",
+                observed_deployment,
+                consumed_authority=consumed_authority,
+            ),
+        )
+        self.assertIn(
+            "$.authority_used: does not match caller authority ledger",
+            self.validator.validate_result_checkpoint_state(
+                automatic_source,
+                automatic,
+                4,
+                "token-4",
+                observed_deployment,
+                automatic_tracker,
+                consumed_authority,
+            ),
+        )
+
     def test_candidate_must_match_invocation_repository(self) -> None:
         value = result()
         value["candidate"]["repository"] = "github:other/project"
@@ -465,6 +696,274 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         self.assertIn(
             "$.validation: duplicate observation names just test",
             self.validator.validate("result", value),
+        )
+
+    def test_acceptance_evidence_is_required_and_candidate_bound(self) -> None:
+        value = result()
+        value.pop("acceptance_evidence")
+        self.assertIn(
+            "$: missing required property 'acceptance_evidence'",
+            self.validator.validate("result", value),
+        )
+        value = result()
+        value["acceptance_evidence"][0]["candidate_sha"] = SHA_A
+        self.assertIn(
+            "$.acceptance_evidence: candidate mismatch for Automated regression suite passes",
+            self.validator.validate("result", value),
+        )
+
+    def test_ready_pr_requires_pre_merge_acceptance(self) -> None:
+        value = result()
+        value["acceptance_evidence"][0].update({"status": "missing", "source": None})
+        self.assertIn(
+            "$.acceptance_evidence: required pre-merge evidence incomplete for "
+            "Automated regression suite passes",
+            self.validator.validate("result", value),
+        )
+
+    def test_merged_requires_post_merge_acceptance(self) -> None:
+        value = result()
+        value["terminal_state"] = "merged"
+        record_tracker_transition(value)
+        value["candidate"]["publication"]["pull_requests"][0]["state"] = "merged"
+        value["acceptance_evidence"].append(
+            {
+                "criterion": "Production deployment smoke passes",
+                "required": True,
+                "evidence_category": "deployed_integration",
+                "stage": "post_merge",
+                "candidate_sha": None,
+                "deployed_sha": None,
+                "environment": "production",
+                "url": "https://example.test",
+                "source": None,
+                "status": "missing",
+            }
+        )
+        self.assertIn(
+            "$.acceptance_evidence: merged requires complete evidence for "
+            "Production deployment smoke passes",
+            self.validator.validate("result", value),
+        )
+        value["acceptance_evidence"][-1].update(
+            {
+                "candidate_sha": None,
+                "deployed_sha": SHA_A,
+                "source": "production smoke run",
+                "status": "pass",
+            }
+        )
+        self.assertEqual([], self.validator.validate("result", value))
+        value["acceptance_evidence"][-1]["candidate_sha"] = SHA_A
+        self.assertIn(
+            "$.acceptance_evidence: candidate mismatch for "
+            "Production deployment smoke passes",
+            self.validator.validate("result", value),
+        )
+
+    def test_invocation_anchors_acceptance_contract_and_deployment(self) -> None:
+        source = invocation()
+        source["desired_outcome"] = "merged"
+        source["accepted_terminal_states"].append("merged")
+        source["acceptance_requirements"].append(
+            {
+                "criterion": "Production deployment smoke passes",
+                "required": True,
+                "evidence_category": "deployed_integration",
+                "stage": "post_merge",
+                "identity": "deployment",
+                "environment": "production",
+                "url": "https://example.test",
+                "source": "production smoke run",
+            }
+        )
+        source["starting_deployment"] = {
+            "candidate_sha": SHA_B,
+            "deployed_sha": SHA_C,
+            "environment": "production",
+            "url": "https://example.test",
+        }
+        value = result()
+        value["terminal_state"] = "merged"
+        record_tracker_transition(value, source)
+        value["candidate"]["publication"]["pull_requests"][0]["state"] = "merged"
+        value["validation"].append(
+            {
+                "name": "just lint",
+                "outcome": "passed",
+                "candidate_sha": SHA_B,
+                "observed_at": "2026-07-25T12:01:00Z",
+            }
+        )
+        value["acceptance_evidence"].append(
+            {
+                "criterion": "Production deployment smoke passes",
+                "required": True,
+                "evidence_category": "deployed_integration",
+                "stage": "post_merge",
+                "candidate_sha": None,
+                "deployed_sha": SHA_C,
+                "environment": "production",
+                "url": "https://example.test",
+                "source": "production smoke run",
+                "status": "pass",
+            }
+        )
+        observed_tracker = copy.deepcopy(value["tracker_transition"])
+        consumed_authority = list(value["authority_used"])
+        self.assertEqual(
+            [],
+            self.validator.validate_result_for_invocation(
+                source,
+                value,
+                observed_tracker=observed_tracker,
+                consumed_authority=consumed_authority,
+            ),
+        )
+
+        dynamic_source = copy.deepcopy(source)
+        dynamic_source["starting_deployment"] = None
+        observed_deployment = copy.deepcopy(source["starting_deployment"])
+        self.assertEqual(
+            [],
+            self.validator.validate_result_for_invocation(
+                dynamic_source,
+                value,
+                observed_deployment,
+                observed_tracker,
+                consumed_authority,
+            ),
+        )
+        self.assertIn(
+            "$.acceptance_evidence: passing deployment evidence lacks "
+            "caller-observed deployment for Production deployment smoke passes",
+            self.validator.validate_result_for_invocation(
+                dynamic_source,
+                value,
+                observed_tracker=observed_tracker,
+                consumed_authority=consumed_authority,
+            ),
+        )
+        observed_deployment["candidate_sha"] = SHA_A
+        self.assertIn(
+            "$.acceptance_evidence: deployment candidate mismatch for "
+            "Production deployment smoke passes",
+            self.validator.validate_result_for_invocation(
+                dynamic_source,
+                value,
+                observed_deployment,
+                observed_tracker,
+                consumed_authority,
+            ),
+        )
+
+        omitted = copy.deepcopy(value)
+        omitted["acceptance_evidence"].pop()
+        self.assertIn(
+            "$.acceptance_evidence: missing invocation criteria "
+            "Production deployment smoke passes",
+            self.validator.validate_result_for_invocation(
+                source,
+                omitted,
+                observed_tracker=observed_tracker,
+                consumed_authority=consumed_authority,
+            ),
+        )
+        for field, replacement, expected_error in (
+            (
+                "deployed_sha",
+                None,
+                "$.acceptance_evidence: passing evidence requires candidate or "
+                "deployed SHA for Production deployment smoke passes",
+            ),
+            (
+                "deployed_sha",
+                SHA_A,
+                "$.acceptance_evidence: current deployment deployed_sha mismatch for "
+                "Production deployment smoke passes",
+            ),
+            (
+                "environment",
+                "staging",
+                "$.acceptance_evidence: environment mismatch for "
+                "Production deployment smoke passes",
+            ),
+            (
+                "evidence_category",
+                "browser_functional",
+                "$.acceptance_evidence: evidence_category mismatch for "
+                "Production deployment smoke passes",
+            ),
+            (
+                "source",
+                "delegate summary",
+                "$.acceptance_evidence: source mismatch for "
+                "Production deployment smoke passes",
+            ),
+        ):
+            mismatched = copy.deepcopy(value)
+            mismatched["acceptance_evidence"][-1][field] = replacement
+            self.assertIn(
+                expected_error,
+                self.validator.validate_result_for_invocation(
+                    source,
+                    mismatched,
+                    observed_tracker=observed_tracker,
+                    consumed_authority=consumed_authority,
+                ),
+            )
+
+    def test_postmerge_acceptance_may_bind_to_merged_candidate(self) -> None:
+        source = invocation()
+        source["desired_outcome"] = "merged"
+        source["accepted_terminal_states"].append("merged")
+        source["acceptance_requirements"].append(
+            {
+                "criterion": "Merged result is represented on main",
+                "required": True,
+                "evidence_category": "mainline_representation",
+                "stage": "post_merge",
+                "identity": "candidate",
+                "environment": "repository",
+                "url": None,
+                "source": "git merge-base --is-ancestor",
+            }
+        )
+        value = result()
+        value["terminal_state"] = "merged"
+        record_tracker_transition(value, source)
+        value["candidate"]["publication"]["pull_requests"][0]["state"] = "merged"
+        value["validation"].append(
+            {
+                "name": "just lint",
+                "outcome": "passed",
+                "candidate_sha": SHA_B,
+                "observed_at": "2026-07-25T12:01:00Z",
+            }
+        )
+        value["acceptance_evidence"].append(
+            {
+                "criterion": "Merged result is represented on main",
+                "required": True,
+                "evidence_category": "mainline_representation",
+                "stage": "post_merge",
+                "candidate_sha": SHA_B,
+                "deployed_sha": None,
+                "environment": "repository",
+                "url": None,
+                "source": "git merge-base --is-ancestor",
+                "status": "pass",
+            }
+        )
+
+        self.assertEqual(
+            [],
+            self.validator.validate_result_for_invocation(
+                source,
+                value,
+                observed_tracker=copy.deepcopy(value["tracker_transition"]),
+                consumed_authority=list(value["authority_used"]),
+            ),
         )
 
     def test_ready_prs_require_unique_ordered_topology(self) -> None:
@@ -574,6 +1073,7 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         self.assertIn("before every action", skill)
         self.assertIn("invocation's `last_sequence`", skill)
         self.assertIn("candidate_published", skill)
+        self.assertIn("deployment_observed", skill)
         self.assertIn("versioned delegated-execution contract", result_reference)
 
 

@@ -118,5 +118,35 @@
     "case_id": "mid-stack-material-redesign",
     "terminal_state": "blocked",
     "required_actions": ["preserve partial stack state", "report the invalidated merged changeset", "require product or architecture resolution", "do not rewrite merged history"]
+  },
+  {
+    "case_id": "auto-closed-missing-postmerge-acceptance",
+    "terminal_state": "blocked",
+    "required_actions": ["record merged delivery separately", "reopen G-46 when authorized", "keep acceptance pending", "name missing deployment authority and evidence"]
+  },
+  {
+    "case_id": "authenticated-browser-unavailable",
+    "terminal_state": "blocked",
+    "required_actions": ["record authenticated browser evidence as missing", "keep the tracker open", "do not substitute unauthenticated or CI evidence"]
+  },
+  {
+    "case_id": "functional-browser-without-visual-evidence",
+    "terminal_state": "blocked",
+    "required_actions": ["preserve the passing functional evidence", "require screenshot or geometry evidence", "do not claim visual acceptance"]
+  },
+  {
+    "case_id": "backend-only-acceptance",
+    "terminal_state": "merged",
+    "required_actions": ["build the criterion ledger", "use the current command and review evidence", "add no browser visual or deployment gate", "merge after current gates pass"]
+  },
+  {
+    "case_id": "merge-without-deploy-or-close-authority",
+    "terminal_state": "blocked",
+    "required_actions": ["use non-closing PR syntax", "report merged delivery separately", "preserve deployment and transition authority boundaries", "keep acceptance pending"]
+  },
+  {
+    "case_id": "stale-acceptance-evidence",
+    "terminal_state": "blocked",
+    "required_actions": ["reject old-head evidence", "rebuild required acceptance for the current head", "do not publish or claim ready_pr"]
   }
 ]

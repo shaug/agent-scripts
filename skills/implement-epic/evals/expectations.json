@@ -47,7 +47,7 @@
   {
     "case_id": "authorized-full-epic-closeout",
     "workflow_state": "epic_closed",
-    "required_actions": ["verify every closeout gate", "close G-190", "report final graph and evidence"]
+    "required_actions": ["verify every child and parent acceptance ledger", "verify current-main and exact deployment identities", "close G-190", "report final graph and evidence"]
   },
   {
     "case_id": "umbrella-closeout-separately",
@@ -93,5 +93,15 @@
     "case_id": "verify-stacked-child-result",
     "workflow_state": "stack_child_verified",
     "required_actions": ["verify stack topology and every PR gate", "verify all_merged and full-chain representation on base", "do not invoke carve-changesets directly", "refresh graph before considering G-282"]
+  },
+  {
+    "case_id": "closed-children-missing-manual-browser",
+    "workflow_state": "closeout_blocked",
+    "required_actions": ["read the closed child ledger", "record manual browser evidence as missing", "keep G-290 open", "report delivery separately from acceptance"]
+  },
+  {
+    "case_id": "reopened-correction-missing-journey-revalidation",
+    "workflow_state": "closeout_blocked",
+    "required_actions": ["preserve the corrective child result", "require full affected journey revalidation", "keep G-300 open", "do not impose unrelated full-system testing"]
   }
 ]

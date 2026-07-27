@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import sys
@@ -14,6 +15,13 @@ SPEC = importlib.util.spec_from_file_location("implement_ticket_forward", RUNNER
 RUNNER = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(RUNNER)
+
+FIXTURE_SPEC = importlib.util.spec_from_file_location(
+    "implement_ticket_fixture_executor", EXECUTOR_PATH
+)
+FIXTURE_EXECUTOR = importlib.util.module_from_spec(FIXTURE_SPEC)
+assert FIXTURE_SPEC and FIXTURE_SPEC.loader
+FIXTURE_SPEC.loader.exec_module(FIXTURE_EXECUTOR)
 
 CLAUDE_EXECUTOR_PATH = SKILL_ROOT / "scripts" / "evals" / "claude_executor.py"
 CLAUDE_SPEC = importlib.util.spec_from_file_location(
@@ -42,9 +50,28 @@ class ForwardEvaluationTests(unittest.TestCase):
             "worktree",
             "handoff",
         }
-        self.assertEqual(25, len(self.cases))
+        self.assertEqual(41, len(self.cases))
         for case in self.cases:
             self.assertEqual(required, set(case["artifacts"]), case["id"])
+
+    def test_acceptance_packets_separate_requirements_from_raw_observations(self):
+        acceptance_cases = [
+            case
+            for case in self.cases
+            if "acceptance_requirements" in case["artifacts"]["ticket"]
+        ]
+        self.assertGreaterEqual(len(acceptance_cases), 15)
+        for case in acceptance_cases:
+            requirements = case["artifacts"]["ticket"]["acceptance_requirements"]
+            observations = case["artifacts"]["handoff"].get(
+                "acceptance_observations", []
+            )
+            with self.subTest(case=case["id"]):
+                self.assertTrue(requirements)
+                self.assertTrue(all("status" not in item for item in requirements))
+                self.assertTrue(all("status" not in item for item in observations))
+                self.assertTrue(all("outcome" not in item for item in requirements))
+                self.assertTrue(all(item.get("source") for item in requirements))
 
     def test_executor_payload_is_result_blind(self):
         for case in self.cases:
@@ -57,6 +84,20 @@ class ForwardEvaluationTests(unittest.TestCase):
             self.assertNotIn("terminal_state", serialized)
             self.assertNotIn(self.expectations_text, serialized)
 
+    def test_reference_executor_actions_fit_real_runtime_vocabulary(self):
+        emitted_actions = {
+            action
+            for case in self.cases
+            for action in FIXTURE_EXECUTOR.action_result(RUNNER.build_payload(case))[
+                "actions"
+            ]
+        }
+        emitted_actions.add("skill_contract_incomplete")
+        self.assertEqual(
+            set(),
+            emitted_actions - set(CLAUDE_EXECUTOR.ACTION_VOCABULARY),
+        )
+
     def test_forward_cases_execute_fresh_and_pass_separate_grading(self):
         observations, failures = RUNNER.evaluate(
             RUNNER.DEFAULT_CASES,
@@ -64,9 +105,9 @@ class ForwardEvaluationTests(unittest.TestCase):
             [sys.executable, str(EXECUTOR_PATH)],
         )
         self.assertEqual([], failures)
-        self.assertEqual(25, len(observations))
+        self.assertEqual(41, len(observations))
         process_ids = {result["executor_pid"] for result in observations.values()}
-        self.assertEqual(25, len(process_ids))
+        self.assertEqual(41, len(process_ids))
 
     def test_reference_executor_evaluates_the_supplied_skill_prompt(self):
         payload = RUNNER.build_payload(self.cases[2])
@@ -77,6 +118,28 @@ class ForwardEvaluationTests(unittest.TestCase):
         )
         self.assertEqual("blocked", observed["terminal_state"])
         self.assertIn("skill_contract_incomplete", observed["actions"])
+
+    def test_acceptance_cases_depend_on_the_acceptance_skill_contract(self):
+        for case_id, fragment in (
+            (
+                "functional-browser-missing-visual-layout",
+                "Build the acceptance evidence ledger",
+            ),
+            (
+                "epic-closed-children-missing-manual-browser",
+                "every required child's criterion-specific acceptance ledger",
+            ),
+        ):
+            case = next(item for item in self.cases if item["id"] == case_id)
+            payload = RUNNER.build_payload(case)
+            payload["skill_prompt"] = payload["skill_prompt"].replace(fragment, "")
+            observed = RUNNER.run_executor(
+                [sys.executable, str(EXECUTOR_PATH)], payload
+            )
+            with self.subTest(case=case_id):
+                self.assertEqual("blocked", observed["terminal_state"])
+                self.assertEqual([], observed["acceptance_ledger"])
+                self.assertIn("skill_contract_incomplete", observed["actions"])
 
     def test_vocabulary_spam_fails_every_case(self):
         """An executor emitting the whole action vocabulary must never pass.
@@ -146,6 +209,130 @@ class ForwardEvaluationTests(unittest.TestCase):
         self.assertIn(
             "reject_stale_or_malformed_result",
             observations["stale-carved-result"]["actions"],
+        )
+
+    def test_acceptance_cases_fail_closed_or_complete_from_raw_evidence(self):
+        observations, failures = RUNNER.evaluate(
+            RUNNER.DEFAULT_CASES,
+            RUNNER.DEFAULT_EXPECTATIONS,
+            [sys.executable, str(EXECUTOR_PATH)],
+        )
+        self.assertEqual([], failures)
+        for case_id in (
+            "epic-closed-children-missing-manual-browser",
+            "auto-closed-missing-postmerge-deployment",
+            "authenticated-deployed-browser-unavailable",
+            "functional-browser-missing-visual-layout",
+            "merge-without-deploy-or-close-authority",
+            "reopened-epic-correction-without-journey-revalidation",
+            "stale-acceptance-evidence",
+            "epic-auto-closed-child-incomplete",
+            "prior-unrelated-deployment-evidence",
+            "wrong-source-acceptance-evidence",
+            "deployment-requirement-rejects-candidate-fallback",
+            "epic-refreshes-after-blocked-merged-delivery",
+        ):
+            self.assertEqual("blocked", observations[case_id]["terminal_state"])
+        self.assertEqual(
+            "merged", observations["all-acceptance-current"]["terminal_state"]
+        )
+        self.assertEqual(
+            "merged", observations["backend-only-no-ui-gates"]["terminal_state"]
+        )
+        self.assertIn(
+            "avoid_irrelevant_ui_gates",
+            observations["backend-only-no-ui-gates"]["actions"],
+        )
+        self.assertIn(
+            "require_visual_layout_evidence",
+            observations["functional-browser-missing-visual-layout"]["actions"],
+        )
+        self.assertIn(
+            "select_auto_closed_incomplete_child",
+            observations["epic-auto-closed-child-incomplete"]["actions"],
+        )
+        self.assertIn(
+            "invoke_implement_ticket_for_recovery",
+            observations["epic-auto-closed-child-incomplete"]["actions"],
+        )
+        self.assertEqual(
+            "fail",
+            observations["wrong-source-acceptance-evidence"]["acceptance_ledger"][0][
+                "status"
+            ],
+        )
+        deployment_fallback = observations[
+            "deployment-requirement-rejects-candidate-fallback"
+        ]
+        self.assertEqual(
+            "deployment", deployment_fallback["acceptance_ledger"][0]["identity"]
+        )
+        self.assertIn(
+            "reject_stale_acceptance_evidence", deployment_fallback["actions"]
+        )
+        self.assertIn(
+            "refresh_graph_after_verified_delivery",
+            observations["epic-refreshes-after-blocked-merged-delivery"]["actions"],
+        )
+
+    def test_reference_executor_rejects_null_pass_identity(self):
+        case = copy.deepcopy(
+            next(item for item in self.cases if item["id"] == "all-acceptance-current")
+        )
+        post_merge = next(
+            entry
+            for entry in case["artifacts"]["handoff"]["acceptance_observations"]
+            if entry["stage"] == "post_merge"
+        )
+        post_merge["deployed_sha"] = None
+        observed = RUNNER.run_executor(
+            [sys.executable, str(EXECUTOR_PATH)], RUNNER.build_payload(case)
+        )
+        self.assertEqual("blocked", observed["terminal_state"])
+        self.assertIn("reject_missing_required_acceptance", observed["actions"])
+        self.assertEqual("fail", observed["acceptance_ledger"][-1]["status"])
+
+    def test_reference_executor_accepts_candidate_bound_postmerge_identity(self):
+        case = copy.deepcopy(
+            next(item for item in self.cases if item["id"] == "all-acceptance-current")
+        )
+        requirement = next(
+            entry
+            for entry in case["artifacts"]["ticket"]["acceptance_requirements"]
+            if entry["stage"] == "post_merge"
+        )
+        observation = next(
+            entry
+            for entry in case["artifacts"]["handoff"]["acceptance_observations"]
+            if entry["stage"] == "post_merge"
+        )
+        requirement["identity"] = "candidate"
+        observation["candidate_sha"] = case["artifacts"]["pr"]["head"]
+        observation["deployed_sha"] = None
+        case["artifacts"]["handoff"]["current_deployed_sha"] = None
+
+        observed = RUNNER.run_executor(
+            [sys.executable, str(EXECUTOR_PATH)], RUNNER.build_payload(case)
+        )
+
+        self.assertEqual("merged", observed["terminal_state"])
+        self.assertNotIn("reject_stale_acceptance_evidence", observed["actions"])
+        self.assertEqual("pass", observed["acceptance_ledger"][-1]["status"])
+
+    def test_target_skill_filter_runs_only_epic_cases(self):
+        observations, failures = RUNNER.evaluate(
+            RUNNER.DEFAULT_CASES,
+            RUNNER.DEFAULT_EXPECTATIONS,
+            [sys.executable, str(EXECUTOR_PATH)],
+            target_skill="implement-epic",
+        )
+        self.assertEqual([], failures)
+        self.assertEqual(6, len(observations))
+        self.assertTrue(
+            all(
+                result["target_skill"] == "implement-epic"
+                for result in observations.values()
+            )
         )
 
 

@@ -136,6 +136,7 @@ just test-babysit-pr
 just test-implement-ticket
 just test-implement-epic
 just eval-implement-ticket
+just eval-implement-epic
 ```
 
 Validate a review packet and result together:
@@ -149,6 +150,7 @@ Run deterministic local evaluation harnesses without an agent runtime:
 ```bash
 just eval-carve-changesets
 just eval-implement-ticket
+just eval-implement-epic
 ```
 
 The carve-changesets command first runs its objective integration self-test,
@@ -163,14 +165,16 @@ just eval-carve-changesets-executor "python3 /path/to/adapter.py"
 ```
 
 The ticket-composition evaluator starts a fresh process for each case, with
-fixture identity and grader expectations withheld. Case artifacts carry
-pre-classified scenario flags (for example, a CI failure already labeled
-branch-caused or infrastructure), so the harness grades obligation mapping and
-terminal-state selection — not evidence classification itself. Its bundled
-reference executor is a deterministic simulation of a compliant runtime, not a
-model. To forward-evaluate a real agent runtime, pass its stdin/stdout JSON
-adapter through `scripts/evals/run_forward.py --executor` and retain captured
-observations with `--output-dir`. A Claude Code headless adapter is bundled:
+fixture identity and grader expectations withheld. Its shared corpus targets
+both `implement-ticket` and `implement-epic`; `just eval-implement-epic` filters
+the same validated corpus to epic packets. Case artifacts carry raw, live-shaped
+workflow state, including criterion-specific acceptance evidence bound to the
+candidate or deployed SHA. The harness grades obligation mapping and
+terminal-state selection. Its bundled reference executor is a deterministic
+simulation of a compliant runtime, not a model. To forward-evaluate a real agent
+runtime, pass its stdin/stdout JSON adapter through
+`scripts/evals/run_forward.py --executor` and retain captured observations with
+`--output-dir`. A Claude Code headless adapter is bundled:
 
 ```bash
 just eval-implement-ticket-claude

@@ -38,10 +38,11 @@ When duplicate branches or PRs exist, compare actual patches or resulting trees
 and retain one canonical implementation path. For an open canonical path owned
 by another worker, return `blocked` with its identity unless ownership is
 explicitly transferred; never claim its candidate as this run's `ready_pr` or
-`ready_prs`. When a merged PR is verified on the base and the ticket is already
-complete, return `merged` with that evidence without creating new state. Return
-`blocked` rather than creating a competing PR when canonical ownership is
-unresolved.
+`ready_prs`. A merged PR and `CLOSED` issue prove delivery/administrative state,
+not acceptance. Return `merged` without new implementation only when the
+criterion-specific ledger passes for the current candidate/deployment and the
+tracker transition is correct. Return `blocked` rather than creating a competing
+PR when canonical ownership is unresolved.
 
 ## PR-host preflight and contract
 
@@ -51,19 +52,22 @@ unresolved.
 - Inspect open and merged PRs that reference the owning tracker ticket.
 - Use one tracker ticket per candidate. Publish that candidate as exactly one
   ordinary PR or one ordered carved stack.
-- When GitHub owns ticket state, use the repository's closing syntax, normally
-  `Fixes #<issue>`.
-- Determine whether that syntax will automatically close or transition the
-  ticket on merge and disclose the consequence in the resolved completion policy
-  before publishing or merging. Use a non-closing reference when automatic
-  closure would conflict with that policy.
-- For a carved stack, put closing syntax only on the final changeset PR; every
-  intermediate PR uses a non-closing reference. Verify transition only after the
-  full stack is merged.
+- When GitHub owns ticket state and every required acceptance item can pass
+  before merge, use the repository's closing syntax, normally `Fixes #<issue>`.
+- When any required item needs merged code, deployment, authentication, or
+  another post-merge environment, use `Refs #<issue>`, `Supports #<issue>`, or
+  the repository's established non-closing equivalent. Close manually only after
+  the current acceptance ledger passes and close authority exists.
+- If closing automation transitions the issue before required acceptance passes,
+  treat it as incomplete. Reopen it when authorized; otherwise report missing
+  reopen authority as a blocker.
+- For a carved stack, closing syntax is permitted only on the final changeset PR
+  and only under the same pre-merge-acceptance rule. Every intermediate PR uses
+  a non-closing reference.
 - When another tracker owns state, use its required reference and avoid GitHub
   closing syntax unless a real GitHub issue is also intentionally in scope.
 - Describe the branch as a whole, preserve material non-goals, and report actual
-  validation.
+  validation plus pre-merge and post-merge acceptance-ledger state.
 - Confirm the PR base and head match the ticket worktree.
 
 Use file-based commit and PR messages when shell interpolation could alter
@@ -88,10 +92,10 @@ state. Do not also poll, mutate, reply, resolve, or merge from this caller after
 ownership transfer.
 
 After a babysitter `merged` result or a carve `all_merged` result, independently
-verify PR or stack state, complete candidate representation on the base, and the
-GitHub issue transition before cleanup. When the ticket is an epic child, reread
-its affected native `blocking` and sibling `blockedBy` relationships and report
-newly unblocked work without selecting or mutating it. If local worktree
-ownership prevents the CLI from switching to the base, use a read-only remote
-verification path and perform local cleanup separately. Never close a parent
-issue from this skill.
+verify PR or stack state and complete candidate representation on the base, then
+run every required post-merge acceptance item with separately granted authority.
+Transition the GitHub issue only after the ledger passes. When the ticket is an
+epic child, reread affected native relationships only after acceptance and the
+transition pass. If local worktree ownership prevents switching to the base, use
+a read-only remote verification path and perform local cleanup separately. Never
+close a parent issue from this skill.
