@@ -6,7 +6,7 @@ the coordinator is opaque to Agent Scripts, and no Atelier concept appears in
 the protocol.
 
 The capability identifier is
-`agent-scripts.implement-ticket/delegated-execution/v1`.
+`agent-scripts.implement-ticket/delegated-execution/v2`.
 
 ## Contract ownership
 
@@ -34,6 +34,11 @@ binds the run to:
 - one caller-owned work identifier and revision;
 - opaque caller-owned approval evidence;
 - intent, scope, non-goals, constraints, and done definition;
+- a structured acceptance contract with one stable criterion identity, required
+  flag, evidence category, stage, candidate/deployment identity basis, and
+  applicable environment/URL requirement per item;
+- the caller-observed starting deployment's candidate SHA, deployed SHA,
+  environment, and URL, or explicit null when none applies;
 - required validation and review expectations;
 - a finite authority ceiling;
 - one desired delivery outcome;
@@ -66,6 +71,7 @@ sends a `pre_external_mutation` request. The finite action vocabulary is:
 - `review.reply`
 - `review.resolve`
 - `ticket.update`
+- `tracker.auto_close.authorize`
 - `ticket.dependencies.update`
 - `ticket.followup.create`
 - `changeset.carve`
@@ -122,6 +128,25 @@ may report that verified published candidate whether acknowledgement succeeded
 or failed. It becomes shared coordinator state only after the caller records it
 in a later verified transition.
 
+## Deployment observation acknowledgement
+
+A starting deployment is only an invocation-time baseline; it is not evidence
+for a different candidate. After merge and after any authorized deployment, the
+delegate sends a `deployment_observed` checkpoint containing the exact candidate
+and proposed deployed SHA, environment, and URL. The coordinator rereads the
+current deployment from its authoritative source and returns `allow` with
+`observed_deployment` only when every field matches and the deployment
+represents the exact candidate. A denial or mismatch blocks acceptance.
+
+The caller persists that observation in the checkpoint ledger and passes it to
+`validate_result_checkpoint_state` for combined terminal and durable-ledger-tail
+validation. That helper forwards the live observation to
+`validate_result_for_invocation`; the live observation overrides the starting
+snapshot. Without a caller-verified live observation, only a starting deployment
+already bound to the exact candidate may satisfy a deployment-based criterion.
+Passing post-merge evidence also requires merged PR state; an open candidate
+cannot carry post-merge acceptance.
+
 ## Terminal result
 
 The terminal result is always validated before return. It records:
@@ -132,17 +157,50 @@ The terminal result is always validated before return. It records:
 - whether the handoff is transferable;
 - checkpoint sequence and final continuation token;
 - validation and review observations;
+- a criterion-specific acceptance ledger with required flag, evidence category,
+  pre/post-merge stage, candidate/deployed SHA, environment/URL, source, and
+  `pass`/`fail`/`missing` status;
+- the caller-verified final tracker state, transition mode, and observation
+  time;
 - authority actually used;
 - unresolved obligations; and
 - one next action or blocking reason.
 
 `ready_pr`, `ready_prs`, and `merged` require published, transferable candidate
-state. `ready_pr` requires exactly one PR; `ready_prs` requires a stack.
-`requires_epic` requires no implementation state.
+state and at least one acceptance record. `ready_pr` requires exactly one PR;
+`ready_prs` requires a stack. `requires_epic` requires no implementation state
+and may have an empty ledger.
 
-Delivery terminals must report every required validation command as passed at
-the exact candidate, satisfy requested independent review, and report zero
-unresolved material feedback when requested.
+Except for `requires_epic`, the terminal ledger must cover the invocation's
+acceptance contract one-to-one: it may neither omit a criterion nor invent one,
+and its required flag, category, stage, identity basis, exact required source,
+and applicable environment/URL must match the caller-owned requirement. A
+passing record's source must equal the authored source; a delegate summary or
+other nonempty substitute does not satisfy it. Passing evidence must match the
+required identity basis: candidate-bound evidence names the exact candidate;
+deployment-bound evidence names the exact caller-observed deployment SHA,
+environment, and URL whose candidate SHA matches the result candidate. Delivery
+terminals must report every required pre-merge entry as passing at the exact
+candidate, every required validation command as passed, satisfy requested
+independent review, and report zero unresolved material feedback when requested.
+Every passing post-merge record requires merged PR state. `merged` additionally
+requires every required post-merge entry to pass with its declared candidate or
+caller-verified deployment identity. A merged publication with pending
+acceptance returns `blocked` while preserving its transferable candidate.
+
+`merged` is also a tracker-completion claim. The result's `tracker_transition`
+is delegate-supplied evidence, not an authoritative observation. The caller must
+reread the owning tracker and pass a final observation bound to provider, ticket
+ID, state, transition mode, and observation time into
+`validate_result_for_invocation` or `validate_result_checkpoint_state`; the
+helper requires an exact match. It also requires the caller's consumed-authority
+ledger to match `authority_used` exactly. A manual transition requires
+`ticket.update`; an automatic transition requires the distinct
+`tracker.auto_close.authorize` grant for closing syntax and a subsequent live
+closed-state observation. Automatic closing authority does not imply manual
+`ticket.update` authority. A merged publication with an open, stale, delegate-
+only, mismatched, or unauthorized tracker transition returns `blocked` while
+preserving delivery.
 
 Published implementation must report the candidate push in `authority_used`. A
 result containing a pull request must also report the corresponding pull-request
@@ -164,8 +222,10 @@ never describe a local-only SHA as transferable.
 The caller must validate every terminal result against the durable checkpoint
 ledger tail, not merely the invocation's starting position. The bundled
 `validate_result_checkpoint_state` helper requires the terminal sequence and
-continuation token to equal that caller-supplied tail. A stale terminal
-checkpoint blocks handoff.
+continuation token to equal that caller-supplied tail. For `merged`, it also
+requires the caller-observed final tracker record and consumed-authority ledger.
+The CLI accepts those JSON values through `--observed-tracker` and
+`--consumed-authority`. A stale terminal checkpoint blocks handoff.
 
 A material ticket-observation change always causes the caller to deny the
 current invocation. Eligibility may be reevaluated only before starting a fresh
@@ -176,8 +236,10 @@ truthfully.
 ## Compatibility and failure
 
 Standalone invocations remain unchanged and may return the documented human
-handoff. Delegated execution applies only when the caller supplies a valid v1
-invocation.
+handoff. Delegated execution applies only when the caller supplies a valid v2
+invocation. Version 2 adds the required acceptance-evidence ledger to terminal
+results; v1 manifests, invocations, checkpoints, and results are rejected rather
+than silently interpreted under the stronger closeout contract.
 
 There is no daemon, callback server, or background lease. The checkpoint command
 is synchronous and caller-owned. If the caller disappears, execution fails

@@ -22,7 +22,10 @@ Before delegation, capture HEAD, comparison base, commit history, and tracked,
 staged, unstaged, untracked, and ignored state. Invoke `review-code-change` in a
 fresh or minimally inherited read-only context with:
 
-- the live ticket and acceptance criteria;
+- the live ticket, every acceptance criterion, and every required verification
+  item classified as pre-merge or post-merge;
+- the criterion-specific acceptance ledger with required evidence category,
+  current SHA/environment, source, and status;
 - every named architecture, design, contract, migration, and rollout document;
 - repository instructions and representative nearby code and tests;
 - the exact captured head and comparison-base SHAs plus the complete
@@ -54,6 +57,8 @@ Before invoking either delegate:
 
 - verify the initial review is clean for the exact live head and applicable
   base;
+- verify every required pre-merge acceptance entry passes and choose closing or
+  non-closing tracker syntax from whether post-merge entries exist;
 - evaluate the exact candidate against the live `carve-changesets` guardrails
   without duplicating their thresholds;
 - verify the selected single-PR or stack identity, effective diff, resulting
@@ -62,7 +67,8 @@ Before invoking either delegate:
 - assemble every field required by the applicable
   [babysit-pr](babysit-pr-handoff.md) or
   [carve-changesets](carve-changesets-handoff.md) handoff contract;
-- map the completion policy without broadening authority; and
+- map the completion policy without broadening merge, deployment, verification,
+  or tracker-transition authority; and
 - establish one exclusive mutating owner.
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
@@ -75,14 +81,17 @@ initial review is clean.
 After the selected delegate returns, reread live GitHub state and apply the
 applicable [babysit-pr](babysit-pr-handoff.md) or
 [carve-changesets](carve-changesets-handoff.md) result mapping. A `ready_pr`
-requires a validated current `ready_to_merge` result. A `ready_prs` requires a
-validated current `prs_open` result. A `merged` result requires independent
-remote merge or `all_merged`, mainline, tracker-transition, dependency-refresh,
-and cleanup verification by `implement-ticket`.
+requires a validated current `ready_to_merge` result plus passing required
+pre-merge acceptance evidence. A `ready_prs` requires a validated current
+`prs_open` result plus the same evidence. A `merged` result requires independent
+remote merge or `all_merged`, mainline, complete current acceptance evidence,
+tracker transition, dependency refresh, and cleanup verification by
+`implement-ticket`.
 
-If the live head, base, PR state, ownership, or gate evidence differs from the
-result, reconcile the live candidate or fail closed. Never carry stale evidence
-through a head change or accept a closed-unmerged PR as complete.
+If the live head, base, PR state, ownership, acceptance ledger, or gate evidence
+differs from the result, reconcile the live candidate or fail closed. Never
+carry stale evidence through a head/deployment change or accept a closed issue,
+merged PR, or closed-unmerged PR as acceptance proof.
 
 ## Findings that must not expand the ticket
 

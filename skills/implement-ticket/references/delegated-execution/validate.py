@@ -28,6 +28,7 @@ CANDIDATE_REQUIRED_ACTIONS = {
     "changeset.carve",
     "pull_request.merge",
     "repository.branch.delete",
+    "deployment.execute",
 }
 PUBLICATION_ACTIONS = CANDIDATE_REQUIRED_ACTIONS | {
     "deployment.execute",
@@ -132,6 +133,16 @@ def _validate_invocation(value: dict[str, Any]) -> list[str]:
         errors.append("$.desired_outcome: must appear in accepted_terminal_states")
     if "blocked" not in accepted:
         errors.append("$.accepted_terminal_states: must include blocked")
+    requirements = value.get("acceptance_requirements", [])
+    criteria = [entry["criterion"] for entry in requirements]
+    duplicate_criteria = sorted(
+        {criterion for criterion in criteria if criteria.count(criterion) > 1}
+    )
+    if duplicate_criteria:
+        errors.append(
+            "$.acceptance_requirements: duplicate criteria "
+            + ", ".join(duplicate_criteria)
+        )
     return errors
 
 
@@ -139,6 +150,7 @@ def _validate_checkpoint_request(value: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     phase = value.get("phase")
     candidate = value.get("candidate")
+    deployment = value.get("deployment")
     if value.get("action") in CANDIDATE_REQUIRED_ACTIONS and candidate is None:
         errors.append("$.candidate: action requires exact candidate")
     if phase == "candidate_published":
@@ -148,6 +160,17 @@ def _validate_checkpoint_request(value: dict[str, Any]) -> list[str]:
             errors.append(
                 "$.action: candidate_published requires repository.candidate.push"
             )
+    if phase == "deployment_observed":
+        if candidate is None or deployment is None:
+            errors.append(
+                "$.deployment: deployment_observed requires candidate and deployment"
+            )
+        elif deployment["candidate_sha"] != candidate["head_sha"]:
+            errors.append("$.deployment.candidate_sha: does not match candidate")
+        if value.get("action") != "deployment.execute":
+            errors.append("$.action: deployment_observed requires deployment.execute")
+    elif deployment is not None:
+        errors.append("$.deployment: only deployment_observed permits deployment")
     return errors
 
 
@@ -165,6 +188,8 @@ def _validate_checkpoint_response(value: dict[str, Any]) -> list[str]:
         errors.append("$.continuation_token: allow must rotate the token")
     if decision == "deny" and continuation != prior:
         errors.append("$.continuation_token: deny must preserve the prior token")
+    if decision == "deny" and value.get("observed_deployment") is not None:
+        errors.append("$.observed_deployment: deny requires null")
     return errors
 
 
@@ -178,6 +203,8 @@ def _validate_result(value: dict[str, Any]) -> list[str]:
     reason = handoff.get("reason")
     blocking_reason = value.get("blocking_reason")
     authority_used = set(value.get("authority_used", []))
+    acceptance = value.get("acceptance_evidence", [])
+    tracker_transition = value.get("tracker_transition", {})
 
     for collection in ("validation", "reviews"):
         names = [observation["name"] for observation in value[collection]]
@@ -187,6 +214,75 @@ def _validate_result(value: dict[str, Any]) -> list[str]:
                 f"$.{collection}: duplicate observation names " + ", ".join(duplicates)
             )
 
+    criteria = [entry["criterion"] for entry in acceptance]
+    duplicate_criteria = sorted(
+        {criterion for criterion in criteria if criteria.count(criterion) > 1}
+    )
+    if duplicate_criteria:
+        errors.append(
+            "$.acceptance_evidence: duplicate criteria " + ", ".join(duplicate_criteria)
+        )
+
+    if terminal in {"ready_pr", "ready_prs", "merged"} and not acceptance:
+        errors.append("$.acceptance_evidence: delivery terminal requires evidence")
+    if terminal in {"ready_pr", "ready_prs", "merged"}:
+        pre_merge_incomplete = [
+            entry["criterion"]
+            for entry in acceptance
+            if entry["required"]
+            and entry["stage"] == "pre_merge"
+            and entry["status"] != "pass"
+        ]
+        if pre_merge_incomplete:
+            errors.append(
+                "$.acceptance_evidence: required pre-merge evidence incomplete for "
+                + ", ".join(pre_merge_incomplete)
+            )
+    if terminal == "merged":
+        incomplete = [
+            entry["criterion"]
+            for entry in acceptance
+            if entry["required"] and entry["status"] != "pass"
+        ]
+        if incomplete:
+            errors.append(
+                "$.acceptance_evidence: merged requires complete evidence for "
+                + ", ".join(incomplete)
+            )
+        ticket = value.get("ticket", {})
+        if tracker_transition.get("provider") != ticket.get("provider"):
+            errors.append("$.tracker_transition.provider: does not match ticket")
+        if tracker_transition.get("ticket_id") != ticket.get("id"):
+            errors.append("$.tracker_transition.ticket_id: does not match ticket")
+        if tracker_transition.get("state") != "closed":
+            errors.append("$.tracker_transition.state: merged requires closed tracker")
+        transition_mode = tracker_transition.get("mode")
+        if transition_mode not in {"manual", "automatic"}:
+            errors.append(
+                "$.tracker_transition.mode: merged requires verified manual or automatic transition"
+            )
+        elif transition_mode == "manual" and "ticket.update" not in authority_used:
+            errors.append(
+                "$.authority_used: manual tracker transition requires ticket.update"
+            )
+        elif (
+            transition_mode == "automatic"
+            and "tracker.auto_close.authorize" not in authority_used
+        ):
+            errors.append(
+                "$.authority_used: automatic tracker transition requires "
+                "tracker.auto_close.authorize"
+            )
+    missing_source = [
+        entry["criterion"]
+        for entry in acceptance
+        if entry["status"] == "pass" and not entry["source"]
+    ]
+    if missing_source:
+        errors.append(
+            "$.acceptance_evidence: passing evidence requires source for "
+            + ", ".join(missing_source)
+        )
     if implementation == "published":
         if candidate is None or transferable is not True:
             errors.append(
@@ -229,6 +325,30 @@ def _validate_result(value: dict[str, Any]) -> list[str]:
                 "$.implementation_state: delivery terminal requires published candidate"
             )
     if candidate is not None:
+        stale_acceptance = [
+            entry["criterion"]
+            for entry in acceptance
+            if entry["status"] == "pass"
+            and entry["candidate_sha"] is not None
+            and entry["candidate_sha"] != candidate["head_sha"]
+        ]
+        if stale_acceptance:
+            errors.append(
+                "$.acceptance_evidence: candidate mismatch for "
+                + ", ".join(stale_acceptance)
+            )
+        missing_identity = [
+            entry["criterion"]
+            for entry in acceptance
+            if entry["status"] == "pass"
+            and not entry["candidate_sha"]
+            and not entry["deployed_sha"]
+        ]
+        if missing_identity:
+            errors.append(
+                "$.acceptance_evidence: passing evidence requires candidate or deployed SHA for "
+                + ", ".join(missing_identity)
+            )
         publication = candidate["publication"]
         kind = publication["kind"]
         pull_requests = publication["pull_requests"]
@@ -352,6 +472,7 @@ def validate_checkpoint_exchange(
         if request[request_field] != response[response_field]:
             errors.append(f"$.{response_field}: does not match request {request_field}")
     acknowledged = response["acknowledged_candidate_sha"]
+    observed_deployment = response["observed_deployment"]
     if response["decision"] == "deny":
         if acknowledged is not None:
             errors.append("$.acknowledged_candidate_sha: deny requires null")
@@ -362,7 +483,16 @@ def validate_checkpoint_exchange(
             )
     elif acknowledged is not None:
         errors.append(
-            "$.acknowledged_candidate_sha: pre-mutation response requires null"
+            "$.acknowledged_candidate_sha: non-publication response requires null"
+        )
+    if response["decision"] == "allow" and request["phase"] == "deployment_observed":
+        if observed_deployment != request["deployment"]:
+            errors.append(
+                "$.observed_deployment: does not match caller-verified deployment"
+            )
+    elif observed_deployment is not None:
+        errors.append(
+            "$.observed_deployment: only deployment_observed allow may include it"
         )
     return errors
 
@@ -385,10 +515,42 @@ def validate_checkpoint_progress(
 def validate_result_for_invocation(
     invocation: dict[str, Any],
     result: dict[str, Any],
+    observed_deployment: dict[str, Any] | None = None,
+    observed_tracker: dict[str, Any] | None = None,
+    consumed_authority: list[str] | None = None,
 ) -> list[str]:
-    """Validate a terminal result against its delegated invocation."""
+    """Validate a terminal result against its invocation and caller observations."""
     errors = validate("invocation", invocation)
     errors.extend(validate("result", result))
+    if observed_deployment is not None:
+        response_schema = json.loads(SCHEMAS["checkpoint-response"].read_text())
+        errors.extend(
+            validate_schema(
+                observed_deployment,
+                response_schema["properties"]["observed_deployment"],
+                response_schema,
+                "$.observed_deployment",
+            )
+        )
+    result_schema = json.loads(SCHEMAS["result"].read_text())
+    if observed_tracker is not None:
+        errors.extend(
+            validate_schema(
+                observed_tracker,
+                result_schema["properties"]["tracker_transition"],
+                result_schema,
+                "$.observed_tracker",
+            )
+        )
+    if consumed_authority is not None:
+        errors.extend(
+            validate_schema(
+                consumed_authority,
+                result_schema["properties"]["authority_used"],
+                result_schema,
+                "$.consumed_authority",
+            )
+        )
     if errors:
         return errors
     if result["invocation_id"] != invocation["invocation_id"]:
@@ -397,6 +559,19 @@ def validate_result_for_invocation(
         errors.append("$.terminal_state: caller does not accept this state")
     if result["ticket"] != invocation["ticket"]:
         errors.append("$.ticket: does not match invocation")
+    if result["terminal_state"] == "merged":
+        if observed_tracker is None:
+            errors.append("$.observed_tracker: merged requires caller observation")
+        elif result["tracker_transition"] != observed_tracker:
+            errors.append(
+                "$.tracker_transition: does not match caller-observed tracker state"
+            )
+        if consumed_authority is None:
+            errors.append(
+                "$.consumed_authority: merged requires caller authority ledger"
+            )
+        elif set(result["authority_used"]) != set(consumed_authority):
+            errors.append("$.authority_used: does not match caller authority ledger")
     expected_repository = {
         "identity": invocation["repository"]["identity"],
         "base_ref": invocation["repository"]["base_ref"],
@@ -422,6 +597,94 @@ def validate_result_for_invocation(
             errors.append(
                 "$.candidate.publication: first PR base_ref does not match invocation"
             )
+    if result["terminal_state"] != "requires_epic":
+        requirements = {
+            item["criterion"]: item for item in invocation["acceptance_requirements"]
+        }
+        evidence = {item["criterion"]: item for item in result["acceptance_evidence"]}
+        missing_criteria = sorted(set(requirements) - set(evidence))
+        if missing_criteria:
+            errors.append(
+                "$.acceptance_evidence: missing invocation criteria "
+                + ", ".join(missing_criteria)
+            )
+        unexpected_criteria = sorted(set(evidence) - set(requirements))
+        if unexpected_criteria:
+            errors.append(
+                "$.acceptance_evidence: criteria not present in invocation "
+                + ", ".join(unexpected_criteria)
+            )
+        deployment = observed_deployment or invocation["starting_deployment"]
+        for criterion in sorted(set(requirements) & set(evidence)):
+            requirement = requirements[criterion]
+            entry = evidence[criterion]
+            for field in ("required", "evidence_category", "stage"):
+                if entry[field] != requirement[field]:
+                    errors.append(
+                        f"$.acceptance_evidence: {field} mismatch for {criterion}"
+                    )
+            for field in ("environment", "url"):
+                expected = requirement[field]
+                if expected is not None and entry[field] != expected:
+                    errors.append(
+                        f"$.acceptance_evidence: {field} mismatch for {criterion}"
+                    )
+            if entry["status"] == "pass" and entry["source"] != requirement["source"]:
+                errors.append(f"$.acceptance_evidence: source mismatch for {criterion}")
+            if entry["status"] != "pass":
+                continue
+            if entry["stage"] == "post_merge":
+                pull_requests = (
+                    candidate["publication"]["pull_requests"]
+                    if candidate is not None
+                    else []
+                )
+                if not pull_requests or any(
+                    pull_request["state"] != "merged" for pull_request in pull_requests
+                ):
+                    errors.append(
+                        "$.acceptance_evidence: post-merge evidence requires merged "
+                        f"candidate for {criterion}"
+                    )
+            if requirement["identity"] == "candidate":
+                if candidate is None or entry["candidate_sha"] != candidate["head_sha"]:
+                    errors.append(
+                        "$.acceptance_evidence: required candidate identity mismatch "
+                        f"for {criterion}"
+                    )
+                continue
+            if entry["deployed_sha"] is None:
+                errors.append(
+                    "$.acceptance_evidence: required deployment identity missing "
+                    f"for {criterion}"
+                )
+                continue
+            if deployment is None:
+                errors.append(
+                    "$.acceptance_evidence: passing deployment evidence lacks "
+                    f"caller-observed deployment for {criterion}"
+                )
+                continue
+            if (
+                candidate is None
+                or deployment["candidate_sha"] != candidate["head_sha"]
+            ):
+                errors.append(
+                    "$.acceptance_evidence: deployment candidate mismatch "
+                    f"for {criterion}"
+                )
+                continue
+            deployment_fields = {
+                "deployed_sha": "deployed_sha",
+                "environment": "environment",
+                "url": "url",
+            }
+            for evidence_field, deployment_field in deployment_fields.items():
+                if entry[evidence_field] != deployment[deployment_field]:
+                    errors.append(
+                        "$.acceptance_evidence: current deployment "
+                        f"{evidence_field} mismatch for {criterion}"
+                    )
     allowed = set(invocation["authority"]["allow"])
     excess = sorted(set(result["authority_used"]) - allowed)
     if excess:
@@ -470,9 +733,18 @@ def validate_result_checkpoint_state(
     result: dict[str, Any],
     last_sequence: int,
     current_token: str,
+    observed_deployment: dict[str, Any] | None = None,
+    observed_tracker: dict[str, Any] | None = None,
+    consumed_authority: list[str] | None = None,
 ) -> list[str]:
-    """Validate a terminal result against its invocation and caller ledger tail."""
-    errors = validate_result_for_invocation(invocation, result)
+    """Validate a terminal result against live observations and the ledger tail."""
+    errors = validate_result_for_invocation(
+        invocation,
+        result,
+        observed_deployment,
+        observed_tracker,
+        consumed_authority,
+    )
     if errors:
         return errors
     if result["checkpoint"]["last_sequence"] != last_sequence:
@@ -500,6 +772,16 @@ def main() -> int:
         type=Path,
         help="Validate a checkpoint response against this request",
     )
+    parser.add_argument(
+        "--observed-tracker",
+        type=Path,
+        help="Caller-observed final tracker transition for a merged result",
+    )
+    parser.add_argument(
+        "--consumed-authority",
+        type=Path,
+        help="Caller authorization ledger for a merged result",
+    )
     args = parser.parse_args()
 
     try:
@@ -514,7 +796,22 @@ def main() -> int:
         if args.kind != "result":
             parser.error("--invocation requires kind=result")
         invocation = json.loads(args.invocation.read_text())
-        errors = validate_result_for_invocation(invocation, value)
+        observed_tracker = (
+            json.loads(args.observed_tracker.read_text())
+            if args.observed_tracker
+            else None
+        )
+        consumed_authority = (
+            json.loads(args.consumed_authority.read_text())
+            if args.consumed_authority
+            else None
+        )
+        errors = validate_result_for_invocation(
+            invocation,
+            value,
+            observed_tracker=observed_tracker,
+            consumed_authority=consumed_authority,
+        )
     elif args.request:
         if args.kind != "checkpoint-response":
             parser.error("--request requires kind=checkpoint-response")

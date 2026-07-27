@@ -5,11 +5,13 @@ status state. Let `implement-ticket` resolve repository and PR-host mechanics.
 
 ## Read native graph state
 
-- Read the live parent or epic, project context, children, comments, and linked
-  specifications.
+- Read the live parent or epic, project context, children, comments, linked
+  specifications, acceptance criteria, and required verification items.
 - Read explicit blocking and duplicate relationships plus current dispositions.
 - Verify completed, canceled, duplicate, or superseding blocker outcomes in
   their authoritative repository, artifact registry, tracker, or environment.
+- Read criterion-specific acceptance ledgers for every required child regardless
+  of Linear state.
 - Resolve repository and PR identities only far enough to avoid duplicate child
   selection and build the `implement-ticket` handoff.
 
@@ -20,15 +22,20 @@ graph state.
 
 ## Select and refresh
 
-Select only an open in-scope child with no unresolved blocker and verified
-prerequisite outcomes. Treat canceled or not-planned blockers with missing
-outcomes as unresolved.
+Select an in-scope child with no unresolved blocker and verified prerequisite
+outcomes when it is either open or auto-closed with required acceptance still
+missing. Route the latter through `implement-ticket` with its closeout
+observation and granted or withheld reopen authority. Do not select an accepted,
+superseded, or otherwise terminal closed child. Treat canceled or not-planned
+blockers with missing outcomes as unresolved.
 
-After `implement-ticket` returns `merged`, verify the expected Linear transition
-and reread the complete epic relationship state. For a stacked result, also
-verify every PR merge and full-chain representation on the base. Do not treat
-`ready_pr` or `ready_prs` as a completed child or unblock a dependent that
-requires merge.
+After every caller-verified merge, delivery, or Linear transition, reread the
+complete graph regardless of the returned terminal state. Verify the live
+transition first, then separately decide which edges require delivery and which
+require the child's complete current acceptance ledger. For a stacked delivery,
+also verify every completed PR transition and full-chain representation on the
+base. A `ready_pr`, `ready_prs`, or merged delivery with acceptance pending
+remains incomplete but must still inform the refreshed ready set.
 
 ## Separate tracker and PR host
 
@@ -39,7 +46,8 @@ a same-numbered GitHub issue as a substitute for Linear state.
 ## Close Linear epics
 
 Apply the shared closeout reference and require explicit parent-close authority.
-Update the epic only when every required child and blocker outcome is satisfied,
-acceptance holds on the base, and late feedback is dispositioned. Preserve
-deferred or canceled scope in the final report; never count an unmet canceled
-outcome as complete.
+Update the epic only when every required child ledger and blocker outcome is
+satisfied, the parent's own acceptance ledger holds on the current base and
+required deployment, and late feedback is dispositioned. Preserve deferred or
+canceled scope in the final report; never count an unmet outcome or completed
+Linear state as acceptance.

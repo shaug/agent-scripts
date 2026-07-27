@@ -17,10 +17,10 @@
   ],
   "properties": {
     "schema": {
-      "const": "agent-scripts.implement-ticket/capability-manifest/v1"
+      "const": "agent-scripts.implement-ticket/capability-manifest/v2"
     },
     "id": {
-      "const": "agent-scripts.implement-ticket/delegated-execution/v1"
+      "const": "agent-scripts.implement-ticket/delegated-execution/v2"
     },
     "contract": {
       "const": "CONTRACT.md"
@@ -54,7 +54,8 @@
       "type": "array",
       "const": [
         "pre_external_mutation",
-        "candidate_published"
+        "candidate_published",
+        "deployment_observed"
       ]
     }
   }

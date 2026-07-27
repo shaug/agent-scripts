@@ -6,7 +6,7 @@
     "authority": {},
     "capabilities": {"review_code_change": false, "babysit_pr": false},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-301", "state": "open", "whole_epic": true, "subissues": ["G-302"]},
+      "ticket": {"tracker": "github", "id": "G-301", "state": "open", "whole_epic": true, "subissues": ["G-302"], "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "one ticket per PR"},
       "pr": {"state": "absent", "merged": false, "head": null, "base": "base-1", "mergeable": null},
       "diff": {"base": "base-1", "head": null, "patch": "", "resulting_tree": null},
@@ -24,7 +24,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": false},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-303", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-303", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "one ticket per PR"},
       "pr": {"state": "absent", "merged": false, "head": null, "base": "base-1", "mergeable": null},
       "diff": {"base": "base-1", "head": null, "patch": "", "resulting_tree": null},
@@ -42,7 +42,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-304", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-304", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "CI and clean review required"},
       "pr": {"state": "open", "merged": false, "head": "head-304", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-304", "patch": "ticket-scoped patch", "resulting_tree": "tree-304"},
@@ -57,10 +57,10 @@
     "id": "authorized-merge-closeout",
     "target_skill": "implement-ticket",
     "request": "Implement and merge G-305.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-305", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-305", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "merge commits allowed"},
       "pr": {"state": "open", "merged": false, "head": "head-305", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-305", "patch": "ticket-scoped patch", "resulting_tree": "tree-305"},
@@ -75,10 +75,10 @@
     "id": "linear-ticket-github-pr",
     "target_skill": "implement-ticket",
     "request": "Implement and merge Linear ticket LIN-306 through a GitHub PR.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "linear", "id": "LIN-306", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "linear", "id": "LIN-306", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "linear", "pr_host": "github", "instructions": "Linear owns status"},
       "pr": {"state": "open", "merged": false, "head": "head-306", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-306", "patch": "ticket-scoped patch", "resulting_tree": "tree-306"},
@@ -96,7 +96,7 @@
     "authority": {"merge": false, "reply": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-307", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-307", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "resolve addressed threads"},
       "pr": {"state": "open", "merged": false, "head": "head-307b", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-307b", "patch": "ticket fix", "resulting_tree": "tree-307b"},
@@ -111,10 +111,10 @@
     "id": "branch-caused-ci-fix",
     "target_skill": "implement-ticket",
     "request": "Implement and merge G-308 after repairing its CI regression.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-308", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-308", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "full tests required"},
       "pr": {"state": "open", "merged": false, "head": "head-308b", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-308b", "patch": "CI fix", "resulting_tree": "tree-308b"},
@@ -132,7 +132,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-309", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-309", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "bounded retries"},
       "pr": {"state": "open", "merged": false, "head": "head-309", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-309", "patch": "ticket patch", "resulting_tree": "tree-309"},
@@ -150,7 +150,7 @@
     "authority": {"merge": false, "reply": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-310", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-310", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "human replies require authority"},
       "pr": {"state": "open", "merged": false, "head": "head-310", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-310", "patch": "ticket patch", "resulting_tree": "tree-310"},
@@ -168,7 +168,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-311", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-311", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "current-head connector required"},
       "pr": {"state": "open", "merged": false, "head": "head-311b", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-311b", "patch": "ticket patch", "resulting_tree": "tree-311b"},
@@ -183,10 +183,10 @@
     "id": "unrelated-base-drift",
     "target_skill": "implement-ticket",
     "request": "Merge G-312 after unrelated base drift.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-312", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-312", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "unrelated drift may retain evidence"},
       "pr": {"state": "open", "merged": false, "head": "head-312", "base": "base-2", "mergeable": true},
       "diff": {"base": "base-2", "head": "head-312", "base_drift": "unrelated", "patch": "unchanged patch", "resulting_tree": "tree-312"},
@@ -201,10 +201,10 @@
     "id": "relevant-base-drift",
     "target_skill": "implement-ticket",
     "request": "Merge G-313 after overlapping base drift.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-313", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-313", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "relevant drift invalidates gates"},
       "pr": {"state": "open", "merged": false, "head": "head-313b", "base": "base-2", "mergeable": true},
       "diff": {"base": "base-2", "head": "head-313b", "base_drift": "relevant", "patch": "reconciled patch", "resulting_tree": "tree-313b"},
@@ -222,7 +222,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-314", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-314", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "head changes reset gates"},
       "pr": {"state": "open", "merged": false, "head": "head-314b", "base": "base-1", "mergeable": true, "external_head_change": true},
       "diff": {"base": "base-1", "head": "head-314b", "patch": "new patch", "resulting_tree": "tree-314b"},
@@ -240,7 +240,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-315", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-315", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "preserve closed PR artifacts"},
       "pr": {"state": "closed", "merged": false, "head": "head-315", "base": "base-1", "mergeable": false},
       "diff": {"base": "base-1", "head": "head-315", "patch": "ticket patch", "resulting_tree": "tree-315"},
@@ -258,7 +258,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-316", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-316", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "candidate-bound results"},
       "pr": {"state": "open", "merged": false, "head": "head-316b", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-316b", "patch": "ticket patch", "resulting_tree": "tree-316b"},
@@ -276,7 +276,7 @@
     "authority": {"merge": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-317", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-317", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "one mutating owner"},
       "pr": {"state": "open", "merged": false, "head": "head-317", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-317", "patch": "ticket patch", "resulting_tree": "tree-317"},
@@ -291,10 +291,10 @@
     "id": "resumed-pr-deduplication",
     "target_skill": "implement-ticket",
     "request": "Resume and merge G-318 from its canonical PR.",
-    "authority": {"merge": true},
+    "authority": {"merge": true, "tracker_transition": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-318", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-318", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "adopt canonical PR only"},
       "pr": {"state": "open", "merged": false, "head": "head-318", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-318", "patch": "ticket patch", "resulting_tree": "tree-318"},
@@ -312,7 +312,7 @@
     "authority": {"merge": true},
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-319", "state": "open", "whole_epic": true, "children": ["G-320", "G-321", "G-322"]},
+      "ticket": {"tracker": "github", "id": "G-319", "state": "open", "whole_epic": true, "children": ["G-320", "G-321", "G-322"], "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic invokes implement-ticket only"},
       "pr": {"state": "multiple", "merged": false, "head": null, "base": "base-2", "mergeable": null},
       "diff": {"base": "base-2", "head": null, "patch": "", "resulting_tree": "tree-epic"},
@@ -330,7 +330,7 @@
     "authority": {"merge": false, "decompose_oversized": false},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-323", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-323", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "one ticket per candidate"},
       "pr": {"state": "absent", "merged": false, "head": "head-323", "base": "base-1", "mergeable": null},
       "diff": {"base": "base-1", "head": "head-323", "patch": "large coherent candidate", "resulting_tree": "tree-323", "guardrail": "oversized"},
@@ -348,7 +348,7 @@
     "authority": {"merge": false, "decompose_oversized": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-324", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-324", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "closing syntax only on final stack PR"},
       "pr": {"state": "multiple_open", "merged": false, "head": "stack-tip-324", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-324", "patch": "large coherent candidate", "resulting_tree": "tree-324", "guardrail": "oversized"},
@@ -366,7 +366,7 @@
     "authority": {"merge": false, "decompose_oversized": true, "ticket_management": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-325", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-325", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "split independently valuable outcomes at tracker level"},
       "pr": {"state": "absent", "merged": false, "head": "head-325", "base": "base-1", "mergeable": null},
       "diff": {"base": "base-1", "head": "head-325", "patch": "three independently valuable outcomes", "resulting_tree": "tree-325", "guardrail": "oversized"},
@@ -384,7 +384,7 @@
     "authority": {"merge": true, "decompose_oversized": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-326", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-326", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "never rewrite merged history"},
       "pr": {"state": "partial_stack", "merged": false, "head": "stack-326-2", "base": "base-1", "mergeable": false},
       "diff": {"base": "base-1", "head": "head-326", "patch": "large coherent candidate", "resulting_tree": "tree-326", "guardrail": "oversized"},
@@ -402,7 +402,7 @@
     "authority": {"merge": true, "decompose_oversized": true},
     "capabilities": {"implement_ticket": true, "babysit_pr": false, "carve_changesets": false},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-327", "state": "open", "whole_epic": true, "children": ["G-328", "G-329"]},
+      "ticket": {"tracker": "github", "id": "G-327", "state": "open", "whole_epic": true, "children": ["G-328", "G-329"], "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic verifies ticket results without decomposition mechanics"},
       "pr": {"state": "multiple_merged", "merged": true, "head": "stack-tip-328", "base": "base-2", "mergeable": null},
       "diff": {"base": "base-2", "head": "stack-tip-328", "patch": "three changesets", "resulting_tree": "tree-328"},
@@ -420,7 +420,7 @@
     "authority": {"merge": false, "decompose_oversized": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": false},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-330", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-330", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed when the publication dependency is unavailable"},
       "pr": {"state": "absent", "merged": false, "head": "head-330", "base": "base-1", "mergeable": null},
       "diff": {"base": "base-1", "head": "head-330", "patch": "large coherent candidate", "resulting_tree": "tree-330", "guardrail": "oversized"},
@@ -438,7 +438,7 @@
     "authority": {"merge": false, "decompose_oversized": true},
     "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
     "artifacts": {
-      "ticket": {"tracker": "github", "id": "G-331", "state": "open", "whole_epic": false},
+      "ticket": {"tracker": "github", "id": "G-331", "state": "open", "whole_epic": false, "acceptance_evidence": []},
       "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "candidate-bound stack results"},
       "pr": {"state": "multiple_open", "merged": false, "head": "stack-tip-331b", "base": "base-1", "mergeable": true},
       "diff": {"base": "base-1", "head": "head-331b", "patch": "large coherent candidate", "resulting_tree": "tree-331b", "guardrail": "oversized"},
@@ -447,6 +447,294 @@
       "threads": {"items": [], "unresolved": 0},
       "worktree": {"path": "/worktrees/g331", "exclusive_owner": true, "tracked": [], "untracked": []},
       "handoff": {"created": true, "result_well_formed": false, "result_stale": true, "rubric": "carve_coherent_branch", "carve_terminal": "prs_open", "result_head": "stack-tip-331a"}
+    }
+  },
+  {
+    "id": "epic-closed-children-missing-manual-browser",
+    "target_skill": "implement-epic",
+    "request": "Close epic G-340 after every child PR merged and every child ticket closed.",
+    "authority": {"merge": true, "tracker_transition": true},
+    "capabilities": {"implement_ticket": true, "babysit_pr": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-340", "state": "open", "whole_epic": true, "children": ["G-341", "G-342"], "acceptance_requirements": [{"criterion": "Authenticated workflow succeeds", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "authenticated browser run"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "closed children are delivery state, not acceptance"},
+      "pr": {"state": "multiple_merged", "merged": true, "head": "head-340", "base": "main-340", "mergeable": null},
+      "diff": {"base": "main-339", "head": "head-340", "patch": "epic changes", "resulting_tree": "tree-340"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-340", "current_deployment_candidate_sha": "head-340", "children_closed": true, "acceptance_observations": []}
+    }
+  },
+  {
+    "id": "auto-closed-missing-postmerge-deployment",
+    "target_skill": "implement-ticket",
+    "request": "Finish ticket G-350, which auto-closed when its PR merged.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-350", "state": "closed", "whole_epic": false, "acceptance_requirements": [{"criterion": "Tests pass", "required": true, "evidence_category": "ci", "stage": "pre_merge", "identity": "candidate", "environment": "ci", "url": null, "source": "check-run"}, {"criterion": "Production deploy is verified", "required": true, "evidence_category": "deployment", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "deployment-check"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "auto-close does not prove acceptance"},
+      "pr": {"state": "merged", "merged": true, "head": "head-350", "base": "main", "mergeable": null},
+      "diff": {"base": "base-350", "head": "head-350", "patch": "feature", "resulting_tree": "tree-350"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": null, "closing_syntax": "Fixes #350", "acceptance_observations": [{"criterion": "Tests pass", "evidence_category": "ci", "stage": "pre_merge", "candidate_sha": "head-350", "deployed_sha": null, "environment": "ci", "url": null, "source": "check-run", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "authenticated-deployed-browser-unavailable",
+    "target_skill": "implement-ticket",
+    "request": "Verify ticket G-360 after deployment when the authenticated browser is unavailable.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-360", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Authenticated production journey succeeds", "required": true, "evidence_category": "authenticated_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "authenticated browser capability probe"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "required unavailable evidence fails closed"},
+      "pr": {"state": "merged", "merged": true, "head": "head-360", "base": "main", "mergeable": null},
+      "diff": {"base": "base-360", "head": "head-360", "patch": "auth flow", "resulting_tree": "tree-360"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-360", "current_deployment_candidate_sha": "head-360", "acceptance_observations": [{"criterion": "Authenticated production journey succeeds", "evidence_category": "authenticated_browser", "stage": "post_merge", "candidate_sha": null, "deployed_sha": "deploy-360", "environment": "production", "url": null, "source": "authenticated browser capability probe", "outcome": "unavailable"}]}
+    }
+  },
+  {
+    "id": "functional-browser-missing-visual-layout",
+    "target_skill": "implement-ticket",
+    "request": "Close G-370 after its functional browser test passes.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-370", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Controls work", "required": true, "evidence_category": "functional_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "browser-run"}, {"criterion": "Panel is visually aligned", "required": true, "evidence_category": "visual_layout", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "layout evidence"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "functional evidence does not satisfy visual layout"},
+      "pr": {"state": "merged", "merged": true, "head": "head-370", "base": "main", "mergeable": null},
+      "diff": {"base": "base-370", "head": "head-370", "patch": "panel", "resulting_tree": "tree-370"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-370", "current_deployment_candidate_sha": "head-370", "acceptance_observations": [{"criterion": "Controls work", "evidence_category": "functional_browser", "stage": "post_merge", "candidate_sha": null, "deployed_sha": "deploy-370", "environment": "production", "url": null, "source": "browser-run", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "all-acceptance-current",
+    "target_skill": "implement-ticket",
+    "request": "Merge and complete G-380 after all authored acceptance evidence passes.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-380", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Contract tests pass", "required": true, "evidence_category": "command", "stage": "pre_merge", "identity": "candidate", "environment": "worktree", "url": null, "source": "just test"}, {"criterion": "Current deployment responds", "required": true, "evidence_category": "deployment", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "deployment-check"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "complete only with current criterion evidence"},
+      "pr": {"state": "merged", "merged": true, "head": "head-380", "base": "main", "mergeable": null},
+      "diff": {"base": "base-380", "head": "head-380", "patch": "feature", "resulting_tree": "tree-380"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g380", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-380", "current_deployment_candidate_sha": "head-380", "deployment_observed_after_merge": true, "acceptance_observations": [{"criterion": "Contract tests pass", "evidence_category": "command", "stage": "pre_merge", "candidate_sha": "head-380", "deployed_sha": null, "environment": "worktree", "url": null, "source": "just test", "outcome": "passed"}, {"criterion": "Current deployment responds", "evidence_category": "deployment", "stage": "post_merge", "candidate_sha": null, "deployed_sha": "deploy-380", "environment": "production", "url": null, "source": "deployment-check", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "backend-only-no-ui-gates",
+    "target_skill": "implement-ticket",
+    "request": "Merge backend-only G-390 after its authored command acceptance passes.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-390", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Parser contract suite passes", "required": true, "evidence_category": "command", "stage": "pre_merge", "identity": "candidate", "environment": "worktree", "url": null, "source": "just test-parser"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "do not invent UI acceptance"},
+      "pr": {"state": "open", "merged": false, "head": "head-390", "base": "main", "mergeable": true},
+      "diff": {"base": "base-390", "head": "head-390", "patch": "parser", "resulting_tree": "tree-390"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g390", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "acceptance_observations": [{"criterion": "Parser contract suite passes", "evidence_category": "command", "stage": "pre_merge", "candidate_sha": "head-390", "deployed_sha": null, "environment": "worktree", "url": null, "source": "just test-parser", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "merge-without-deploy-or-close-authority",
+    "target_skill": "implement-ticket",
+    "request": "Merge G-400; deployment and tracker transition were not authorized.",
+    "authority": {"merge": true, "tracker_transition": false, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-400", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Tests pass", "required": true, "evidence_category": "ci", "stage": "pre_merge", "identity": "candidate", "environment": "ci", "url": null, "source": "check-run"}, {"criterion": "Production deploy is verified", "required": true, "evidence_category": "deployment", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "deployment-check"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "merge authority does not grant deploy or close authority"},
+      "pr": {"state": "merged", "merged": true, "head": "head-400", "base": "main", "mergeable": null},
+      "diff": {"base": "base-400", "head": "head-400", "patch": "feature", "resulting_tree": "tree-400"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": null, "acceptance_observations": [{"criterion": "Tests pass", "evidence_category": "ci", "stage": "pre_merge", "candidate_sha": "head-400", "deployed_sha": null, "environment": "ci", "url": null, "source": "check-run", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "reopened-epic-correction-without-journey-revalidation",
+    "target_skill": "implement-epic",
+    "request": "Reclose G-410 after its focused corrective child merged.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": true},
+    "capabilities": {"implement_ticket": true, "babysit_pr": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-410", "state": "open", "whole_epic": true, "children": ["G-411"], "acceptance_requirements": [{"criterion": "Escaped boundary regression passes", "required": true, "evidence_category": "regression", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "regression-run"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "corrective merge alone does not reaccept the journey"},
+      "pr": {"state": "merged", "merged": true, "head": "head-411", "base": "main", "mergeable": null},
+      "diff": {"base": "base-411", "head": "head-411", "patch": "focused correction", "resulting_tree": "tree-411"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-410", "current_deployment_candidate_sha": "head-411", "escaped_acceptance_defect": true, "affected_journey_revalidated": false, "acceptance_observations": [{"criterion": "Escaped boundary regression passes", "evidence_category": "regression", "stage": "post_merge", "candidate_sha": null, "deployed_sha": "deploy-410", "environment": "production", "url": null, "source": "regression-run", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "stale-acceptance-evidence",
+    "target_skill": "implement-ticket",
+    "request": "Publish G-420 using its prior successful acceptance run.",
+    "authority": {"merge": false, "tracker_transition": false, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-420", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Contract tests pass", "required": true, "evidence_category": "command", "stage": "pre_merge", "identity": "candidate", "environment": "worktree", "url": null, "source": "just test"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "acceptance evidence is candidate bound"},
+      "pr": {"state": "open", "merged": false, "head": "head-420-new", "base": "main", "mergeable": true},
+      "diff": {"base": "base-420", "head": "head-420-new", "patch": "new head", "resulting_tree": "tree-420-new"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g420", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "acceptance_observations": [{"criterion": "Contract tests pass", "evidence_category": "command", "stage": "pre_merge", "candidate_sha": "head-420-old", "deployed_sha": null, "environment": "worktree", "url": null, "source": "just test", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "epic-auto-closed-child-incomplete",
+    "target_skill": "implement-epic",
+    "request": "Continue epic G-430 by recovering auto-closed child G-431, whose required production acceptance is missing.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": false},
+    "capabilities": {"implement_ticket": true, "babysit_pr": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-431", "state": "closed", "whole_epic": false, "acceptance_requirements": [{"criterion": "Tests pass", "required": true, "evidence_category": "ci", "stage": "pre_merge", "identity": "candidate", "environment": "ci", "url": null, "source": "check-run"}, {"criterion": "Production journey passes", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "production browser run"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "auto-closed child remains selectable until acceptance is complete"},
+      "pr": {"state": "merged", "merged": true, "head": "head-431", "base": "main", "mergeable": null},
+      "diff": {"base": "base-431", "head": "head-431", "patch": "child feature", "resulting_tree": "tree-431"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": null, "auto_closed_incomplete_child": true, "acceptance_observations": [{"criterion": "Tests pass", "evidence_category": "ci", "stage": "pre_merge", "candidate_sha": "head-431", "deployed_sha": null, "environment": "ci", "url": null, "source": "check-run", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "prior-unrelated-deployment-evidence",
+    "target_skill": "implement-ticket",
+    "request": "Complete G-440 using the production deployment that was already live before this candidate merged.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-440", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Tests pass", "required": true, "evidence_category": "ci", "stage": "pre_merge", "identity": "candidate", "environment": "ci", "url": null, "source": "check-run"}, {"criterion": "Production deployment responds", "required": true, "evidence_category": "deployment", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "prior-deployment-check"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "prior deployment belongs to a different candidate"},
+      "pr": {"state": "merged", "merged": true, "head": "head-440", "base": "main", "mergeable": null},
+      "diff": {"base": "base-440", "head": "head-440", "patch": "feature", "resulting_tree": "tree-440"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-old", "current_deployment_candidate_sha": "head-old", "acceptance_observations": [{"criterion": "Tests pass", "evidence_category": "ci", "stage": "pre_merge", "candidate_sha": "head-440", "deployed_sha": null, "environment": "ci", "url": null, "source": "check-run", "outcome": "passed"}, {"criterion": "Production deployment responds", "evidence_category": "deployment", "stage": "post_merge", "candidate_sha": null, "deployed_sha": "deploy-old", "environment": "production", "url": null, "source": "prior-deployment-check", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "missing-acceptance-ledger",
+    "target_skill": "implement-ticket",
+    "request": "Publish G-450 as ready without recording its authored acceptance contract.",
+    "authority": {"merge": false, "tracker_transition": false, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-450", "state": "open", "whole_epic": false},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "acceptance contract observation is required before readiness"},
+      "pr": {"state": "open", "merged": false, "head": "head-450", "base": "main", "mergeable": true},
+      "diff": {"base": "base-450", "head": "head-450", "patch": "feature", "resulting_tree": "tree-450"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g450", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "merge-without-tracker-transition-authority",
+    "target_skill": "implement-ticket",
+    "request": "Merge G-451 after acceptance passes, but do not transition its tracker.",
+    "authority": {"merge": true, "tracker_transition": false, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-451", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Contract tests pass", "required": true, "evidence_category": "command", "stage": "pre_merge", "identity": "candidate", "environment": "worktree", "url": null, "source": "just test"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "merge authority does not grant tracker transition authority"},
+      "pr": {"state": "merged", "merged": true, "head": "head-451", "base": "main", "mergeable": null},
+      "diff": {"base": "base-451", "head": "head-451", "patch": "feature", "resulting_tree": "tree-451"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g451", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "closing_syntax": "Refs #451", "acceptance_observations": [{"criterion": "Contract tests pass", "evidence_category": "command", "stage": "pre_merge", "candidate_sha": "head-451", "deployed_sha": null, "environment": "worktree", "url": null, "source": "just test", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "wrong-source-acceptance-evidence",
+    "target_skill": "implement-ticket",
+    "request": "Publish G-460 using a delegate summary in place of the authored command source.",
+    "authority": {"merge": false, "tracker_transition": false, "deploy": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-460", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Contract tests pass", "required": true, "evidence_category": "command", "stage": "pre_merge", "identity": "candidate", "environment": "worktree", "url": null, "source": "just test"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "the authored evidence source is part of the acceptance contract"},
+      "pr": {"state": "open", "merged": false, "head": "head-460", "base": "main", "mergeable": true},
+      "diff": {"base": "base-460", "head": "head-460", "patch": "feature", "resulting_tree": "tree-460"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g460", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "acceptance_observations": [{"criterion": "Contract tests pass", "evidence_category": "command", "stage": "pre_merge", "candidate_sha": "head-460", "deployed_sha": null, "environment": "worktree", "url": null, "source": "delegate summary", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "deployment-requirement-rejects-candidate-fallback",
+    "target_skill": "implement-ticket",
+    "request": "Complete G-470 because its candidate matches even though the observed deployment is not current.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": true},
+    "capabilities": {"review_code_change": true, "babysit_pr": true, "carve_changesets": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-470", "state": "open", "whole_epic": false, "acceptance_requirements": [{"criterion": "Production deployment responds", "required": true, "evidence_category": "deployment", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "deployment-check"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "deployment identity cannot fall back to candidate identity"},
+      "pr": {"state": "merged", "merged": true, "head": "head-470", "base": "main", "mergeable": null},
+      "diff": {"base": "base-470", "head": "head-470", "patch": "feature", "resulting_tree": "tree-470"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "current_deployed_sha": "deploy-current", "current_deployment_candidate_sha": "head-470", "acceptance_observations": [{"criterion": "Production deployment responds", "evidence_category": "deployment", "stage": "post_merge", "candidate_sha": "head-470", "deployed_sha": "deploy-wrong", "environment": "production", "url": null, "source": "deployment-check", "outcome": "passed"}]}
+    }
+  },
+  {
+    "id": "epic-refreshes-after-blocked-merged-delivery",
+    "target_skill": "implement-epic",
+    "request": "Continue G-480 after a child delivery merged but required production acceptance remains missing.",
+    "authority": {"merge": true, "tracker_transition": true, "deploy": false},
+    "capabilities": {"implement_ticket": true, "babysit_pr": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-480", "state": "open", "whole_epic": true, "children": ["G-481"], "acceptance_requirements": [{"criterion": "Production journey passes", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "production browser run"}]},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "refresh the complete graph after verified delivery even when acceptance blocks completion"},
+      "pr": {"state": "merged", "merged": true, "head": "head-481", "base": "main", "mergeable": null},
+      "diff": {"base": "base-481", "head": "head-481", "patch": "child feature", "resulting_tree": "tree-481"},
+      "checks": {"status": "success", "items": []},
+      "reviews": {"initial": "clean", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "verified_merged_delivery": true, "graph_state_changed": true, "acceptance_observations": []}
     }
   }
 ]

@@ -11,11 +11,12 @@
     "continuation_token",
     "decision",
     "reason",
-    "acknowledged_candidate_sha"
+    "acknowledged_candidate_sha",
+    "observed_deployment"
   ],
   "properties": {
     "schema": {
-      "const": "agent-scripts.implement-ticket/checkpoint-response/v1"
+      "const": "agent-scripts.implement-ticket/checkpoint-response/v2"
     },
     "invocation_id": {
       "type": "string",
@@ -42,6 +43,28 @@
     "acknowledged_candidate_sha": {
       "type": ["string", "null"],
       "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "observed_deployment": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["candidate_sha", "deployed_sha", "environment", "url"],
+      "properties": {
+        "candidate_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "deployed_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40,64}$"
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": ["string", "null"]
+        }
+      }
     }
   }
 }

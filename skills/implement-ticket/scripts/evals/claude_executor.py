@@ -5,7 +5,8 @@ Reads one result-blind evaluation packet as JSON on stdin (the shape built by
 `run_forward.py`), asks a fresh `claude -p` process to act as the target
 skill's runtime, and prints one JSON result to stdout:
 
-    {"target_skill": ..., "terminal_state": ..., "actions": [...]}
+    {"target_skill": ..., "terminal_state": ..., "actions": [...],
+     "acceptance_ledger": [...]}
 
 The evaluated model receives the skill prompt, the request, and raw scenario
 artifacts, plus the closed action vocabulary below so its choices are gradable
@@ -38,6 +39,9 @@ TERMINAL_STATES = (
 # must decide which obligations apply, not invent matching strings.
 ACTION_VOCABULARY = (
     "adopt_verified_canonical_pr",
+    "allow_acceptance_completion",
+    "avoid_irrelevant_ui_gates",
+    "build_acceptance_ledger",
     "caller_verifies_mainline_tracker_cleanup",
     "consume_ticket_states_unchanged",
     "deduplicate_prior_actions",
@@ -54,6 +58,7 @@ ACTION_VOCABULARY = (
     "invoke_merge_when_ready",
     "invoke_ready_to_merge",
     "invoke_carve_changesets",
+    "invoke_implement_ticket_for_recovery",
     "make_no_code_mutation",
     "name_missing_babysit_pr",
     "name_missing_carve_changesets",
@@ -61,16 +66,23 @@ ACTION_VOCABULARY = (
     "place_closing_syntax_final_pr_only",
     "preserve_artifacts",
     "preserve_feedback_gate",
+    "preserve_acceptance_authority_boundaries",
     "preserve_partial_stack",
     "preserve_tracker_pr_host_separation",
     "rebuild_remote_gates",
     "record_guardrail_evidence",
     "refresh_graph_after_merged_only",
+    "refresh_graph_after_verified_delivery",
     "reject_concurrent_mutation",
+    "reject_missing_required_acceptance",
     "reject_stale_connector_verdict",
     "reject_stale_or_malformed_result",
+    "reject_stale_acceptance_evidence",
     "report_closed_without_merge",
+    "report_delivery_acceptance_separately",
     "report_mid_stack_redesign",
+    "report_missing_reopen_authority",
+    "reopen_auto_closed_ticket",
     "reread_live_pr",
     "retain_only_proven_unaffected_evidence",
     "retry_diagnosed_run_only",
@@ -78,15 +90,24 @@ ACTION_VOCABULARY = (
     "revalidate_commit_push",
     "route_before_ticket_dependencies",
     "route_to_tracker_split",
+    "select_auto_closed_incomplete_child",
+    "skill_contract_incomplete",
     "skip_direct_babysit_handoff",
     "stop_before_publication",
+    "keep_tracker_open",
+    "require_escape_journey_revalidation",
+    "require_visual_layout_evidence",
     "ticket_scoped_fix",
     "transfer_exclusive_mutation_ownership",
+    "verify_live_deployment_candidate_binding",
     "verify_merge_live",
     "verify_non_merge_gates",
     "verify_each_pr_gate",
     "verify_full_stack_on_base",
     "verify_stack_topology",
+    "verify_child_acceptance_ledgers",
+    "verify_epic_acceptance",
+    "use_non_closing_reference",
 )
 
 
@@ -117,7 +138,8 @@ def build_prompt(payload: dict) -> str:
             "Return ONLY one JSON object, no prose and no code fence:",
             '{"target_skill": "' + payload["target_skill"] + '",',
             ' "terminal_state": <one of ' + json.dumps(list(TERMINAL_STATES)) + ">,",
-            ' "actions": <every applicable value from this closed vocabulary>}',
+            ' "actions": <every applicable value from this closed vocabulary>,',
+            ' "acceptance_ledger": <one derived evidence record per authored criterion>}',
             json.dumps(list(ACTION_VOCABULARY), indent=2),
         ]
     )
@@ -160,6 +182,16 @@ def normalize(payload: dict, observed: dict) -> dict:
     actions = observed.get("actions")
     if not isinstance(actions, list):
         actions = []
+    ledger = observed.get("acceptance_ledger")
+    if not isinstance(ledger, list):
+        ledger = []
+    normalized_ledger = [
+        entry
+        for entry in ledger
+        if isinstance(entry, dict)
+        and isinstance(entry.get("criterion"), str)
+        and entry.get("status") in {"pass", "fail", "missing"}
+    ]
     return {
         # Report exactly what the model claimed; backfilling from the payload
         # would make the grader's target_skill check vacuous.
@@ -168,6 +200,7 @@ def normalize(payload: dict, observed: dict) -> dict:
         "actions": sorted(
             {str(action) for action in actions if str(action) in ACTION_VOCABULARY}
         ),
+        "acceptance_ledger": normalized_ledger,
     }
 
 

@@ -285,5 +285,133 @@
     "required_actions": ["reject_stale_or_malformed_result", "reread_live_pr"],
     "target_skill": "implement-ticket",
     "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-closed-children-missing-manual-browser",
+    "acceptance_statuses": {"Authenticated workflow succeeds": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_merge_when_ready"],
+    "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "verify_epic_acceptance", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "auto-closed-missing-postmerge-deployment",
+    "acceptance_statuses": {"Tests pass": "pass", "Production deploy is verified": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_merge_when_ready"],
+    "required_actions": ["build_acceptance_ledger", "reject_missing_required_acceptance", "reopen_auto_closed_ticket", "keep_tracker_open", "use_non_closing_reference", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "authenticated-deployed-browser-unavailable",
+    "acceptance_statuses": {"Authenticated production journey succeeds": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "caller_verifies_mainline_tracker_cleanup"],
+    "required_actions": ["build_acceptance_ledger", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "functional-browser-missing-visual-layout",
+    "acceptance_statuses": {"Controls work": "pass", "Panel is visually aligned": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_merge_when_ready"],
+    "required_actions": ["build_acceptance_ledger", "require_visual_layout_evidence", "reject_missing_required_acceptance", "keep_tracker_open"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "all-acceptance-current",
+    "acceptance_statuses": {"Contract tests pass": "pass", "Current deployment responds": "pass"},
+    "forbidden_actions": ["reject_missing_required_acceptance", "keep_tracker_open", "invoke_merge_when_ready"],
+    "required_actions": ["build_acceptance_ledger", "allow_acceptance_completion", "verify_live_deployment_candidate_binding", "verify_merge_live", "caller_verifies_mainline_tracker_cleanup"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "backend-only-no-ui-gates",
+    "acceptance_statuses": {"Parser contract suite passes": "pass"},
+    "forbidden_actions": ["require_visual_layout_evidence", "reject_missing_required_acceptance"],
+    "required_actions": ["build_acceptance_ledger", "avoid_irrelevant_ui_gates", "allow_acceptance_completion", "invoke_merge_when_ready"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "merged"
+  },
+  {
+    "case_id": "merge-without-deploy-or-close-authority",
+    "acceptance_statuses": {"Tests pass": "pass", "Production deploy is verified": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "reopen_auto_closed_ticket"],
+    "required_actions": ["build_acceptance_ledger", "reject_missing_required_acceptance", "keep_tracker_open", "use_non_closing_reference", "preserve_acceptance_authority_boundaries", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "reopened-epic-correction-without-journey-revalidation",
+    "acceptance_statuses": {"Escaped boundary regression passes": "pass"},
+    "forbidden_actions": ["allow_acceptance_completion", "refresh_graph_after_merged_only"],
+    "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "verify_epic_acceptance", "require_escape_journey_revalidation", "keep_tracker_open"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "stale-acceptance-evidence",
+    "acceptance_statuses": {"Contract tests pass": "pass"},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_ready_to_merge"],
+    "required_actions": ["build_acceptance_ledger", "reject_stale_acceptance_evidence", "reject_missing_required_acceptance", "keep_tracker_open"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-auto-closed-child-incomplete",
+    "acceptance_statuses": {"Tests pass": "pass", "Production journey passes": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion", "refresh_graph_after_merged_only"],
+    "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery", "reopen_auto_closed_ticket", "reject_missing_required_acceptance", "keep_tracker_open", "use_non_closing_reference"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "prior-unrelated-deployment-evidence",
+    "acceptance_statuses": {"Tests pass": "pass", "Production deployment responds": "pass"},
+    "forbidden_actions": ["allow_acceptance_completion", "caller_verifies_mainline_tracker_cleanup"],
+    "required_actions": ["build_acceptance_ledger", "reject_stale_acceptance_evidence", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "missing-acceptance-ledger",
+    "acceptance_statuses": {},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_ready_to_merge"],
+    "required_actions": ["build_acceptance_ledger", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "merge-without-tracker-transition-authority",
+    "acceptance_statuses": {"Contract tests pass": "pass"},
+    "forbidden_actions": ["reject_missing_required_acceptance", "invoke_merge_when_ready"],
+    "required_actions": ["build_acceptance_ledger", "allow_acceptance_completion", "keep_tracker_open", "use_non_closing_reference", "preserve_acceptance_authority_boundaries", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "wrong-source-acceptance-evidence",
+    "acceptance_statuses": {"Contract tests pass": "fail"},
+    "forbidden_actions": ["allow_acceptance_completion", "invoke_ready_to_merge"],
+    "required_actions": ["build_acceptance_ledger", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "deployment-requirement-rejects-candidate-fallback",
+    "acceptance_statuses": {"Production deployment responds": "pass"},
+    "forbidden_actions": ["allow_acceptance_completion", "caller_verifies_mainline_tracker_cleanup"],
+    "required_actions": ["build_acceptance_ledger", "reject_stale_acceptance_evidence", "reject_missing_required_acceptance", "keep_tracker_open", "report_delivery_acceptance_separately"],
+    "target_skill": "implement-ticket",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-refreshes-after-blocked-merged-delivery",
+    "acceptance_statuses": {"Production journey passes": "missing"},
+    "forbidden_actions": ["allow_acceptance_completion"],
+    "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "verify_epic_acceptance", "reject_missing_required_acceptance", "keep_tracker_open", "refresh_graph_after_verified_delivery"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
   }
 ]

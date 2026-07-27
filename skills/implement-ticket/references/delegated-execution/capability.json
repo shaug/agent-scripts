@@ -1,6 +1,6 @@
 {
-  "schema": "agent-scripts.implement-ticket/capability-manifest/v1",
-  "id": "agent-scripts.implement-ticket/delegated-execution/v1",
+  "schema": "agent-scripts.implement-ticket/capability-manifest/v2",
+  "id": "agent-scripts.implement-ticket/delegated-execution/v2",
   "contract": "CONTRACT.md",
   "invocation_schema": "invocation.schema.json",
   "checkpoint_request_schema": "checkpoint-request.schema.json",
@@ -16,6 +16,7 @@
   ],
   "checkpoint_phases": [
     "pre_external_mutation",
-    "candidate_published"
+    "candidate_published",
+    "deployment_observed"
   ]
 }

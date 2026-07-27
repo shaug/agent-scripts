@@ -57,7 +57,7 @@
     "id": "authorized-full-epic-closeout",
     "request": "Implement and close epic G-190.",
     "authority": "child merge and parent closeout explicitly granted",
-    "closeout": "All children merged and closed; graph, base representation, acceptance, clean-main, rollout, and late-feedback gates pass."
+    "closeout": "Every child and parent criterion ledger passes, every required PR is represented on current main, exact deployed SHA evidence is current, clean-main and late-feedback gates pass."
   },
   {
     "id": "umbrella-closeout-separately",
@@ -113,5 +113,17 @@
     "request": "Continue epic G-280 after authorized child G-281 returns a three-PR carved result.",
     "graph": "G-282 is blocked until G-281 is fully merged.",
     "ticket_results": ["G-281 reports all_merged with three ordered PRs, per-PR gate evidence, propagation evidence, and full-chain representation on main"]
+  },
+  {
+    "id": "closed-children-missing-manual-browser",
+    "request": "Close epic G-290 after every child PR merged and every child ticket closed.",
+    "graph": "Every required child is administratively closed and represented on main.",
+    "closeout": "A required child acceptance ledger has missing authenticated manual-browser evidence for the exact deployment."
+  },
+  {
+    "id": "reopened-correction-missing-journey-revalidation",
+    "request": "Reclose escaped epic G-300 after corrective child G-301 merged.",
+    "graph": "G-301 is merged and closed with a focused regression test.",
+    "closeout": "The escaped boundary regression passes, but the full affected customer journey has not been revalidated."
   }
 ]

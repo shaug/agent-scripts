@@ -161,6 +161,69 @@ class ImplementTicketContractTests(unittest.TestCase):
             "ready_prs",
             self.expectations["oversized-authorized-carved-stack"]["terminal_state"],
         )
+        for case_id in (
+            "auto-closed-missing-postmerge-acceptance",
+            "authenticated-browser-unavailable",
+            "functional-browser-without-visual-evidence",
+            "merge-without-deploy-or-close-authority",
+            "stale-acceptance-evidence",
+        ):
+            self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
+        self.assertEqual(
+            "merged", self.expectations["backend-only-acceptance"]["terminal_state"]
+        )
+
+    def test_acceptance_evidence_is_criterion_specific_and_fail_closed(self):
+        for field in (
+            "criterion text or stable identity",
+            "evidence category",
+            "pre-merge or post-merge",
+            "exact candidate SHA",
+            "deployed SHA",
+            "environment and URL",
+            "source",
+            "`pass`, `fail`, or `missing`",
+        ):
+            self.assertIn(field, self.all_contract)
+        self.assertIn("wrong-environment", self.skill_compact)
+        self.assertIn("category-mismatched", self.skill_compact)
+        self.assertIn("return `blocked`", self.skill_compact)
+
+    def test_closing_syntax_and_post_merge_transition_are_acceptance_gated(self):
+        self.assertIn("non-closing reference", self.skill_compact)
+        self.assertIn("`Fixes #<issue>`", self.github)
+        self.assertIn("`Refs #<issue>`", self.github)
+        self.assertIn("`Supports #<issue>`", self.github)
+        self.assertIn(
+            "Reopen it when manual transition authority permits", self.skill_compact
+        )
+        self.assertIn("Close manually only after the ledger passes", self.skill_compact)
+
+    def test_acceptance_does_not_invent_irrelevant_ui_gates(self):
+        self.assertIn(
+            "Do not add browser, deployment, authenticated, integration, manual, visual, or full-system gates that the ticket does not require",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "do not satisfy an explicit visual-layout requirement",
+            self.skill_compact,
+        )
+
+    def test_escaped_acceptance_requires_focused_revalidation(self):
+        self.assertIn("focused corrective ticket", self.skill_compact)
+        self.assertIn("regression test at the escaped boundary", self.skill_compact)
+        self.assertIn("full affected customer journey", self.skill_compact)
+        self.assertIn("do not impose unrelated full-system testing", self.skill_compact)
+
+    def test_epic_child_unblocks_only_after_acceptance_transition(self):
+        self.assertIn(
+            "report newly unblocked downstream work only after the child acceptance "
+            "ledger and authorized tracker transition pass",
+            self.skill_compact,
+        )
+        self.assertNotIn(
+            "report newly unblocked downstream work after merge", self.skill_compact
+        )
 
     def test_runtime_adapters_exist_for_both_products(self):
         metadata = read(SKILL_ROOT / "agents" / "openai.yaml")
