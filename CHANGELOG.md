@@ -19,6 +19,8 @@ summary: Chronological history of repository and skill changes.
   (`df55335d2df85f0ba3064e671095d0621eeb145e`)
 - feat: require acceptance evidence for workflow closeout
   (`a3597c25ee2d76135d1f0c8642a620e673fc8e57`)
+- docs: record the solution-simplicity delivery and settle the grading method
+  (`3fb600c57e2547d437d3a1a8ed9e0ad4595186cc`)
 - fix: make every packet diff a valid patch, and gate the adjudication record
   (`06a5679643a0a5bcb1944c8bff4bd4986f4f77e1`)
 - fix: stop a grader formulation being quotable from its own packet

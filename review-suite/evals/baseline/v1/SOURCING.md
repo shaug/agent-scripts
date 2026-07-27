@@ -247,7 +247,7 @@ packet and expectation was checked against the specific classes of leak found
 and fixed in `s2` (real product terms, real symbol names, verbatim reviewer
 phrasing) before this record was written, not after.
 
-One source is reused a third time across strata. `atelier` PR 410 comment
+One source is reused a second time across strata. `atelier` PR 410 comment
 2870262209 already grounds `s2`'s `registry-client-layering` (the whole-solution
 over-engineering reading) and now also grounds
 `metrics-label-formatting-duplication` here (the local-implementation reading:

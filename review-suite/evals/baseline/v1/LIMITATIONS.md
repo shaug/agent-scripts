@@ -161,14 +161,22 @@ quote the recall or false-clean figure from
 metric consumes it. Severity agreement is not measured. Either score it or drop
 the requirement; do not assume it is being measured.
 
-## 7. The scored corpus is not yet populated
+## 7. Corpus minima are met; the corpus is not yet scored
 
-`frozen-configuration.json` declares three scored strata in state
-`declared_unpopulated`. No scored case exists yet, so **no baseline figure
-exists yet**. The corpus-population batches, their sourced ground truth, and the
-case classes each will carry are recorded in [SOURCING.md](SOURCING.md). Every
-case class required of the corpus is named there; none has been silently
+`frozen-configuration.json` now records all three declared strata as
+`populated_not_scored` — `s1-correctness-orchestrator`,
+`s2-solution-simplicity-lens`, and `s3-code-simplicity-lens` each carry their
+required minimum case set, sourced and minimized in three population batches
+recorded in [SOURCING.md](SOURCING.md). No stratum remains
+`declared_unpopulated`, and no case class required of the corpus was silently
 omitted.
+
+**No scored case exists, and no baseline figure exists.** Corpus completeness is
+a necessary condition for a scored baseline, not a sufficient one. Two gates
+stay open regardless of the corpus being complete: the independent adjudication
+of every `owner_required` case (see item 8, and items 19 and 25), and the frozen
+baseline protocol itself, which this population work does not perform. See item
+27 for the full statement of what is and is not closed by corpus completeness.
 
 ## 8. Independent adjudication is outstanding
 
@@ -618,3 +626,25 @@ plainly rather than implied closed by the corpus being complete:
 - **The frozen baseline** cannot be captured until the owner's adjudications
   land, regardless of corpus completeness. Populating every stratum is a
   necessary condition for scoring, not a sufficient one.
+
+## 28. The non-material near-miss control for code-simplicity may not discriminate
+
+`s3-code-simplicity-lens`'s non-material near-miss control,
+`env-inventory-bullet-format`, is a pure Markdown-formatting diff.
+`review-code-simplicity`'s own rubric instructs a reviewer to omit formatting
+concerns unconditionally, which means a fully compliant reviewer returns clean
+on this packet regardless of whether the specific formatting choice is
+justified. The case therefore mostly tests rubric compliance - does the reviewer
+correctly decline to flag formatting - rather than the near-miss judgement (is
+this apparent verbosity actually justified) it was built to demonstrate, since
+both a reviewer that reasons about the justification and one that reflexively
+ignores all formatting land on the identical clean verdict.
+
+This was flagged by review before merge and is recorded rather than silently
+accepted. Recommended path for the owner: keep the case and read its clean
+verdict as validating the omission rule specifically, not as evidence the
+reviewer weighed the justification; or substitute a code-level (non-Markdown)
+non-material near-miss in a future batch. `atelier` was searched for a
+better-fitting code-level candidate before this record was written and none was
+found quickly enough to hold up this delivery; a stronger candidate may still
+exist and is worth a fresh search rather than treated as exhausted.
