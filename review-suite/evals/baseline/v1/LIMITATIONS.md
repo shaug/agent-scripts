@@ -721,3 +721,52 @@ property of a curation process, and a mechanical diff-against-real-source check
 commit or PR patch - would have caught both defects on the first pass. That
 check does not exist today and is recorded here as unfinished work rather than
 implied solved by the fact that this batch, eventually, got there.
+
+## 31. A packet's own narrative must agree with its own diff, verdict, and evidence
+
+A fifth review cycle - the first entirely on the rebased head, with no case
+content changed since the fourth - still found three real defects by reading the
+fixture content directly rather than trusting the passing automated checks, none
+of which check narrative or evidentiary self-consistency:
+
+- **A stale symbol reference survived a rename.**
+  `reconciliation-outcome-type`'s accepted non-finding still named
+  `BLOCKED_AMBIGUOUS`/`FAILED`, the pre-rename enum members, after the case's
+  sanitization pass (item 21) had already renamed them to
+  `AMBIGUOUS_HOLD`/`WRITE_FAILED` everywhere else. One more instance of the
+  sweep-every-field lesson (item 24), in a field none of the prior four cycles
+  happened to check.
+- **A validation entry named the wrong test file.** `registry-client-layering`'s
+  focused validation cited `pytest tests/test_worker.py`, left over from an
+  earlier, larger version of the case before it was rebuilt as a purely additive
+  diff (item 20's fix) touching only `tests/test_client.py`. The evidence didn't
+  test the change the packet actually shows.
+- **A case's polarity was inverted.** `watcher-check-policy-duplication`'s diff
+  showed the real fix - removing the last inline duplicate of a shared policy -
+  which is what a clean diff looks like, while the case declared
+  `expected_verdict: changes_required` and a root cause arguing the diff itself
+  was the correction. A reviewer given this packet would be right to say
+  `clean`, and the case would have scored that correct answer as a miss. Rebuilt
+  so the diff instead *adds* a new call site that duplicates the shared
+  predicate inline rather than calling it - the failure shape the source
+  commit's own drift history actually warns against - which is both internally
+  consistent and closer in spirit to what a "local code-complexity escape" case
+  needs to demonstrate.
+
+The third of these is the more serious one: it was not a stale reference but a
+logic error in the case's own design, present since the case was first authored
+and undetected through three full review cycles plus one rebase-focused cycle,
+because every one of those checked identifiers, terms, and diff coherence in
+isolation without checking whether the packet's *diagnosis of itself* - what
+verdict and root cause its own diff should produce - was actually consistent
+with the diff shown.
+
+The general lesson this adds to items 21, 24, and 29: **sweeping a rename or a
+sanitization fix across every field is necessary but not sufficient. Each case
+also needs one pass that asks, independent of any wording concern, "if I read
+only this diff, what verdict would I reach, and does it match what the case
+declares?"** Nothing mechanical asks that question today. Five review cycles
+across two strata found a defect at every prior stopping point; that is the
+strongest evidence yet in this record that curation discipline alone does not
+converge, and that a mechanical diff-to-expectation consistency check remains
+the more durable fix, still undone.

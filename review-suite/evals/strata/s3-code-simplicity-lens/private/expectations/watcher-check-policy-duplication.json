@@ -7,27 +7,27 @@
   "material_root_causes": [
     {
       "id": "rc.local-policy-duplicated-across-call-sites",
-      "requirement": "A policy predicate with more than one call site must have exactly one implementation.",
-      "trigger": "A remaining inline copy of a policy that a shared predicate now implements.",
-      "surface": "build_is_mergeable",
-      "consequence": "The packet's own diff replaces the inline copy with the shared predicate, which is the correction this case demonstrates: before this change, three call sites decided the same failed-check question with two different implementations, and the packet's own history states that exact drift previously produced a self-contradictory clear/not-clear result on the same candidate. Reviewing this diff for local complexity means recognising that the change is the fix, and that the requirement is precisely what motivated it.",
+      "requirement": "A new call site that needs a gating question an existing shared predicate already answers must call that predicate rather than re-deriving it inline.",
+      "trigger": "Adding a new predicate that needs the same gating question an existing shared predicate already answers.",
+      "surface": "build_is_archivable",
+      "consequence": "The new `build_is_archivable` re-derives the aborted-or-red-or-failed-run question inline instead of calling `has_gating_failure`, which `build_is_mergeable` in the same module already uses for exactly this question. The packet's own history states that this class of inline duplication previously drifted between two call sites and produced a self-contradictory result for the same candidate - the risk this diff reintroduces by adding a second inline copy instead of calling the existing shared predicate.",
       "severity": "strong_recommendation",
       "equivalent_formulations": [
-        "the inline copy duplicates the shared predicate",
-        "this call site had its own copy of the failed-check policy",
-        "the same policy is implemented twice",
-        "route this through the existing shared predicate",
-        "this duplication previously caused drift between call sites"
+        "this re-derives the gating check instead of calling the shared predicate",
+        "build_is_archivable duplicates has_gating_failure inline",
+        "the same policy is now implemented in two places again",
+        "call has_gating_failure instead of repeating its logic",
+        "this reintroduces the duplication the shared predicate was built to remove"
       ]
     }
   ],
   "accepted_non_findings": [
     {
       "id": "anf.pending-check-inline",
-      "description": "The waiting-run condition (`status[\"waiting_count\"] > 0`) stays inline rather than moving into the shared predicate. A reviewer may ask why it was not folded in too; the packet's non-goals state that changing the waiting condition is out of scope, and it is not part of the duplication the shared predicate was built to resolve.",
+      "description": "The retention-window check (`retention_days < MIN_RETENTION_DAYS`) stays inline rather than moving into a shared helper. A reviewer may ask why; the packet's non-goals state that archive-specific logic is out of scope for centralisation, and it is not part of the gating-failure duplication this case demonstrates.",
       "equivalent_formulations": [
-        "the waiting check is still inline",
-        "why wasn't the waiting condition also shared"
+        "the retention check is inline",
+        "why isn't the retention window also shared"
       ]
     }
   ]

@@ -10,22 +10,21 @@
     "diff": {
       "format": "unified_diff",
       "complete": true,
-      "content": "diff --git a/watcher/gate.py b/watcher/gate.py\n--- a/watcher/gate.py\n+++ b/watcher/gate.py\n@@ -1058,13 +1058,9 @@ def build_is_mergeable(status, run_failures, job_failures, unread_comments):\n     if not status[\"fully_settled\"]:\n         return False\n-    if status[\"red_count\"] > 0 or status[\"waiting_count\"] > 0:\n+    if status[\"waiting_count\"] > 0:\n         return False\n-    if int(status.get(\"aborted_count\") or 0) > 0:\n+    if has_gating_failure(status, run_failures, job_failures):\n         return False\n-    # A settled status view can still hide an aborted or red run underneath;\n-    # accept the candidate only once neither signal objects.\n-    if run_failures or job_failures:\n-        return False\n     if unread_comments:\n         return False\n     return True\ndiff --git a/tests/test_gate.py b/tests/test_gate.py\n--- a/tests/test_gate.py\n+++ b/tests/test_gate.py\n@@ -20,1 +20,10 @@ def test_build_is_mergeable_rejects_a_waiting_run():\n     assert not build_is_mergeable(waiting_status(), [], [], [])\n+\n+\n+def test_build_is_mergeable_uses_the_shared_gating_predicate():\n+    status = settled_status(aborted_count=1)\n+    assert not build_is_mergeable(status, [], [], [])\n+\n+\n+def test_build_is_mergeable_still_rejects_a_job_failure(monkeypatch):\n+    assert not build_is_mergeable(settled_status(), [], [\"job-1\"], [])\n"
+      "content": "diff --git a/watcher/gate.py b/watcher/gate.py\n--- a/watcher/gate.py\n+++ b/watcher/gate.py\n@@ -1058,9 +1058,22 @@ def build_is_mergeable(status, run_failures, job_failures, unread_comments):\n     if not status[\"fully_settled\"]:\n         return False\n     if status[\"waiting_count\"] > 0:\n         return False\n     if has_gating_failure(status, run_failures, job_failures):\n         return False\n     if unread_comments:\n         return False\n     return True\n+\n+\n+def build_is_archivable(status, run_failures, job_failures, retention_days):\n+    \\\"\\\"\\\"Return whether a settled candidate is old enough to archive.\\\"\\\"\\\"\n+    if not status[\"fully_settled\"]:\n+        return False\n+    if int(status.get(\"aborted_count\") or 0) > 0 or int(status.get(\"red_count\") or 0) > 0:\n+        return False\n+    if run_failures or job_failures:\n+        return False\n+    if retention_days < MIN_RETENTION_DAYS:\n+        return False\n+    return True\ndiff --git a/tests/test_gate.py b/tests/test_gate.py\n--- a/tests/test_gate.py\n+++ b/tests/test_gate.py\n@@ -20,1 +20,11 @@ def test_build_is_mergeable_rejects_a_waiting_run():\n     assert not build_is_mergeable(waiting_status(), [], [], [])\n+\n+\n+def test_build_is_archivable_rejects_a_red_run():\n+    status = settled_status(red_count=1)\n+    assert not build_is_archivable(status, [], [], MIN_RETENTION_DAYS)\n+\n+\n+def test_build_is_archivable_rejects_a_short_retention_window(monkeypatch):\n+    status = settled_status()\n+    assert not build_is_archivable(status, [], [], MIN_RETENTION_DAYS - 1)\n"
     }
   },
   "change_contract": {
-    "goal": "Route the last inline copy of the gating-failure policy through the shared `has_gating_failure` predicate that two other agreement sites already use.",
+    "goal": "Add an archive-eligibility check alongside the existing merge-eligibility check, so a settled candidate can be archived once its retention window has passed.",
     "acceptance_criteria": [
-      "`build_is_mergeable` uses the shared predicate instead of its own inline conditions for aborted and red runs.",
-      "Existing pass/fail behaviour is unchanged."
+      "`build_is_archivable` rejects a candidate with a red or aborted run.",
+      "`build_is_archivable` rejects a candidate whose retention window has not yet passed."
     ],
     "non_goals": [
-      "Change what `has_gating_failure` itself considers a failure.",
-      "Change the waiting-run condition."
+      "Change `build_is_mergeable`'s own behaviour.",
+      "Change what counts as a red or aborted run."
     ],
     "preserved_behaviors": [
-      "A waiting run still rejects the candidate.",
-      "A settled, fully green candidate with no unread comments is still accepted."
+      "`build_is_mergeable`'s existing behaviour and its call to the shared predicate are unchanged."
     ]
   },
   "sources": {
@@ -33,12 +32,12 @@
       {
         "label": "Shared-policy rules",
         "location": "AGENTS.md",
-        "summary": "A policy predicate with more than one call site must have exactly one implementation. An inline copy at a remaining call site is a defect once the shared version exists, not a stylistic choice."
+        "summary": "A policy predicate with more than one call site must have exactly one implementation. A new call site that needs the same gating question must call the existing shared predicate rather than re-deriving it inline."
       }
     ],
     "named_documents": [
       {
-        "label": "Watcher mergeability contract",
+        "label": "Watcher archive contract",
         "location": "docs/watcher-contract.md"
       },
       {
@@ -48,8 +47,8 @@
     ],
     "nearby_patterns": [
       {
-        "label": "Two call sites already using the shared predicate",
-        "location": "watcher/reconcile.py"
+        "label": "Existing caller of the shared predicate",
+        "location": "watcher/gate.py:build_is_mergeable"
       },
       {
         "label": "Gate tests",
@@ -63,24 +62,24 @@
       "command": "pytest tests/test_gate.py",
       "scope": "focused",
       "status": "passed",
-      "result": "9 passed"
+      "result": "11 passed"
     },
     {
       "name": "full tests",
       "command": "pytest",
       "scope": "full",
       "status": "passed",
-      "result": "211 passed"
+      "result": "213 passed"
     }
   ],
   "context": {
     "data": [
-      "`has_gating_failure(status, run_failures, job_failures)` already exists in `watcher/policy.py` and is already called from two other agreement sites in `watcher/reconcile.py`.",
-      "This inline copy in `build_is_mergeable` predates the shared predicate and was never migrated when the predicate was introduced.",
-      "The same duplication class previously caused two separate incidents where one call site's copy drifted from another's and produced a self-contradictory result for the same candidate."
+      "`has_gating_failure(status, run_failures, job_failures)` already exists in `watcher/policy.py` and is already called from `build_is_mergeable`, the only other predicate in this module.",
+      "This diff's new `build_is_archivable` needs exactly the same aborted-or-red-or-failed-run question that `has_gating_failure` already answers, but re-derives it inline instead of calling the shared predicate.",
+      "A prior incident in this module saw one call site's inline copy of this exact policy drift from another's and produce a self-contradictory result for the same candidate, which is why the shared predicate was introduced in the first place."
     ],
     "operational": [
-      "`build_is_mergeable` is the gate a merge automation checks before acting, so a wrong answer here is user-visible."
+      "`build_is_archivable` gates an automation that deletes retained run data, so a wrong answer here is also user-visible."
     ]
   }
 }

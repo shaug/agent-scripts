@@ -58,11 +58,11 @@
   },
   "validation": [
     {
-      "name": "worker tests",
-      "command": "pytest tests/test_worker.py",
+      "name": "client tests",
+      "command": "pytest tests/test_client.py",
       "scope": "focused",
       "status": "passed",
-      "result": "5 passed"
+      "result": "6 passed"
     },
     {
       "name": "full tests",

@@ -18,7 +18,7 @@
     },
     {
       "id": "anf.four-member-enum-two-used-by-caller",
-      "description": "Only two of the four `SyncOutcome` members (`BLOCKED_AMBIGUOUS`, `FAILED`) are branched on by the startup caller shown here. Worth noting; the packet does not claim every consumer is shown.",
+      "description": "Only two of the four `SyncOutcome` members (`AMBIGUOUS_HOLD`, `WRITE_FAILED`) are branched on by the startup caller shown here. Worth noting; the packet does not claim every consumer is shown.",
       "equivalent_formulations": [
         "not every enum member is handled here",
         "only two outcomes are branched on"

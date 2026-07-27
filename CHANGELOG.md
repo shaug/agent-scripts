@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- fix: correct a stale reference, a stale validation entry, and an inverted case
 - fix: make the last two before-state and sanitization defects actually resolved
+  (`41de65daadc5d53bfbb299cb4ecd6d040ac47ab9`)
 - fix: sanitize the repository-history case and correct the changelog order
   (`3d9fe4925c8908a311453c87ae740bfcf4de20bd`)
 - fix: reconcile records after folding s2 and s3 into one delivery
