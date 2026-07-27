@@ -68,7 +68,7 @@ demonstrated both halves of what that means:
   adjudication referrals.
 - **Confirmed independently on a second case.** `status-label-normalization` is
   carried by the orchestrator pilot stratum and deliberately left uncalibrated
-  as a control. Over five attempts it scored recall **0.0** with **nine
+  as a control. Over five attempts it scored recall **0.0** with **ten
   adjudication referrals**, while verdict stability was 1.0 and the reviewer
   gated the change on every attempt. Two cases, ten attempts, one conclusion: an
   uncalibrated expectation reports a number about itself.
@@ -210,9 +210,12 @@ Two further measurements bear on any cost figure quoted from here:
   number of findings it warrants. A stratum's cost is not predictable from its
   packet sizes alone.
 - **Reported input tokens include runtime-side prompt overhead.** The same
-  case's reported input drifted across batches — 32,507, 32,955, 33,166, then
-  32,464 — with the payload unchanged. Treat within-batch differences as
-  measurements and absolute counts as approximate.
+  case's reported input drifted across the four batches whose raw output is
+  retained — 32,573, 32,955, 33,166, then 32,464 — with the payload unchanged.
+  Treat within-batch differences as measurements and absolute counts as
+  approximate. A fifth value, 32,507, was observed on the earliest batch, whose
+  raw output was overwritten before the artifact path was version-scoped; it is
+  not re-derivable and is recorded here only for completeness.
 
 ## 10. A stratum boundary is not a rounding difference
 
@@ -220,3 +223,34 @@ A change of runtime, runtime version, model, target skill, dependency closure,
 or run count creates a new stratum. Comparing across one of those boundaries is
 an invalid comparison, not a noisier one. Every report records its closure
 membership and digest so a stratum can always state what it evaluated.
+
+## 11. Every measured figure has several hand-maintained homes
+
+The pilot's numbers appear in the committed reports and are then restated in
+this record, in the cost-ceiling proposal, in the calibration record, in the
+strata README, and in the frozen configuration. Nothing checks those
+restatements against the reports, and two review cycles on this candidate each
+found a figure that had drifted — a referral count and an input-token series,
+both corrected.
+
+The restated **prose** caveats must stay duplicated: a reader who reaches one
+report should not have to find another file to learn that its grading is not a
+signal, or that the connector stratum is deferred. The restated **numbers**
+should not be. Two remedies are open, and neither is done here: give each figure
+one canonical home and reference it, or add a test asserting that every
+documented figure matches the committed report it came from.
+
+Recorded as a deferred finding and an input to #59 rather than fixed, because
+the review that raised it did not gate on it. Until one of those remedies lands,
+treat a number in a prose record as a restatement and the committed report as
+the source.
+
+## 12. The overwrite guard covers raw artifacts, not every output path
+
+`runner.refuse_to_overwrite_artifacts` fails before launching any attempt when a
+run would overwrite a retained raw stdout artifact. The per-attempt records, the
+aggregate report, and the baseline report are still written unconditionally. The
+frozen invocations give every output the same `<commit>-<corpus_version>` stem,
+so in practice the raw-artifact collision fires first and nothing is lost — but
+that is the invocation's property, not the runner's. Widening the guard is a
+deferred finding.

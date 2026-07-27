@@ -68,11 +68,13 @@ upper end of the observed range; its clean controls will sit at the lower end.
 The proposal therefore uses the **worse** of the two measured cases for the
 orchestrator stratum.
 
-Absolute input-token counts drift slightly across batches — 32,507, 32,955,
-33,166, then 32,464 for the same case — because reported input includes
-runtime-side prompt overhead that the payload does not control. Treat the
-within-batch difference as the measurement and the absolute count as
-approximate.
+Absolute input-token counts drift slightly across the four batches whose raw
+output is retained — 32,573, 32,955, 33,166, then 32,464 for the same case —
+because reported input includes runtime-side prompt overhead that the payload
+does not control. Treat the within-batch difference as the measurement and the
+absolute count as approximate. A fifth value, 32,507, was observed on the
+earliest batch, whose raw output was overwritten before the artifact path was
+version-scoped, so it is not re-derivable.
 
 ## Proposal
 
