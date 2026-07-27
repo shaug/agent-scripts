@@ -288,41 +288,38 @@ different control class — a candidate adjudicated clean by construction rather
 than by rejection — which this corpus does not contain and which the standard
 above deliberately declines to fake.
 
-## 14. A scored stratum cannot be both calibrated and result-blind
+## 14. Grading method — SETTLED by the owner: score three-way, never calibrate a scored case first
 
-This is the sharpest open question the corpus has, and it blocks scoring rather
-than merely qualifying it.
+This was the sharpest open question the corpus had. Batch 1 measured what an
+uncalibrated expectation reports: recall 0.0 over five attempts against a
+reviewer that found the defect every time, because grader matching is
+containment and the shipped formulations had never met real prose. Calibration
+fixed it — recall 1.0 — but calibration requires *observing the reviewer's prose
+for that case*, and observing a scored case's prose to tune its formulations is
+fitting the grader to the answer, which the non-goals forbid outright.
 
-Batch 1 measured what an uncalibrated expectation reports: recall 0.0 over five
-attempts against a reviewer that found the defect every time, because grader
-matching is containment and the shipped formulations had never met real prose.
-Calibration fixed it — recall 1.0 — but calibration requires *observing the
-reviewer's prose for that case*. Observing a scored case's prose and then tuning
-its formulations is fitting the grader to the answer, which is exactly what the
-non-goals forbid.
+**Resolution: score every case three-way — matched, missed, or referred for
+adjudication — and never calibrate a scored case on its own prose first.** A
+grader miss that stems from an unmet formulation is a `referred` outcome, not a
+silent reviewer-miss and not a scored match. This reuses the
+`adjudication_required` machinery already built by the grading interface rather
+than shrinking an already-tight corpus by splitting each case class into
+calibrate/score halves, or gambling on untuned transfer as the sole method,
+which is unproven at corpus scale and biases recall downward if it fails.
 
-`s1-correctness-orchestrator` is therefore populated with `scored: false` and
-every expectation `calibrated: false`, and **no case in it has been run through
-any runtime**. Both states are honest, and neither is a resting place: scored as
-it stands, it would report a number about the corpus. Four resolutions exist,
-and the owner has to pick one:
+Every populated scored stratum therefore ships `scored: false` and every
+expectation `calibrated: false`, with **no case run through any runtime**, until
+the owner unblocks scoring under this method. Once enough scored runs exist, a
+post-hoc check of whether untuned transfer would have matched the referred
+bucket is deferred evidence for #59's v2 grading design — it does not gate this
+baseline and is not built here.
 
-1. **Rely on transfer.** Calibrate only on the disjoint pilot cases and accept
-   that scored formulations are untuned. Measured to transfer once — the pilot's
-   calibrated formulations held on two later runs — but transfer is not
-   guaranteed, and untuned formulations bias recall **downward**, so the
-   baseline would understate the reviewer.
-2. **Split each case class.** Calibrate on half, score the other half. Costs
-   corpus size, which the per-stratum minima already constrain.
-3. **Report referrals as a first-class bucket.** Score matched, missed, and
-   *referred for adjudication* separately, so a containment miss is visible as a
-   grader limitation instead of silently becoming a reviewer miss. Cheapest, and
-   it makes the existing `adjudication_required` output load-bearing.
-4. **Replace containment matching** with semantic matching or a standing
-   adjudication queue. A v2 mechanism, so it belongs to #59.
-
-Whichever is chosen, it must be preregistered with the rest of the frozen
-configuration, because it decides what recall means.
+The three rejected alternatives, recorded for context rather than
+reconsideration: relying on untuned transfer alone (unproven at scale, biases
+recall downward); splitting each case class into calibrate/score halves (shrinks
+corpus size the per-stratum minima already constrain); and replacing containment
+matching itself with semantic matching or a standing adjudication queue (a
+genuine v2 mechanism, so it belongs to #59, not to this baseline).
 
 ## 15. An oracle adjudicates a requirement, not a diff
 
@@ -422,3 +419,42 @@ merge verdict on it is behaving correctly under its own contract — which a
 scored run would then record as a verdict mismatch, charging the reviewer for a
 curation defect. All seventeen now parse, and the check runs across every corpus
 rather than one.
+
+## 19. The solution-simplicity stratum has no oracle at all
+
+Every correctness case in `s1-correctness-orchestrator` has an executable oracle
+because a correctness requirement is a statement about behaviour, so it can be
+run. Nothing in `s2-solution-simplicity-lens` can be, because there is no
+runnable form of "this abstraction is unnecessary" or "this machinery is
+requirement-justified" — both are judgements about whether a design decision
+matches its requirement, not properties a program can check.
+
+Every case in this stratum therefore records
+`adjudication.second: owner_required` rather than `oracle`, and a test enforces
+that a case may not claim anything else without one. Each case's provenance also
+records a recommended disposition and the specific residual risk that could
+overturn it, so the owner is confirming or correcting a stated argument rather
+than starting from a bare case description. That is not a substitute for the
+owner's adjudication — it is scoped as a recommendation precisely so it is not
+mistaken for one.
+
+The same will be true of `s3-code-simplicity-lens` in the next batch: local
+code-complexity and reuse judgements have the same property.
+
+## 20. Two sources were reused across strata under different questions
+
+`shaug/atelier` PR 417, comment 2870710594, was assessed once for
+`s1-correctness-orchestrator` as a candidate clean-correctness control and
+dropped there, because the owner's clean-control standard requires an
+adjudicated-rejected finding and this comment records an accepted *fix* —
+acceptance is the opposite disposition. The same accepted change is sourced
+again here, in `s2-solution-simplicity-lens`, as a requirement-justified
+near-miss control, where the relevant question is not "was a finding rejected"
+but "is the added machinery justified by a stated requirement" — a question the
+same accepted change answers cleanly.
+
+This is a deliberate reuse under a different standard, not a retention-authority
+question or a double-count: the two corpora measure different lenses against
+different criteria from the same real disposition. Recorded here so a reader who
+notices the same PR number in two places finds the reasoning rather than an
+unexplained coincidence.

@@ -125,7 +125,19 @@ the answer. Limitation 14 in
 [the limitations record](../baseline/v1/LIMITATIONS.md) sets out the four
 resolutions and the owner picks one before `scored` flips.
 
-`s2-solution-simplicity-lens` and `s3-code-simplicity-lens` remain unpopulated.
+`s2-solution-simplicity-lens` is populated with four cases: two whole-solution
+over-engineering escapes and two requirement-justified near-miss controls, all
+minimized from adjudicated `shaug/atelier` review history. It has **no
+executable oracle** — "over-engineered" and "requirement-justified" have no
+runnable form — so every case records `adjudication.second: owner_required` with
+a recommended disposition and residual risk in
+[SOURCING.md](../baseline/v1/SOURCING.md) and
+[the adjudication plan](../baseline/v1/ADJUDICATION-PLAN.md). It declares
+`scored: false` for the same reason `s1` does: the owner-settled three-way
+grading method (limitation 14) forbids calibrating a scored case on its own
+prose, and no case here has been run through any runtime.
+
+`s3-code-simplicity-lens` remains unpopulated (batch 4).
 
 ## Adding a stratum
 

@@ -191,6 +191,26 @@ the opposite of what the table assumed:
 The clean-control question the table flagged as the weakest slot is now settled
 by the owner, and the corpus is built to that standard.
 
+## 2c. Outcome: `s2-solution-simplicity-lens`, no oracle available
+
+Every case in this stratum records `adjudication.second: owner_required`, and a
+test now enforces that a case with no shipped oracle may not record anything
+other than that value. Each case's provenance carries a recommended disposition
+and the specific counter-argument that could overturn it, so the owner is
+confirming or correcting a stated argument rather than starting from a bare case
+description.
+
+| case                             | recommended | the strongest counter-argument, for the owner to weigh                                                                                                                                                                                                              |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup-service-path-gateway`     | MATERIAL    | A reviewer could value the injected gateway as forward consistency with a future second implementation the packet does not rule out.                                                                                                                                |
+| `registry-client-layering`       | MATERIAL    | The diff only touches the queue-message client; a reviewer could argue the mutation-client duplication predates this change and is out of scope for it.                                                                                                             |
+| `reconciliation-outcome-type`    | CLEAN       | A reviewer could reasonably propose a smaller fix (a second boolean, or one sentinel) instead of a four-member enum - whether that is "over-shoots the requirement" or "unnecessary machinery" is a distinction this case's own accepted non-finding does not draw. |
+| `record-status-transition-guard` | CLEAN       | Retry count and backoff are unspecified in the packet; a reviewer could reasonably ask for that detail without the request being about over-engineering at all.                                                                                                     |
+
+None of these four is settled. They are recommendations, not adjudications, and
+the record is explicit about the distinction so a recommendation is never
+mistaken for a second party's judgement.
+
 ## 3. Expected workload
 
 Fifteen scored cases across three strata: roughly 12–16 material root causes,

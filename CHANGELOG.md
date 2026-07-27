@@ -4,11 +4,13 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
+## 2026-07-27 — Populated the solution-simplicity stratum, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- feat: populate the solution-simplicity stratum with four adjudicated cases
 - feat: require acceptance evidence for workflow closeout
+  (`a3597c25ee2d76135d1f0c8642a620e673fc8e57`)
 - fix: make every packet diff a valid patch, and gate the adjudication record
-  (`c4e01d3c6fc94f1bd174d1ad5bd2374511c85471`)
+  (`06a5679643a0a5bcb1944c8bff4bd4986f4f77e1`)
 - fix: stop a grader formulation being quotable from its own packet
   (`fa772a7d770bd3d07f3fdd9bdc45a0c237b1d14e`)
 - docs: record the batch-2 delivery, the clean-control standard, and its limits

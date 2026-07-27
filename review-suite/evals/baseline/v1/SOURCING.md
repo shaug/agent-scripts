@@ -176,14 +176,42 @@ The correction is worth recording plainly: batch 1's adjudication plan named PR
 and PR 356 were accepted and are unusable as controls; PR 335 **was** accepted,
 which makes it a valid escape rather than a valid control.
 
-### Batch 3 — `s2-solution-simplicity-lens`, 4 cases
+### Batch 3 — `s2-solution-simplicity-lens`, 4 cases — **DELIVERED**
 
-| class                                   | candidate ground truth                                                                                                                                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| whole-solution over-engineering         | `shaug/atelier` PR 160, comment 2848776499: a service tier given an injected abstraction purely to make calls it could make directly, with the reviewer asking why any abstraction is needed.                                 |
-| whole-solution over-engineering         | `shaug/atelier` PR 410, comment 2870262209: three overlapping client concepts threading the same root and working directory through every method, to be converged on one already-bound client.                                |
-| requirement-justified near-miss control | `shaug/atelier` PR 417, comment 2870710594: replacing a boolean with a typed outcome looks like extra machinery and is required, because the caller must distinguish an intentional fail-closed block from a genuine failure. |
-| requirement-justified near-miss control | `shaug/atelier` PR 277, comments 2861848880 and 2861868165: retry plus fail-closed auto-close after a two-step create looks like defensive scaffolding and is required by deferred-by-default semantics.                      |
+Populated but not scored, and unlike the correctness stratum, this one has no
+executable oracle available for its subject at all: "over-engineered" and
+"requirement-justified" are design judgements, not properties a runnable check
+can decide. Every case's second adjudication is `owner_required`, each with a
+recommended disposition and its own stated residual risk for the owner to weigh.
+
+| case                             | class                                   | source disposition                                                                                     | expected | recommended adjudication |
+| -------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------- | ------------------------ |
+| `setup-service-path-gateway`     | whole-solution over-engineering         | atelier PR 160, comment 2848776499 — **accepted** in `fcbf469`, gateway indirection removed entirely   | gating   | MATERIAL                 |
+| `registry-client-layering`       | whole-solution over-engineering         | atelier PR 410, comment 2870262209 — **accepted** in `f631cb0`, three client concepts converged to one | gating   | MATERIAL                 |
+| `reconciliation-outcome-type`    | requirement-justified near-miss control | atelier PR 417, comment 2870710594 — accepted, the comment records its own implementation              | clean    | CLEAN / NOT MATERIAL     |
+| `record-status-transition-guard` | requirement-justified near-miss control | atelier PR 277, comment 2861848880 — **accepted** in reply 2861868165, naming commit `79703c5`         | clean    | CLEAN / NOT MATERIAL     |
+
+Sanitization: all four are `minimized_reproduction`, rewritten from scratch
+against fictional subjects (a setup service, a registry client, a registry
+runtime, a planner tool), retaining only the failure shape. No source
+identifier, path, symbol, prose, or diff was copied. All sources are public, all
+retention authority is public-repository owner-authored review.
+
+Two cases reuse source PRs batch 1 or batch 2 also drew from, in a different
+framing each time: PR 417 (comment 2870710594) was assessed for `s1` as a
+**correctness** clean control and dropped there because acceptance of a *fix*
+contradicts what a clean-control standard needs; here it is sourced as a
+**solution-simplicity** near-miss control instead, where the same accepted
+change is evidence for a different, legitimate question — is the added machinery
+requirement-justified — and the standard for that question is not the
+adjudicated-rejected-finding standard `s1` uses. Recorded so the reuse is a
+decision, not an oversight.
+
+One case id needed renaming during audit: the natural name
+`deferred-status-fail-closed-retry` triggered the outcome-revealing-token check
+twice (`defer`, `fail`); a second attempt, `changeset-status-transition-guard`,
+still matched on `changes` as a substring of `changeset`. It shipped as
+`record-status-transition-guard`.
 
 ### Batch 4 — `s3-code-simplicity-lens`, 4 cases
 
@@ -206,7 +234,9 @@ which makes it a valid escape rather than a valid control.
   corpus.
 - Every case in `s1-correctness-orchestrator` is adjudicated twice: the recorded
   source disposition, and an executable oracle that runs the stated requirement.
-  No case in that stratum needs the owner. The simplicity strata will, because
-  their claims have no executable form.
+  No case in that stratum needs the owner.
+- Every case in `s2-solution-simplicity-lens` has no executable oracle and needs
+  the owner directly, with a concrete recommended disposition and its residual
+  risk recorded per case rather than left as a bare list.
 - No case in any populated scored stratum has been run through a runtime. They
   are unobserved, which is what keeps a later baseline result-blind.
