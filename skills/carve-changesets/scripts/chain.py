@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import fnmatch
-import subprocess
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+from command_argv import display_argv, execute_argv, validate_argv
 from common import (
     CommandError,
     branch_exists,
@@ -382,14 +382,14 @@ def compare_chain(plan: Dict) -> Tuple[str, str]:
     return diffstat, namestatus
 
 
-def validate_chain(plan: Dict, *, test_cmd: str) -> None:
+def validate_chain(plan: Dict, *, test_argv: object) -> None:
     """Merge changesets in order into a temp branch and run tests after each merge."""
-    effective_test_cmd = test_cmd.strip()
-    if not effective_test_cmd:
+    if isinstance(test_argv, list) and not test_argv:
         raise CommandError(
-            "validate-chain requires an explicitly approved --test-cmd or "
-            "plan.test_command."
+            "validate-chain requires an explicitly approved --test-argv or "
+            "plan.test_argv."
         )
+    effective_test_argv = validate_argv(test_argv, label="approved test argv")
 
     ensure_git_repo()
     ensure_clean_tree()
@@ -410,13 +410,14 @@ def validate_chain(plan: Dict, *, test_cmd: str) -> None:
                 print(f"\n[STEP] Merging {name} ({idx} of {total})")
                 git("merge", "--no-ff", "--no-edit", name)
                 print(
-                    f"[STEP] Running tests after changeset {idx}: {effective_test_cmd}"
+                    f"[STEP] Running tests after changeset {idx}: "
+                    f"{display_argv(effective_test_argv)}"
                 )
                 if git("diff", "--quiet", check=False).returncode != 0:
                     raise CommandError(
                         "Working tree became dirty during validate-chain."
                     )
-                result = subprocess.run(effective_test_cmd, shell=True)
+                result = execute_argv(effective_test_argv)
                 if result.returncode != 0:
                     raise CommandError(f"Test command failed after changeset {idx}.")
         finally:

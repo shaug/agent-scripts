@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import unittest
+from unittest.mock import patch
 
 import preflight as preflight_mod
 from common import CommandError
@@ -9,6 +10,21 @@ from legacy_helpers import chdir, commit, init_conflict_repo, init_repo, run
 
 
 class PreflightTests(unittest.TestCase):
+    def test_preflight_rejects_unknown_command_representations_before_git(self) -> None:
+        invalid_values = ["x", ("python3",), {"python3": "-V"}]
+        with patch.object(preflight_mod, "ensure_git_repo") as ensure_git_repo:
+            for value in invalid_values:
+                with self.subTest(value=value):
+                    with self.assertRaises(CommandError):
+                        preflight_mod.preflight(
+                            base="main",
+                            source="feature/x",
+                            test_argv=value,
+                            skip_tests=False,
+                            skip_merge_check=False,
+                        )
+            ensure_git_repo.assert_not_called()
+
     def test_preflight_success_does_not_modify_source(self) -> None:
         repo_dir, plan = init_repo()
         try:
@@ -19,7 +35,7 @@ class PreflightTests(unittest.TestCase):
                 preflight_mod.preflight(
                     base=plan["base_branch"],
                     source=plan["source_branch"],
-                    test_cmd="python3 -c \"print('ok')\"",
+                    test_argv=["python3", "-c", "print('ok')"],
                     skip_tests=False,
                     skip_merge_check=False,
                 )
@@ -38,7 +54,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=True,
                         skip_merge_check=False,
                     )
@@ -57,7 +73,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=True,
                         skip_merge_check=True,
                     )
@@ -76,7 +92,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=True,
                         skip_merge_check=True,
                         allow_source_behind_base=True,
@@ -96,7 +112,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=True,
                         skip_merge_check=True,
                         confirm_source_behind_base=True,
@@ -115,7 +131,7 @@ class PreflightTests(unittest.TestCase):
                 preflight_mod.preflight(
                     base=plan["base_branch"],
                     source=plan["source_branch"],
-                    test_cmd="",
+                    test_argv=[],
                     skip_tests=True,
                     skip_merge_check=True,
                     allow_source_behind_base=True,
@@ -135,7 +151,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=True,
                         skip_merge_check=True,
                     )
@@ -152,7 +168,7 @@ class PreflightTests(unittest.TestCase):
                 preflight_mod.preflight(
                     base=plan["base_branch"],
                     source=plan["source_branch"],
-                    test_cmd="",
+                    test_argv=[],
                     skip_tests=True,
                     skip_merge_check=True,
                     allow_recordkeeping_tracked=True,
@@ -175,7 +191,7 @@ class PreflightTests(unittest.TestCase):
                     preflight_mod.preflight(
                         base=plan["base_branch"],
                         source=plan["source_branch"],
-                        test_cmd="",
+                        test_argv=[],
                         skip_tests=False,
                         skip_merge_check=True,
                     )

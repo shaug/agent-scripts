@@ -43,7 +43,7 @@ class EvalGraderTests(unittest.TestCase):
                 result = grade_repo(
                     plan_path=repo_dir / ".carve-changesets/plan.json",
                     expected_source_hash=source_hash,
-                    test_cmd="python3 -c \"print('ok')\"",
+                    test_argv=["python3", "-c", "print('ok')"],
                     auto_create_chain=True,
                 )
             self.assertTrue(result.ok, f"grader should pass: {result.failures}")
@@ -62,7 +62,7 @@ class EvalGraderTests(unittest.TestCase):
                 result = grade_repo(
                     plan_path=repo_dir / ".carve-changesets/plan.json",
                     expected_source_hash=source_hash,
-                    test_cmd="python3 -c \"print('ok')\"",
+                    test_argv=["python3", "-c", "print('ok')"],
                     auto_create_chain=True,
                 )
             self.assertFalse(result.ok)
@@ -171,7 +171,7 @@ class ForwardEvaluationTests(unittest.TestCase):
         )
         results = RUNNER.evaluate_integration(
             RUNNER.DEFAULT_INTEGRATION_CASES,
-            test_cmd="python3 -c \"print('ok')\"",
+            test_argv=["python3", "-c", "print('ok')"],
         )
         self.assertTrue(all(result["ok"] for result in results.values()), results)
         for result in results.values():

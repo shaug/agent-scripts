@@ -213,9 +213,9 @@ def validate_plan_strict(plan: Dict) -> Tuple[bool, List[str], List[str]]:
 
         _warn_placeholders(cs, idx, warnings)
 
-    test_cmd = str(plan.get("test_command", "")).strip()
-    if not test_cmd:
-        warnings.append("Plan test_command is empty; set it or pass --test-cmd.")
+    test_argv = plan.get("test_argv", [])
+    if not test_argv:
+        warnings.append("Plan test_argv is empty; set it or pass --test-argv.")
 
     try:
         freshness = compute_freshness(base, source)

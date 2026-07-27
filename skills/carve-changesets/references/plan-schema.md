@@ -18,7 +18,7 @@ published candidate, or override a merged prefix.
   "feature_title": "Cloud host migration",
   "base_branch": "main",
   "source_branch": "feature/cloud-host-migration",
-  "test_command": "just test",
+  "test_argv": ["just", "test"],
   "changesets": [
     {
       "slug": "rename-config-types",
@@ -59,7 +59,12 @@ published candidate, or override a merged prefix.
 - `feature_title` (required string): shared title stem for the changeset PRs.
 - `base_branch` (required string): mainline branch that precedes changeset 1.
 - `source_branch` (required string): immutable review-ready branch to recompose.
-- `test_command` (optional string): separately approved validation command.
+- `test_argv` (optional string array): separately approved validation argv.
+  Arguments are executed directly without implicit shell parsing. Use
+  `["sh", "-lc", "<approved shell command>"]` only when shell semantics are
+  intentional; see the
+  [concrete shell migrations](cli.md#explicit-shell-migrations). An empty array
+  records that no command has been approved yet.
 - `changesets` (required non-empty array): ordered proposed changesets.
 
 ## Changeset fields
@@ -101,6 +106,10 @@ Pure renames should use `paths` or `patch` so rename intent is preserved.
 
 - Keep one cohesive intent per changeset and prefer additive foundations before
   consumers, cutovers, or removals.
+- Treat repository-discovered command text as a proposal only. Never copy it
+  into `test_argv` or infer argument boundaries without separate approval.
+- Legacy `test_command` strings are invalid. Replace them with an explicit argv
+  array; the validator never applies shell-style splitting.
 - Make changesets append-only once validated; do not reorder or renumber an
   existing materialized position.
 - Document temporary flags and incomplete states in `pr_notes`, including the

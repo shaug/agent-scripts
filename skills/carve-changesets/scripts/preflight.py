@@ -3,8 +3,12 @@
 
 from __future__ import annotations
 
-import subprocess
-
+from command_argv import (
+    display_argv,
+    execute_argv,
+    validate_argv,
+    validate_optional_argv,
+)
 from common import (
     CommandError,
     branch_exists,
@@ -38,10 +42,11 @@ def check_mergeability(base: str, source: str) -> None:
             delete_branch(temp_branch)
 
 
-def run_tests_on_branch(branch: str, test_cmd: str) -> None:
-    print(f"[INFO] Running test command on {branch}: {test_cmd}")
+def run_tests_on_branch(branch: str, test_argv: object) -> None:
+    approved_argv = validate_argv(test_argv, label="test argv")
+    print(f"[INFO] Running test command on {branch}: {display_argv(approved_argv)}")
     with checkout_restore(branch):
-        result = subprocess.run(test_cmd, shell=True)
+        result = execute_argv(approved_argv)
         if result.returncode != 0:
             raise CommandError("Test command failed.")
         ensure_clean_tree()
@@ -66,7 +71,7 @@ def _print_test_command_help(discovery: dict) -> None:
         for cmd in suggestions:
             print(f"  - {cmd}")
 
-    print("[NEXT] Ask once for the desired test command, then re-run with --test-cmd.")
+    print("[NEXT] Ask once for the desired test command, then re-run with --test-argv.")
     print(
         "[NEXT] If still unknown, re-run with --skip-tests and record this in the plan."
     )
@@ -76,13 +81,14 @@ def preflight(
     *,
     base: str,
     source: str,
-    test_cmd: str,
+    test_argv: object,
     skip_tests: bool,
     skip_merge_check: bool,
     allow_source_behind_base: bool = False,
     confirm_source_behind_base: bool = False,
     allow_recordkeeping_tracked: bool = False,
 ) -> None:
+    effective_test_argv = validate_optional_argv(test_argv, label="approved test argv")
     ensure_git_repo()
     ensure_clean_tree()
 
@@ -129,30 +135,37 @@ def preflight(
         else:
             raise CommandError(message)
 
+    if not effective_test_argv and not skip_tests:
+        discovery = discover_test_command("")
+        discovered = str(discovery.get("command") or "").strip()
+        if discovered:
+            print(f"[HINT] Discovered test command proposal: {discovered}")
+            print(
+                "[NEXT] Approve it, encode the intended argv explicitly, and pass "
+                "it via --test-argv."
+            )
+        else:
+            _print_test_command_help(discovery)
+        raise CommandError(
+            "Preflight never executes discovered commands; pass an explicitly "
+            "approved --test-argv JSON array or use --skip-tests."
+        )
+
+    if effective_test_argv:
+        effective_test_argv = validate_argv(
+            effective_test_argv, label="approved test argv"
+        )
+
     if not skip_merge_check:
         check_mergeability(base, source)
         print("[OK] Mergeability check passed.")
     else:
         print("[WARN] Skipping mergeability check by request.")
 
-    effective_test_cmd = test_cmd.strip()
-    if not effective_test_cmd and not skip_tests:
-        discovery = discover_test_command("")
-        discovered = str(discovery.get("command") or "").strip()
-        if discovered:
-            print(f"[HINT] Discovered test command proposal: {discovered}")
-            print("[NEXT] Re-run with that exact command passed via --test-cmd.")
-        else:
-            _print_test_command_help(discovery)
-        raise CommandError(
-            "Preflight never executes discovered commands; pass an explicitly "
-            "approved --test-cmd or use --skip-tests."
-        )
-
-    if effective_test_cmd and not skip_tests:
-        run_tests_on_branch(source, effective_test_cmd)
+    if effective_test_argv and not skip_tests:
+        run_tests_on_branch(source, effective_test_argv)
         print("[OK] Test command succeeded on source branch.")
-    elif effective_test_cmd and skip_tests:
+    elif effective_test_argv and skip_tests:
         print("[WARN] Test command provided but skipped by request.")
     else:
         print("[WARN] No test command provided.")

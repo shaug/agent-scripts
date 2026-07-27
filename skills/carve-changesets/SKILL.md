@@ -61,7 +61,7 @@ Before mutation, discover or receive and verify:
   their merge bases, source freshness, and the complete active candidate diff;
 - the immutable source outcome and the behavior, schema, constraints, public
   interfaces, migrations, and rollout properties the final chain must preserve;
-- an explicitly approved test command and any required database, build,
+- explicitly approved argv arrays for tests and any required database, build,
   integration, or manual validation commands;
 - cognitive-load guardrails, acceptable intermediate states, decomposition
   order, feature-flag policy, and database-migration requirements from the
@@ -72,7 +72,9 @@ Before mutation, discover or receive and verify:
   candidate repair, review communication, merge, propagation, and cleanup.
 
 Treat discovered validation commands as proposals until the user explicitly
-approves them. Every source in the lineage is immutable throughout the workflow.
+approves their argv boundaries. Execute argv directly without implicit shell
+parsing; use `["sh", "-lc", "..."]` only for intentionally approved shell
+semantics. Every source in the lineage is immutable throughout the workflow.
 Stop if the active source is behind the base unless the contract's explicit
 override and confirmation are both present.
 
@@ -102,12 +104,11 @@ resolution authority remain separate from branch mutation and merge authority.
 
 ### 1. Propose
 
-Run `preflight` against the exact source and base with the approved test
-command. Use `init-plan` to create `.carve-changesets/plan.json`, then replace
-every placeholder with cohesive boundaries, ordering, intent, extraction
-selectors, validation, and intentional incompleteness. Use `hunk-preview` when
-textual hunk selection needs inspection, and require `validate --strict` before
-promotion.
+Run `preflight` against the exact source and base with the approved test argv.
+Use `init-plan` to create `.carve-changesets/plan.json`, then replace every
+placeholder with cohesive boundaries, ordering, intent, extraction selectors,
+validation, and intentional incompleteness. Use `hunk-preview` when textual hunk
+selection needs inspection, and require `validate --strict` before promotion.
 
 At this phase the plan is the only writable truth. Do not create changeset refs
 or perform remote operations. Return `plan_ready` when proposal is the requested

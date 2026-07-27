@@ -39,7 +39,7 @@ def _init_hunk_repo() -> tuple[Path, dict]:
         "feature_title": "Hunk feature",
         "base_branch": "main",
         "source_branch": "feature/hunks",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "hunk-1",
@@ -97,7 +97,7 @@ def _init_context_shift_repo() -> tuple[Path, dict]:
         "feature_title": "Shift feature",
         "base_branch": "main",
         "source_branch": "feature/shift",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "insert",
@@ -159,7 +159,7 @@ def _init_patch_repo() -> tuple[Path, dict]:
         "feature_title": "Patch feature",
         "base_branch": "main",
         "source_branch": "feature/patch",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "patch",
@@ -196,7 +196,7 @@ def _init_rename_repo() -> tuple[Path, dict]:
         "feature_title": "Rename feature",
         "base_branch": "main",
         "source_branch": "feature/rename",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "rename-hunk",
@@ -245,7 +245,7 @@ def _init_bad_patch_repo() -> tuple[Path, dict]:
         "feature_title": "Bad patch",
         "base_branch": "main",
         "source_branch": "feature/bad-patch",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "bad-patch",
