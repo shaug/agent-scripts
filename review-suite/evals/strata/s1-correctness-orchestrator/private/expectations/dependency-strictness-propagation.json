@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "dependency-strictness-propagation",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.sibling-call-site-keeps-permissive-mode",
+      "requirement": "Every path that decides whether a record is integrated applies the same strictness rule for a closed record.",
+      "trigger": "A closed record that carries a merge marker but no target ref reaches the dependency gate.",
+      "surface": "dependency_finalized",
+      "consequence": "The change hardens one of the two callers and leaves the other calling the same helper in its permissive mode, so the abandoned-merge record the change exists to catch is still reported as finalized on that path and still releases the work that follows it. The added tests cover the hardened caller only, so the suite is green.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "dependency_finalized still calls integration_proven without the strict flag",
+        "the sibling call site was not updated",
+        "one caller keeps the permissive mode",
+        "a closed dependency can still be treated as finalized",
+        "the strictness rule is applied inconsistently across call sites"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.keyword-only-flag-shape",
+      "description": "A reviewer may prefer a distinct function over a boolean mode flag. Reasonable as design commentary; the packet's preserved-behaviour list keeps the permissive result reachable, so a mode flag satisfies the contract.",
+      "equivalent_formulations": [
+        "prefer a separate function to a boolean flag",
+        "a mode flag is a design smell"
+      ]
+    }
+  ]
+}

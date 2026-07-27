@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/queue",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "9d3e71b8c04a26f5138e7b02da96c451f8a3d70e",
+    "comparison_base_sha": "3a7f2e94b18c50d6ae23f107c9b48d5162ea08f3",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/queue/reaper.py b/queue/reaper.py\n--- a/queue/reaper.py\n+++ b/queue/reaper.py\n@@ -14,18 +14,36 @@ from queue.store import load_claim, release_claim\n def collect_expired(now, store):\n     \"\"\"Return one release action per claim that looks expired.\"\"\"\n     actions = []\n     for entry in store.scan():\n         if entry.claimed_at is None or now - entry.claimed_at <= TTL:\n             continue\n+        snapshot_owner = entry.owner\n \n-        def _release(entry_id=entry.entry_id):\n-            release_claim(store, entry_id)\n+        def _release(entry_id=entry.entry_id, snapshot_owner=snapshot_owner):\n+            # Re-read at apply time: the snapshot may be minutes old.\n+            current = load_claim(store, entry_id)\n+            if current is None:\n+                return\n+            if snapshot_owner is not None and current.owner != snapshot_owner:\n+                return\n+            release_claim(store, entry_id)\n \n         actions.append(_release)\n     return actions\ndiff --git a/tests/test_reaper.py b/tests/test_reaper.py\n--- a/tests/test_reaper.py\n+++ b/tests/test_reaper.py\n@@ -18,3 +18,18 @@ def test_collect_expired_ignores_a_fresh_claim():\n     assert collect_expired(NOW, store) == []\n+\n+\n+def test_collect_expired_skips_release_when_the_owner_changed():\n+    store = FakeStore([Entry(entry_id=\"e-1\", owner=\"worker-a\", claimed_at=OLD)])\n+    actions = collect_expired(NOW, store)\n+    store.set_owner(\"e-1\", \"worker-b\")\n+    for action in actions:\n+        action()\n+    assert store.claim(\"e-1\").owner == \"worker-b\"\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Stop the expiry reaper from releasing a claim that another worker has taken since the scan, by re-reading the claim at apply time.",
+    "acceptance_criteria": [
+      "A release only happens when the claim still belongs to the owner the scan saw.",
+      "A claim taken by another worker between scan and apply is never released.",
+      "A claim that has since disappeared is skipped rather than erroring."
+    ],
+    "non_goals": [
+      "Change the expiry TTL.",
+      "Make the scan itself transactional."
+    ],
+    "preserved_behaviors": [
+      "An unexpired claim is still ignored by the scan.",
+      "`collect_expired` still returns callables the caller applies later."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Concurrency rules",
+        "location": "AGENTS.md",
+        "summary": "A collect-then-apply pass must re-verify every precondition it captured. A guard that is conditional on the captured value being present is not a guard for the case where it was absent."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Claim ownership contract",
+        "location": "docs/claims.md"
+      },
+      {
+        "label": "Claim store",
+        "location": "queue/store.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Claim writer used by workers",
+        "location": "queue/worker.py"
+      },
+      {
+        "label": "Reaper tests",
+        "location": "tests/test_reaper.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "reaper tests",
+      "command": "pytest tests/test_reaper.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "132 passed"
+    },
+    {
+      "name": "concurrency soak",
+      "command": "pytest -m soak",
+      "scope": "full",
+      "status": "unavailable",
+      "reason": "The soak marker needs a live store and was not run on this candidate."
+    }
+  ],
+  "context": {
+    "data": [
+      "An unclaimed entry has `owner` set to `None` and still carries `claimed_at` from a prior cycle, because the writer clears ownership before it clears the timestamp.",
+      "`queue/worker.py` takes a claim by setting `owner` and refreshing `claimed_at` in one write.",
+      "Roughly a fifth of expired entries are seen by the scan with no owner."
+    ],
+    "operational": [
+      "The reaper and the workers run concurrently against the same store; minutes can pass between scan and apply."
+    ]
+  }
+}

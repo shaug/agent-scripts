@@ -1,0 +1,27 @@
+{
+  "corpus_version": "0.1-s1-populated",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-code-change",
+  "target_skill_dependencies": [
+    "review-solution-simplicity",
+    "review-correctness",
+    "review-code-simplicity"
+  ],
+  "stratum": {
+    "id": "s1-correctness-orchestrator",
+    "ground_truth": "human-review",
+    "scored": false,
+    "grading_is_signal": true,
+    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Populated but NOT yet scored: every expectation is uncalibrated and none has a second independent adjudication, and a baseline captured on either would report a number about the corpus rather than about the reviewer. Flip `scored` to true only once both land."
+  },
+  "cases": [
+    "dependency-hint-parser-coverage",
+    "dependency-strictness-propagation",
+    "optional-tool-probe",
+    "post-bootstrap-module-load",
+    "process-isolation-assertion",
+    "session-continuation-summary",
+    "stale-claim-release-guard"
+  ]
+}

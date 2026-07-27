@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Added successor-source recovery for corrected carved suffixes
+## 2026-07-27 — Populated the correctness stratum, and recovered carved suffixes
 
+- feat: populate the correctness stratum with seven adjudicated cases
 - feat: recover corrected carved suffixes
+  (`ba12e0744a938fc71af16eeeaa0eea98e7c2c63e`)
 
 ## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 

@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/lineage",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "6a08d3f27b915ce4130827aebf5d9c6142b83e70",
+    "comparison_base_sha": "b71e4c8093a5d216f804eb37c295a610d7f2b8ce",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/lineage/parse.py b/lineage/parse.py\n--- a/lineage/parse.py\n+++ b/lineage/parse.py\n@@ -8,17 +8,14 @@ CANONICAL_LINK = \"link_type\"\n def parent_links(entry):\n     \"\"\"Return the parent links declared by one dependency entry.\n \n-    Historically the exporter emitted the link kind under several names.\n+    The exporter now emits exactly one canonical field, so only that field is\n+    read. The former aliases are gone from the export contract and reading them\n+    would keep accepting shapes the exporter can no longer produce.\n     \"\"\"\n     links = []\n     for item in entry.get(\"dependencies\") or []:\n         if isinstance(item, str):\n             links.append(item)\n             continue\n-        kind = (\n-            item.get(CANONICAL_LINK)\n-            or item.get(\"relation\")\n-            or item.get(\"linkType\")\n-            or item.get(\"type\")\n-        )\n+        kind = item.get(CANONICAL_LINK)\n         if kind == \"parent_child\":\n             links.append(item[\"issue\"][\"id\"])\n     return links\ndiff --git a/tests/test_parse.py b/tests/test_parse.py\n--- a/tests/test_parse.py\n+++ b/tests/test_parse.py\n@@ -10,6 +10,18 @@ def test_parent_links_reads_a_string_entry():\n     assert parent_links({\"dependencies\": [\"p-1\"]}) == [\"p-1\"]\n+\n+\n+def test_parent_links_reads_the_canonical_link_field():\n+    entry = {\"dependencies\": [{\"link_type\": \"parent_child\", \"issue\": {\"id\": \"p-2\"}}]}\n+    assert parent_links(entry) == [\"p-2\"]\n+\n+\n+def test_parent_links_ignores_a_retired_alias():\n+    entry = {\"dependencies\": [{\"type\": \"parent_child\", \"issue\": {\"id\": \"p-3\"}}]}\n+    assert parent_links(entry) == []\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Narrow the dependency-entry parser to the one canonical link field the exporter now emits, dropping the retired aliases.",
+    "acceptance_criteria": [
+      "The canonical link field is read.",
+      "A retired alias is not read, so a shape the exporter can no longer produce is not silently accepted.",
+      "A bare string entry keeps working."
+    ],
+    "non_goals": [
+      "Change the exporter.",
+      "Keep a compatibility path for retired aliases."
+    ],
+    "preserved_behaviors": [
+      "A bare string dependency entry resolves exactly as before."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Export contract rules",
+        "location": "AGENTS.md",
+        "summary": "When the export contract narrows, the reader narrows with it in the same change. Keeping a reader for a retired shape hides exporter regressions instead of surfacing them."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Export contract",
+        "location": "docs/export-contract.md"
+      },
+      {
+        "label": "Exporter",
+        "location": "lineage/export.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Parser tests",
+        "location": "tests/test_parse.py"
+      },
+      {
+        "label": "Frontier resolution consumer",
+        "location": "lineage/frontier.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "parser tests",
+      "command": "pytest tests/test_parse.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "11 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "97 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`lineage/export.py` emits only `link_type`; the aliases were removed from the export contract in the same release.",
+      "No stored data is replayed through this parser: every entry it sees comes from a live export."
+    ],
+    "operational": [
+      "The exporter and this parser ship together and are always the same version."
+    ]
+  }
+}
