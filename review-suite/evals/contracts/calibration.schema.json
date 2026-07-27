@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/calibration.schema.json",
+  "title": "Grader calibration set for one corpus case",
+  "description": "Probe reviews graded against one case's private expectation, with the classification each probe must receive. Calibration proves the shipped formulations recognise a real reviewer's prose and its paraphrases while still refusing overlapping symptoms, partial claims, duplicate reports, and plausible false positives. Calibration is private grading evidence: it never enters an executor request.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "calibration_version",
+    "case_id",
+    "grader_version",
+    "source",
+    "probes"
+  ],
+  "properties": {
+    "calibration_version": {"const": "1.0"},
+    "case_id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+    "grader_version": {"type": "string", "minLength": 1},
+    "source": {
+      "description": "Where the probe prose came from. An observed probe must name the run that produced it, so a calibrated formulation can always be traced to prose a real reviewer actually wrote rather than to prose the corpus author guessed.",
+      "type": "string",
+      "minLength": 1
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "note", "verdict", "findings", "expect"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^probe\\.[a-z0-9][a-z0-9-]*$"},
+          "kind": {
+            "enum": [
+              "observed",
+              "paraphrase",
+              "overlapping_symptom",
+              "duplicate_report",
+              "partial_claim",
+              "plausible_false_positive",
+              "accepted_non_finding"
+            ]
+          },
+          "note": {"type": "string", "minLength": 1},
+          "verdict": {"enum": ["clean", "changes_required", "blocked"]},
+          "findings": {
+            "description": "Findings exactly as a review result carries them. Each is validated against the v1 review-result contract, so a probe can never drift from the shape a real reviewer returns.",
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object"}
+          },
+          "expect": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "classifications",
+              "matched_root_cause_ids",
+              "recall",
+              "false_positive_finding_ids",
+              "adjudication_finding_ids"
+            ],
+            "properties": {
+              "classifications": {
+                "description": "The classification the grader must give each finding, keyed by finding id.",
+                "type": "object"
+              },
+              "matched_root_cause_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1}
+              },
+              "recall": {
+                "description": "The recall the grader must report for this probe, or null for a case that expects no material root cause. Left untyped because this repository's schema-subset validator has no numeric type; the calibration test compares it to the grader's value exactly."
+              },
+              "false_positive_finding_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1}
+              },
+              "adjudication_finding_ids": {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

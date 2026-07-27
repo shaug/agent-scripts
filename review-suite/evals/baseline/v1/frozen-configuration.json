@@ -1,0 +1,138 @@
+{
+  "record_version": "1.0",
+  "status": "incomplete_pending_owner_preregistration",
+  "status_detail": "Every value an implementing run can fix is fixed below. Two values cannot come from an implementing context and are therefore null: the per-stratum cost ceiling, which must be preregistered by the repository owner before any scored output is examined because a scored run spends real money, and the independent adjudication of each private expectation, which one context cannot supply both sides of. No scored run may launch until both are present. Freezing everything else now is what makes the remaining inputs a decision rather than a negotiation.",
+  "suite_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "calibration_version": "1.0",
+  "runtime": {
+    "adapter": "review-suite/scripts/evals/claude_executor.py",
+    "adapter_version": "1.0",
+    "executor_command": "python3 review-suite/scripts/evals/claude_executor.py",
+    "runtime": "claude",
+    "runtime_cli_version": "2.1.92",
+    "model": "claude-opus-4-6[1m]",
+    "model_identity_source": "resolved from the runtime's reported modelUsage on every attempt; an attempt that cannot name its model is recorded as a runtime failure rather than a result",
+    "stratum_rule": "a change of runtime, runtime version, or model creates a new stratum and must never be compared with this one"
+  },
+  "execution": {
+    "runs_per_case": 5,
+    "runs_per_case_rationale": "A denominator of one cannot measure a stochastic reviewer, and this suite has already observed the same configuration return `blocked` on one attempt and a merge verdict on the next for the case that tests refusal on incomplete evidence. Five is the smallest count that makes a per-case verdict-stability figure mean anything while keeping the worst-case spend inside the proposed ceiling.",
+    "timeout_seconds": 300,
+    "timeout_rationale": "Worst observed pilot latency was 52.7 s on the orchestrator stratum. 300 s is roughly six times that, which absorbs a slow attempt without letting a hung process run unbounded.",
+    "retry_policy": "none",
+    "retry_policy_rationale": "A failed attempt is recorded as an evaluation failure and never retried. Retrying would silently replace an unstable attempt with a luckier one and would bias every stability figure toward agreement.",
+    "max_output_bytes": 4000000,
+    "process_isolation": "one fresh executor process per attempt",
+    "cost_ceiling_exhaustion_policy": "Exceeding a stratum's preregistered ceiling stops further runs in that stratum and records an incomplete baseline for it. Repetitions are never reduced after outputs are visible."
+  },
+  "strata": [
+    {
+      "id": "s1-correctness-orchestrator",
+      "state": "declared_unpopulated",
+      "target_skill": "review-code-change",
+      "target_skill_dependencies": [
+        "review-solution-simplicity",
+        "review-correctness",
+        "review-code-simplicity"
+      ],
+      "closure_documents": 8,
+      "closure_digest_at_this_commit": "9b2805f14cdd6158",
+      "ground_truth": "human-review and repository-history",
+      "planned_cases": 7,
+      "planned_case_classes": [
+        "multi-file contract or untouched-consumer propagation failure",
+        "concurrency, retry, idempotency, transaction, or data-integrity failure",
+        "validation gap where passing tests did not exercise the changed risk",
+        "two clean correctness controls",
+        "two adjudicated rejected, deferred, speculative, or polish-only findings as negative controls"
+      ],
+      "envelope_source": "pilot-orchestrator",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 8.0
+    },
+    {
+      "id": "s2-solution-simplicity-lens",
+      "state": "declared_unpopulated",
+      "target_skill": "review-solution-simplicity",
+      "target_skill_dependencies": [],
+      "closure_documents": 2,
+      "closure_digest_at_this_commit": "6257ee4448b15874",
+      "ground_truth": "human-review",
+      "planned_cases": 4,
+      "planned_case_classes": [
+        "two demonstrated whole-solution over-engineering cases",
+        "two requirement-justified near-miss controls"
+      ],
+      "envelope_source": "pilot-solution-simplicity",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 3.0
+    },
+    {
+      "id": "s3-code-simplicity-lens",
+      "state": "declared_unpopulated",
+      "target_skill": "review-code-simplicity",
+      "target_skill_dependencies": [],
+      "closure_documents": 2,
+      "closure_digest_at_this_commit": "a6187d8971eaef24",
+      "ground_truth": "human-review",
+      "planned_cases": 4,
+      "planned_case_classes": [
+        "two demonstrated local code-complexity or reuse cases",
+        "two behaviour-clarifying or non-material near-miss controls"
+      ],
+      "envelope_source": "pilot-code-simplicity",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": 3.0
+    },
+    {
+      "id": "connector-escape",
+      "state": "deferred_not_satisfied",
+      "target_skill": null,
+      "ground_truth": "connector-review",
+      "deferral_reason": "No connector review history is available to this repository under acceptable third-party authority and disclosure terms. Connector-escape recall is not measured by this baseline and must not be inferred from any human-review figure.",
+      "cost_ceiling_usd": null,
+      "cost_ceiling_proposal_usd": null
+    }
+  ],
+  "metrics_to_report": [
+    "per-case and aggregate material-finding recall, with denominators",
+    "false-clean rate, with denominator",
+    "false-positive rate, with denominator",
+    "false-alarm rate, with denominator",
+    "unique finding contribution per case",
+    "per-case and mean verdict stability, with denominators",
+    "per-case and mean finding stability, with denominators",
+    "every failure-status rate: spawn_failure, timeout, runtime_failure, output_too_large, malformed_output, protocol_mismatch, blocked",
+    "latency count, mean, p50, min, max",
+    "reported usage: input tokens, output tokens, cost in USD, with the number of attempts reporting each",
+    "adjudication referrals, per case and per run",
+    "confidence and uncertainty appropriate to the observed run count; no point estimate is presented as exact model capability"
+  ],
+  "metrics_not_available": [
+    {
+      "metric": "aggregate verdict-accuracy rate",
+      "detail": "The per-attempt grade records `verdict_match`, but the aggregate report has no verdict-accuracy figure, and only `review_result` attempts are graded at all. A case whose expected verdict is `blocked` therefore enters no quality denominator: when the reviewer correctly refuses, the attempt is classified `blocked` and never graded. This was raised twice during the evaluator's own review and deliberately deferred.",
+      "consequence_for_this_baseline": "No scored stratum declared above expects a `blocked` verdict, so the gap does not silently drop a scored case. That is a composition decision, not a repair: adding a refusal-on-incomplete-evidence case class to any scored stratum requires the metric first."
+    },
+    {
+      "metric": "severity agreement",
+      "detail": "`expectation.schema.json` requires a `severity` on every root cause that no metric consumes. Severity agreement is not measured and must not be assumed."
+    }
+  ],
+  "pending_owner_inputs": [
+    "A per-stratum cost ceiling, preregistered before any scored output is examined. Proposals are in COST-CEILING-PROPOSAL.md.",
+    "Two independent adjudications for each material root cause, accepted non-finding, severity, and allowed equivalent formulation, from genuinely separate parties, with disagreements resolved in a recorded adjudication note. Current state is in CALIBRATION.md."
+  ],
+  "pilot_reports": [
+    "pilot/pilot-orchestrator.report.json",
+    "pilot/pilot-solution-simplicity.report.json",
+    "pilot/pilot-code-simplicity.report.json"
+  ],
+  "controlled_artifacts": {
+    "location": "review-suite/evals/artifacts/<stratum>/<case>.run-<n>.stdout.json",
+    "in_git": false,
+    "detail": "Raw executor output is retained outside git by the repository's existing ignore rule. The committed compact reports carry every metric, denominator, and identity a consumer needs; the raw transcripts are referenced by that path identity for anyone re-deriving a figure."
+  }
+}

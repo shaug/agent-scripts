@@ -4,7 +4,7 @@
 The layout physically separates the three kinds of data so a reviewer-visible
 read can never reach grading evidence:
 
-    <corpus>/corpus.json                        version metadata, case ids
+    <corpus>/corpus.json                        version metadata, stratum, cases
     <corpus>/reviewer/PROMPT.md                 shared reviewer instructions
     <corpus>/reviewer/<case>/packet.json        reviewer-visible artifacts
     <corpus>/private/expectations/<case>.json   expected material root causes
@@ -13,6 +13,12 @@ read can never reach grading evidence:
 Loading fails closed. A missing expectation, a malformed schema, an orphaned
 file, or an outcome-revealing identifier is an error before any executor
 process is started.
+
+More than one corpus ships. A corpus index declares exactly one `target_skill`,
+and a stratum is defined by the payload it sends, so each stratum is its own
+corpus directory under `strata/`. `corpus_roots` discovers them; grading
+calibration for their cases lives outside every corpus in
+`review-suite/evals/calibration/`, which no reviewer-visible read can reach.
 """
 
 from __future__ import annotations
@@ -26,6 +32,12 @@ from typing import Any
 from . import protocol
 
 DEFAULT_CORPUS = protocol.REVIEW_SUITE / "evals" / "corpus"
+
+#: Root holding one directory per baseline stratum. Each is a complete,
+#: independently loadable corpus with its own target skill and closure, because
+#: a corpus index declares exactly one target and a stratum is defined by the
+#: payload it sends.
+STRATA_ROOT = protocol.REVIEW_SUITE / "evals" / "strata"
 REVIEWER_PROMPT = "PROMPT.md"
 
 #: Filenames permitted inside a reviewer-visible case directory. Anything else
@@ -93,6 +105,15 @@ class Corpus:
     target_skill: str
     target_skill_dependencies: tuple[str, ...]
     cases: tuple[Case, ...]
+    #: The declared baseline stratum, or `None` on a corpus that predates
+    #: stratum labelling. A stratum names the ground truth its expectations came
+    #: from, so a report can never present one kind of ground truth as another.
+    stratum: dict[str, Any] | None = None
+
+    @property
+    def scored(self) -> bool:
+        """True only when this corpus declares itself part of the baseline."""
+        return bool((self.stratum or {}).get("scored"))
 
 
 class CorpusError(ValueError):
@@ -269,7 +290,25 @@ def load_corpus(root: Path | None = None) -> Corpus:
         target_skill=index["target_skill"],
         target_skill_dependencies=dependencies,
         cases=tuple(load_case(root, case_id) for case_id in declared),
+        stratum=index.get("stratum"),
     )
+
+
+def corpus_roots() -> list[Path]:
+    """Every corpus directory this repository ships, default first.
+
+    Discovery rather than an enumerated list, so a stratum added by a later
+    corpus-population batch is audited by the same command without editing the
+    recipe that gates it.
+    """
+    roots = [DEFAULT_CORPUS]
+    if STRATA_ROOT.is_dir():
+        roots.extend(
+            path
+            for path in sorted(STRATA_ROOT.iterdir())
+            if (path / "corpus.json").is_file()
+        )
+    return roots
 
 
 #: Verdict and severity names the shared reviewer prompt must not mention.

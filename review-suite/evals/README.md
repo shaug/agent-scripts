@@ -18,27 +18,70 @@ review-suite/evals/
 ├── contracts/                          versioned evaluator schemas
 │   ├── executor-request.schema.json    the complete result-blind payload
 │   ├── executor-response.schema.json   the single reply an executor returns
-│   ├── corpus.schema.json              versions, target closure, case list
+│   ├── corpus.schema.json              versions, target closure, stratum, cases
 │   ├── expectation.schema.json         private material root causes
-│   └── provenance.schema.json          origin and retention authority
-├── corpus/
+│   ├── provenance.schema.json          origin and retention authority
+│   └── calibration.schema.json         probe reviews and required classifications
+├── corpus/                             the protocol-proof corpus
 │   ├── corpus.json                     versions, target closure, case ids
 │   ├── reviewer/PROMPT.md              shared reviewer instructions
 │   ├── reviewer/<case>/packet.json     reviewer-visible artifacts
 │   ├── private/expectations/<case>.json
 │   └── private/provenance/<case>.json
+├── strata/                             one directory per baseline stratum
+│   ├── README.md                       what a stratum is, and the measured envelope
+│   └── <stratum>/                      a complete corpus with its own target
+├── calibration/<case_id>.json          private grader calibration probes
+├── baseline/v1/                        the frozen v1 baseline record
+│   ├── frozen-configuration.json       the immutable configuration
+│   ├── COST-CEILING-PROPOSAL.md        per-stratum ceiling, from pilot numbers
+│   ├── CALIBRATION.md                  what was calibrated, and from what
+│   ├── SOURCING.md                     ground truth, sanitization, batches
+│   ├── LIMITATIONS.md                  explicit inputs to interpretation
+│   └── pilot/<stratum>.report.json     the unscored pilot's compact reports
 └── artifacts/                          opt-in captured output, not in git
 
 review-suite/scripts/evals/
 ├── protocol.py           versioned request/response contract, failure taxonomy
-├── corpus.py             corpus loading, separation, and naming rules
+├── corpus.py             corpus loading, separation, naming, and discovery
 ├── grader.py             root-cause grading interface and reference grader
+├── calibration.py        calibration sets and the case index they grade against
 ├── report.py             per-attempt records and the aggregate report
 ├── runner.py             fresh-process replay driver
 ├── audit_corpus.py       `just audit-review-corpus`
 ├── fixture_executor.py   deterministic simulation, never a baseline
 └── claude_executor.py    documented real-runtime adapter
 ```
+
+## Strata
+
+A stratum is the unit of valid comparison: same target skill, same declared
+dependency closure, same runtime and model, same kind of ground truth. Each
+directory under `strata/` is a complete corpus declaring its own `target_skill`
+and a `stratum` block naming its id, its ground truth, whether it is scored, and
+what it is for. `just audit-review-corpus` discovers every one of them, so a
+stratum added later is gated without changing the recipe.
+
+Read [`strata/README.md`](strata/README.md) for the measured per-stratum cost
+and latency envelope, and
+[`baseline/v1/LIMITATIONS.md`](baseline/v1/LIMITATIONS.md) before quoting any
+figure. In particular: **the connector stratum is deferred, not satisfied.**
+Connector-escape recall has never been measured here, and no human-review figure
+may be reported as a connector figure.
+
+## Calibration
+
+An uncalibrated grader does not report a conservative score; it reports a
+meaningless one, because matching is containment on normalised text.
+Formulations are therefore calibrated against prose a real reviewer actually
+returned — from the unscored pilot only, never from scored output — and
+`review-suite/scripts/tests/test_eval_calibration.py` replays committed probe
+reviews through the real grader to assert the classification each must receive.
+Calibration probes every boundary: paraphrase, overlapping symptom, duplicate
+report, partial claim, plausible false positive, and accepted non-finding.
+
+See [`baseline/v1/CALIBRATION.md`](baseline/v1/CALIBRATION.md) for what was
+calibrated, what it measured before and after, and what remains un-adjudicated.
 
 ## Commands
 
@@ -247,8 +290,19 @@ freezing a cost envelope:
 ## Scope and known limitations
 
 This directory proves the protocol, the grading interface, the contamination
-controls, and the failure taxonomy. It deliberately does not curate a
-representative scored corpus, calibrate the grader, or capture a v1 baseline.
+controls, and the failure taxonomy. It now also carries the stratum layout, the
+per-stratum unscored pilot envelope, the grader calibration machinery, and the
+frozen v1 configuration record.
+
+It still does **not** carry a populated scored corpus or a captured v1 baseline.
+`baseline/v1/frozen-configuration.json` declares three scored strata in state
+`declared_unpopulated`, and its `status` is
+`incomplete_pending_owner_preregistration`: the per-stratum cost ceiling must be
+preregistered by the repository owner before any scored output is examined, and
+each private expectation needs two independent adjudications from genuinely
+separate parties. Neither can come from an implementing context.
+[`baseline/v1/SOURCING.md`](baseline/v1/SOURCING.md) records the population
+batches and the ground truth already identified for every required case class.
 
 ### Protocol smoke evaluation
 
@@ -290,14 +344,24 @@ result as a measurement only once the denominator supports it.
 
 ### Limitations for whoever curates the scored corpus
 
+The first two of these have since been measured rather than predicted; see
+[`baseline/v1/LIMITATIONS.md`](baseline/v1/LIMITATIONS.md) for what the pilot
+found and what it cost to fix.
+
 - Surface matching is file-level, because a private root cause names a function
   while a finding names a line. A finding in the right file that the grader does
   not recognize is therefore reported as a partial match needing adjudication,
-  not as a false positive. Calibration must decide how those are scored.
+  not as a false positive. Calibration must decide how those are scored. The
+  pilot showed the sharper form of this: a surface written as a path prefix
+  shares a token with almost every location in a packet, and made a deliberately
+  wrong gating finding an unfalsifiable partial. Write a surface as the smallest
+  identifying symbol.
 - The shipped formulations were written before any real run and were not tuned
   afterwards, which is why recall is 0.0 above. That is the conservative
   behaviour this interface is meant to have, and it means grader calibration is
-  required before any recall number means anything.
+  required before any recall number means anything. Calibrated against the
+  pilot's observed prose, the same interface scored recall 1.0 with zero false
+  positives on three fresh runs.
 - Completeness of the evaluated skill closure is load-bearing, not incidental.
   Earlier revisions omitted first the orchestration protocol and then the three
   lens skills that `review-code-change` requires; each omission changed observed

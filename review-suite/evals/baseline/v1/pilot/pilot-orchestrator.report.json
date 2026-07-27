@@ -1,0 +1,114 @@
+{
+  "adjudication_required": [],
+  "attempts": 3,
+  "baseline_eligible": true,
+  "configuration": {
+    "artifacts_retained": true,
+    "cases": 1,
+    "corpus_version": "1.1-pilot-orchestrator",
+    "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "grader_version": "1.0",
+    "max_output_bytes": 4000000,
+    "runs_per_case": 3,
+    "suite_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+    "target_skill": "review-code-change",
+    "target_skill_dependencies": [
+      "review-solution-simplicity",
+      "review-correctness",
+      "review-code-simplicity"
+    ],
+    "target_skill_digest": "9b2805f14cdd6158",
+    "target_skill_documents": [
+      "review-code-change/SKILL.md",
+      "review-code-change/references/orchestration-protocol.md",
+      "review-code-simplicity/SKILL.md",
+      "review-code-simplicity/references/code-simplicity-rubric.md",
+      "review-correctness/SKILL.md",
+      "review-correctness/references/correctness-rubric.md",
+      "review-solution-simplicity/SKILL.md",
+      "review-solution-simplicity/references/solution-simplicity-rubric.md"
+    ],
+    "timeout_seconds": 300.0
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 3,
+  "grader_version": "1.0",
+  "latency": {
+    "count": 3,
+    "max_seconds": 37.20436308393255,
+    "mean_seconds": 34.76848513881365,
+    "min_seconds": 30.250969290733337,
+    "p50_seconds": 36.85012304177508
+  },
+  "per_case": [
+    {
+      "attempts": 3,
+      "case_id": "rollback-guidance-render",
+      "expected_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 3,
+      "intersection_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "mean_recall": 1.0,
+      "stability_denominator": 3,
+      "statuses": {
+        "review_result": 3
+      },
+      "union_root_cause_ids": [
+        "rc.unsupported-emitted-subcommand"
+      ],
+      "verdict_stability": 1.0
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 0,
+    "false_alarm_rate": null,
+    "false_clean_denominator": 3,
+    "false_clean_rate": 0.0,
+    "false_positive_denominator": 3,
+    "false_positive_rate": 0.0,
+    "material_finding_recall": 1.0,
+    "recall_attempts": 3,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 1.0,
+    "per_case_finding_stability": {
+      "rollback-guidance-render": 1.0
+    },
+    "per_case_stability_denominator": {
+      "rollback-guidance-render": 3
+    },
+    "per_case_verdict_stability": {
+      "rollback-guidance-render": 1.0
+    },
+    "stability_denominator": 3
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 3,
+    "reporting_attempts_input_tokens": 3,
+    "reporting_attempts_output_tokens": 3,
+    "total_cost_usd": 0.28784475,
+    "total_input_tokens": 97719.0,
+    "total_output_tokens": 4550.0
+  }
+}
