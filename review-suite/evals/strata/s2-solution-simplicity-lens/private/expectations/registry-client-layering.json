@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "registry-client-layering",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.three-client-concepts-duplicate-binding",
+      "requirement": "When one caller already threads a root and working directory through every method of a client, a second client for a different operation family should converge on the client already bound to those values.",
+      "trigger": "Adding a client for a new operation family next to two existing ones that all wrap the same transport.",
+      "surface": "_RegistryQueueMessagesClient",
+      "consequence": "A third client class is added that re-threads `registry_root` and `cwd` through every method exactly as the second one does, even though the first client in the same file is already bound to both values at construction and exists specifically to avoid that repetition. Every caller of any of the three has to supply the same two values again at every call site, and a fourth operation family would repeat the pattern a third time.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "converge on one bound client instead of three overlapping ones",
+        "the adapter layering duplicates client concepts",
+        "root and cwd are threaded through every method call",
+        "this repeats the same binding the runtime client already has",
+        "a single already-bound client would remove this adapter stack"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.private-class-naming",
+      "description": "The three client classes are all leading-underscore private. A reviewer may ask whether that is intentional given they are imported across modules; it is a naming convention question independent of the layering defect this case is built from.",
+      "equivalent_formulations": [
+        "the classes are private but imported elsewhere",
+        "underscore-prefixed classes crossing module boundaries"
+      ]
+    }
+  ]
+}

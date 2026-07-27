@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "reconciliation-outcome-type",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 417, review comment 2870710594, authored by the repository owner. The comment itself records acceptance: \"Implemented in 668f2c7\", describing the typed outcome. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional registry runtime. Retains only the shape of the adjudicated exchange: a boolean reconciliation result is replaced by a typed outcome so an intentional block is never conflated with a genuine failure. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 417 review comment 2870710594, which records its own acceptance: implemented in 668f2c7, adding the typed outcome exactly as the packet describes.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for whether machinery is 'requirement-justified' rather than over-engineered - that is the judgement itself. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the caller must distinguish an intentional block from a real failure and that a boolean cannot express that distinction, which is a concrete, checkable requirement rather than a preference for more types. The residual risk: a reviewer could reasonably propose a smaller fix (e.g. a second boolean flag, or a single sentinel value) instead of a four-member enum: whether that counts as 'this change over-shoots the requirement' rather than 'this looks like unnecessary machinery' is a distinction the owner should draw, since this case's accepted non-finding treats the whole enum as justified rather than picking apart its size."
+  }
+}

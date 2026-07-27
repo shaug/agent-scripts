@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/planner-tools",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "7c94b28d016a53fe2c810736ad4f915b062ea7c9",
+    "comparison_base_sha": "0e5a3f8b621dc47a90f16be283507ad9c4e163f2",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/skills/create_changeset.py b/skills/create_changeset.py\n--- a/skills/create_changeset.py\n+++ b/skills/create_changeset.py\n@@ -85,5 +85,24 @@ def main() -> None:\n     if not created.ok:\n         print(\"error: failed to create changeset bead\", file=sys.stderr)\n         raise SystemExit(1)\n \n-    beads.run_bd_command([\"update\", created.issue_id, \"--status\", \"deferred\"])\n+    status_applied = _apply_deferred_status_with_retry(created.issue_id)\n+    if not status_applied:\n+        beads.run_bd_command([\"close\", created.issue_id, \"--reason\",\n+                              \"deferred status could not be applied\"])\n+        print(\n+            f\"error: created {created.issue_id} but could not set deferred status; \"\n+            \"auto-closed to avoid an unexpectedly runnable changeset\",\n+            file=sys.stderr,\n+        )\n+        raise SystemExit(1)\n+\n+\n+def _apply_deferred_status_with_retry(issue_id, attempts=3):\n+    for _ in range(attempts):\n+        result = beads.run_bd_command(\n+            [\"update\", issue_id, \"--status\", \"deferred\"], allow_failure=True,\n+        )\n+        if result.ok:\n+            return True\n+    return False\ndiff --git a/tests/test_create_changeset.py b/tests/test_create_changeset.py\n--- a/tests/test_create_changeset.py\n+++ b/tests/test_create_changeset.py\n@@ -14,1 +14,17 @@ def test_main_sets_the_changeset_to_deferred():\n     assert bd_calls[-1] == [\"update\", \"cs-1\", \"--status\", \"deferred\"]\n+\n+\n+def test_main_auto_closes_when_the_deferred_status_never_applies():\n+    with failing_status_updates():\n+        with pytest.raises(SystemExit):\n+            main()\n+    assert bd_calls[-1][0] == \"close\"\n+\n+\n+def test_main_does_not_export_after_the_auto_close_path(monkeypatch):\n+    exported = []\n+    monkeypatch.setattr(exporter, \"export\", lambda *a, **k: exported.append(a))\n+    with failing_status_updates():\n+        with pytest.raises(SystemExit):\n+            main()\n+    assert exported == []\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Guarantee a newly created changeset never ends up unexpectedly runnable when the deferred-status transition fails, by retrying and then auto-closing.",
+    "acceptance_criteria": [
+      "A transient status-update failure is retried before giving up.",
+      "If deferred status still cannot be applied, the created changeset is auto-closed rather than left runnable.",
+      "The auto-close path does not export the changeset."
+    ],
+    "non_goals": [
+      "Change how a changeset is created.",
+      "Change what makes a changeset runnable."
+    ],
+    "preserved_behaviors": [
+      "The happy-path status transition still runs exactly one `bd` update call."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Deferred-by-default rules",
+        "location": "AGENTS.md",
+        "summary": "A creation script that relies on deferred-by-default semantics must not leave a newly created record in its default runnable state when the deferred transition fails. Fail closed: retry, and if the transition still cannot be applied, remove the record from the runnable pool entirely."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Changeset creation contract",
+        "location": "docs/changeset-creation.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Sibling epic-creation script with the same protection",
+        "location": "skills/create_epic.py"
+      },
+      {
+        "label": "Creation tests",
+        "location": "tests/test_create_changeset.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "creation tests",
+      "command": "pytest tests/test_create_changeset.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "9 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "154 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "A changeset with no explicit status defaults to runnable in the underlying tracker.",
+      "The status-update call can fail transiently (a brief tracker outage) as well as permanently.",
+      "The sibling epic-creation script already carries the identical retry-then-auto-close protection, added in the same release."
+    ],
+    "operational": [
+      "A runnable changeset is picked up by the scheduler within seconds of creation."
+    ]
+  }
+}

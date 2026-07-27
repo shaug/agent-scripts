@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "record-status-transition-guard",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.retry-plus-autoclose-is-extra-machinery",
+      "description": "A reviewer may observe that a retry loop plus an auto-close fallback is defensive scaffolding for what used to be a single `bd update` call. This is the finding this case is built from, and it was adjudicated NOT material: the packet states the record is runnable by default and the scheduler picks it up within seconds, so a silently-failed transition is a real correctness hazard, not a hypothetical one, and the sibling script already carries the identical protection. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "this looks like defensive scaffolding for a single api call",
+        "retry plus auto-close is extra machinery",
+        "a small fail-closed guard is unnecessary here",
+        "this is over-engineered for a status update"
+      ]
+    },
+    {
+      "id": "anf.retry-count-hardcoded",
+      "description": "The retry count is a literal `3` rather than a named constant or configuration value. Worth noting; the packet's preserved behaviour keeps exactly one status call on the happy path and does not claim the count is configurable.",
+      "equivalent_formulations": [
+        "the retry count is a magic number",
+        "3 is hardcoded rather than named"
+      ]
+    }
+  ]
+}

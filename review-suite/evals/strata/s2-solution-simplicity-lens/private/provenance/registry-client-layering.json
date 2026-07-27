@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "registry-client-layering",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 410, review comment 2870262209, authored by the repository owner and accepted in commit f631cb0, which converged the three client concepts onto one bound `BeadsClient`. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional registry client. Retains only the failure shape: three client classes wrapping one transport, one of them already bound to the values the other two re-thread through every method. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 410 review comment 2870262209, accepted in commit f631cb0: all three client classes were converged onto one bound BeadsClient instance.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for a solution-shape judgement like this. Recommended adjudication: MATERIAL. The packet states all three classes call the same transport and that one is already bound to the exact two values the other two re-thread, which is the layering defect stated directly rather than inferred. The only real counter-consideration: the diff is scoped to a queue-message client only, so a reviewer might argue the mutation-client duplication predates this change and is out of scope for it - the owner should weigh whether introducing a third instance of an existing anti-pattern is itself gating."
+  }
+}

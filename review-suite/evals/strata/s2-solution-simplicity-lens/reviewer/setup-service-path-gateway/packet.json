@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/toolkit",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "4a17e9d302cb6f851ae2903d61b7f4c826e19a3d",
+    "comparison_base_sha": "b823f61e97d0a4c518e2d637a9f5b0128e4c73da",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/services/setup.py b/services/setup.py\n--- a/services/setup.py\n+++ b/services/setup.py\n@@ -1,8 +1,15 @@\n from paths import project_dir_for_enlistment\n \n \n+class SetupPathGateway:\n+    \"\"\"Indirection over `paths.project_dir_for_enlistment` for the setup service.\"\"\"\n+\n+    def project_dir(self, enlistment_id):\n+        return project_dir_for_enlistment(enlistment_id)\n+\n+\n class SetupDependencies:\n     \"\"\"Dependency bag threaded into `SetupService`.\"\"\"\n \n     def __init__(self, path_gateway):\n         self.path_gateway = path_gateway\n@@ -18,6 +22,6 @@ class SetupService:\n     def __init__(self, deps: SetupDependencies):\n         self._deps = deps\n \n     def run(self, enlistment_id):\n-        target = self._deps.path_gateway.project_dir(enlistment_id)\n+        target = self._deps.path_gateway.project_dir(enlistment_id)\n         return self._prepare(target)\ndiff --git a/commands/setup.py b/commands/setup.py\n--- a/commands/setup.py\n+++ b/commands/setup.py\n@@ -1,10 +1,10 @@\n-from services.setup import SetupService\n+from services.setup import SetupDependencies, SetupPathGateway, SetupService\n \n \n def _build_setup_service():\n-    return SetupService()\n+    return SetupService(SetupDependencies(path_gateway=SetupPathGateway()))\n \n \n def run(enlistment_id):\n     service = _build_setup_service()\n     return service.run(enlistment_id)\ndiff --git a/tests/test_setup_service.py b/tests/test_setup_service.py\n--- a/tests/test_setup_service.py\n+++ b/tests/test_setup_service.py\n@@ -8,1 +8,8 @@ def test_run_prepares_the_resolved_target():\n     assert service.run(\"e-1\") == prepared(\"/enlistments/e-1\")\n+\n+\n+def test_run_uses_the_injected_path_gateway():\n+    gateway = FakePathGateway(paths={\"e-1\": \"/enlistments/e-1\"})\n+    service = SetupService(SetupDependencies(path_gateway=gateway))\n+    assert service.run(\"e-1\") == prepared(\"/enlistments/e-1\")\n+    assert gateway.calls == [\"e-1\"]\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Let `SetupService` resolve an enlistment's project directory so `run` no longer hardcodes a stub target.",
+    "acceptance_criteria": [
+      "`SetupService.run` resolves the real project directory for the given enlistment.",
+      "The resolution is testable without touching the filesystem."
+    ],
+    "non_goals": [
+      "Change what `_prepare` does with the resolved target.",
+      "Change how an enlistment id maps to a directory."
+    ],
+    "preserved_behaviors": [
+      "`SetupService`'s public `run(enlistment_id)` signature is unchanged."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Service tier rules",
+        "location": "AGENTS.md",
+        "summary": "The service tier exists to capture repeatable business logic, not to abstract away the concrete calls it needs to make to do its job. A service should call the function it needs directly unless there is a demonstrated reason - more than one real implementation, or a boundary the service must not cross - to indirect it."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Path resolution module",
+        "location": "paths.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "A sibling service with no injected gateway",
+        "location": "services/compose.py"
+      },
+      {
+        "label": "Service tests",
+        "location": "tests/test_setup_service.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "setup service tests",
+      "command": "pytest tests/test_setup_service.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "141 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`paths.project_dir_for_enlistment` is a pure function: given an enlistment id, it returns a path with no I/O of its own.",
+      "There is exactly one production implementation of `project_dir_for_enlistment`, and no plan to add another.",
+      "`services/compose.py`, the only other service in this package, calls `paths.project_dir_for_enlistment` directly with no injected gateway and is tested by monkeypatching the module function."
+    ],
+    "operational": [
+      "This service runs once per `setup` invocation; it is not on a hot path."
+    ]
+  }
+}

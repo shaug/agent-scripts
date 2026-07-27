@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/registry-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "3d7f9a6014c2b8e57610fda934c86e21b508d7a3",
+    "comparison_base_sha": "9e0a2c76d18b543f0e9127ad46b3c105e78f3961",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/registry/client.py b/registry/client.py\n--- a/registry/client.py\n+++ b/registry/client.py\n@@ -20,4 +20,36 @@ class Record:\n     identifier: str\n     status: str\n \n \n+class _RegistryRuntimeClient:\n+    \\\"\\\"\\\"Low-level transport bound to one registry root and working directory.\\\"\\\"\\\"\n+\n+    def __init__(self, registry_root, cwd):\n+        self._root = registry_root\n+        self._cwd = cwd\n+\n+    def _call(self, *args):\n+        return run_cli(*args, root=self._root, cwd=self._cwd)\n+\n+\n+class _RegistryRecordMutationsClient:\n+    \\\"\\\"\\\"Record create/update/close, threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def create(self, payload, *, registry_root, cwd):\n+        return run_cli(\"create\", payload, root=registry_root, cwd=cwd)\n+\n+    def update(self, identifier, payload, *, registry_root, cwd):\n+        return run_cli(\"update\", identifier, payload, root=registry_root, cwd=cwd)\n+\n+    def close(self, identifier, *, registry_root, cwd):\n+        return run_cli(\"close\", identifier, root=registry_root, cwd=cwd)\n+\n+\n+class _RegistryQueueMessagesClient:\n+    \\\"\\\"\\\"Queue message operations, also threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def enqueue(self, message, *, registry_root, cwd):\n+        return run_cli(\"enqueue\", message, root=registry_root, cwd=cwd)\n+\n+    def drain(self, *, registry_root, cwd):\n+        return run_cli(\"drain\", root=registry_root, cwd=cwd)\ndiff --git a/registry/worker.py b/registry/worker.py\n--- a/registry/worker.py\n+++ b/registry/worker.py\n@@ -8,8 +8,8 @@ from registry.client import (\n-    RegistryQueueMessagesClient,\n-    RegistryRecordMutationsClient,\n+    _RegistryQueueMessagesClient,\n+    _RegistryRecordMutationsClient,\n )\n \n \n def finalize(identifier, registry_root, cwd):\n-    mutations = RegistryRecordMutationsClient()\n+    mutations = _RegistryRecordMutationsClient()\n     mutations.close(identifier, registry_root=registry_root, cwd=cwd)\ndiff --git a/tests/test_worker.py b/tests/test_worker.py\n--- a/tests/test_worker.py\n+++ b/tests/test_worker.py\n@@ -10,2 +10,9 @@ def test_finalize_closes_the_record():\n     finalize(\"r-1\", registry_root=ROOT, cwd=CWD)\n     assert closed(\"r-1\")\n+\n+\n+def test_finalize_threads_root_and_cwd_to_the_mutation_client():\n+    calls = capture_run_cli_calls()\n+    finalize(\"r-1\", registry_root=ROOT, cwd=CWD)\n+    assert calls[-1].kwargs[\"root\"] == ROOT\n+    assert calls[-1].kwargs[\"cwd\"] == CWD\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Move a queue-message client onto typed records, following the same pattern the mutation client already uses.",
+    "acceptance_criteria": [
+      "Queue message operations carry typed records rather than raw dicts.",
+      "The runtime client's transport call is unaffected."
+    ],
+    "non_goals": [
+      "Converge the three client concepts onto one bound client.",
+      "Change the CLI transport itself."
+    ],
+    "preserved_behaviors": [
+      "`finalize` keeps its existing signature and behaviour."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Client layering rules",
+        "location": "AGENTS.md",
+        "summary": "When one caller already threads a root and working directory through every method of a client, a second client added for a different operation family should not repeat the same threading - converge on one client already bound to those values."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Registry client contract",
+        "location": "docs/registry-client.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Runtime transport client",
+        "location": "registry/client.py"
+      },
+      {
+        "label": "Worker using the mutation client",
+        "location": "registry/worker.py"
+      },
+      {
+        "label": "Worker tests",
+        "location": "tests/test_worker.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "worker tests",
+      "command": "pytest tests/test_worker.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "5 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "176 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`_RegistryRuntimeClient` is already bound to `registry_root` and `cwd` at construction and calls `run_cli` through `self._call`.",
+      "`_RegistryRecordMutationsClient` and `_RegistryQueueMessagesClient` both take `registry_root` and `cwd` as parameters on every method instead of using the already-bound runtime client.",
+      "All three classes call the same underlying `run_cli` transport function."
+    ],
+    "operational": [
+      "Every runtime module that calls the registry constructs its own root/cwd pair from the same two configuration values."
+    ]
+  }
+}
