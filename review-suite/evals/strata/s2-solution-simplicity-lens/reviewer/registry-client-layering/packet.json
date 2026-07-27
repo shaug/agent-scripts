@@ -10,21 +10,21 @@
     "diff": {
       "format": "unified_diff",
       "complete": true,
-      "content": "diff --git a/registry/client.py b/registry/client.py\n--- a/registry/client.py\n+++ b/registry/client.py\n@@ -20,4 +20,36 @@ class Record:\n     identifier: str\n     status: str\n \n \n+class _TransportSession:\n+    \\\"\\\"\\\"Low-level transport bound to one registry root and working directory.\\\"\\\"\\\"\n+\n+    def __init__(self, registry_root, cwd):\n+        self._root = registry_root\n+        self._cwd = cwd\n+\n+    def _call(self, *args):\n+        return run_cli(*args, root=self._root, cwd=self._cwd)\n+\n+\n+class _RecordMutationOps:\n+    \\\"\\\"\\\"Record create/update/close, threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def create(self, payload, *, registry_root, cwd):\n+        return run_cli(\"create\", payload, root=registry_root, cwd=cwd)\n+\n+    def update(self, identifier, payload, *, registry_root, cwd):\n+        return run_cli(\"update\", identifier, payload, root=registry_root, cwd=cwd)\n+\n+    def close(self, identifier, *, registry_root, cwd):\n+        return run_cli(\"close\", identifier, root=registry_root, cwd=cwd)\n+\n+\n+class _QueueMessageOps:\n+    \\\"\\\"\\\"Queue message operations, also threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def enqueue(self, message, *, registry_root, cwd):\n+        return run_cli(\"enqueue\", message, root=registry_root, cwd=cwd)\n+\n+    def drain(self, *, registry_root, cwd):\n+        return run_cli(\"drain\", root=registry_root, cwd=cwd)\ndiff --git a/registry/worker.py b/registry/worker.py\n--- a/registry/worker.py\n+++ b/registry/worker.py\n@@ -8,8 +8,8 @@ from registry.client import (\n-    QueueMessageOps,\n-    RecordMutationOps,\n+    _QueueMessageOps,\n+    _RecordMutationOps,\n )\n \n \n def finalize(identifier, registry_root, cwd):\n-    mutations = RecordMutationOps()\n+    mutations = _RecordMutationOps()\n     mutations.close(identifier, registry_root=registry_root, cwd=cwd)\ndiff --git a/tests/test_worker.py b/tests/test_worker.py\n--- a/tests/test_worker.py\n+++ b/tests/test_worker.py\n@@ -10,2 +10,9 @@ def test_finalize_closes_the_record():\n     finalize(\"r-1\", registry_root=ROOT, cwd=CWD)\n     assert closed(\"r-1\")\n+\n+\n+def test_finalize_threads_root_and_cwd_to_the_mutation_client():\n+    calls = capture_run_cli_calls()\n+    finalize(\"r-1\", registry_root=ROOT, cwd=CWD)\n+    assert calls[-1].kwargs[\"root\"] == ROOT\n+    assert calls[-1].kwargs[\"cwd\"] == CWD\n"
+      "content": "diff --git a/registry/client.py b/registry/client.py\n--- a/registry/client.py\n+++ b/registry/client.py\n@@ -20,4 +20,12 @@ class Record:\n     identifier: str\n     status: str\n \n \n+class _QueueMessageOps:\n+    \\\"\\\"\\\"Queue message operations, threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def enqueue(self, message, *, registry_root, cwd):\n+        return run_cli(\"enqueue\", message, root=registry_root, cwd=cwd)\n+\n+    def drain(self, *, registry_root, cwd):\n+        return run_cli(\"drain\", root=registry_root, cwd=cwd)\ndiff --git a/tests/test_client.py b/tests/test_client.py\n--- a/tests/test_client.py\n+++ b/tests/test_client.py\n@@ -10,2 +10,9 @@ def test_record_mutation_ops_close_calls_run_cli():\n     ops.close(\"r-1\", registry_root=ROOT, cwd=CWD)\n     assert last_run_cli_call().kwargs[\"root\"] == ROOT\n+\n+\n+def test_queue_message_ops_enqueue_threads_root_and_cwd():\n+    ops = _QueueMessageOps()\n+    ops.enqueue({\"kind\": \"sync\"}, registry_root=ROOT, cwd=CWD)\n+    assert last_run_cli_call().kwargs[\"root\"] == ROOT\n+    assert last_run_cli_call().kwargs[\"cwd\"] == CWD\n"
     }
   },
   "change_contract": {
-    "goal": "Move a queue-message client onto typed records, following the same pattern the mutation client already uses.",
+    "goal": "Add queue message operations (enqueue, drain) to the registry client.",
     "acceptance_criteria": [
-      "Queue message operations carry typed records rather than raw dicts.",
-      "The runtime client's transport call is unaffected."
+      "Queue messages can be enqueued and drained through the registry client.",
+      "The new operations reach the registry through the existing transport."
     ],
     "non_goals": [
-      "Converge the three client concepts onto one bound client.",
+      "Change record mutation behaviour.",
       "Change the CLI transport itself."
     ],
     "preserved_behaviors": [
-      "`finalize` keeps its existing signature and behaviour."
+      "`_RecordMutationOps` and `_TransportSession` are unchanged."
     ]
   },
   "sources": {
@@ -43,16 +43,16 @@
     ],
     "nearby_patterns": [
       {
-        "label": "Runtime transport client",
-        "location": "registry/client.py"
+        "label": "Existing bound transport session",
+        "location": "registry/client.py:_TransportSession"
       },
       {
-        "label": "Worker using the mutation client",
-        "location": "registry/worker.py"
+        "label": "Existing record mutation client",
+        "location": "registry/client.py:_RecordMutationOps"
       },
       {
-        "label": "Worker tests",
-        "location": "tests/test_worker.py"
+        "label": "Client tests",
+        "location": "tests/test_client.py"
       }
     ]
   },
@@ -74,9 +74,9 @@
   ],
   "context": {
     "data": [
-      "`_RegistryRuntimeClient` is already bound to `registry_root` and `cwd` at construction and calls `run_cli` through `self._call`.",
-      "`_RegistryRecordMutationsClient` and `_RegistryQueueMessagesClient` both take `registry_root` and `cwd` as parameters on every method instead of using the already-bound runtime client.",
-      "All three classes call the same underlying `run_cli` transport function."
+      "`registry/client.py` already defines `_TransportSession`, bound to `registry_root` and `cwd` at construction, calling `run_cli` through `self._call`. This diff does not touch it.",
+      "`registry/client.py` also already defines `_RecordMutationOps`, whose `create`/`update`/`close` methods each take `registry_root` and `cwd` as parameters rather than using the already-bound transport session. This diff does not touch it either.",
+      "All client classes in this module call the same underlying `run_cli` transport function."
     ],
     "operational": [
       "Every runtime module that calls the registry constructs its own root/cwd pair from the same two configuration values."

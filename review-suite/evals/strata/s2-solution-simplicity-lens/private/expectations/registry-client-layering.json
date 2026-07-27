@@ -8,9 +8,9 @@
     {
       "id": "rc.three-client-concepts-duplicate-binding",
       "requirement": "When one caller already threads a root and working directory through every method of a client, a second client for a different operation family should converge on the client already bound to those values.",
-      "trigger": "Adding a client for a new operation family next to two existing ones that all wrap the same transport.",
+      "trigger": "Adding a client for a new operation family next to an existing one that already re-threads root and working directory, in a module that also already has a transport session bound to those exact values.",
       "surface": "_QueueMessageOps",
-      "consequence": "A third client class is added that re-threads `registry_root` and `cwd` through every method exactly as the second one does, even though the first client in the same file is already bound to both values at construction and exists specifically to avoid that repetition. Every caller of any of the three has to supply the same two values again at every call site, and a fourth operation family would repeat the pattern a third time.",
+      "consequence": "A second client class is added that re-threads `registry_root` and `cwd` through every method exactly as the existing `_RecordMutationOps` already does, even though `_TransportSession` in the same module is already bound to both values at construction and exists specifically to avoid that repetition. Every caller of either operation client has to supply the same two values again at every call site, and this diff repeats rather than corrects the pattern.",
       "severity": "blocking",
       "equivalent_formulations": [
         "a third wrapper repeats the binding the transport session already holds",

@@ -70,7 +70,7 @@
   ],
   "context": {
     "data": [
-      "Before this change, `_update_runtime_metadata_database` returned a plain `bool`, and `True` covered both a successful reconciliation and an intentional preserve-ambiguous-state no-op.",
+      "Before this change, `_apply_runtime_database_sync` returned a plain `bool`, and `True` covered both a successful reconciliation and an intentional preserve-ambiguous-state no-op.",
       "The startup caller only had the boolean to decide what to log, so an intentional block and a real failure were indistinguishable to an operator reading the log."
     ],
     "operational": [

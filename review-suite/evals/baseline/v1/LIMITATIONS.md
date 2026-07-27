@@ -501,3 +501,48 @@ no way to know what the source's vocabulary was. Curation discipline is the only
 defense until one exists: name every symbol as if writing original code for the
 fictional subject, and never carry a reviewer's sentence forward as a
 formulation without independently rephrasing it.
+
+## 22. A minimization rewrite must update every field that names the changed symbols, not only the diff
+
+The second review cycle on this batch found that the first sanitization fix
+(item 21) renamed symbols inside the diff but left two packets' `context.data`
+naming the pre-rename symbol — a function or class the diff no longer defines.
+That is a narrower defect than a leak: it makes the packet internally
+self-contradictory, independent of whether either name is real or fictional. A
+reviewer reading `context.data` would be told to look for a symbol its own diff
+had already renamed away.
+
+The same cycle also found a packet whose diff had never been consistent in the
+first place: it introduced three classes as brand-new code while a downstream
+file's hunk implied two of them already existed under different names. That
+predates the sanitization fix; renaming inside an already-incoherent diff cannot
+make it coherent.
+
+Both are now fixed: `registry-client-layering`'s case was rebuilt as a purely
+additive diff — one new class next to two explicitly pre-existing, untouched
+ones named only in context — and every context reference across the stratum was
+checked against its own diff. The general lesson: **a rename or a fix inside a
+diff must be swept across the whole packet, and a packet's diff must be checked
+for internal consistency independently of whatever sanitization or grading
+concern prompted editing it.** Neither check is mechanical today; both are
+curation discipline until a tool exists to enforce them.
+
+## 23. Naming the real source in private provenance is retention, not a leak
+
+The same review cycle raised the real source's class name (`BeadsClient`)
+appearing in a case's `retention_authority` and `adjudication.first` fields as a
+possible sanitization defect. It is not: those two fields are private,
+structurally separated from every reviewer-visible artifact, and their entire
+purpose is to record *what the real source actually was* — the PR, the comment,
+the accepted commit, and, where useful for a future audit, what that commit's
+outcome was named. Every provenance record in this corpus already cites real PR
+numbers, comment ids, and commit SHAs for exactly this reason, and this case is
+consistent with that established pattern rather than an exception to it.
+
+The sanitization rule in items 16 and 21 governs what reaches a
+**reviewer-visible artifact or a grader formulation a reviewer's payload could
+echo** — the packet, the equivalent formulations, anything `audit_corpus.py` can
+reach. It was never a rule against a private, human-facing provenance record
+describing its own real source, and applying it there would make provenance
+unable to do the one job it exists for: letting a later reader verify where a
+case actually came from.
