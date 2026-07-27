@@ -23,6 +23,12 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+# Imported for its normalisation only. The contamination audit has to judge a
+# leak by the same rule the grader uses to match one, so the two must share that
+# rule rather than each keep its own. `grader` deliberately imports nothing from
+# here, so this direction stays acyclic.
+from . import grader
+
 PROTOCOL_VERSION = "1.0"
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
@@ -277,6 +283,44 @@ def audit_request(
     for blind in blind_strings(expectation, provenance):
         if _contains(haystack, blind):
             errors.append(f"payload contains private expectation text {blind!r}")
+    errors.extend(_matchable_formulation_errors(request, expectation))
+    return errors
+
+
+def _matchable_formulation_errors(
+    request: dict[str, Any], expectation: dict[str, Any]
+) -> list[str]:
+    """Reject a root-cause formulation the grader could match from the payload.
+
+    The check above folds case and whitespace but keeps punctuation, while the
+    grader folds punctuation away entirely. That gap is not academic: a
+    formulation reading ``subprocess.run raises FileNotFoundError`` is invisible
+    to a collapse-based search of a packet saying
+    ``\\`subprocess.run\\` raises \\`FileNotFoundError\\```, and matches perfectly
+    once the grader normalises both. A case shipped in exactly that state, so a
+    reviewer could have earned full recall by quoting its own input, and the
+    escape it was built to measure would have measured nothing.
+
+    Whatever the grader treats as the same text is what decides a score, so the
+    audit has to use the grader's own definition rather than a stricter one.
+
+    Scoped to `material_root_causes` deliberately. An accepted non-finding's
+    formulation frequently does restate reviewer-visible content, and an echo
+    there only makes the grader more tolerant of an observation already judged
+    immaterial - it cannot manufacture a correct answer, which is the failure
+    this guards against.
+    """
+    payload = [grader.normalize(leaf) for leaf in _string_leaves(request)]
+    errors = []
+    for root_cause in expectation.get("material_root_causes", []):
+        for formulation in root_cause.get("equivalent_formulations", []):
+            needle = grader.normalize(formulation)
+            if needle and any(needle in leaf for leaf in payload):
+                errors.append(
+                    "payload contains text the grader would match as the accepted "
+                    f"formulation {formulation!r} for {root_cause.get('id')!r}, so a "
+                    "reviewer could earn recall by quoting the packet"
+                )
     return errors
 
 

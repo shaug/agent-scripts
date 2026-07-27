@@ -346,3 +346,36 @@ One case carries a further caveat. `process-isolation-assertion`'s first
 adjudication came from the review suite **under evaluation** — a `defer` verdict
 from the same contract being measured — which is weaker evidence than a human
 disposition and is recorded as such in its provenance.
+
+## 16. A grader formulation must not be quotable from its own packet
+
+A contamination class that the physical separation of reviewer and private
+artifacts does not cover, found by review on this corpus and now gated.
+
+The audit's text search folds case and whitespace but keeps punctuation. The
+grader folds punctuation away entirely. So a formulation reading
+`subprocess.run raises FileNotFoundError` is invisible to the audit when its
+packet says `` `subprocess.run` raises `FileNotFoundError` `` — and is a perfect
+match once the grader normalises both. **A case shipped in exactly that state**:
+the stratum's only validation-gap escape could have been answered at full recall
+by quoting its own input, so it would have measured whether a reviewer echoes
+the packet rather than whether it finds the escape.
+
+The general lesson is worth stating beyond this instance: *whatever the grader
+treats as the same text is what decides a score, so an audit that uses a
+stricter definition of "the same text" than the grader is not auditing the thing
+that matters.* The two now share one normalisation, and a regression test echoes
+a formulation into its own packet with punctuation between every word to prove
+the check survives re-wording.
+
+Scoped to `material_root_causes`. An accepted non-finding's formulation often
+does legitimately restate reviewer-visible content, and matching one only makes
+the grader more tolerant of an observation already judged immaterial — it cannot
+manufacture a correct answer. A second test pins that exemption so it is a
+decision rather than an oversight.
+
+What this does **not** cover: a packet that describes the defect in words the
+formulations do not use. No mechanical check can catch that, because the packet
+is supposed to describe the change. It is a curation judgement, and the oracle
+is the backstop — a case whose defect is spelled out in its own packet will
+still fail its oracle if the stated root cause is not the real cause.

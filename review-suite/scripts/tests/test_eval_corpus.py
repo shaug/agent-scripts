@@ -143,6 +143,55 @@ class MutatedCorpusTests(unittest.TestCase):
             f"no error mentioned {fragment!r}: {errors}",
         )
 
+    def test_a_formulation_the_grader_could_match_from_the_packet_fails(self):
+        """Punctuation must not hide a leak the grader would still match.
+
+        The plain text search folds case and whitespace but keeps punctuation,
+        while the grader folds punctuation away. A formulation echoed into its own
+        packet with backticks around it is therefore invisible to the first check
+        and a perfect match for the grader - which would let a reviewer earn full
+        recall by quoting its own input, and make the case measure nothing. A real
+        case shipped in that state before this check existed.
+        """
+        case_id = self._index()["cases"][0]
+        expectation = self._load_expectation(case_id)
+        formulation = expectation["material_root_causes"][0]["equivalent_formulations"][
+            0
+        ]
+        packet_path = self.root / "reviewer" / case_id / "packet.json"
+        packet = json.loads(packet_path.read_text())
+        # Echo it the way real prose would: emphasised, not verbatim.
+        decorated = "`" + "` `".join(formulation.split()) + "`"
+        packet.setdefault("context", {}).setdefault("data", []).append(decorated)
+        packet_path.write_text(json.dumps(packet, indent=2))
+        self.assertAuditFails("the grader would match")
+
+    def test_an_accepted_non_finding_formulation_may_restate_the_packet(self):
+        """Scoped deliberately: an echo there cannot manufacture a right answer.
+
+        An accepted non-finding often does restate reviewer-visible content, and
+        matching one only makes the grader tolerate an observation already judged
+        immaterial. Banning it would ban honest corpora for no gain.
+        """
+        formulation = None
+        for candidate in self._index()["cases"]:
+            non_findings = (
+                self._load_expectation(candidate).get("accepted_non_findings") or []
+            )
+            if non_findings:
+                case_id = candidate
+                formulation = non_findings[0]["equivalent_formulations"][0]
+                break
+        self.assertIsNotNone(
+            formulation, "no corpus case declares an accepted non-finding to probe"
+        )
+        packet_path = self.root / "reviewer" / case_id / "packet.json"
+        packet = json.loads(packet_path.read_text())
+        decorated = "`" + "` `".join(formulation.split()) + "`"
+        packet.setdefault("context", {}).setdefault("data", []).append(decorated)
+        packet_path.write_text(json.dumps(packet, indent=2))
+        self.assertEqual([], audit_corpus.audit(self.root))
+
     def test_missing_expectation_fails_before_any_launch(self):
         case_id = self._index()["cases"][0]
         self._expectation_path(case_id).unlink()

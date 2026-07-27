@@ -18,7 +18,7 @@
     },
     {
       "id": "anf.artifact-glob-not-scoped",
-      "description": "The artifact glob reads the whole directory rather than only this run's files. Worth noting; the packet scopes the directory to the run under test.",
+      "description": "The artifact glob reads a directory-wide pattern rather than only this run's files. A real observation about the test's precision, and worth saying. It is not material to either stated requirement, and the packet's contract does not claim per-run scoping, so it is tolerated rather than counted.",
       "equivalent_formulations": [
         "the glob is not scoped to this run",
         "reads every file in the artifact directory"

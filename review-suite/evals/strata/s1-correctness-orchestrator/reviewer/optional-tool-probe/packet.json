@@ -77,7 +77,7 @@
     "data": [
       "The developer machine this candidate was validated on has the task runner installed.",
       "`.github/workflows/ci.yml` installs the project's Python dependencies and does not install the task runner.",
-      "`subprocess.run` raises `FileNotFoundError`, a subclass of `OSError`, when the named executable does not exist; it does not return a non-zero status."
+      "The existing probe in `tests/test_formatter.py` is the repository's worked example of detecting an optional tool."
     ],
     "operational": [
       "CI is the only environment where the optional runner is absent, and it is the gate that must stay green."
