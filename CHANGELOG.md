@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 
+- fix: attribute the pilot to a reproducible commit and correct the records
 - feat: report the stratum a run evaluated
+  (`2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e`)
 - fix: make the frozen baseline record auditable, and measure the envelope
   (`f7787dcba681db1de079f57ce1f2f2941e0923b2`)
 - feat: add baseline strata, grader calibration, and the frozen v1 record

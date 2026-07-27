@@ -64,17 +64,19 @@ list.
 
 ### Measured envelope
 
-Five runs per case. Suite commit `16560d807c66076fcbf3f00d3a87f543c6ae2458`,
-model `claude-opus-4-6[1m]`, corpus version `1.3-pilot-*`, grader version `1.0`,
-timeout 300 s, no retries. **20 attempts, zero evaluation failures, zero
-timeouts, 1.2266 USD.**
+Five runs per case, run from the committed tree at suite commit
+`2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e` — the commit every report records,
+and the one the batch is reproducible from. Model `claude-opus-4-6[1m]`, corpus
+version `1.3-pilot-*`, grader version `1.0`, timeout 300 s, no retries, one
+fresh process per attempt. **20 attempts, zero evaluation failures, zero
+timeouts, 1.2536 USD.**
 
 | stratum                     | target                       | docs | digest             | case                         | input tokens / attempt | cold cost  | warm cost         | latency range |
 | --------------------------- | ---------------------------- | ---- | ------------------ | ---------------------------- | ---------------------- | ---------- | ----------------- | ------------- |
-| `pilot-orchestrator`        | `review-code-change`         | 8    | `9b2805f14cdd6158` | `rollback-guidance-render`   | 33,166                 | 0.1719 USD | 0.0467–0.0548 USD | 24.9–36.1 s   |
-| `pilot-orchestrator`        | `review-code-change`         | 8    | `9b2805f14cdd6158` | `status-label-normalization` | 34,144                 | 0.1943 USD | 0.0570–0.0678 USD | 39.4–53.1 s   |
-| `pilot-solution-simplicity` | `review-solution-simplicity` | 2    | `6257ee4448b15874` | `rollback-guidance-render`   | 26,482                 | 0.1118 USD | 0.0215–0.0237 USD | 9.8–12.0 s    |
-| `pilot-code-simplicity`     | `review-code-simplicity`     | 2    | `a6187d8971eaef24` | `rollback-guidance-render`   | 26,272                 | 0.1170 USD | 0.0210–0.0240 USD | 9.2–16.8 s    |
+| `pilot-orchestrator`        | `review-code-change`         | 8    | `9b2805f14cdd6158` | `rollback-guidance-render`   | 32,464                 | 0.1698 USD | 0.0519–0.0532 USD | 31.8–34.9 s   |
+| `pilot-orchestrator`        | `review-code-change`         | 8    | `9b2805f14cdd6158` | `status-label-normalization` | 33,442                 | 0.2021 USD | 0.0589–0.0684 USD | 37.7–51.2 s   |
+| `pilot-solution-simplicity` | `review-solution-simplicity` | 2    | `6257ee4448b15874` | `rollback-guidance-render`   | 25,800                 | 0.1094 USD | 0.0216–0.0238 USD | 10.4–14.2 s   |
+| `pilot-code-simplicity`     | `review-code-simplicity`     | 2    | `a6187d8971eaef24` | `rollback-guidance-render`   | 25,617                 | 0.1116 USD | 0.0245–0.0303 USD | 12.7–22.9 s   |
 
 Two measurements shape the ceiling, and both are in
 [the cost-ceiling proposal](../baseline/v1/COST-CEILING-PROPOSAL.md):
@@ -84,24 +86,25 @@ Two measurements shape the ceiling, and both are in
   built from the mean is exceeded by any run whose cache does not stay warm.
 - **Cost tracks output volume, not packet size.** The orchestrator stratum
   carries two cases specifically to measure this. The larger packet raised input
-  tokens by 2.9% and raised warm cost by 28% and mean latency by 45%, because
-  mean output grew 44% — the packet warranted more findings, and output tokens
-  dominate.
+  tokens by 3.0% and raised warm cost by 21% and warm mean latency by 22%,
+  because mean warm output grew 29% — the packet warranted more findings, and
+  output tokens dominate.
 
 Verdict stability and finding stability were 1.0 on every case at five runs, so
 five runs did not surface instability on these packets. That is a statement
 about these packets, not a licence to reduce the run count.
 
-Total pilot spend across the whole ticket: **3.3776 USD over 52 attempts** in
-five batches. Only the last, the committed configuration above, is cited as the
+Total pilot spend across the whole ticket: **4.6312 USD over 72 attempts** in
+six batches. Only the last, the committed configuration above, is cited as the
 frozen envelope; the earlier batches sized it and produced the prose the
 formulations were calibrated against.
 
 Raw output is retained outside git at
-`review-suite/evals/artifacts/<stratum>/<corpus_version>/`. The corpus version
-is in the path deliberately: an artifact is named for its case and run number
-only, so re-running a stratum into an unscoped directory silently replaced
-output a committed record already cited — which happened once, and cost the
+`review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>/`, with the
+run's per-attempt records beside it. The commit and corpus version are in the
+path deliberately: an artifact is named for its case and run number only, so
+re-running a stratum into an unscoped directory silently replaced output a
+committed record already cited — which happened once, and cost the
 calibration-source run. The runner now refuses before launching any attempt when
 a run would overwrite retained output. The exact per-stratum invocations,
 artifact paths included, are recorded in

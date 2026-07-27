@@ -26,8 +26,9 @@ Case `rollback-guidance-render`, carried identically by all three pilot strata.
 
 **Source run:** three attempts at corpus version `1.0-pilot-orchestrator`,
 target `review-code-change`, closure digest `9b2805f14cdd6158`, model
-`claude-opus-4-6[1m]`, suite commit `16560d807c66076fcbf3f00d3a87f543c6ae2458`.
-Spend: 0.2857 USD. Per-attempt latency 52.7 s, 30.4 s, 39.7 s.
+`claude-opus-4-6[1m]`. Spend: 0.2857 USD. Per-attempt latency 52.7 s, 30.4 s,
+39.7 s. It ran from an uncommitted tree, so it is cited by its corpus version
+and closure digest rather than by a commit: no commit reproduces it.
 
 > **The source run's raw output is no longer retained.** The runner names an
 > artifact `<case>.run-<n>.stdout.json` with no corpus-version component, so the
@@ -99,9 +100,10 @@ raises the point.
 
 The calibrated formulations were re-measured after calibration, on prose they
 were not fitted to. At the frozen configuration — five runs per case, corpus
-version `1.3-pilot-*`, raw output retained at
-`review-suite/evals/artifacts/pilot-orchestrator/1.3-pilot-orchestrator/` —
-`rollback-guidance-render` scored **recall 1.0, false-positive rate 0.0, zero
+version `1.3-pilot-*`, suite commit `2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e`,
+raw output retained at
+`review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator/`
+— `rollback-guidance-render` scored **recall 1.0, false-positive rate 0.0, zero
 adjudication referrals, and verdict stability 1.0 over five attempts.** The
 calibration generalised beyond the exact sentences it was drawn from. It is not
 proven to generalise indefinitely; see limitation 3 in
@@ -115,7 +117,7 @@ uncalibrated**, as a control:
 | case                         | `calibrated` | recall  | verdict stability | referrals | reviewer verdict       |
 | ---------------------------- | ------------ | ------- | ----------------- | --------- | ---------------------- |
 | `rollback-guidance-render`   | `true`       | **1.0** | 1.0               | 0         | `changes_required` × 5 |
-| `status-label-normalization` | `false`      | **0.0** | 1.0               | 9         | `changes_required` × 5 |
+| `status-label-normalization` | `false`      | **0.0** | 1.0               | 10        | `changes_required` × 5 |
 
 The uncalibrated case's reviewer gated the change on every attempt, stably, and
 the grader matched neither root cause. Two cases, ten attempts, one conclusion:
@@ -125,7 +127,7 @@ reviewer.**
 That is why the flag exists. `expectation.calibrated` is machine-readable, and a
 test refuses a scored case that is not calibrated or that ships no calibration
 set. The uncalibrated case is retained deliberately as the measured control, and
-its nine referrals are also the evidence for the adjudication disagreement
+its ten referrals are also the evidence for the adjudication disagreement
 recorded against it in [ADJUDICATION-PLAN.md](ADJUDICATION-PLAN.md).
 
 ## Calibration cases and how they are enforced

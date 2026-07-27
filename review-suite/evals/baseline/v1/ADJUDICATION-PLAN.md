@@ -38,7 +38,7 @@ pilot tested that twice on two independent cases:
   nothing. Recall 0.0 while the reviewer found the defect on every attempt.
   After calibration against observed prose, recall 1.0 over five fresh attempts.
 - `status-label-normalization`: left deliberately uncalibrated as a control.
-  Recall **0.0** over five attempts with **nine adjudication referrals**, while
+  Recall **0.0** over five attempts with **ten adjudication referrals**, while
   verdict stability was 1.0 and the reviewer gated the change every time.
 
 So a source thread cannot supply adjudication C, and a source-derived
@@ -111,13 +111,13 @@ Three things do make an acceptable second adjudication for A:
    available here and is stronger than any opinion, human or model. Where a
    minimized reproduction can be made to *run*, materiality stops being a
    judgment: the defect either reproduces as a failing check or it does not. The
-   corpus already contains a case adjudicated exactly this way — `f544aa0` in
-   this repository survived an aggregate `clean` review verdict and was then
-   caught by CI, so its second adjudication is a machine, with full provenance
-   and no retention question. Both pilot cases are mechanically checkable in
-   principle: an emitted subcommand can be compared against a registered command
-   surface, and a flag contradicting a canonical status can be asserted
-   directly.
+   [SOURCING.md](SOURCING.md) already identifies a candidate adjudicated exactly
+   this way — `f544aa0` in this repository survived an aggregate `clean` review
+   verdict and was then caught by CI, so its second adjudication is a machine,
+   with full provenance and no retention question. Both pilot cases are
+   mechanically checkable in principle: an emitted subcommand can be compared
+   against a registered command surface, and a flag contradicting a canonical
+   status can be asserted directly.
 3. **A blind context in a different model family from the evaluated stratum**,
    with the correlation limitation recorded. Weaker than the first two,
    materially better than same-family, and never sufficient on its own for a
@@ -166,7 +166,7 @@ re-verified at the source.
 | atelier PR 350, two recovery paths                             | Root cause should agree; **severity will not.** `blocking` versus `strong_recommendation` is not recoverable from the thread.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | atelier PR 410, duplicated client concepts                     | **Lens assignment, not materiality.** Whole-solution over-engineering or local reuse? That decision picks the stratum, so a disagreement here moves the case rather than resolving it.                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | All four simplicity near-miss controls (PR 417, 277, 630, 443) | **Highest expected disagreement rate.** "Requirement-justified" is a judgment with no oracle. PR 443 — per-item bullets chosen over a table for formatter stability — may not be a simplicity question at all and should probably be replaced.                                                                                                                                                                                                                                                                                                                                                          |
-| `status-label-normalization`, this corpus's pilot case         | Two root causes were authored by one context and deliberately left uncalibrated. Over five attempts the reviewer gated the change every time and the grader matched neither root cause, producing nine referrals. Whether the authored root cause or the reviewer's actual finding is the material one **is** the adjudication question, and the referrals are the evidence.                                                                                                                                                                                                                            |
+| `status-label-normalization`, this corpus's pilot case         | Two root causes were authored by one context and deliberately left uncalibrated. Over five attempts the reviewer gated the change every time and the grader matched neither root cause, producing ten referrals. Whether the authored root cause or the reviewer's actual finding is the material one **is** the adjudication question, and the referrals are the evidence.                                                                                                                                                                                                                             |
 
 ### Ambiguous source disposition — verify or drop before use
 

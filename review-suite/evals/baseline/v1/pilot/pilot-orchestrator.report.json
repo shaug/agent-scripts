@@ -6,7 +6,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "ready-flag-retained-on-inactive",
+      "finding_id": "corr.inactive-ready-retained",
       "reason": "partial",
       "run_number": 1
     },
@@ -16,7 +16,17 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "inactive-record-retains-ready-flag",
+      "finding_id": "corr.missing-dual-flag-test",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.retained-ready-flag-on-inactive-status",
+        "rc.tests-omit-the-migrating-shape"
+      ],
+      "case_id": "status-label-normalization",
+      "finding_id": "flag-ready-retained-on-inactive",
       "reason": "partial",
       "run_number": 2
     },
@@ -26,7 +36,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "missing-test-both-flags-inactive",
+      "finding_id": "no-test-for-dual-flag-inactive",
       "reason": "partial",
       "run_number": 2
     },
@@ -36,7 +46,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "correctness.inactive-ready-flag-retained",
+      "finding_id": "inactive-retains-ready-flag",
       "reason": "partial",
       "run_number": 3
     },
@@ -46,7 +56,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "correctness.missing-dual-flag-test",
+      "finding_id": "missing-dual-flag-test",
       "reason": "partial",
       "run_number": 3
     },
@@ -56,7 +66,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "ready-flag-retained-on-inactive-dual-flag",
+      "finding_id": "corr.inactive-ready-retained",
       "reason": "partial",
       "run_number": 4
     },
@@ -66,7 +76,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "missing-dual-flag-test",
+      "finding_id": "corr.missing-dual-flag-test",
       "reason": "partial",
       "run_number": 4
     },
@@ -86,7 +96,7 @@
         "rc.tests-omit-the-migrating-shape"
       ],
       "case_id": "status-label-normalization",
-      "finding_id": "missing-dual-flag-inactive-test",
+      "finding_id": "missing-dual-flag-test",
       "reason": "partial",
       "run_number": 5
     }
@@ -98,10 +108,20 @@
     "cases": 2,
     "corpus_version": "1.3-pilot-orchestrator",
     "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
     "grader_version": "1.0",
     "max_output_bytes": 4000000,
     "runs_per_case": 5,
-    "suite_commit": "16b77e447dbcc844edd8f3fb58728d96826e177c",
+    "stratum": {
+      "grading_is_signal": true,
+      "ground_truth": "human-review",
+      "id": "pilot-orchestrator",
+      "purpose": "Size the cost and latency envelope for a stratum whose target is the orchestrator, whose payload therefore carries its three required lens skills. Carries two cases of materially different packet size so the fixed cost of the closure can be separated from the variable cost of the packet. Unscored.",
+      "scored": false
+    },
+    "suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
     "target_skill": "review-code-change",
     "target_skill_dependencies": [
       "review-solution-simplicity",
@@ -134,10 +154,10 @@
   "grader_version": "1.0",
   "latency": {
     "count": 10,
-    "max_seconds": 53.09396595787257,
-    "mean_seconds": 36.91776127498597,
-    "min_seconds": 24.860583000350744,
-    "p50_seconds": 37.728567416314036
+    "max_seconds": 51.17633504094556,
+    "mean_seconds": 38.692721895687285,
+    "min_seconds": 31.838742708787322,
+    "p50_seconds": 36.32987822918221
   },
   "per_case": [
     {
@@ -222,8 +242,8 @@
     "reporting_attempts_cost_usd": 10,
     "reporting_attempts_input_tokens": 10,
     "reporting_attempts_output_tokens": 10,
-    "total_cost_usd": 0.8159675000000002,
-    "total_input_tokens": 336550.0,
-    "total_output_tokens": 15389.0
+    "total_cost_usd": 0.8376845,
+    "total_input_tokens": 329530.0,
+    "total_output_tokens": 16721.0
   }
 }

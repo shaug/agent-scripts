@@ -7,10 +7,20 @@
     "cases": 1,
     "corpus_version": "1.3-pilot-solution-simplicity",
     "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
     "grader_version": "1.0",
     "max_output_bytes": 4000000,
     "runs_per_case": 5,
-    "suite_commit": "16b77e447dbcc844edd8f3fb58728d96826e177c",
+    "stratum": {
+      "grading_is_signal": false,
+      "ground_truth": "human-review",
+      "id": "pilot-solution-simplicity",
+      "purpose": "Size the cost and latency envelope for a stratum targeting the self-sufficient solution-simplicity lens. Unscored. Its expectations were authored for the orchestrator target, so its graded output is a target-mismatch artefact and not a quality signal; only its payload size, latency, cost, and protocol outcomes are.",
+      "scored": false
+    },
+    "suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
     "target_skill": "review-solution-simplicity",
     "target_skill_dependencies": [],
     "target_skill_digest": "6257ee4448b15874",
@@ -33,10 +43,10 @@
   "grader_version": "1.0",
   "latency": {
     "count": 5,
-    "max_seconds": 12.044242959003896,
-    "mean_seconds": 10.887090650293976,
-    "min_seconds": 9.784014916978776,
-    "p50_seconds": 10.844918083399534
+    "max_seconds": 14.185639708768576,
+    "mean_seconds": 11.552183233574032,
+    "min_seconds": 10.409321167040616,
+    "p50_seconds": 11.100352916866541
   },
   "per_case": [
     {
@@ -93,8 +103,8 @@
     "reporting_attempts_cost_usd": 5,
     "reporting_attempts_input_tokens": 5,
     "reporting_attempts_output_tokens": 5,
-    "total_cost_usd": 0.201944,
-    "total_input_tokens": 132410.0,
-    "total_output_tokens": 1820.0
+    "total_cost_usd": 0.1992675,
+    "total_input_tokens": 129000.0,
+    "total_output_tokens": 1938.0
   }
 }

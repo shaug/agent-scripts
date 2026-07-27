@@ -23,7 +23,9 @@ Ground truth therefore comes from real adjudicated **human** review and from
 this suite's own delivery history. Consequences:
 
 - every stratum is labelled `human-review` or `repository-history`, never
-  `connector`, in `corpus.json` and in every report;
+  `connector`, in `corpus.json` and in every report's `configuration.stratum`,
+  which the runner copies verbatim from the corpus so a report quoted on its own
+  still states its ground truth;
 - a test asserts no shipped corpus claims `connector-review` ground truth, so
   the label cannot drift by accident; and
 - **a human-review figure must never be reported as a connector-escape figure,
@@ -202,13 +204,14 @@ caching behaviour as much as about the work done.
 Two further measurements bear on any cost figure quoted from here:
 
 - **Cost tracks output volume, not packet size.** The orchestrator stratum's
-  larger packet raised input tokens 2.9% and raised cache-read cost 28% and mean
-  latency 45%, because mean output grew 44%. A case's cost therefore depends on
-  how much a reviewer has to say about it, which tracks the number of findings
-  it warrants. A stratum's cost is not predictable from its packet sizes alone.
+  larger packet raised input tokens 3.0% and raised cache-read cost 21% and
+  cache-read latency 22%, because cache-read output grew 29%. A case's cost
+  therefore depends on how much a reviewer has to say about it, which tracks the
+  number of findings it warrants. A stratum's cost is not predictable from its
+  packet sizes alone.
 - **Reported input tokens include runtime-side prompt overhead.** The same
-  case's reported input drifted across batches — 32,507, then 32,955, then
-  33,166 — with the payload unchanged. Treat within-batch differences as
+  case's reported input drifted across batches — 32,507, 32,955, 33,166, then
+  32,464 — with the payload unchanged. Treat within-batch differences as
   measurements and absolute counts as approximate.
 
 ## 10. A stratum boundary is not a rounding difference

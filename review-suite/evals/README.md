@@ -361,12 +361,21 @@ found and what it cost to fix.
   shares a token with almost every location in a packet, and made a deliberately
   wrong gating finding an unfalsifiable partial. Write a surface as the smallest
   identifying symbol.
+
 - The shipped formulations were written before any real run and were not tuned
   afterwards, which is why recall is 0.0 above. That is the conservative
   behaviour this interface is meant to have, and it means grader calibration is
-  required before any recall number means anything. Calibrated against the
-  pilot's observed prose, the same interface scored recall 1.0 with zero false
-  positives on three fresh runs.
+  required before any recall number means anything.
+
+  The scale of it has since been measured, on this ticket's own pilot rather
+  than against the void smoke figure above, which cannot anchor a comparison.
+  Two cases in one 20-attempt batch, differing only in whether their
+  formulations had ever been confronted with real prose: the calibrated case
+  scored recall 1.0 over five attempts with zero false positives and zero
+  referrals, and the deliberately uncalibrated one scored recall 0.0 over five
+  attempts with ten referrals, while the reviewer gated the change every time in
+  both. An uncalibrated expectation reports a number about itself.
+
 - Completeness of the evaluated skill closure is load-bearing, not incidental.
   Earlier revisions omitted first the orchestration protocol and then the three
   lens skills that `review-code-change` requires; each omission changed observed
@@ -374,10 +383,12 @@ found and what it cost to fix.
   carries is a change to what is being measured, and starts a new stratum. Every
   run records its closure's membership and digest so a stratum can state what it
   evaluated.
+
 - The choice of scored target, the strata to compare, and the cost envelope to
   preregister all follow from that closure and are deliberately left open. Size
   the envelope from a preregistered run of the chosen closure; do not
   extrapolate it from the protocol smoke run above.
+
 - `expectation.schema.json` requires a `severity` on every root cause that no
   metric currently consumes. Either score severity agreement or drop the
   requirement; do not assume it is being measured.

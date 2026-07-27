@@ -4,11 +4,17 @@ These three reports establish executor compatibility, timeout behaviour, and a
 cost and latency envelope **per stratum**. They are not a baseline. No scored
 case exists yet, and nothing here measures reviewer quality across a corpus.
 
-Five runs per case. Suite commit `16560d807c66076fcbf3f00d3a87f543c6ae2458`,
-model `claude-opus-4-6[1m]`, corpus version `1.3-pilot-*`, grader version `1.0`,
-timeout 300 s, no retries, one fresh process per attempt. **20 attempts, zero
-evaluation failures, zero timeouts, 1.2266 USD.** Raw output is retained outside
-git at `review-suite/evals/artifacts/<stratum>/1.3-<stratum>/`.
+Five runs per case, run from the committed tree at suite commit
+`2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e` — the commit every report records,
+and the one the batch is reproducible from. Model `claude-opus-4-6[1m]`, corpus
+version `1.3-pilot-*`, grader version `1.0`, timeout 300 s, no retries, one
+fresh process per attempt. **20 attempts, zero evaluation failures, zero
+timeouts, 1.2536 USD.**
+
+Raw output and the run's per-attempt records are retained outside git at
+`review-suite/evals/artifacts/<stratum>/2ae0d23-1.3-<stratum>/` and
+`.../2ae0d23-1.3-<stratum>.attempts.jsonl`. Every per-attempt figure quoted
+anywhere in this directory is re-derivable from those records.
 
 ## Before reading any recall number, read the case's `calibrated` flag
 
@@ -19,7 +25,7 @@ respect, and the contrast is the most useful thing in this directory:
 | case                         | `calibrated` | recall over 5 attempts | verdict stability | referrals | what it means                                                                                                                |
 | ---------------------------- | ------------ | ---------------------- | ----------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `rollback-guidance-render`   | `true`       | **1.0**                | 1.0               | 0         | Formulations pinned to prose a real reviewer wrote. The grader recognises the finding every time.                            |
-| `status-label-normalization` | `false`      | **0.0**                | 1.0               | 9         | Deliberately uncalibrated control. The reviewer gated the change on every attempt and the grader matched neither root cause. |
+| `status-label-normalization` | `false`      | **0.0**                | 1.0               | 10        | Deliberately uncalibrated control. The reviewer gated the change on every attempt and the grader matched neither root cause. |
 
 The aggregate `material_finding_recall: 0.5` in `pilot-orchestrator.report.json`
 is the mean of those two. **It is not a capability figure.** It is the measured

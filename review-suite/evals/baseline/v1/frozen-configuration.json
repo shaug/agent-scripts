@@ -2,7 +2,10 @@
   "record_version": "1.0",
   "status": "incomplete_pending_owner_preregistration",
   "status_detail": "Every value an implementing run can fix is fixed below. Two values cannot come from an implementing context and are therefore null: the per-stratum cost ceiling, which must be preregistered by the repository owner before any scored output is examined because a scored run spends real money, and the independent adjudication of each private expectation, which one context cannot supply both sides of. No scored run may launch until both are present. Freezing everything else now is what makes the remaining inputs a decision rather than a negotiation.",
-  "suite_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+  "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+  "v1_review_behaviour_commit_note": "The pre-v2 review-suite commit whose behaviour a scored baseline must evaluate. This candidate modifies no file under skills/ and no v1 contract, so the evaluated closure text is identical at every commit on this branch: all three closure digests recorded below and in every pilot report are unchanged from this commit. The digest, not the commit, is the load-bearing pin - a commit can move without the evaluated text changing, and the evaluated text cannot change without the digest moving.",
+  "pilot_suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
+  "pilot_suite_commit_note": "The commit the committed pilot reports record, and the tree the recorded pilot batch actually ran from. The corpora it evaluated are present at that commit, so the batch is reproducible from it. Later commits on this branch change records only and leave every payload byte-identical. Earlier superseded batches ran from uncommitted trees and are cited by their corpus version and closure digest rather than by a commit, because no commit reproduces them.",
   "protocol_version": "1.0",
   "grader_version": "1.0",
   "calibration_version": "1.0",
@@ -18,16 +21,16 @@
   },
   "execution": {
     "runs_per_case": 5,
-    "runs_per_case_rationale": "A denominator of one cannot measure a stochastic reviewer, and this suite has already observed the same configuration return `blocked` on one attempt and a merge verdict on the next for the case that tests refusal on incomplete evidence. Five is the smallest count that makes a per-case verdict-stability figure mean anything. Measured at five runs per case over 20 attempts, the pilot observed verdict stability 1.0 and finding stability 1.0 on every case, so five did not surface instability on these packets - which is a statement about these packets, not a licence to reduce the count. The instability #50 observed was on a refusal-on-incomplete-evidence case, a class no scored stratum here contains.",
+    "runs_per_case_rationale": "A denominator of one cannot measure a stochastic reviewer, and this suite has already observed the same configuration return `blocked` on one attempt and a merge verdict on the next for the case that tests refusal on incomplete evidence. Five is the smallest count that makes a per-case verdict-stability figure mean anything. Measured at five runs per case, the pilot observed verdict stability 1.0 and finding stability 1.0 on every case, so five did not surface instability on these packets - a statement about these packets, not a licence to reduce the count. The instability #50 observed was on a refusal-on-incomplete-evidence case, a class no scored stratum here contains.",
     "timeout_seconds": 300,
-    "timeout_rationale": "Worst latency in any committed pilot report is 53.1 s, on the orchestrator stratum's larger packet. The slowest attempt observed at any point across this ticket's 52 pilot attempts was 55.4 s, also on that packet. 300 s is roughly 5.4 times the worst observed, which absorbs a slow attempt without letting a hung process run unbounded. No pilot attempt timed out, and no attempt came within a factor of five of the limit.",
+    "timeout_rationale": "Worst latency in any committed pilot report is 51.2 s, on the orchestrator stratum's larger packet. The slowest attempt observed at any point across this ticket's 72 pilot attempts was 55.4 s, also on that packet. 300 s is roughly 5.4 times the worst observed. No pilot attempt timed out and none came within a factor of five of the limit.",
     "retry_policy": "none",
     "retry_policy_rationale": "A failed attempt is recorded as an evaluation failure and never retried. Retrying would silently replace an unstable attempt with a luckier one and would bias every stability figure toward agreement.",
     "max_output_bytes": 4000000,
     "process_isolation": "one fresh executor process per attempt",
     "cost_ceiling_exhaustion_policy": "Exceeding a stratum's preregistered ceiling stops further runs in that stratum and records an incomplete baseline for it. Repetitions are never reduced after outputs are visible.",
-    "artifact_retention": "Raw executor output is retained outside git at review-suite/evals/artifacts/<stratum>/<corpus_version>/<case>.run-<n>.stdout.json. The corpus version is in the path deliberately: an artifact name carries only the case and run number, so re-running a stratum into an unscoped directory silently replaces output that a committed record may already cite, which happened once and cost a calibration source run. The runner now refuses before launching any attempt when a run would overwrite retained output, so the failure costs nothing.",
-    "invocation_template": "just eval-review-suite '<executor command>' --corpus review-suite/evals/strata/<stratum> --runs <runs> --timeout <timeout> --artifact-dir review-suite/evals/artifacts/<stratum>/<corpus_version> --attempts-out <path> --report-out <path>",
+    "artifact_retention": "Raw executor output is retained outside git at review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>/<case>.run-<n>.stdout.json, with the run's per-attempt records beside it at <stratum>/<commit>-<corpus_version>.attempts.jsonl. The commit and corpus version are in the path deliberately: an artifact name carries only the case and run number, so re-running a stratum into an unscoped directory silently replaces output a committed record may already cite, which happened once and cost a calibration source run. The runner now refuses before launching any attempt when a run would overwrite retained output, so the failure costs nothing.",
+    "invocation_template": "just eval-review-suite '<executor command>' --corpus review-suite/evals/strata/<stratum> --runs <runs> --timeout <timeout> --artifact-dir review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>.attempts.jsonl --report-out <path>",
     "invocation_note": "The recipe forwards extra arguments to the runner. Naming an executor alone is not the frozen configuration: --corpus defaults to the protocol-proof corpus and --runs to 1, so the abbreviated command silently evaluates a different corpus once."
   },
   "strata": [
@@ -53,11 +56,13 @@
       ],
       "envelope_source": "pilot-orchestrator",
       "cost_ceiling_usd": null,
-      "cost_ceiling_proposal_usd": 8.0,
-      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s1-correctness-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s1-correctness-orchestrator/<corpus_version> --attempts-out <out>/s1-correctness-orchestrator.attempts.jsonl --report-out review-suite/evals/baseline/v1/s1-correctness-orchestrator.report.json",
+      "cost_ceiling_proposal_usd": 9.0,
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s1-correctness-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s1-correctness-orchestrator.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
-      "expected_spend_usd": 3.26,
-      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one."
+      "expected_spend_usd": 3.33,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.2021,
+      "all_cold_worst_case_usd": 7.07
     },
     {
       "id": "s2-solution-simplicity-lens",
@@ -75,10 +80,12 @@
       "envelope_source": "pilot-solution-simplicity",
       "cost_ceiling_usd": null,
       "cost_ceiling_proposal_usd": 3.0,
-      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s2-solution-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s2-solution-simplicity-lens/<corpus_version> --attempts-out <out>/s2-solution-simplicity-lens.attempts.jsonl --report-out review-suite/evals/baseline/v1/s2-solution-simplicity-lens.report.json",
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s2-solution-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s2-solution-simplicity-lens.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
-      "expected_spend_usd": 0.83,
-      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one."
+      "expected_spend_usd": 0.82,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.1094,
+      "all_cold_worst_case_usd": 2.19
     },
     {
       "id": "s3-code-simplicity-lens",
@@ -96,10 +103,12 @@
       "envelope_source": "pilot-code-simplicity",
       "cost_ceiling_usd": null,
       "cost_ceiling_proposal_usd": 3.0,
-      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s3-code-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s3-code-simplicity-lens/<corpus_version> --attempts-out <out>/s3-code-simplicity-lens.attempts.jsonl --report-out review-suite/evals/baseline/v1/s3-code-simplicity-lens.report.json",
+      "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s3-code-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s3-code-simplicity-lens.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
-      "expected_spend_usd": 0.85,
-      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one."
+      "expected_spend_usd": 0.93,
+      "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
+      "worst_observed_cold_cost_per_attempt_usd": 0.1116,
+      "all_cold_worst_case_usd": 2.23
     },
     {
       "id": "connector-escape",
@@ -151,31 +160,35 @@
       "report": "pilot/pilot-orchestrator.report.json",
       "stratum": "pilot-orchestrator",
       "quality_block_is_signal": true,
-      "retained_artifacts": "review-suite/evals/artifacts/pilot-orchestrator/1.3-pilot-orchestrator/",
-      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-orchestrator/1.3-pilot-orchestrator --report-out review-suite/evals/baseline/v1/pilot/pilot-orchestrator.report.json",
-      "quality_block_caveat": "The aggregate recall of 0.5 is the mean of two cases that differ in one respect only: rollback-guidance-render is calibrated and scored recall 1.0 on all five attempts, while status-label-normalization is deliberately left uncalibrated as a control and scored recall 0.0 on all five, with nine adjudication referrals, while the reviewer gated the change every time. Do not read 0.5 as a capability figure; read the per-case block, and read each case's expectation `calibrated` flag first."
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator --attempts-out review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-orchestrator.report.json",
+      "quality_block_caveat": "The aggregate recall of 0.5 is the mean of two cases that differ in one respect only: rollback-guidance-render is calibrated and scored recall 1.0 on all five attempts, while status-label-normalization is deliberately left uncalibrated as a control and scored recall 0.0 on all five, with ten adjudication referrals, while the reviewer gated the change every time. Do not read 0.5 as a capability figure; read the per-case block, and read each case's expectation `calibrated` flag first.",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-orchestrator/2ae0d23-1.3-pilot-orchestrator.attempts.jsonl"
     },
     {
       "report": "pilot/pilot-solution-simplicity.report.json",
       "stratum": "pilot-solution-simplicity",
       "quality_block_is_signal": false,
       "quality_block_caveat": "DO NOT QUOTE this report's material_finding_recall (0.0) or false_clean_rate (1.0) as a reviewer quality figure. This corpus carries the orchestrator stratum's case byte for byte, so that the declared skill closure is the only variable between pilot strata, and the expectation is a correctness root cause authored for that target. A simplicity lens returning clean on a correctness defect is behaving exactly as its contract requires, so the recorded miss is a target mismatch, not a reviewer failure. The corpus declares stratum.grading_is_signal false for this reason. Only payload size, latency, cost, and protocol outcomes are signals here.",
-      "retained_artifacts": "review-suite/evals/artifacts/pilot-solution-simplicity/1.3-pilot-solution-simplicity/",
-      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-solution-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-solution-simplicity/1.3-pilot-solution-simplicity --report-out review-suite/evals/baseline/v1/pilot/pilot-solution-simplicity.report.json"
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-solution-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity --attempts-out review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-solution-simplicity.report.json",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-solution-simplicity/2ae0d23-1.3-pilot-solution-simplicity.attempts.jsonl"
     },
     {
       "report": "pilot/pilot-code-simplicity.report.json",
       "stratum": "pilot-code-simplicity",
       "quality_block_is_signal": false,
       "quality_block_caveat": "DO NOT QUOTE this report's material_finding_recall (0.0) or false_clean_rate (1.0) as a reviewer quality figure. This corpus carries the orchestrator stratum's case byte for byte, so that the declared skill closure is the only variable between pilot strata, and the expectation is a correctness root cause authored for that target. A simplicity lens returning clean on a correctness defect is behaving exactly as its contract requires, so the recorded miss is a target mismatch, not a reviewer failure. The corpus declares stratum.grading_is_signal false for this reason. Only payload size, latency, cost, and protocol outcomes are signals here.",
-      "retained_artifacts": "review-suite/evals/artifacts/pilot-code-simplicity/1.3-pilot-code-simplicity/",
-      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-code-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-code-simplicity/1.3-pilot-code-simplicity --report-out review-suite/evals/baseline/v1/pilot/pilot-code-simplicity.report.json"
+      "retained_artifacts": "review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity/",
+      "invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/pilot-code-simplicity --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity --attempts-out review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity.attempts.jsonl --report-out review-suite/evals/baseline/v1/pilot/pilot-code-simplicity.report.json",
+      "retained_per_attempt_records": "review-suite/evals/artifacts/pilot-code-simplicity/2ae0d23-1.3-pilot-code-simplicity.attempts.jsonl"
     }
   ],
   "controlled_artifacts": {
-    "location": "review-suite/evals/artifacts/<stratum>/<case>.run-<n>.stdout.json",
+    "raw_output": "review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>/<case>.run-<n>.stdout.json",
+    "per_attempt_records": "review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>.attempts.jsonl",
     "in_git": false,
-    "detail": "Raw executor output is retained outside git by the repository's existing ignore rule. The committed compact reports carry every metric, denominator, and identity a consumer needs; the raw transcripts are referenced by that path identity for anyone re-deriving a figure."
+    "detail": "The committed compact reports carry every metric, denominator, and identity a consumer needs. The retained per-attempt records are what a per-attempt figure quoted from a record - a single attempt's cost, token count, or latency - is re-derived from, and they are referenced by the path identity above."
   },
   "baseline_limitations_record": "LIMITATIONS.md",
   "adjudication_plan": "ADJUDICATION-PLAN.md"
