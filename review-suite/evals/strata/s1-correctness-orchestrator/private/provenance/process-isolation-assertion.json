@@ -4,6 +4,11 @@
   "origin": "repository_history",
   "retention_authority": "This repository's own delivery history. The finding was raised by a real `review-code-change` run during #50 and dispositioned `defer` under the review contract, then preserved rather than applied. It is recorded verbatim in the merged body of pull request 61, item 4 of the deferred list. Public, owner-authored, no retention question.",
   "sanitization": "Rewritten against a fictional harness rather than the real evaluator, so the case cannot be recognised as, or confused with, this repository's own test suite. The failure shape is retained exactly: a test named for process freshness that asserts a stable executor identity, in a suite that cannot observe a process identifier. Nothing private is involved.",
+  "adjudication": {
+    "first": "A real `review-code-change` run during #50 dispositioned this `defer`; it is item 4 of the preserved deferred list in the merged body of pull request 61.",
+    "second": "oracle",
+    "notes": "The first adjudication came from the review suite under evaluation, not from a human. An adjudicator must weigh that correlation: a `defer` from the same contract being measured is weaker evidence than a human disposition. The oracle is independent of it, but it can only adjudicate that the stated requirements hold - it cannot adjudicate whether the test's name overstates them, which is a judgement about prose."
+  },
   "recorded_at": "2026-07-27",
   "notes": "NEGATIVE CONTROL, deferred-as-immaterial disposition, and the only case whose first adjudication was produced by the review suite under evaluation rather than by a human. Recorded as such because that is a correlation an adjudicator must weigh: the disposition came from the same contract being measured. The rejected concern is recorded as anf.name-asserts-identity-not-freshness."
 }

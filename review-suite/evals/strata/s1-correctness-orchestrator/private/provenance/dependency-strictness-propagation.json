@@ -4,6 +4,10 @@
   "origin": "minimized_reproduction",
   "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 335, review comment 2867594627, authored by the repository owner and accepted in the reply naming implementing commit 5cb0333. Public source, owner-authored review, no third-party or customer material.",
   "sanitization": "Rewritten from scratch against a fictional record pipeline. Retains only the failure shape: a decision helper gains a strict mode, one of its two callers adopts it, and the untouched sibling caller keeps deciding the same question permissively. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 335 review comment 2867594627, accepted in commit 5cb0333.",
+    "second": "oracle"
+  },
   "recorded_at": "2026-07-27",
   "notes": "Multi-file case: the defect is only visible by reading a caller the diff does not touch. Second adjudication is available by oracle."
 }

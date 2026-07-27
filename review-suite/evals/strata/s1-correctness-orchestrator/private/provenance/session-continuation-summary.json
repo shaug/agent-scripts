@@ -4,6 +4,11 @@
   "origin": "minimized_reproduction",
   "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 486, review comment 2881737041, authored by the repository owner. Public source, owner-authored review, no third-party or customer material.",
   "sanitization": "Rewritten from scratch against a fictional worker. Retains only the shape of the adjudicated exchange: a summary flag that reads as a claim about behaviour is deliberately kept because it is the loop-continuation signal, and the reporting is corrected instead. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 486 review comment 2881737041, declined on the merits: the flag was kept and only the operator wording changed.",
+    "second": "oracle",
+    "notes": "The oracle adjudicates that the stated contract holds. It does not, and cannot, adjudicate the reviewer's aesthetic objection to the flag's name."
+  },
   "recorded_at": "2026-07-27",
   "notes": "CLEAN CONTROL under the owner's settled standard: cleanliness rests on an adjudicated-rejected finding, not on absence of comment. The reviewer asked for `started=True` to change; the owner declined on the merits - the flag preserves loop continuation - and fixed only the operator-facing wording. The rejected concern is recorded as anf.started-true-without-an-agent so a non-gating mention is tolerated while gating on it is charged a false alarm. Multi-file case: the disposition only makes sense by reading the untouched loop that consumes the flag."
 }
