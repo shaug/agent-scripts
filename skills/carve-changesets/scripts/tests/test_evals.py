@@ -100,6 +100,9 @@ class ForwardEvaluationTests(unittest.TestCase):
             "publish-with-merge-withheld",
             "refuse-dirty-source",
             "refuse-source-behind-base",
+            "recover-successor-suffix",
+            "reject-conflicting-successor-lineage",
+            "reject-original-source-mutation",
         }
         self.assertEqual(expected_ids, {case["id"] for case in self.cases})
         for case in self.cases:
@@ -160,10 +163,11 @@ class ForwardEvaluationTests(unittest.TestCase):
                 expected["case_id"],
             )
 
-    def test_integration_self_test_migrates_both_prompt_cases(self) -> None:
+    def test_integration_self_test_covers_baseline_and_successor_recovery(self) -> None:
         cases = json.loads(RUNNER.DEFAULT_INTEGRATION_CASES.read_text())
         self.assertEqual(
-            {"chain-basic", "chain-compare"}, {case["id"] for case in cases}
+            {"chain-basic", "chain-compare", "successor-recovery-metadata"},
+            {case["id"] for case in cases},
         )
         results = RUNNER.evaluate_integration(
             RUNNER.DEFAULT_INTEGRATION_CASES,
@@ -173,6 +177,7 @@ class ForwardEvaluationTests(unittest.TestCase):
         for result in results.values():
             self.assertIn("equivalence", result["checks"])
             self.assertIn("validate_chain", result["checks"])
+            self.assertIn("successor_recovery_metadata", result["checks"])
 
     def test_runner_has_no_agent_cli_specific_dependency(self) -> None:
         runner_source = RUNNER_PATH.read_text()

@@ -42,7 +42,30 @@ def action_result(payload: dict) -> dict:
     actions: list[str]
     terminal_state: str
 
-    if "dirty" in state:
+    if "mutates the original immutable source" in state:
+        terminal_state = "blocked"
+        actions = [
+            "reject_original_source_mutation",
+            "require_distinct_successor_source",
+        ]
+    elif "missing and conflicting lineage" in state:
+        terminal_state = "blocked"
+        actions = [
+            "preserve_partial_chain",
+            "reject_conflicting_lineage",
+            "reject_unexpected_suffix_head",
+        ]
+    elif "distinct immutable successor source" in state:
+        terminal_state = "all_merged"
+        actions = [
+            "create_successor_lineage",
+            "invalidate_candidate_evidence",
+            "recover_owned_suffix_with_exact_lease",
+            "rehandoff_babysit_pr",
+            "verify_merged_prefix",
+            "verify_successor_equivalence",
+        ]
+    elif "dirty" in state:
         terminal_state = "blocked"
         actions = ["diagnose_dirty_tree", "refuse_dirty_source"]
     elif "behind base" in state and "two-part override" not in state:

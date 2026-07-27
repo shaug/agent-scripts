@@ -6,8 +6,19 @@ import unittest
 from pathlib import Path
 
 import helpers
-from metadata import ChangesetMetadata, embed_pr_metadata, stamp_commit_message
-from rehydrate import PullRequestRecord, RehydrationError, rehydrate_chain
+from metadata import (
+    ChangesetMetadata,
+    SourceIdentity,
+    embed_pr_metadata,
+    stamp_commit_message,
+)
+from rehydrate import (
+    ChangesetRecord,
+    PullRequestRecord,
+    RehydrationError,
+    _validate_recovery_transition,
+    rehydrate_chain,
+)
 from status import status_from_live
 
 
@@ -222,6 +233,200 @@ class RehydrationTests(unittest.TestCase):
         with self.assertRaisesRegex(RehydrationError, "uses a fork head"):
             rehydrate_chain(
                 source_branch="feature/report", pull_requests=forked, cwd=clone
+            )
+
+    def test_rehydrates_merged_v1_prefix_and_recovered_v2_suffix(self) -> None:
+        heads, prs = self._materialize()
+        successor = SourceIdentity("feature/report-corrected", "c" * 40)
+        recovered = ChangesetMetadata(
+            slug="part-2",
+            index=2,
+            source_branch=successor.branch,
+            source_sha=successor.sha,
+            source_lineage=(
+                SourceIdentity("feature/report", self.source_sha),
+                successor,
+            ),
+            recovery_from_head=heads[2],
+        )
+        helpers.run(self.repo, "git", "checkout", "feature/report-2")
+        helpers.run(
+            self.repo,
+            "git",
+            "commit",
+            "--amend",
+            "-F",
+            "-",
+            input_text=stamp_commit_message("feat: changeset 2", recovered),
+        )
+        recovered_head = helpers.run(self.repo, "git", "rev-parse", "HEAD")
+        helpers.run(
+            self.repo,
+            "git",
+            "push",
+            "--force-with-lease",
+            "origin",
+            "feature/report-2",
+        )
+        prs[1] = PullRequestRecord(
+            **{
+                **prs[1].__dict__,
+                "head_sha": recovered_head,
+                "body": embed_pr_metadata(prs[1].body, recovered),
+            }
+        )
+        clone = self._fresh_clone()
+
+        chain = rehydrate_chain(
+            source_branch="feature/report", pull_requests=prs, cwd=clone
+        )
+
+        self.assertEqual(self.source_sha, chain.root_source_sha)
+        self.assertEqual(successor.sha, chain.source_sha)
+        self.assertEqual(
+            ("feature/report", "feature/report-corrected"),
+            tuple(identity.branch for identity in chain.source_lineage),
+        )
+
+    def test_recovery_rejects_conflicting_v2_pr_provenance(self) -> None:
+        heads, prs = self._materialize()
+        successor = SourceIdentity("feature/report-corrected", "c" * 40)
+        lineage = (SourceIdentity("feature/report", self.source_sha), successor)
+        recovered = ChangesetMetadata(
+            "part-2",
+            2,
+            successor.branch,
+            successor.sha,
+            lineage,
+            heads[2],
+        )
+        conflicting = ChangesetMetadata(
+            "part-2",
+            2,
+            successor.branch,
+            successor.sha,
+            lineage,
+            "d" * 40,
+        )
+        helpers.run(self.repo, "git", "checkout", "feature/report-2")
+        helpers.run(
+            self.repo,
+            "git",
+            "commit",
+            "--amend",
+            "-F",
+            "-",
+            input_text=stamp_commit_message("feat: changeset 2", recovered),
+        )
+        recovered_head = helpers.run(self.repo, "git", "rev-parse", "HEAD")
+        helpers.run(
+            self.repo,
+            "git",
+            "push",
+            "--force-with-lease",
+            "origin",
+            "feature/report-2",
+        )
+        prs[1] = PullRequestRecord(
+            **{
+                **prs[1].__dict__,
+                "head_sha": recovered_head,
+                "body": embed_pr_metadata(prs[1].body, conflicting),
+            }
+        )
+
+        with self.assertRaisesRegex(
+            RehydrationError, "conflicting recovered provenance"
+        ):
+            rehydrate_chain(
+                source_branch="feature/report",
+                pull_requests=prs,
+                cwd=self._fresh_clone(),
+                recovery_successor=successor,
+            )
+
+    def test_recovery_rejects_a_recovered_head_after_an_old_suffix_head(self) -> None:
+        root = SourceIdentity("feature/report", self.source_sha)
+        successor = SourceIdentity("feature/report-corrected", "c" * 40)
+        first = ChangesetMetadata("part-1", 1, root.branch, root.sha)
+        second = ChangesetMetadata("part-2", 2, root.branch, root.sha)
+        third = ChangesetMetadata(
+            "part-3",
+            3,
+            successor.branch,
+            successor.sha,
+            (root, successor),
+            "3" * 40,
+        )
+        records = (
+            ChangesetRecord(first, "feature/report-1", "1" * 40, "main", 1, "MERGED"),
+            ChangesetRecord(
+                second,
+                "feature/report-2",
+                "2" * 40,
+                "feature/report-1",
+                2,
+                "OPEN",
+            ),
+            ChangesetRecord(
+                third,
+                "feature/report-3",
+                "4" * 40,
+                "feature/report-2",
+                3,
+                "OPEN",
+            ),
+        )
+
+        with self.assertRaisesRegex(RehydrationError, "leading prefix"):
+            _validate_recovery_transition(records, successor)
+
+    def test_rejects_discontinuous_successor_lineage(self) -> None:
+        heads, prs = self._materialize()
+        lineage = (
+            SourceIdentity("feature/report", self.source_sha),
+            SourceIdentity("feature/skipped", "b" * 40),
+            SourceIdentity("feature/report-corrected", "c" * 40),
+        )
+        invalid = ChangesetMetadata(
+            "part-2",
+            2,
+            lineage[-1].branch,
+            lineage[-1].sha,
+            lineage,
+            heads[2],
+        )
+        helpers.run(self.repo, "git", "checkout", "feature/report-2")
+        helpers.run(
+            self.repo,
+            "git",
+            "commit",
+            "--amend",
+            "-F",
+            "-",
+            input_text=stamp_commit_message("feat: changeset 2", invalid),
+        )
+        invalid_head = helpers.run(self.repo, "git", "rev-parse", "HEAD")
+        helpers.run(
+            self.repo,
+            "git",
+            "push",
+            "--force-with-lease",
+            "origin",
+            "feature/report-2",
+        )
+        prs[1] = PullRequestRecord(
+            **{
+                **prs[1].__dict__,
+                "head_sha": invalid_head,
+                "body": embed_pr_metadata(prs[1].body, invalid),
+            }
+        )
+        clone = self._fresh_clone()
+
+        with self.assertRaisesRegex(RehydrationError, "discontinuous"):
+            rehydrate_chain(
+                source_branch="feature/report", pull_requests=prs, cwd=clone
             )
 
 

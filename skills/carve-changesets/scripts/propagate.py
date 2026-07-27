@@ -62,6 +62,7 @@ def push_changeset_branch(
     remote: str,
     dry_run: bool,
     expected_remote_head: str | None = None,
+    local_ref: str | None = None,
 ) -> None:
     current = remote_branch_head(remote, branch)
     if expected_remote_head is not None and current != expected_remote_head:
@@ -71,7 +72,8 @@ def push_changeset_branch(
         )
     expected = expected_remote_head if expected_remote_head is not None else current
     lease = f"--force-with-lease=refs/heads/{branch}:{expected or ''}"
-    refspec = f"refs/heads/{branch}:refs/heads/{branch}"
+    source_ref = local_ref or branch
+    refspec = f"refs/heads/{source_ref}:refs/heads/{branch}"
     command = ("git", "push", remote, refspec, lease)
     print(f"[STEP] Pushing changeset branch {branch} to {remote} with an exact lease")
     if dry_run:

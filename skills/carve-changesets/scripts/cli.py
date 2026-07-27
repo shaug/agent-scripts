@@ -23,6 +23,7 @@ from patch_apply import build_diff
 from plan_checks import strict_apply_check, validate_plan_strict
 from preflight import preflight
 from propagate import merge_propagate_from_live, propagate_from_live, push_chain
+from recovery import recover_suffix_from_live
 from rehydrate import RehydrationError, discover_changeset_heads, rehydrate_chain
 from squash_check import squash_check
 from squash_ref import _resolve_base_source, create_squashed_ref
@@ -45,6 +46,7 @@ COMMAND_MUTATION_CLASSES = {
     "push-chain": REMOTE_MUTATING,
     "propagate": REMOTE_MUTATING,
     "merge-propagate": REMOTE_MUTATING,
+    "recover-suffix": REMOTE_MUTATING,
     "db-compare": LOCAL_MUTATING,
     "hunk-preview": READ_ONLY,
     "squash-ref": LOCAL_MUTATING,
@@ -239,6 +241,19 @@ def cmd_merge_propagate(args: argparse.Namespace) -> None:
         remote=args.remote,
         dry_run=args.dry_run,
         authority_acknowledged=args.ack_merge_and_propagate,
+    )
+
+
+def cmd_recover_suffix(args: argparse.Namespace) -> None:
+    recover_suffix_from_live(
+        source=args.source,
+        base=args.base,
+        from_index=args.from_index,
+        successor_branch=args.successor_source,
+        successor_sha=args.successor_sha,
+        remote=args.remote,
+        dry_run=args.dry_run,
+        authority_acknowledged=args.ack_suffix_recovery,
     )
 
 
@@ -453,6 +468,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--method", choices=("merge", "squash", "rebase"), default="merge"
     )
     item.set_defaults(func=cmd_merge_propagate)
+
+    item = _command(
+        sub,
+        "recover-suffix",
+        "Restamp an owned unmerged suffix onto an immutable successor source.",
+    )
+    item.add_argument("--source", required=True, help="Original chain-root source")
+    item.add_argument("--base", required=True, help="Current mainline base branch")
+    item.add_argument(
+        "--from-index", type=int, required=True, help="First unmerged changeset index"
+    )
+    item.add_argument(
+        "--successor-source", required=True, help="Immutable successor source branch"
+    )
+    item.add_argument(
+        "--successor-sha", required=True, help="Exact immutable successor commit SHA"
+    )
+    item.add_argument("--remote", default="origin")
+    item.add_argument(
+        "--ack-suffix-recovery",
+        action="store_true",
+        help="Acknowledge explicit suffix-recovery authority",
+    )
+    _add_remote_dry_run(item)
+    item.set_defaults(func=cmd_recover_suffix)
 
     item = _command(sub, "db-compare", "Compare source and chain database schemas.")
     _add_plan(item)

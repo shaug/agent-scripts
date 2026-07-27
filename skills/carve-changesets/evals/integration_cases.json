@@ -26,5 +26,20 @@
       "equivalence",
       "validate_chain"
     ]
+  },
+  {
+    "id": "successor-recovery-metadata",
+    "request": "Prove that a corrected immutable source can restamp only the remaining suffix while preserving its materialized identity.",
+    "auto_create_chain": true,
+    "objective_checks": [
+      "clean_tree",
+      "plan_valid",
+      "source_hash_unchanged",
+      "create_chain",
+      "chain_exists",
+      "equivalence",
+      "validate_chain",
+      "successor_recovery_metadata"
+    ]
   }
 ]

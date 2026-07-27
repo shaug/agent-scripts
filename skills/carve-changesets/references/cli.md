@@ -23,6 +23,7 @@ validation commands the user has separately approved.
 | `pr-create`       | remote-mutating | Create one or all correctly based changeset PRs and verify exact candidates.                                 |
 | `propagate`       | remote-mutating | Verify an already merged PR and rewrite only its downstream suffix.                                          |
 | `merge-propagate` | remote-mutating | Directly merge one exact PR, verify mainline, then propagate its suffix.                                     |
+| `recover-suffix`  | remote-mutating | Restamp an exact owned unmerged suffix onto a verified immutable successor source.                           |
 | `db-compare`      | local-mutating  | Capture and compare source and full-chain database schemas.                                                  |
 | `hunk-preview`    | read-only       | Preview textual hunks for explicit selectors.                                                                |
 | `squash-ref`      | local-mutating  | Create or manage the local-only squashed source reference.                                                   |
@@ -37,10 +38,14 @@ validation commands the user has separately approved.
   remote resolves to the intended GitHub repository.
 - `status`, `validate --strict`, and `validate-chain` accept `--local-only` to
   avoid GitHub reads.
-- `push-chain`, `pr-create`, `propagate`, and `merge-propagate` require
-  `--no-dry-run` for execution. Omitting it prints the intended remote actions.
+- `push-chain`, `pr-create`, `propagate`, `merge-propagate`, and
+  `recover-suffix` require `--no-dry-run` for execution. Omitting it prints the
+  intended remote actions.
 - `propagate` and `merge-propagate` additionally require
   `--ack-merge-and-propagate` and exactly one of `--pr` or `--index`.
+- `recover-suffix` additionally requires `--ack-suffix-recovery`, the stable
+  `--from-index` of the first unmerged position, and exact `--successor-source`
+  and `--successor-sha` identity.
 - Propagation supports `--strategy rebase` or `--strategy cherry-pick`. Direct
   merge supports `--method merge`, `squash`, or `rebase`.
 - `preflight` and `run` require `--base` and `--source`. Pass the approved test
@@ -154,6 +159,50 @@ python3 scripts/cli.py merge-propagate \
   --no-dry-run \
   --ack-merge-and-propagate
 ```
+
+## Successor-source suffix recovery
+
+Use recovery only after a delegated, ticket-scoped suffix fix changes behavior
+after an earlier prefix has merged. First create or receive a distinct immutable
+successor source containing the accepted result. Verify the merged prefix on
+current base and preview the live suffix transition:
+
+```bash
+python3 scripts/cli.py recover-suffix \
+  --source feature/large-change \
+  --base main \
+  --from-index 2 \
+  --successor-source feature/large-change-corrected \
+  --successor-sha 0123456789abcdef0123456789abcdef01234567
+```
+
+The preview rehydrates live branches and PRs, requires every lineage source at
+its exact SHA on the selected remote, verifies same-repository ownership, builds
+the corrected suffix locally, and proves base-plus-suffix equivalence without a
+remote write. A local-only successor is rejected. After every identity and the
+separate recovery authority are confirmed, execute:
+
+```bash
+python3 scripts/cli.py recover-suffix \
+  --source feature/large-change \
+  --base main \
+  --from-index 2 \
+  --successor-source feature/large-change-corrected \
+  --successor-sha 0123456789abcdef0123456789abcdef01234567 \
+  --no-dry-run \
+  --ack-suffix-recovery
+```
+
+Execution updates only the exact owned open suffix with explicit refspecs and
+exact leases, replaces its PR metadata through the GitHub chokepoint, verifies
+the live result, and reports that validation, review, CI, and feedback evidence
+is invalidated. Obtain fresh exact-head validation and repository review before
+handing the corrected PR back to `babysit-pr`.
+
+If execution is interrupted after a branch push but before its PR metadata edit,
+rerun the same command with the same source identities. Recovery reconstructs
+that exact transition from live commit and PR metadata and resumes; it never
+uses the plan or a cache.
 
 After every operation, rerun `status` and the required live validation. Resume
 an interrupted sequence by selecting the exact PR or stable changeset index from

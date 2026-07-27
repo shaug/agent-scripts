@@ -11,7 +11,7 @@ class CliSafetyTests(unittest.TestCase):
     def test_every_operation_has_one_mutation_class(self) -> None:
         parser = build_parser()
         help_text = parser.format_help()
-        self.assertEqual(16, len(COMMAND_MUTATION_CLASSES))
+        self.assertEqual(17, len(COMMAND_MUTATION_CLASSES))
         for command, mutation_class in COMMAND_MUTATION_CLASSES.items():
             self.assertIn(command, help_text)
             self.assertIn(f"[{mutation_class}]", help_text)
@@ -23,6 +23,19 @@ class CliSafetyTests(unittest.TestCase):
             ("push-chain",),
             ("propagate", "--source", "feature/test", "--index", "1"),
             ("merge-propagate", "--source", "feature/test", "--index", "1"),
+            (
+                "recover-suffix",
+                "--source",
+                "feature/test",
+                "--base",
+                "main",
+                "--from-index",
+                "2",
+                "--successor-source",
+                "feature/test-corrected",
+                "--successor-sha",
+                "a" * 40,
+            ),
         ):
             args = parser.parse_args(argv)
             self.assertEqual("remote-mutating", args.mutation_class)

@@ -113,18 +113,44 @@ def validate_live_chain(
     for changeset in chain.changesets:
         metadata = changeset.metadata
         if (
-            metadata.source_branch != chain.source_branch
-            or metadata.source_sha != chain.source_sha
+            metadata.root_source.branch != chain.source_branch
+            or metadata.root_source.sha != chain.root_source_sha
+            or chain.source_lineage[: len(metadata.source_lineage)]
+            != metadata.source_lineage
         ):
             diagnostics.append(
                 ValidationDiagnostic(
                     "source_stamp_mismatch",
                     "error",
-                    f"Changeset branch {changeset.branch} names source "
-                    f"{metadata.source_branch} @ {metadata.source_sha}; expected "
-                    f"{chain.source_branch} @ {chain.source_sha}.",
+                    f"Changeset branch {changeset.branch} names lineage "
+                    f"{' -> '.join(item.trailer for item in metadata.source_lineage)}; "
+                    "expected a continuous prefix of "
+                    f"{' -> '.join(item.trailer for item in chain.source_lineage)}.",
                 )
             )
+
+    if len(chain.source_lineage) > 1:
+        for identity in chain.source_lineage:
+            current_identity = _resolve(
+                repo, f"refs/remotes/{remote}/{identity.branch}^{{commit}}"
+            )
+            if current_identity is None:
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "source_lineage_ref_missing",
+                        "error",
+                        f"Immutable lineage source {identity.branch!r} is unavailable.",
+                    )
+                )
+            elif current_identity != identity.sha:
+                diagnostics.append(
+                    ValidationDiagnostic(
+                        "source_lineage_ref_moved",
+                        "error",
+                        f"Immutable lineage source {identity.branch} moved from "
+                        f"{identity.sha} to {current_identity}.",
+                    )
+                )
 
     live_heads: dict[int, tuple[str, str]] | None
     try:
@@ -283,18 +309,25 @@ def validate_live_chain(
                     "source_equivalence_mismatch",
                     "error",
                     f"Changeset tip {tip_record.branch} at {tip} does not "
-                    f"recompose to stamped source {chain.source_branch} at "
+                    f"recompose to active source {chain.active_source.branch} at "
                     f"{stamped_source}.",
                 )
             )
 
-    current_source = _resolve_branch(repo, chain.source_branch, remote)
+    current_source = (
+        _resolve(
+            repo,
+            f"refs/remotes/{remote}/{chain.active_source.branch}^{{commit}}",
+        )
+        if len(chain.source_lineage) > 1
+        else _resolve_branch(repo, chain.active_source.branch, remote)
+    )
     if current_source is None:
         diagnostics.append(
             ValidationDiagnostic(
                 "source_branch_missing",
                 "error",
-                f"Source branch {chain.source_branch!r} is not available in live git.",
+                f"Source branch {chain.active_source.branch!r} is not available in live git.",
             )
         )
     elif stamped_source is not None and current_source == stamped_source:
@@ -307,7 +340,7 @@ def validate_live_chain(
                 ValidationDiagnostic(
                     "source_advanced",
                     "warning",
-                    f"Source branch {chain.source_branch} legitimately advanced from "
+                    f"Source branch {chain.active_source.branch} legitimately advanced from "
                     f"stamped commit {stamped_source} to {current_source}; the chain "
                     "remains validated against the stamped source.",
                 )
@@ -318,7 +351,7 @@ def validate_live_chain(
                 ValidationDiagnostic(
                     "source_history_mismatch",
                     "error",
-                    f"Source branch {chain.source_branch} at {current_source} does not "
+                    f"Source branch {chain.active_source.branch} at {current_source} does not "
                     f"descend from stamped commit {stamped_source}; the chain was built "
                     "against a different source history.",
                 )

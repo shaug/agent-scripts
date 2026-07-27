@@ -101,6 +101,28 @@ class GithubTests(unittest.TestCase):
             capture.call_args.args[0],
         )
 
+    def test_recovery_pr_edit_uses_body_file_for_exact_number(self) -> None:
+        with (
+            mock.patch.object(
+                github_mod,
+                "github_repo_for_remote",
+                return_value="github.com/acme/widgets",
+            ),
+            mock.patch.object(github_mod, "ensure_gh_ready"),
+            mock.patch.object(github_mod, "gh_capture") as capture,
+        ):
+            github_mod.edit_pull_request(
+                93,
+                remote="origin",
+                body="updated metadata body",
+                dry_run=False,
+            )
+
+        args = capture.call_args.args[0]
+        self.assertEqual(("pr", "edit", "93"), args[:3])
+        self.assertIn("--body-file", args)
+        self.assertNotIn("--body", args)
+
     def test_pr_create_dry_run_uses_body_file(self) -> None:
         repo_dir, plan = init_repo()
         try:

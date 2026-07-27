@@ -4,9 +4,14 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-27 — Added successor-source recovery for corrected carved suffixes
+
+- feat: recover corrected carved suffixes
+
 ## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 
 - fix: reconcile every recorded figure with its retained artifact
+  (`d013507956aa0ab328140a72c87fdbb151f2b1ec`)
 - fix: attribute the pilot to a reproducible commit and correct the records
   (`3a8388d42e355e4bc9731b98b6dcd42ffd13ff2f`)
 - feat: report the stratum a run evaluated

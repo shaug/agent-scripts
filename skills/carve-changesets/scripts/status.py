@@ -27,12 +27,14 @@ def render_status(chain: Chain) -> str:
             )
         )
     widths = [max(len(row[column]) for row in rows) for column in range(len(rows[0]))]
-    return "\n".join(
+    table = "\n".join(
         "  ".join(
             value.ljust(widths[column]) for column, value in enumerate(row)
         ).rstrip()
         for row in rows
     )
+    lineage = " -> ".join(identity.trailer for identity in chain.source_lineage)
+    return f"SOURCE LINEAGE  {lineage}\n{table}"
 
 
 def status_from_live(

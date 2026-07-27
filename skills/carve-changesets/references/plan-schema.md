@@ -5,6 +5,12 @@ The proposal phase stores one ephemeral JSON plan at
 The plan is authoritative only for changesets that have not been materialized;
 live commit trailers, PR metadata, and mainline replace it in later phases.
 
+Successor sources and suffix recovery are deliberately absent from this schema.
+They can exist only after materialization and publication, so their authority is
+the exact live source refs, v2 commit trailers, PR metadata, remote heads, and
+current mainline. A plan edit cannot create lineage, restamp a suffix, replace a
+published candidate, or override a merged prefix.
+
 ## Minimal example
 
 ```json
@@ -104,3 +110,6 @@ Pure renames should use `paths` or `patch` so rename intent is preserved.
   resolved rather than ignored.
 - After materialization, do not use plan edits to change the meaning or identity
   of an existing changeset. Create a new candidate commit and renew evidence.
+- After publication, use the live successor-source recovery protocol when an
+  accepted correction requires a new intended result. Do not add successor
+  fields to the plan or use it as a recovery cache.
