@@ -6,7 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the correctness stratum, and recovered carved suffixes
 
+- docs: record the batch-2 delivery, the clean-control standard, and its limits
+- feat: adjudicate the correctness cases by executable oracle
+  (`6dcfeabc7acd325d1dcaae4ed341fa780df94bc9`)
 - feat: populate the correctness stratum with seven adjudicated cases
+  (`43deec617ee06e22e1a937234eea2a4d99b5d836`)
 - feat: recover corrected carved suffixes
   (`ba12e0744a938fc71af16eeeaa0eea98e7c2c63e`)
 

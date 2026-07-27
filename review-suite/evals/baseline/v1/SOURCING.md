@@ -110,21 +110,71 @@ The candidate ground truth below was identified while sourcing this batch and is
 recorded so the evidence is not lost. Each still requires the adjudication trail
 to be re-verified at the source and the reproduction to be minimized fresh.
 
-### Batch 2 — `s1-correctness-orchestrator`, 7 cases
+### Batch 2 — `s1-correctness-orchestrator`, 7 cases — **DELIVERED**
 
-| class                                                                   | candidate ground truth                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| multi-file contract or untouched-consumer propagation failure           | `shaug/atelier` PR 335, comment 2867594627: a strictness flag was added to one call site while a sibling call site kept calling the same helper without it, so a closed dependency could still be treated as finalized through non-strict signals. Alternate: PR 350, comments 2867972061 and 2867993101 — the same coupling defect in two separate files, both recovery paths skipping external-state reconciliation.                                                                                                              |
-| concurrency, retry, idempotency, transaction, or data-integrity failure | `shaug/atelier` PR 373, comment 2869270760: a stale-snapshot cleanup guard compared assignees only when the stale assignee was non-null, so a claim taken between collect and apply could be cleared. Alternate: PR 674, comment 2937093107 — one atomic note-plus-status write split into two, so a later failure leaves a fresh blocked reason on a changeset that is not blocked.                                                                                                                                                |
-| validation gap where passing tests did not exercise the changed risk    | `shaug/agent-scripts` commit `f544aa0`: a probe for an optional executable checked only the return code, but a missing executable makes the call raise, so the intended skip never happened and the whole suite errored. It **survived an aggregate `clean` review verdict at head `b605051`** and was caught by CI. Complete provenance, this repository, no retention question. Alternate: `shaug/atelier` PR 318, comment 2867098097 — a tautological self-ancestor success when two branch references point at the same branch. |
-| clean correctness control                                               | `shaug/atelier` PR 335: the hardening hunk in isolation, which the reviewer explicitly adjudicated as correct in the same thread that raised the sibling gap.                                                                                                                                                                                                                                                                                                                                                                       |
-| clean correctness control                                               | `shaug/atelier` PR 417, comment 2870710594: a typed outcome replacing a boolean, implemented and accepted, with the reviewer's stated requirement met.                                                                                                                                                                                                                                                                                                                                                                              |
-| adjudicated rejected or declined finding as negative control            | `shaug/atelier` PR 279, comment 2862037362: a reviewer-suggested fallback regression path was **declined on the merits** after the parser was intentionally narrowed to one canonical shape.                                                                                                                                                                                                                                                                                                                                        |
-| adjudicated speculative or polish-only finding as negative control      | `shaug/atelier` PR 333, comment 2867594626 (a scope question plus "if exclusion is intentional, a brief rationale would help") or PR 356, comment 2868540467 ("possible edge case to validate ... or add a regression test to prove current behaviour is intentional"). Both are real observations that identify no defect.                                                                                                                                                                                                         |
+Populated but not scored. Every case is minimized, every case names its source
+disposition, and every case is adjudicated a second time by executable oracle.
 
-At least three of these require reasoning across multiple files or an untouched
-downstream surface: the PR 335 and PR 350 propagation cases and the PR 674
-split-write case all do.
+| case                                | class                           | source disposition                                                                                            | expected |
+| ----------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| `dependency-strictness-propagation` | multi-file / untouched consumer | atelier PR 335, comment 2867594627 — **accepted**, commit `5cb0333`                                           | gating   |
+| `stale-claim-release-guard`         | concurrency / data integrity    | atelier PR 373, comment 2869270760 — **accepted**, with a regression test for the collect/apply window        | gating   |
+| `optional-tool-probe`               | validation gap                  | this repository's `f544aa0` — survived an aggregate `clean` verdict, **caught by CI**                         | gating   |
+| `session-continuation-summary`      | clean control                   | atelier PR 486, comment 2881737041 — **declined on the merits**; flag kept, only operator wording changed     | clean    |
+| `dependency-hint-parser-coverage`   | clean control                   | atelier PR 279, comment 2862025661 — **declined on the merits** in reply 2862037362                           | clean    |
+| `post-bootstrap-module-load`        | negative control, polish-only   | atelier PR 710, comment 2961766206 — **comment added, no behaviour changed**                                  | clean    |
+| `process-isolation-assertion`       | negative control, deferred      | this repository's #50 — raised by a real review, **dispositioned `defer`**, item 4 of PR #61's preserved list | clean    |
+
+Five carry multi-file diffs; three are only decidable by reading a consumer the
+diff does not touch, which satisfies #58's multi-file minimum.
+
+Sanitization: all five atelier-sourced cases are `minimized_reproduction`,
+rewritten from scratch against fictional subjects, retaining only the failure
+shape. The two sourced from this repository are `repository_history`, also
+rewritten against fictional subjects so neither can be mistaken for this suite's
+own code. No source identifier, path, symbol, prose, or diff was copied into any
+case. Retention authority is public in every case.
+
+#### The clean-control standard, and what it cost
+
+The owner settled the standard after batch 1: a clean control must be an
+**adjudicated-rejected finding** — a case where a finding was actually raised
+and dispositioned as not material. The recorded rejection is the evidence, and a
+reviewer that re-raises it is charged a false alarm. "No review comments" is
+explicitly not evidence of cleanliness, because absence of comment is ambiguous
+between reviewed-and-clean and nobody-looked, and a control resting on it would
+charge a false alarm against a reviewer that correctly found a real unnoticed
+defect.
+
+Encoding: each clean case records its rejected concern as an accepted
+non-finding carrying the formulations a reviewer would actually use. That
+tolerates a non-gating mention while a gating one is still charged as a false
+alarm at the verdict level. The rejected concern is deliberately **not** a root
+cause — raising it is the error being measured, not the answer.
+
+**Four candidates were dropped for failing this standard.** Both of the
+clean-control candidates batch 1 had identified, and two of the negative-control
+candidates:
+
+| dropped candidate                  | why it fails the standard                                                                                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| atelier PR 335, the hardening hunk | Its cleanliness rested on the reviewer praising the hunk, not on any rejected finding, and it was cropped from a pull request that did carry a finding. Not an adjudicated rejection. |
+| atelier PR 417, comment 2870710594 | An accepted **fix**, not a rejected finding. Acceptance says the concern was material, which is the opposite of what a clean control needs.                                           |
+| atelier PR 333, comment 2867594626 | Verified on re-check: the concern was **accepted** ("Included now"), with blocked epics added and coverage extended. Not immaterial.                                                  |
+| atelier PR 356, comment 2868540467 | Verified on re-check: also **accepted** ("good catch"), with the recompute added and a regression test. Not immaterial.                                                               |
+
+One further candidate was assessed and dropped: atelier PR 160, comment
+2849318292, where a one-liner suggestion was initially declined on readability
+grounds. Following the thread, the reviewer pushed back and the underlying
+preference was ultimately **implemented** via a shared helper. The disposition
+is therefore acceptance in another form, not rejection, so it fails the standard
+too.
+
+The correction is worth recording plainly: batch 1's adjudication plan named PR
+333 and PR 356 as having *ambiguous* dispositions needing verification, and PR
+335 as lacking a verified acceptance. Verification resolved all three — PR 333
+and PR 356 were accepted and are unusable as controls; PR 335 **was** accepted,
+which makes it a valid escape rather than a valid control.
 
 ### Batch 3 — `s2-solution-simplicity-lens`, 4 cases
 
@@ -154,7 +204,9 @@ split-write case all do.
 - Retention authority is recorded per case, and a case whose authority could not
   be established would be excluded before scoring rather than minimized into the
   corpus.
-- Nothing here is adjudicated twice yet. Which of these candidates a second
-  adjudication is expected to *disagree* with, and which source dispositions are
-  too ambiguous to use without re-verification, is recorded in
-  [ADJUDICATION-PLAN.md](ADJUDICATION-PLAN.md) rather than smoothed over here.
+- Every case in `s1-correctness-orchestrator` is adjudicated twice: the recorded
+  source disposition, and an executable oracle that runs the stated requirement.
+  No case in that stratum needs the owner. The simplicity strata will, because
+  their claims have no executable form.
+- No case in any populated scored stratum has been run through a runtime. They
+  are unobserved, which is what keeps a later baseline result-blind.

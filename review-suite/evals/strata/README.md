@@ -110,6 +110,23 @@ a run would overwrite retained output. The exact per-stratum invocations,
 artifact paths included, are recorded in
 [`baseline/v1/frozen-configuration.json`](../baseline/v1/frozen-configuration.json).
 
+## Scored strata
+
+`s1-correctness-orchestrator` is populated with seven cases covering #58's
+correctness classes: three accepted material escapes, two clean controls, and
+two negative controls. Every case is minimized from a real review disposition in
+the public `shaug/atelier` or in this repository's own history, and every case
+carries an executable oracle as its second independent adjudication.
+
+It declares `scored: false`, which is not a formality. Every expectation is
+`calibrated: false` and no case has been run through any runtime, deliberately —
+observing a scored case's prose in order to calibrate it would fit the grader to
+the answer. Limitation 14 in
+[the limitations record](../baseline/v1/LIMITATIONS.md) sets out the four
+resolutions and the owner picks one before `scored` flips.
+
+`s2-solution-simplicity-lens` and `s3-code-simplicity-lens` remain unpopulated.
+
 ## Adding a stratum
 
 1. Create `review-suite/evals/strata/<stratum-id>/` with `corpus.json`,
