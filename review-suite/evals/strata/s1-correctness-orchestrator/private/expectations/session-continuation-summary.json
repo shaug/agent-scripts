@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "session-continuation-summary",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.started-true-without-an-agent",
+      "description": "A reviewer may observe that `started=True` on a path that started no agent reads as inaccurate and could mislead operators or metrics. This is the finding this case is built from, and it was adjudicated NOT material: the field is the loop-continuation signal by contract, the packet states no metric reads it, and the reporter is what speaks to operators. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "started=True is inaccurate for a path that started no agent",
+        "the summary claims a session started",
+        "started True is misleading for operators or metrics",
+        "split continuation from agent-session-started"
+      ]
+    },
+    {
+      "id": "anf.reason-string-not-an-enum",
+      "description": "The reason is a bare string rather than an enumerated type. Fair design commentary; the packet's preserved behaviour keeps the existing shape.",
+      "equivalent_formulations": [
+        "reason should be an enum",
+        "the reason string is untyped"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/pipeline",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "5b1c9f47a20d8e63145c7a09b2fd86e3517ac04d",
+    "comparison_base_sha": "1f8a3d20c9b475e6a08d1c73f92b4e6035ad7c81",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/pipeline/integration.py b/pipeline/integration.py\n--- a/pipeline/integration.py\n+++ b/pipeline/integration.py\n@@ -18,3 +18,10 @@ from pipeline.model import Record\n-def integration_proven(record):\n-    \"\"\"Return whether this record's work reached the target branch.\"\"\"\n-    return bool(record.merge_marker or record.target_ref)\n+def integration_proven(record, *, require_target_proof=False):\n+    \"\"\"Return whether this record's work reached the target branch.\n+\n+    With `require_target_proof`, only a target-branch ancestry proof counts. The\n+    merge marker alone is a hint written by the tooling and can be present on a\n+    record whose work never landed.\n+    \"\"\"\n+    if require_target_proof:\n+        return bool(record.target_ref)\n+    return bool(record.merge_marker or record.target_ref)\n@@ -44,3 +56,4 @@ def reconcile_closed(records):\n     for record in records:\n-        if not integration_proven(record):\n+        status = record.status\n+        if not integration_proven(record, require_target_proof=status == \"closed\"):\n             reopen_if_unlanded(record)\ndiff --git a/tests/test_integration.py b/tests/test_integration.py\n--- a/tests/test_integration.py\n+++ b/tests/test_integration.py\n@@ -20,1 +20,12 @@ def test_integration_proven_accepts_a_target_ref():\n     assert integration_proven(Record(target_ref=\"refs/heads/main\"))\n+\n+\n+def test_integration_proven_rejects_a_marker_only_record_under_strict_proof():\n+    record = Record(merge_marker=True, target_ref=None)\n+    assert not integration_proven(record, require_target_proof=True)\n+\n+\n+def test_reconcile_closed_uses_strict_proof_for_a_closed_record():\n+    record = Record(status=\"closed\", merge_marker=True, target_ref=None)\n+    reconcile_closed([record])\n+    assert record.reopened\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Stop treating a record as integrated on the strength of a merge marker alone once that record is closed, because the marker is a tooling hint that can outlive work that never landed.",
+    "acceptance_criteria": [
+      "A closed record is only integrated when target-branch ancestry proves it.",
+      "Every path that decides whether a record is integrated applies the same strictness rule for a closed record.",
+      "An open record keeps the existing permissive behaviour."
+    ],
+    "non_goals": [
+      "Change how the merge marker itself is written.",
+      "Change ancestry computation."
+    ],
+    "preserved_behaviors": [
+      "`integration_proven` keeps its permissive result for an open record.",
+      "`dependency_finalized` keeps its signature."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Consistency rules",
+        "location": "AGENTS.md",
+        "summary": "When a decision rule gains a stricter mode, every caller that makes the same decision adopts it in the same change. Two call sites deciding one question differently is a defect, not a difference."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Integration proof contract",
+        "location": "docs/integration.md"
+      },
+      {
+        "label": "Record model",
+        "location": "pipeline/model.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Sibling decision path",
+        "location": "pipeline/dependencies.py"
+      },
+      {
+        "label": "Downstream unblock path",
+        "location": "pipeline/scheduler.py"
+      },
+      {
+        "label": "Integration tests",
+        "location": "tests/test_integration.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "integration tests",
+      "command": "pytest tests/test_integration.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "9 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "184 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`pipeline/dependencies.py` and `pipeline/integration.py` are the only two modules that call `integration_proven`. This diff does not touch `pipeline/dependencies.py`, whose whole body is:\n    from pipeline.integration import integration_proven\n\n    def dependency_finalized(record):\n        \"\"\"Return whether a dependency may unblock what follows it.\"\"\"\n        return integration_proven(record)",
+      "`dependency_finalized` is called by `pipeline/scheduler.py` to decide whether the records that follow a dependency may start.",
+      "A closed record carrying a merge marker but no target ref occurs whenever a merge is abandoned after the marker is written."
+    ],
+    "operational": [
+      "The scheduler runs continuously and acts on `dependency_finalized` without re-checking anything downstream."
+    ]
+  }
+}

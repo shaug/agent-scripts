@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "optional-tool-probe",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.probe-checks-status-not-absence",
+      "requirement": "The suite skips these tests, rather than failing, when the runner is absent.",
+      "trigger": "The suite runs on a machine with no task runner installed, which the packet states is exactly what CI is.",
+      "surface": "setUpClass",
+      "consequence": "Looking only at the return code cannot detect an absent executable, because the call raises instead of returning. The intended skip therefore never happens and the error escapes `setUpClass`, failing the whole class in the one environment the skip exists for. Local validation passes because the tool is installed there, so the suite is green on the machine that cannot reproduce the condition.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "a missing executable raises rather than returning a status",
+        "subprocess.run raises FileNotFoundError",
+        "the probe only checks the return code",
+        "OSError is not caught",
+        "the skip never happens when the tool is absent"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.probe-not-shared",
+      "description": "The packet names an existing optional-tool probe in another test module, so a reviewer may reasonably ask for one shared helper. A real reuse observation, not the reason this candidate fails.",
+      "equivalent_formulations": [
+        "share one optional-tool probe helper",
+        "the probe duplicates the existing one"
+      ]
+    }
+  ]
+}

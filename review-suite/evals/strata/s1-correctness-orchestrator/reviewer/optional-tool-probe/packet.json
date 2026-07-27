@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/toolkit",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "c42a8f150b7e93d6218ac05f7b34e9612d8a70bf",
+    "comparison_base_sha": "7e91b3d05c28a46f130db7295ea86c410fb2d539",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/tests/test_recipes.py b/tests/test_recipes.py\n--- a/tests/test_recipes.py\n+++ b/tests/test_recipes.py\n@@ -1,6 +1,25 @@\n import subprocess\n import unittest\n \n \n class RecipeTests(unittest.TestCase):\n-    \"\"\"Exercise the recipes directly.\"\"\"\n+    \"\"\"Run the recipes through the task runner when it is installed.\n+\n+    The runner is optional, so this class skips cleanly when it is absent.\n+    \"\"\"\n+\n+    @classmethod\n+    def setUpClass(cls):\n+        if subprocess.run(\n+            [\"taskr\", \"--version\"], capture_output=True, check=False\n+        ).returncode != 0:\n+            raise unittest.SkipTest(\"taskr is not installed\")\n+\n+    def taskr(self, *args):\n+        return subprocess.run([\"taskr\", *args], capture_output=True, text=True)\n+\n+    def test_the_check_recipe_runs(self):\n+        self.assertEqual(0, self.taskr(\"check\").returncode)\n+\n+    def test_the_audit_recipe_runs(self):\n+        self.assertEqual(0, self.taskr(\"audit\").returncode)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Exercise the task-runner recipes in the suite, skipping cleanly on a machine where the optional runner is not installed.",
+    "acceptance_criteria": [
+      "The recipe tests run when the task runner is installed.",
+      "The suite skips these tests, rather than failing, when the runner is absent.",
+      "No other test changes behaviour."
+    ],
+    "non_goals": [
+      "Install the task runner as a dependency.",
+      "Change what the recipes do."
+    ],
+    "preserved_behaviors": [
+      "Every pre-existing test keeps its result."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Optional-dependency rules",
+        "location": "AGENTS.md",
+        "summary": "A suite must pass on a machine that has none of the optional tools installed. Probe for an optional tool in a way that distinguishes absent from present-and-failing."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Supported environments",
+        "location": "docs/environments.md"
+      },
+      {
+        "label": "CI workflow",
+        "location": ".github/workflows/ci.yml"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Existing optional-tool probe",
+        "location": "tests/test_formatter.py"
+      },
+      {
+        "label": "Recipe definitions",
+        "location": "Taskrfile"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "recipe tests",
+      "command": "pytest tests/test_recipes.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "2 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "88 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "The developer machine this candidate was validated on has the task runner installed.",
+      "`.github/workflows/ci.yml` installs the project's Python dependencies and does not install the task runner.",
+      "The existing probe in `tests/test_formatter.py` is the repository's worked example of detecting an optional tool."
+    ],
+    "operational": [
+      "CI is the only environment where the optional runner is absent, and it is the gate that must stay green."
+    ]
+  }
+}

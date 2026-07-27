@@ -1,0 +1,27 @@
+{
+  "corpus_version": "0.1-s1-populated",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-code-change",
+  "target_skill_dependencies": [
+    "review-solution-simplicity",
+    "review-correctness",
+    "review-code-simplicity"
+  ],
+  "stratum": {
+    "id": "s1-correctness-orchestrator",
+    "ground_truth": "human-review",
+    "scored": false,
+    "grading_is_signal": true,
+    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Populated and independently adjudicated: every case carries the recorded source disposition as its first adjudication and an executable oracle as its second. NOT yet scored, for one remaining reason: every expectation is uncalibrated, and no case has been run through any runtime, because observing a scored case's prose in order to calibrate it would fit the grader to the answer. Flip `scored` to true only once the owner preregisters how that conflict is resolved."
+  },
+  "cases": [
+    "dependency-hint-parser-coverage",
+    "dependency-strictness-propagation",
+    "optional-tool-probe",
+    "post-bootstrap-module-load",
+    "process-isolation-assertion",
+    "session-continuation-summary",
+    "stale-claim-release-guard"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "stale-claim-release-guard",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.guard-skipped-when-snapshot-owner-absent",
+      "requirement": "A claim taken by another worker between scan and apply is never released.",
+      "trigger": "The scan sees an expired entry with no owner, and a worker claims it before the action is applied.",
+      "surface": "_release",
+      "consequence": "The ownership comparison is itself conditional on the snapshot having had an owner, so the exact interleaving the change exists to prevent - unowned at scan, owned at apply - skips the comparison entirely and releases a live claim. The added test starts from an owned entry, so it exercises the branch that was already safe and passes.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "the owner comparison is skipped when the snapshot owner is None",
+        "the guard is conditional on snapshot_owner being not None",
+        "an unowned snapshot bypasses the ownership check",
+        "a claim taken between scan and apply can still be released",
+        "compare owners unconditionally including None"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.late-binding-default-argument",
+      "description": "Binding loop variables through default arguments is unusual. It is the mechanism that makes the snapshot per-entry rather than shared, and the packet preserves the deferred-callable shape, so it is not a defect here.",
+      "equivalent_formulations": [
+        "default arguments are used to bind loop variables",
+        "late binding via default parameters"
+      ]
+    },
+    {
+      "id": "anf.soak-suite-not-run",
+      "description": "The concurrency soak suite is recorded as unavailable. Noting it is reasonable and honest; the packet says so explicitly, and it is a validation limitation rather than a second root cause.",
+      "equivalent_formulations": [
+        "the soak suite was not run",
+        "no live-store concurrency evidence"
+      ]
+    }
+  ]
+}

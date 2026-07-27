@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/toolkit-scripts",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "e3719c4a8b05d2f6410a9be7c583d17206fa4b98",
+    "comparison_base_sha": "a520d8e163b47c09f2718ad6e5c39b410827fd6a",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/scripts/finish_task.py b/scripts/finish_task.py\n--- a/scripts/finish_task.py\n+++ b/scripts/finish_task.py\n@@ -1,11 +1,17 @@\n+import importlib\n import sys\n \n from bootstrap import select_runtime\n \n select_runtime(require_health=__name__ == \"__main__\")\n \n-from toolkit import store  # noqa: E402\n+# Loaded through importlib, after `select_runtime` has reordered `sys.path`\n+# toward the selected runtime. A module-level `import` here binds whichever\n+# copy of `toolkit` was importable before the reorder, which on a machine with\n+# an older installed copy is the wrong one - and `--help` would then exercise a\n+# runtime the real run never uses.\n+_STORE = importlib.import_module(\"toolkit.store\")\n \n \n def main(argv):\n-    return store.finish(argv[1])\n+    return _STORE.finish(argv[1])\ndiff --git a/tests/test_finish_task.py b/tests/test_finish_task.py\n--- a/tests/test_finish_task.py\n+++ b/tests/test_finish_task.py\n@@ -8,1 +8,11 @@ def test_main_finishes_the_named_task():\n     assert main([\"finish_task\", \"t-1\"]) == 0\n+\n+\n+def test_the_store_is_loaded_after_the_runtime_is_selected():\n+    order = import_order_probe()\n+    assert order.index(\"select_runtime\") < order.index(\"toolkit.store\")\n+\n+\n+def test_help_uses_the_selected_runtime(tmp_path):\n+    older = install_older_toolkit(tmp_path)\n+    assert run_help_returns_runtime(older) == \"selected\"\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Make the entry script bind the runtime module the bootstrap selected, rather than whichever copy happened to be importable first.",
+    "acceptance_criteria": [
+      "The store module is loaded after the runtime selection has run.",
+      "`--help` exercises the selected runtime even when an older copy is installed on the machine.",
+      "The command's behaviour is otherwise unchanged."
+    ],
+    "non_goals": [
+      "Change how the runtime is selected.",
+      "Change what `finish` does."
+    ],
+    "preserved_behaviors": [
+      "`main` returns the same status for the same arguments."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Bootstrap rules",
+        "location": "AGENTS.md",
+        "summary": "An entry script must not bind a runtime module before the bootstrap has selected one. Where ordering matters, make the ordering explicit in code and say why in a comment."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Runtime selection contract",
+        "location": "docs/bootstrap.md"
+      },
+      {
+        "label": "Bootstrap",
+        "location": "bootstrap.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Sibling entry script",
+        "location": "scripts/start_task.py"
+      },
+      {
+        "label": "Entry script tests",
+        "location": "tests/test_finish_task.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "entry script tests",
+      "command": "pytest tests/test_finish_task.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "5 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "121 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "A module-level import is executed before any statement below it, so it cannot observe a `sys.path` reorder performed by that statement.",
+      "Machines in the field commonly have an older installed copy of the toolkit alongside the selected runtime."
+    ],
+    "operational": [
+      "`--help` is the path operators use most, and it must reflect the runtime a real run would use."
+    ]
+  }
+}

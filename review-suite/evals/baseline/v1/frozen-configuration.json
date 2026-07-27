@@ -1,7 +1,7 @@
 {
   "record_version": "1.0",
-  "status": "incomplete_pending_owner_preregistration",
-  "status_detail": "Every value an implementing run can fix is fixed below. Two values cannot come from an implementing context and are therefore null: the per-stratum cost ceiling, which must be preregistered by the repository owner before any scored output is examined because a scored run spends real money, and the independent adjudication of each private expectation, which one context cannot supply both sides of. No scored run may launch until both are present. Freezing everything else now is what makes the remaining inputs a decision rather than a negotiation.",
+  "status": "ceiling_preregistered_pending_calibration_decision",
+  "status_detail": "The per-stratum cost ceiling is preregistered by the owner at 9.00 / 3.00 / 3.00 USD, 15.00 USD total, as a hard ceiling: exceeding it stops further runs in that stratum and records incomplete baseline evidence, and repetitions are never reduced after outputs are visible. The clean-control standard is settled: a clean control is an adjudicated-rejected finding, and false-alarm rate under it is a lower bound on invention rather than a general rate. Independent adjudication is satisfied for every populated correctness case by executable oracle, and will need the owner for the simplicity strata. One blocker remains before any scored run: a scored stratum cannot be both calibrated and result-blind, and the owner must preregister which resolution applies. See LIMITATIONS.md items 13 to 15.",
   "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
   "v1_review_behaviour_commit_note": "The pre-v2 review-suite commit whose behaviour a scored baseline must evaluate. This candidate modifies no file under skills/ and no v1 contract, so the evaluated closure text is identical at every commit on this branch: all three closure digests recorded below and in every pilot report are unchanged from this commit. The digest, not the commit, is the load-bearing pin - a commit can move without the evaluated text changing, and the evaluated text cannot change without the digest moving.",
   "pilot_suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
@@ -36,7 +36,7 @@
   "strata": [
     {
       "id": "s1-correctness-orchestrator",
-      "state": "declared_unpopulated",
+      "state": "populated_not_scored",
       "target_skill": "review-code-change",
       "target_skill_dependencies": [
         "review-solution-simplicity",
@@ -55,14 +55,28 @@
         "two adjudicated rejected, deferred, speculative, or polish-only findings as negative controls"
       ],
       "envelope_source": "pilot-orchestrator",
-      "cost_ceiling_usd": null,
+      "cost_ceiling_usd": 9.0,
       "cost_ceiling_proposal_usd": 9.0,
       "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s1-correctness-orchestrator --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s1-correctness-orchestrator/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s1-correctness-orchestrator.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
       "expected_spend_usd": 3.33,
       "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
       "worst_observed_cold_cost_per_attempt_usd": 0.2021,
-      "all_cold_worst_case_usd": 7.07
+      "all_cold_worst_case_usd": 7.07,
+      "cases": 7,
+      "case_ids": [
+        "dependency-hint-parser-coverage",
+        "dependency-strictness-propagation",
+        "optional-tool-probe",
+        "post-bootstrap-module-load",
+        "process-isolation-assertion",
+        "session-continuation-summary",
+        "stale-claim-release-guard"
+      ],
+      "corpus_version": "0.1-s1-populated",
+      "adjudication": "Every case adjudicated twice: the recorded source disposition, and an executable oracle that runs the stated requirement. No case needs the owner.",
+      "blocked_on": "Calibration. Every expectation is `calibrated: false` and no case has been run through any runtime, deliberately. See limitation 14: a scored stratum cannot be both calibrated and result-blind, and the owner must pick a resolution before `scored` flips to true.",
+      "cost_ceiling_status": "preregistered_by_owner"
     },
     {
       "id": "s2-solution-simplicity-lens",
@@ -78,14 +92,16 @@
         "two requirement-justified near-miss controls"
       ],
       "envelope_source": "pilot-solution-simplicity",
-      "cost_ceiling_usd": null,
+      "cost_ceiling_usd": 3.0,
       "cost_ceiling_proposal_usd": 3.0,
       "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s2-solution-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s2-solution-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s2-solution-simplicity-lens.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
       "expected_spend_usd": 0.82,
       "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
       "worst_observed_cold_cost_per_attempt_usd": 0.1094,
-      "all_cold_worst_case_usd": 2.19
+      "all_cold_worst_case_usd": 2.19,
+      "adjudication": "Oracle unavailable: an over-engineering or reuse claim has no executable form. Second adjudication is `owner_required` for every case in this stratum.",
+      "cost_ceiling_status": "preregistered_by_owner"
     },
     {
       "id": "s3-code-simplicity-lens",
@@ -101,14 +117,16 @@
         "two behaviour-clarifying or non-material near-miss controls"
       ],
       "envelope_source": "pilot-code-simplicity",
-      "cost_ceiling_usd": null,
+      "cost_ceiling_usd": 3.0,
       "cost_ceiling_proposal_usd": 3.0,
       "scored_invocation": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s3-code-simplicity-lens --runs 5 --timeout 300 --artifact-dir review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/s3-code-simplicity-lens/<commit>-<corpus_version>.attempts.jsonl --report-out review-suite/evals/baseline/v1/s3-code-simplicity-lens.report.json",
       "scored_invocation_note": "Executable verbatim once the stratum directory exists and the owner has preregistered the ceiling. Substitute the stratum's own corpus_version in the artifact directory.",
       "expected_spend_usd": 0.93,
       "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
       "worst_observed_cold_cost_per_attempt_usd": 0.1116,
-      "all_cold_worst_case_usd": 2.23
+      "all_cold_worst_case_usd": 2.23,
+      "adjudication": "Oracle unavailable: an over-engineering or reuse claim has no executable form. Second adjudication is `owner_required` for every case in this stratum.",
+      "cost_ceiling_status": "preregistered_by_owner"
     },
     {
       "id": "connector-escape",
@@ -151,9 +169,8 @@
     }
   ],
   "pending_owner_inputs": [
-    "A per-stratum cost ceiling, preregistered before any scored output is examined. Proposals, and the pilot arithmetic behind them, are in COST-CEILING-PROPOSAL.md.",
-    "Two independent adjudications for each material root cause, accepted non-finding, severity, and allowed equivalent formulation, from genuinely separate parties, with disagreements resolved in a recorded note. ADJUDICATION-PLAN.md assesses what the source review threads can and cannot supply, where a blind agent context is and is not a legitimate second adjudicator, and every case where the two adjudications are expected to disagree.",
-    "A decision on what a clean correctness control must be. Neither identified candidate is an adjudicated clean review, and until the standard is settled the false-alarm rate has no honest denominator. See ADJUDICATION-PLAN.md section 4."
+    "A resolution to the calibration-versus-result-blindness conflict, preregistered with the rest of the configuration because it decides what recall means. Four options are set out in LIMITATIONS.md item 14.",
+    "Second adjudications for every case in the two simplicity strata, where no executable oracle is possible. See ADJUDICATION-PLAN.md."
   ],
   "pilot_reports": [
     {
@@ -191,5 +208,9 @@
     "detail": "The committed compact reports carry every metric, denominator, and identity a consumer needs. The retained per-attempt records are what a per-attempt figure quoted from a record - a single attempt's cost, token count, or latency - is re-derived from, and they are referenced by the path identity above."
   },
   "baseline_limitations_record": "LIMITATIONS.md",
-  "adjudication_plan": "ADJUDICATION-PLAN.md"
+  "adjudication_plan": "ADJUDICATION-PLAN.md",
+  "resolved_owner_inputs": [
+    "Per-stratum cost ceiling: preregistered at 9.00 / 3.00 / 3.00 USD, 15.00 total.",
+    "Clean-control standard: an adjudicated-rejected finding, with false-alarm rate reported as a lower bound on invention."
+  ]
 }

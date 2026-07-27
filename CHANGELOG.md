@@ -4,9 +4,19 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Added successor-source recovery for corrected carved suffixes
+## 2026-07-27 — Populated the correctness stratum, and recovered carved suffixes
 
+- fix: make every packet diff a valid patch, and gate the adjudication record
+- fix: stop a grader formulation being quotable from its own packet
+  (`fa772a7d770bd3d07f3fdd9bdc45a0c237b1d14e`)
+- docs: record the batch-2 delivery, the clean-control standard, and its limits
+  (`e83da75687f06ec9ff6a82df5ac4845c6e6fb23f`)
+- feat: adjudicate the correctness cases by executable oracle
+  (`6dcfeabc7acd325d1dcaae4ed341fa780df94bc9`)
+- feat: populate the correctness stratum with seven adjudicated cases
+  (`43deec617ee06e22e1a937234eea2a4d99b5d836`)
 - feat: recover corrected carved suffixes
+  (`ba12e0744a938fc71af16eeeaa0eea98e7c2c63e`)
 
 ## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 

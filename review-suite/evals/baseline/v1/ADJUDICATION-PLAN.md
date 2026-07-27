@@ -135,6 +135,62 @@ every near-miss control in `s2-solution-simplicity-lens` and
 `s3-code-simplicity-lens` therefore needs human adjudication, or must be
 reported with the correlated-judgment limitation attached.
 
+## 2b. Outcome: the oracle method, applied
+
+The proposal above was adopted for `s1-correctness-orchestrator` and it settled
+every case in it. `review-suite/scripts/evals/oracles/` ships one runnable
+module per case, and `test_eval_oracles.py` asserts the polarity each expected
+verdict demands: the requirement must **fail** against a gating candidate and
+**hold** once the stated root cause is corrected, and must **hold** against a
+clean candidate.
+
+| case                                | second adjudication | what the oracle settled                                                                                  |
+| ----------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
+| `dependency-strictness-propagation` | oracle              | The two decision paths disagree on the closed record; correcting the sibling call site makes them agree. |
+| `stale-claim-release-guard`         | oracle              | The unowned-at-scan interleaving releases a live claim; an unconditional owner comparison prevents it.   |
+| `optional-tool-probe`               | oracle              | The probe raises instead of skipping; catching `OSError` restores the skip.                              |
+| `session-continuation-summary`      | oracle              | The loop continues and the reporter never claims a session, so the contract holds.                       |
+| `dependency-hint-parser-coverage`   | oracle              | The canonical field is read and both retired aliases are ignored.                                        |
+| `post-bootstrap-module-load`        | oracle              | The module binds after selection, which a module-level import cannot do.                                 |
+| `process-isolation-assertion`       | oracle              | One retained artifact per attempt, attributable to its executor.                                         |
+
+**Owner still required for:** every case in `s2-solution-simplicity-lens` and
+`s3-code-simplicity-lens`. "This is over-engineered" and "this complexity is
+requirement-justified" have no executable form, so those cases will declare
+`owner_required`. Two tests hold them to it: a stratum may not declare `scored`
+while any of its cases lacks a recorded second adjudication, and a case that
+ships no oracle may not record anything other than `owner_required`.
+
+### The three limits of what was settled
+
+1. An oracle adjudicates the **stated requirements**, not the diff. A clean
+   control's oracle proves the contract holds and the raised concern was
+   immaterial; it does not prove nothing else is wrong.
+2. An oracle cannot adjudicate prose. It cannot settle whether a field's name
+   reads as a claim it should not make (`session-continuation-summary`) or
+   whether a test's name overstates its assertion
+   (`process-isolation-assertion`). Both record this.
+3. `process-isolation-assertion`'s **first** adjudication came from the review
+   suite under evaluation — a `defer` from the same contract being measured. The
+   oracle is independent of it, but the first adjudication is weaker than a
+   human disposition and its provenance says so.
+
+### Verification changed three of the expectations below
+
+The disagreement table in section 4 was written before the source dispositions
+were re-checked. Checking them resolved three entries, and two resolutions were
+the opposite of what the table assumed:
+
+- **atelier PR 335 was accepted** (`5cb0333`). It is a valid escape, not an
+  ambiguous one, and it is now the multi-file propagation case.
+- **atelier PR 333 and PR 356 were both accepted**, not deferred. Both are
+  unusable as negative controls and were dropped.
+- **Both clean-control candidates failed** the owner's settled standard and were
+  replaced. See [SOURCING.md](SOURCING.md) for all five dropped candidates.
+
+The clean-control question the table flagged as the weakest slot is now settled
+by the owner, and the corpus is built to that standard.
+
 ## 3. Expected workload
 
 Fifteen scored cases across three strata: roughly 12–16 material root causes,

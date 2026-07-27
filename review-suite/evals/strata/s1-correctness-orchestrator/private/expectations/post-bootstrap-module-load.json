@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "post-bootstrap-module-load",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.importlib-instead-of-a-plain-import",
+      "description": "A reviewer may observe that loading a module through `importlib.import_module` instead of a plain `import` is an unusual pattern and ask for it to be normalised. This is the finding this case is built from, and it was adjudicated NOT material: the deferral is load-bearing, a plain import cannot express it, and the resolution was to explain the pattern in a comment while leaving behaviour untouched. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "use a standard import instead of importlib",
+        "importlib.import_module is a strange pattern here",
+        "this should be a normal module-level import",
+        "the dynamic import is unnecessary indirection"
+      ]
+    },
+    {
+      "id": "anf.module-level-side-effect",
+      "description": "The script performs runtime selection at import time. Real, and worth noting for an entry script; the packet's contract makes that ordering the point of the change rather than an accident.",
+      "equivalent_formulations": [
+        "runtime selection happens at import time",
+        "module-level side effect on import"
+      ]
+    }
+  ]
+}

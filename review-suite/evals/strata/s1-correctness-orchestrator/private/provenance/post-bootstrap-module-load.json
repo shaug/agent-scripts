@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "post-bootstrap-module-load",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 710, review comment 2961766206, authored by the repository owner. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional entry script. Retains only the shape of the adjudicated exchange: an unusual deferred module load flagged as strange, kept because the deferral is load-bearing, with an explanatory comment as the whole resolution. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 710 review comment 2961766206, dispositioned polish-only: a comment was added and no behaviour changed.",
+    "second": "oracle"
+  },
+  "recorded_at": "2026-07-27",
+  "notes": "NEGATIVE CONTROL, polish-only disposition. The reviewer said the pattern was strange and asked for a comment explaining it; the owner added the comment and changed no behaviour, which adjudicates the pattern itself as intentional and correct. The rejected concern is recorded as anf.importlib-instead-of-a-plain-import."
+}

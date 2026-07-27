@@ -1,0 +1,14 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "optional-tool-probe",
+  "origin": "repository_history",
+  "retention_authority": "This repository's own delivery history: commit f544aa0c19d97dd4f1aabd7dfab3df08b2ee6a6b on the #50 branch, whose message records the diagnosis. The defect survived an aggregate `clean` review verdict at head b605051 and was then caught by CI. Public, owner-authored, no retention question.",
+  "sanitization": "Rewritten against a fictional `taskr` runner rather than the real tool, so the case carries no repository-specific naming. The failure shape is retained exactly: an optional-tool probe that inspects only the return code, in a suite whose CI environment lacks the tool. Nothing private is involved; both the source commit and this repository are public.",
+  "adjudication": {
+    "first": "This repository's commit f544aa0, whose message records the diagnosis. CI failed on the real defect after an aggregate `clean` review verdict, so the first adjudication is itself a machine.",
+    "second": "oracle",
+    "notes": "Both adjudications are machines, and they are independent of each other: CI judged the real defect, and the shipped oracle judges the minimized reproduction. The strongest-adjudicated case in the corpus."
+  },
+  "recorded_at": "2026-07-27",
+  "notes": "The strongest-adjudicated case in the corpus: its second adjudication is a machine. CI failed on the real defect after a clean review verdict, which is an independent, non-model judgement of materiality."
+}

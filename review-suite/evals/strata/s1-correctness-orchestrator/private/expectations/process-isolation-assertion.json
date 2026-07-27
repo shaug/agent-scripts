@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "process-isolation-assertion",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.name-asserts-identity-not-freshness",
+      "description": "A reviewer may observe that a test named for process freshness asserts executor identity instead, and that the name therefore overstates what is proven. This is the finding this case is built from, and it was adjudicated NOT material: the packet states the suite cannot observe a process identifier at all, the comment already says what is and is not proven, and the assertion is the strongest available proxy. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "the test asserts executor identity rather than process freshness",
+        "the test name overstates what it proves",
+        "this does not actually prove one process per attempt",
+        "rename the test or assert process identity"
+      ]
+    },
+    {
+      "id": "anf.artifact-glob-not-scoped",
+      "description": "The artifact glob reads a directory-wide pattern rather than only this run's files. A real observation about the test's precision, and worth saying. It is not material to either stated requirement, and the packet's contract does not claim per-run scoping, so it is tolerated rather than counted.",
+      "equivalent_formulations": [
+        "the glob is not scoped to this run",
+        "reads every file in the artifact directory"
+      ]
+    }
+  ]
+}

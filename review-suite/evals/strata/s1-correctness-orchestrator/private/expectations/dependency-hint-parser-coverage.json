@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "dependency-hint-parser-coverage",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.retired-alias-coverage-request",
+      "description": "A reviewer may ask for coverage that locks one of the retired alias variants, or for the aliases to be kept for compatibility. This is the finding this case is built from, and it was adjudicated NOT material: the parser was deliberately narrowed to the canonical shape, so a regression path for a retired alias would pin behaviour the change exists to remove. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "add a regression case for the type variant",
+        "keep the retired aliases for compatibility",
+        "coverage for the alias shapes is missing",
+        "the parser should still accept relation or linkType"
+      ]
+    },
+    {
+      "id": "anf.missing-link-kind-silently-ignored",
+      "description": "An entry whose link kind is absent is skipped without comment. Worth noting; the packet states every entry comes from a live export that always emits the canonical field.",
+      "equivalent_formulations": [
+        "an entry with no link kind is silently skipped",
+        "no error for a missing link type"
+      ]
+    }
+  ]
+}

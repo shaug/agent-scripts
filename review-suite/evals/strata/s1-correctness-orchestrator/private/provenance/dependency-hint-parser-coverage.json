@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "dependency-hint-parser-coverage",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 279, review comment 2862025661, authored by the repository owner and declined on the merits in reply 2862037362. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional lineage parser. Retains only the shape of the adjudicated exchange: a coverage request for an alias the change deliberately retired, declined because the contract narrowed. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 279 review comment 2862025661, declined on the merits in reply 2862037362.",
+    "second": "oracle"
+  },
+  "recorded_at": "2026-07-27",
+  "notes": "CLEAN CONTROL under the owner's settled standard. The reviewer asked for a regression case pinning a retired alias; the owner declined on the merits because the parser had been intentionally narrowed to the canonical shape. The rejected concern is recorded as anf.retired-alias-coverage-request."
+}

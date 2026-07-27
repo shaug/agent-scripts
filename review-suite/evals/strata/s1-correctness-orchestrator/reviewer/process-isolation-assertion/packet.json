@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/harness",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "d81f5a027c34e9b6120837aed5f96c4b1e7a20d3",
+    "comparison_base_sha": "40b9c7e2118d5f36a09e17b4c826d5310fa9e7b2",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/harness/tests/test_attempts.py b/harness/tests/test_attempts.py\n--- a/harness/tests/test_attempts.py\n+++ b/harness/tests/test_attempts.py\n@@ -30,1 +30,12 @@ def test_each_attempt_is_recorded():\n     assert len(records) == 2\n+\n+\n+def test_every_attempt_runs_in_its_own_process():\n+    records = run_attempts(runs=2, artifact_dir=ARTIFACTS)\n+    names = set()\n+    for path in ARTIFACTS.glob(\"*.stdout.json\"):\n+        names.add(json.loads(path.read_text())[\"executor\"][\"name\"])\n+    # The bundled executor reports a stable name; process freshness is proven by\n+    # the driver spawning one subprocess per attempt.\n+    assert names == {\"bundled-executor\"}\n+    assert len(records) == len(list(ARTIFACTS.iterdir()))\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Cover the driver's per-attempt behaviour: every attempt is recorded, and each attempt's retained output is written under its own name.",
+    "acceptance_criteria": [
+      "Every attempt produces exactly one retained artifact.",
+      "The retained artifacts are attributable to the executor that produced them."
+    ],
+    "non_goals": [
+      "Change how the driver spawns a process.",
+      "Add a mechanism for observing operating-system process identity."
+    ],
+    "preserved_behaviors": [
+      "The driver still spawns one subprocess per attempt."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Test naming rules",
+        "location": "AGENTS.md",
+        "summary": "A test's name states its subject. Where a property cannot be observed from inside the suite, assert the strongest observable proxy and say in a comment what is and is not proven."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Driver contract",
+        "location": "docs/driver.md"
+      },
+      {
+        "label": "Driver",
+        "location": "harness/driver.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Bundled executor",
+        "location": "harness/bundled_executor.py"
+      },
+      {
+        "label": "Driver tests",
+        "location": "harness/tests/test_attempts.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "harness tests",
+      "command": "pytest harness/tests",
+      "scope": "focused",
+      "status": "passed",
+      "result": "19 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "19 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "The bundled executor reports a fixed name and exposes no process identifier, so the suite has no way to observe an operating-system process id.",
+      "The driver calls the executor through one `subprocess.run` per attempt; that is the code the assertion is about."
+    ],
+    "operational": [
+      "The retained artifacts are the only evidence a later record can cite."
+    ]
+  }
+}

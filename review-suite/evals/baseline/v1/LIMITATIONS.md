@@ -249,8 +249,176 @@ the source.
 
 `runner.refuse_to_overwrite_artifacts` fails before launching any attempt when a
 run would overwrite a retained raw stdout artifact. The per-attempt records, the
-aggregate report, and the baseline report are still written unconditionally. The
-frozen invocations give every output the same `<commit>-<corpus_version>` stem,
-so in practice the raw-artifact collision fires first and nothing is lost — but
-that is the invocation's property, not the runner's. Widening the guard is a
-deferred finding.
+aggregate report, and the baseline report are still written unconditionally.
+
+**Only some of those paths are protected in practice, not all of them.** The
+frozen invocations give `--artifact-dir` and `--attempts-out` the same
+`<commit>-<corpus_version>` stem, so a re-run into a new stem writes beside the
+old records rather than over them. Every `--report-out` is a **stemless fixed
+path** — `baseline/v1/pilot/pilot-<stratum>.report.json` and
+`baseline/v1/<stratum>.report.json` — so a re-run at a new corpus version
+replaces a committed report **without the guard firing**. That is not
+hypothetical: it is how this ticket's own committed pilot reports were replaced
+between batches.
+
+The only thing protecting a committed report is that `baseline/v1/` is tracked
+in git, so an overwrite is visible in `git status` and recoverable from history.
+That is a real protection and a weak one, because it depends on someone looking.
+Widening the guard to every output path remains a deferred finding.
+
+## 13. False-alarm rate is a lower bound on invention, not a general rate
+
+Every clean control in this corpus is an **adjudicated-rejected finding**: a
+case where a concern was actually raised and dispositioned as not material. That
+is the owner's settled standard, and it is the right one — the alternative,
+treating a comment-free candidate as clean, is ambiguous between
+reviewed-and-clean and nobody-looked, and would charge a false alarm against a
+reviewer that correctly found a real unnoticed defect.
+
+The standard has a boundary that must travel with every figure derived from it.
+**It measures whether a reviewer re-raises a finding a human already rejected.
+It does not measure whether a reviewer invents a novel finding on a wholly clean
+diff.** Those are different failure modes, and only the first is instrumented
+here.
+
+So report false-alarm rate from these controls as a **lower bound on
+invention**. A reviewer could score a perfect 0.0 on every one of them and still
+gate freely on diffs where nothing was ever raised. Measuring that would need a
+different control class — a candidate adjudicated clean by construction rather
+than by rejection — which this corpus does not contain and which the standard
+above deliberately declines to fake.
+
+## 14. A scored stratum cannot be both calibrated and result-blind
+
+This is the sharpest open question the corpus has, and it blocks scoring rather
+than merely qualifying it.
+
+Batch 1 measured what an uncalibrated expectation reports: recall 0.0 over five
+attempts against a reviewer that found the defect every time, because grader
+matching is containment and the shipped formulations had never met real prose.
+Calibration fixed it — recall 1.0 — but calibration requires *observing the
+reviewer's prose for that case*. Observing a scored case's prose and then tuning
+its formulations is fitting the grader to the answer, which is exactly what the
+non-goals forbid.
+
+`s1-correctness-orchestrator` is therefore populated with `scored: false` and
+every expectation `calibrated: false`, and **no case in it has been run through
+any runtime**. Both states are honest, and neither is a resting place: scored as
+it stands, it would report a number about the corpus. Four resolutions exist,
+and the owner has to pick one:
+
+1. **Rely on transfer.** Calibrate only on the disjoint pilot cases and accept
+   that scored formulations are untuned. Measured to transfer once — the pilot's
+   calibrated formulations held on two later runs — but transfer is not
+   guaranteed, and untuned formulations bias recall **downward**, so the
+   baseline would understate the reviewer.
+2. **Split each case class.** Calibrate on half, score the other half. Costs
+   corpus size, which the per-stratum minima already constrain.
+3. **Report referrals as a first-class bucket.** Score matched, missed, and
+   *referred for adjudication* separately, so a containment miss is visible as a
+   grader limitation instead of silently becoming a reviewer miss. Cheapest, and
+   it makes the existing `adjudication_required` output load-bearing.
+4. **Replace containment matching** with semantic matching or a standing
+   adjudication queue. A v2 mechanism, so it belongs to #59.
+
+Whichever is chosen, it must be preregistered with the rest of the frozen
+configuration, because it decides what recall means.
+
+## 15. An oracle adjudicates a requirement, not a diff
+
+Every case in `s1-correctness-orchestrator` carries an executable oracle as its
+second adjudication, and that is genuinely independent of the reviewer being
+measured — a machine that runs the code shares no blind spot with a model. But
+an oracle asserts only the requirements the change contract states.
+
+- On a gating case it proves the requirement fails and that correcting the
+  stated root cause makes it hold, which adjudicates both materiality and the
+  identity of the cause.
+- On a clean control it proves the stated contract holds. **It does not prove
+  the diff is free of every possible defect**, so a clean control means "the
+  contract holds and the raised concern was adjudicated immaterial", never
+  "nothing is wrong here".
+- It cannot adjudicate a judgement about prose. Two cases record this: an oracle
+  cannot settle whether a field's name reads as a claim it should not make, nor
+  whether a test's name overstates what it asserts.
+
+One case carries a further caveat. `process-isolation-assertion`'s first
+adjudication came from the review suite **under evaluation** — a `defer` verdict
+from the same contract being measured — which is weaker evidence than a human
+disposition and is recorded as such in its provenance.
+
+## 16. A grader formulation must not be quotable from its own packet
+
+A contamination class that the physical separation of reviewer and private
+artifacts does not cover, found by review on this corpus and now gated.
+
+The audit's text search folds case and whitespace but keeps punctuation. The
+grader folds punctuation away entirely. So a formulation reading
+`subprocess.run raises FileNotFoundError` is invisible to the audit when its
+packet says `` `subprocess.run` raises `FileNotFoundError` `` — and is a perfect
+match once the grader normalises both. **A case shipped in exactly that state**:
+the stratum's only validation-gap escape could have been answered at full recall
+by quoting its own input, so it would have measured whether a reviewer echoes
+the packet rather than whether it finds the escape.
+
+The general lesson is worth stating beyond this instance: *whatever the grader
+treats as the same text is what decides a score, so an audit that uses a
+stricter definition of "the same text" than the grader is not auditing the thing
+that matters.* The two now share one normalisation, and a regression test echoes
+a formulation into its own packet with punctuation between every word to prove
+the check survives re-wording.
+
+Scoped to `material_root_causes`. An accepted non-finding's formulation often
+does legitimately restate reviewer-visible content, and matching one only makes
+the grader more tolerant of an observation already judged immaterial — it cannot
+manufacture a correct answer. A second test pins that exemption so it is a
+decision rather than an oversight.
+
+What this does **not** cover: a packet that describes the defect in words the
+formulations do not use. No mechanical check can catch that, because the packet
+is supposed to describe the change. It is a curation judgement, and the oracle
+is the backstop — a case whose defect is spelled out in its own packet will
+still fail its oracle if the stated root cause is not the real cause.
+
+## 17. An oracle is a hand transcription of its packet, with no mechanical link
+
+Limitation 15 says an oracle adjudicates a requirement rather than a diff. There
+is a second, sharper gap in the same mechanism, and this corpus demonstrated it.
+
+An oracle's `candidate()` is written by hand to mirror the packet's diff.
+Nothing checks that it does. Review found a case where the diff's corrective
+action was guarded on the wrong side of a negation — so the diff's own added
+test could not have passed, while the packet recorded that suite as green — and
+**the oracle passed anyway**, because it modelled only the two decision
+predicates and never the action the test asserts. The packet was corrected, and
+that oracle now exercises the corrective action too, but the general hole is
+unchanged: an oracle can agree with a packet that says something different.
+
+So an oracle raises the floor without closing it. It proves a requirement is
+violated and that correcting the stated cause fixes it; it does not prove the
+reproduction it runs is the reproduction the reviewer will read. Two habits
+follow, and neither is automatable today:
+
+- read a packet's own added tests as claims that must be *satisfiable* against
+  its own diff, since a packet asserting a green suite it cannot have is
+  inconsistent evidence a contract-faithful reviewer may refuse; and
+- write the oracle from the packet's *acceptance criteria and its tests
+  together*, not from the criteria alone.
+
+A mechanical link — generating one from the other, or applying the diff and
+running its tests — would close it, and is a candidate v2 mechanism for #59
+rather than something this ticket should invent.
+
+## 18. Diff validity is now gated, and was not before
+
+Every packet's diff must parse as a patch. That was asserted only for the
+original protocol-proof corpus, so malformed hunk headers shipped in every
+stratum added afterwards: eleven of the seventeen packets in this repository
+failed `git apply --numstat` when first checked.
+
+It matters more for a scored stratum than it looks. A packet whose diff is not a
+valid patch is internally inconsistent evidence, and a reviewer that refuses a
+merge verdict on it is behaving correctly under its own contract — which a
+scored run would then record as a verdict mismatch, charging the reviewer for a
+curation defect. All seventeen now parse, and the check runs across every corpus
+rather than one.

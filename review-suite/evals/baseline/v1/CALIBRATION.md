@@ -40,8 +40,8 @@ and closure digest rather than by a commit: no commit reproduces it.
 > **before any attempt launches** when a run would overwrite retained output, so
 > the failure is a refusal that costs nothing rather than a silent replacement.
 > And retained output now goes to a version-scoped directory,
-> `artifacts/<stratum>/<corpus_version>/`, which is the artifact path recorded
-> in the frozen per-stratum invocations.
+> `artifacts/<stratum>/<commit>-<corpus_version>/`, which is the artifact path
+> recorded in the frozen per-stratum invocations.
 >
 > The committed `observed` probes are therefore verbatim, byte for byte, from
 > the **first post-calibration run**, whose output is retained at
