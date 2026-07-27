@@ -576,3 +576,45 @@ them. Nothing mechanical catches this today; it took three independent review
 passes on one four-case stratum to find every instance, which is itself evidence
 that curation discipline alone is not a durable defense and a future population
 batch should expect the same scrutiny.
+
+## 25. The code-simplicity stratum has no oracle either
+
+Same reason as `s2-solution-simplicity-lens`: "this is a duplication defect" and
+"this apparent duplication is justified" are design judgements, not properties a
+runnable check can decide. Every case in `s3-code-simplicity-lens` records
+`adjudication.second: owner_required` with a recommended disposition and
+residual risk, and the same test that holds `s2` to this also holds `s3` to it.
+
+## 26. One source PR grounds an escape in two strata, read at two levels
+
+`atelier` PR 410 comment 2870262209 grounds both `s2`'s
+`registry-client-layering` (read at the whole-solution level: three overlapping
+client classes should converge) and `s3`'s
+`metrics-label-formatting-duplication` (read at the local-implementation level:
+the same comment separately observed repeated argument-threading as a local
+reuse defect). This is the same kind of deliberate reuse already recorded in
+limitation 20 for a different source (`atelier` PR 417, reused across `s1` and
+`s2` under two different standards), now happening a second time across `s2` and
+`s3`.
+
+The two cases are built against deliberately different fictional subjects — a
+registry client and a metrics exporter — specifically so they do not read as the
+same scenario duplicated across strata. Recorded here, as with limitation 20, so
+a reader who notices the same PR number twice finds the reasoning rather than an
+unexplained coincidence, and so a future population batch does not repeat the
+same real source a third time without noticing the pattern.
+
+## 27. Corpus minima are now met across all three declared strata; scoring is not
+
+With this batch, `s1-correctness-orchestrator`, `s2-solution-simplicity-lens`,
+and `s3-code-simplicity-lens` are all `populated_not_scored`. No stratum remains
+`declared_unpopulated`. That closes one gate and leaves two open, both stated
+plainly rather than implied closed by the corpus being complete:
+
+- **Independent adjudication** is satisfied by executable oracle for every case
+  in `s1`, and needs the owner directly for every case in `s2` and `s3` — 8
+  cases across the two strata, each with a recommended disposition recorded
+  rather than a bare list.
+- **The frozen baseline** cannot be captured until the owner's adjudications
+  land, regardless of corpus completeness. Populating every stratum is a
+  necessary condition for scoring, not a sufficient one.

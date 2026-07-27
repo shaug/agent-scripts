@@ -1,7 +1,7 @@
 {
   "record_version": "1.0",
-  "status": "ceiling_and_grading_method_settled_adjudication_partial",
-  "status_detail": "The per-stratum cost ceiling is preregistered by the owner at 9.00 / 3.00 / 3.00 USD, 15.00 USD total, as a hard ceiling. The clean-control standard is settled: an adjudicated-rejected finding, with false-alarm rate reported as a lower bound on invention. The grading method is settled: score every case matched, missed, or referred for adjudication, never calibrating a scored case on its own prose first. Independent adjudication is satisfied by executable oracle for every populated correctness case (s1) and needs the owner directly for every populated solution-simplicity case (s2), each with a recommended disposition recorded. One stratum, s3-code-simplicity-lens, remains unpopulated (batch 4). No case in any populated stratum has been run through any runtime and none may be until the owner adjudicates s2 and, once s3 lands, s3.",
+  "status": "corpus_minima_met_adjudication_partial",
+  "status_detail": "All three declared strata are populated: s1-correctness-orchestrator (7 cases, every one oracle-settled), s2-solution-simplicity-lens (4 cases), and s3-code-simplicity-lens (4 cases). Neither s2 nor s3 has an executable oracle for its subject; every case in both records adjudication.second: owner_required with a recommended disposition and residual risk. The per-stratum cost ceiling is preregistered at 9.00 / 3.00 / 3.00 USD, 15.00 total. The clean-control standard is settled: an adjudicated-rejected finding. The grading method is settled: score matched, missed, or referred for adjudication, never calibrating a scored case on its own prose first. No case in any populated stratum has been run through any runtime. Corpus minima being met is a necessary condition for a scored baseline, not a sufficient one: the owner's direct adjudication of s2 and s3 (8 cases) and the frozen-baseline freeze itself remain outstanding.",
   "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
   "v1_review_behaviour_commit_note": "The pre-v2 review-suite commit whose behaviour a scored baseline must evaluate. This candidate modifies no file under skills/ and no v1 contract, so the evaluated closure text is identical at every commit on this branch: all three closure digests recorded below and in every pilot report are unchanged from this commit. The digest, not the commit, is the load-bearing pin - a commit can move without the evaluated text changing, and the evaluated text cannot change without the digest moving.",
   "pilot_suite_commit": "2ae0d23c18f247f49d3cc5e76f26d1cf9610c83e",
@@ -114,7 +114,7 @@
     },
     {
       "id": "s3-code-simplicity-lens",
-      "state": "declared_unpopulated",
+      "state": "populated_not_scored",
       "target_skill": "review-code-simplicity",
       "target_skill_dependencies": [],
       "closure_documents": 2,
@@ -134,8 +134,17 @@
       "expected_spend_note": "Expected spend assumes the prompt cache behaves as measured: one cache-creation attempt per case, the rest cache reads. The proposed ceiling assumes every attempt pays cache creation, which is the worst case actually observed rather than a hypothetical one.",
       "worst_observed_cold_cost_per_attempt_usd": 0.1116,
       "all_cold_worst_case_usd": 2.23,
-      "adjudication": "Oracle unavailable: an over-engineering or reuse claim has no executable form. Second adjudication is `owner_required` for every case in this stratum.",
-      "cost_ceiling_status": "preregistered_by_owner"
+      "adjudication": "No executable oracle exists for this subject. Every case's second adjudication is `owner_required`, each with a recommended disposition and residual risk recorded in SOURCING.md and per-case provenance.",
+      "cost_ceiling_status": "preregistered_by_owner",
+      "cases": 4,
+      "case_ids": [
+        "compat-accessor-boundary-duplication",
+        "env-inventory-bullet-format",
+        "metrics-label-formatting-duplication",
+        "watcher-check-policy-duplication"
+      ],
+      "corpus_version": "0.1-s3-populated",
+      "blocked_on": "Two independent adjudications for every case (source disposition as the first, the owner as the second - no oracle exists)."
     },
     {
       "id": "connector-escape",
@@ -178,7 +187,7 @@
     }
   ],
   "pending_owner_inputs": [
-    "Second adjudications for every case in s2-solution-simplicity-lens (delivered, recommendations recorded) and, once populated, s3-code-simplicity-lens (batch 4). No oracle exists for either subject."
+    "Second adjudications for every case in s2-solution-simplicity-lens (4) and s3-code-simplicity-lens (4). No oracle exists for either subject; recommended dispositions are recorded per case."
   ],
   "pilot_reports": [
     {

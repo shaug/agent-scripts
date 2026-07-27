@@ -211,6 +211,20 @@ None of these four is settled. They are recommendations, not adjudications, and
 the record is explicit about the distinction so a recommendation is never
 mistaken for a second party's judgement.
 
+## 2d. Outcome: `s3-code-simplicity-lens`, no oracle available
+
+Same shape as `s2`: every case records `adjudication.second: owner_required`,
+enforced by the same test.
+
+| case                                   | recommended | the strongest counter-argument, for the owner to weigh                                                                                                                                                                                                                      |
+| -------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `watcher-check-policy-duplication`     | MATERIAL    | Severity is recorded as strong_recommendation rather than blocking, since the packet shows no currently observed drift, only a stated history of it; a reviewer could argue for blocking given that history.                                                                |
+| `metrics-label-formatting-duplication` | MATERIAL    | This case and s2's `registry-client-layering` trace to the same source PR and comment, read at two different levels; the owner should confirm this reuse is deliberate and recorded rather than an unintended duplicate sample of one finding across two strata.            |
+| `compat-accessor-boundary-duplication` | CLEAN       | A reviewer could reasonably ask whether the two independently scheduled callers could still share one function with two call sites rather than two functions with one body each - a smaller version of the question this case's own accepted non-finding already tolerates. |
+| `env-inventory-bullet-format`          | CLEAN       | A reviewer could reasonably propose a narrower fix (wrapping only the wide cell, or a two-column table) rather than the fully verbose bullet form; this case's own accepted non-finding already flags the repeated owner field as one place that narrower fix could start.  |
+
+None of these four is settled. They are recommendations, not adjudications.
+
 ## 3. Expected workload
 
 Fifteen scored cases across three strata: roughly 12–16 material root causes,

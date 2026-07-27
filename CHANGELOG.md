@@ -4,9 +4,13 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Populated the solution-simplicity stratum, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
+## 2026-07-27 — Populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- docs: record the code-simplicity delivery and close out corpus population
+- feat: populate the code-simplicity stratum with four adjudicated cases
+  (`030042a0ee27f9da98413dfe49ed703904808f8b`)
 - fix: sweep sanitization across every reviewer-visible field, not only the diff
+  (`fdbfdc33a252fe5c830bbc9b4e7c091fa46a441f`)
 - fix: make every s2 packet internally consistent after the sanitization rename
   (`5cb339d879aae87946b077fedb53fc3bab013dfd`)
 - fix: sanitize the solution-simplicity cases against source-vocabulary leakage

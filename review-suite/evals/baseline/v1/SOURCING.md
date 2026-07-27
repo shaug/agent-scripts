@@ -223,14 +223,39 @@ twice (`defer`, `fail`); a second attempt, `changeset-status-transition-guard`,
 still matched on `changes` as a substring of `changeset`. It shipped as
 `record-status-transition-guard`.
 
-### Batch 4 — `s3-code-simplicity-lens`, 4 cases
+### Batch 4 — `s3-code-simplicity-lens`, 4 cases — **DELIVERED**
 
-| class                                  | candidate ground truth                                                                                                                                                                                                                                     |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| local code-complexity or reuse         | `shaug/agent-scripts` commit `9351619`: **the code-simplicity lens under evaluation itself** flagged the last inline copy of a policy predicate on PR 27; all three agreement sites now share one predicate. Adjudicated by this repository's own history. |
-| local code-complexity or reuse         | `shaug/atelier` PR 410, comment 2870262209, read at the local level: the duplicated client concepts and the repeated argument threading at every call site.                                                                                                |
-| behaviour-clarifying near-miss control | `shaug/atelier` PR 630, comment 2906875752: compatibility accessors retained at the true downstream edge where untouched callers still need them — apparent duplication that is justified by the migration boundary.                                       |
-| non-material near-miss control         | `shaug/atelier` PR 443, comment 2880556753: per-item bullet blocks chosen over a table for formatter stability and diff-friendliness — apparent verbosity that is justified.                                                                               |
+Populated but not scored. Like `s2`, this stratum has no executable oracle for
+its subject: "this is a duplication defect" and "this apparent duplication is
+justified" are design judgements, not properties a runnable check can decide.
+Every case records `adjudication.second: owner_required` with a recommended
+disposition and residual risk.
+
+| case                                   | class                                  | source disposition                                                                                              | expected | recommended adjudication |
+| -------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------- | ------------------------ |
+| `watcher-check-policy-duplication`     | local code-complexity or reuse         | this repository's own commit `9351619` — the code-simplicity lens under evaluation flagged the last inline copy | gating   | MATERIAL                 |
+| `metrics-label-formatting-duplication` | local code-complexity or reuse         | atelier PR 410, comment 2870262209 — **accepted**, read at the local-implementation level                       | gating   | MATERIAL                 |
+| `compat-accessor-boundary-duplication` | behaviour-clarifying near-miss control | atelier PR 630, comment 2906875752 — accepted resolution of concern raised in 2906745973                        | clean    | CLEAN / NOT MATERIAL     |
+| `env-inventory-bullet-format`          | non-material near-miss control         | atelier PR 443, comment 2880556753 — accepted resolution of an earlier formatting concern                       | clean    | CLEAN / NOT MATERIAL     |
+
+Sanitization: all four are rewritten from scratch against fictional subjects (a
+watch-tool, a metrics exporter, a registry runtime, a worker-runtime inventory
+doc), including the one sourced from this repository's own history, which is
+fictionalized so it cannot be recognised as or confused with this suite's own
+code. No source identifier, path, symbol, prose, or diff was copied; every
+packet and expectation was checked against the specific classes of leak found
+and fixed in `s2` (real product terms, real symbol names, verbatim reviewer
+phrasing) before this record was written, not after.
+
+One source is reused a third time across strata. `atelier` PR 410 comment
+2870262209 already grounds `s2`'s `registry-client-layering` (the whole-solution
+over-engineering reading) and now also grounds
+`metrics-label-formatting-duplication` here (the local-implementation reading:
+the same comment separately observed "repeated argument-threading" as a local
+reuse defect). The two cases are built against deliberately different fictional
+subjects — a registry client versus a metrics exporter — so they do not read as
+one scenario duplicated across two strata, and the reuse is recorded plainly
+rather than left for a reader to notice and wonder about.
 
 ## Guarantees this record makes
 
@@ -248,5 +273,10 @@ still matched on `changes` as a substring of `changeset`. It shipped as
 - Every case in `s2-solution-simplicity-lens` has no executable oracle and needs
   the owner directly, with a concrete recommended disposition and its residual
   risk recorded per case rather than left as a bare list.
+- Every case in `s3-code-simplicity-lens` likewise needs the owner directly, for
+  the same reason: a duplication judgement has no executable oracle.
+- All corpus minima across all three declared strata are now met. The three
+  scored-plus-deferred strata are `populated_not_scored`; no stratum remains
+  `declared_unpopulated`.
 - No case in any populated scored stratum has been run through a runtime. They
   are unobserved, which is what keeps a later baseline result-blind.
