@@ -6,6 +6,7 @@ import helpers  # noqa: F401
 from metadata import (
     ChangesetMetadata,
     MetadataError,
+    SourceIdentity,
     embed_pr_metadata,
     parse_commit_message,
     parse_pr_metadata,
@@ -54,6 +55,52 @@ class MetadataTests(unittest.TestCase):
         block = render_pr_metadata(self.metadata)
         with self.assertRaisesRegex(MetadataError, "multiple"):
             parse_pr_metadata(f"{block}\n{block}\n")
+
+    def test_successor_metadata_round_trips_in_commit_and_pr(self) -> None:
+        successor = ChangesetMetadata(
+            slug="api-foundation",
+            index=2,
+            source_branch="feature/report-corrected",
+            source_sha="c" * 40,
+            source_lineage=(
+                SourceIdentity("feature/report", "a" * 40),
+                SourceIdentity("feature/report-corrected", "c" * 40),
+            ),
+            recovery_from_head="b" * 40,
+        )
+
+        message = stamp_commit_message("fix: accept review correction", successor)
+        body = embed_pr_metadata("Human prose.\n", successor)
+
+        self.assertIn("Changeset-Lineage:", message)
+        self.assertIn("carve-changesets:metadata:v2", body)
+        self.assertEqual(successor, parse_commit_message(message))
+        self.assertEqual(successor, parse_pr_metadata(body))
+
+    def test_successor_metadata_rejects_missing_or_repeated_lineage(self) -> None:
+        with self.assertRaisesRegex(MetadataError, "recovery-from"):
+            ChangesetMetadata(
+                "part-2",
+                2,
+                "feature/report-corrected",
+                "c" * 40,
+                (
+                    SourceIdentity("feature/report", "a" * 40),
+                    SourceIdentity("feature/report-corrected", "c" * 40),
+                ),
+            )
+        with self.assertRaisesRegex(MetadataError, "repeat"):
+            ChangesetMetadata(
+                "part-2",
+                2,
+                "feature/report",
+                "a" * 40,
+                (
+                    SourceIdentity("feature/report", "a" * 40),
+                    SourceIdentity("feature/report", "a" * 40),
+                ),
+                "b" * 40,
+            )
 
 
 if __name__ == "__main__":

@@ -23,9 +23,13 @@ A **pull request (PR)** is the mechanical GitHub representation of one published
 changeset. Changeset and PR are not synonyms: a changeset exists before
 publication and remains the conceptual unit after its PR merges.
 
-The **source branch** contains the complete review-ready result to carve. The
-**base branch** is the mainline branch against which the source result and the
-changeset sequence are compared. Both are user-specified reference branches.
+The **root source** is the original immutable branch and exact commit containing
+the complete review-ready result to carve. A **successor source** is a distinct
+immutable branch and exact commit containing an accepted corrected intended
+result after a prefix changeset has merged. The ordered root and successor
+identities form the **source lineage**. The final entry is the **active
+source**. The **base branch** is the mainline branch against which the active
+source result and changeset sequence are compared.
 
 The **changeset chain** is the ordered sequence of changeset branches. Each
 branch is based on its immediate predecessor, except the first, which is based
@@ -43,9 +47,9 @@ Before decomposition, live git state must prove all of the following:
   and
 - the implementation worktree is clean.
 
-The source branch is immutable throughout decomposition, publication, merge, and
-propagation. Changeset work never rewrites, rebases, resets, commits to, or
-force-pushes the source branch.
+Every source identity is immutable throughout decomposition, publication,
+recovery, merge, and propagation. Changeset work never rewrites, rebases,
+resets, commits to, or force-pushes a root or successor source.
 
 ### Changeset model
 
@@ -129,7 +133,8 @@ resulting schemas, and verify behavioral equivalence.
 ### Equivalence guarantee
 
 After all changesets merge in order, the resulting codebase must be functionally
-equivalent to the immutable source branch.
+equivalent to the active immutable source. An ordinary chain has a one-entry
+lineage whose active source is its root source.
 
 Allowed differences are limited to commit-history shape, decomposition
 scaffolding that is intentionally retained, explanatory documentation, and
@@ -144,24 +149,28 @@ local, must not mutate the source branch, and must not become a truth source.
 #### Live chain validation
 
 Validation derives every invariant from the rehydrated chain and current git
-objects. It must prove that the first changeset descends from the base, every
-later changeset descends from its immediate predecessor, and the final changeset
-tree equals the source commit stamped in every `Changeset-Source` trailer.
+objects. It must prove that the first unmerged changeset descends from the
+current base or its immediate unmerged predecessor, every merged prefix position
+is represented on current base, and the reconstructed base-plus-suffix tree
+equals the active source commit. Every position must carry either the one-entry
+root lineage or a continuous prefix of the same ordered lineage. The first
+recovered suffix position and every later recovered position carry the complete
+active lineage.
 
-The current source ref is classified against that stamped source commit. An
-unchanged ref is clean. A descendant is reported as `source_advanced`, while the
-chain remains validated against its stamped source. A ref that does not descend
-from the stamped commit is a `source_history_mismatch` error because the chain
-was built against a different source history. Legitimate downstream rebase
-propagation therefore validates cleanly: validation compares live ancestry and
-trees, never recorded branch heads.
+Every source ref is classified against its stamped exact commit. An unchanged
+ref is clean. For an ordinary root source, a descendant may be reported as
+`source_advanced` while validation remains bound to the stamp. A successor
+source that moves, disappears, or resolves differently is an error. A ref whose
+history does not contain its stamped commit is a `source_history_mismatch`
+error. Legitimate downstream rebase propagation therefore validates cleanly:
+validation compares live ancestry and trees, never cached branch heads.
 
 ### Plain git and GitHub stack shape
 
 Every materialized and published chain must remain ordinary git and GitHub:
 
-- changeset branches are named `<source>-N`, where `N` is the stable one-based
-  sequence position;
+- changeset branches are named `<root-source>-N`, where `N` is the stable
+  one-based sequence position;
 - changeset 1 is based on the base branch;
 - every later changeset branch is based on its predecessor branch;
 - every PR is based on its predecessor changeset branch, except the first PR,
@@ -173,6 +182,11 @@ Every materialized and published chain must remain ordinary git and GitHub:
 Materialized changesets are append-only: they are not silently reordered or
 renumbered. PR titles may report `(N of M)`, with `M` updated when changesets
 are appended, but the stable position `N` does not change.
+
+Suffix recovery retains those branch names, PR identities, slugs, and stable
+positions. It may replace commits only on the exact owned unmerged suffix under
+an exact lease. It never creates a second position 1, rewrites a merged commit,
+or makes successor-source naming determine chain positions.
 
 This stack shape must remain adoptable by external stacking tools such as
 Graphite or git-spice. `carve-changesets` does not depend on those tools and
@@ -186,6 +200,7 @@ Truth moves forward through four phases:
 proposed (plan file)
   -> materialized (branch and commit trailers)
   -> published (PR metadata)
+  -> recovered (successor lineage on owned unmerged suffix)
   -> merged (mainline)
 ```
 
@@ -256,6 +271,37 @@ branch.
 Merged truth is represented by mainline. A plan edit, branch rewrite, or PR body
 edit cannot revoke or redefine a merged changeset.
 
+#### Recovered suffix
+
+A published suffix is recovered only when a distinct immutable successor source
+contains all accepted corrections and live evidence proves that the preceding
+prefix is already represented on current base.
+
+- May read: current base and source refs, exact commit trailers, same-repository
+  PR heads and bases, PR metadata, remote branch heads, and merged PR evidence.
+- Must write: new suffix commits carrying continuous lineage, exact-lease
+  updates to exclusively owned suffix branches, matching v2 PR metadata, and
+  freshly rebuilt candidate-bound evidence.
+- Must preserve: merged prefix commits and PRs, root source identity, stable
+  indexes, slugs, branch names, PR identities, and ordinary stack bases.
+- Must not depend on: the plan file, a local cache, stale validation or review
+  results, or a previously observed remote head.
+
+Recovery is resumable from live refs and PR metadata. During the narrow
+branch-updated/PR-metadata-not-yet-updated interval, `recover-suffix` may
+rehydrate the exact transition only when the commit identifies the exact prior
+head, the PR block retains the immediately prior metadata, and every other
+identity is unambiguous. Recovered commit heads must form a leading prefix of
+the open suffix, and v2 PR provenance must either match its commit exactly or
+retain the immediately prior lineage during that one metadata-update interval.
+Ordinary `status` may report that interval as inconsistent; it must not silently
+accept it as a complete chain.
+
+Before any remote recovery write, every root and successor identity in the
+lineage must exist at its exact stamped SHA on the selected remote. A matching
+local-only source is insufficient because a fresh clone could not reconstruct
+the published lineage.
+
 ### Metadata authority
 
 Commit trailers and delimited PR metadata blocks are the only carriers of
@@ -271,6 +317,25 @@ machine-readable, versioned when compatibility requires it, and specified by the
 implementation that introduces them. No local database, cached state file,
 synthetic ref, label convention, comment convention, or external stacking-tool
 store may replace these carriers.
+
+#### Concrete metadata versions
+
+Version 1 is the ordinary single-source form. Each commit carries exactly one
+`Changeset-Slug`, `Changeset-Index`, and `Changeset-Source: <branch> @ <sha>`
+trailer. Its PR contains one `carve-changesets:metadata:v1` block with exactly
+`slug`, `index`, `source_branch`, and `source_sha`.
+
+Version 2 is the recovered-suffix form. It retains those fields with
+`Changeset-Source` identifying the active successor and additionally carries:
+
+- `Changeset-Lineage`: compact JSON containing the ordered immutable
+  `{"branch": ..., "sha": ...}` identities from root through active source; and
+- `Changeset-Recovery-From`: the exact pre-recovery head of that position.
+
+The matching `carve-changesets:metadata:v2` PR block contains the v1 fields plus
+`source_lineage` and `recovery_from_head`. Commit and PR metadata must
+reconstruct the same identity. Missing, duplicate, repeated-branch,
+discontinuous, or conflicting lineage fails closed.
 
 ### Authority matrix
 
@@ -324,6 +389,14 @@ source branch, an upstream merged branch, or a branch not owned by the current
 chain. It does not imply issue mutation, deployment, production mutation, or
 destructive data operations.
 
+Recovering a published suffix additionally requires explicit suffix-recovery
+acknowledgement. Under that acknowledgement, merge-and-propagate authority
+permits replacing only the exact owned unmerged suffix through
+`--force-with-lease`, updating its existing PR metadata, and rebuilding the
+stack onto current base. It never permits changing a root or successor source,
+rewriting a merged position, renumbering a materialized changeset, replacing an
+unowned or forked PR, or treating recovery as merge authority.
+
 The base branch must never be force-pushed under any authority.
 
 ### Suite seams
@@ -338,7 +411,8 @@ protocol are defined in [suite-handoffs.md](suite-handoffs.md).
 - chain branch creation and ordering;
 - commit-trailer and PR-metadata stamping;
 - whole-chain equivalence verification; and
-- downstream base updates and branch propagation after an upstream merge.
+- downstream base updates and branch propagation after an upstream merge; and
+- successor-source lineage and corrected unmerged-suffix recovery.
 
 `review-code-change` is the repository-owned per-changeset review mechanism.
 Each invocation receives a raw candidate-bound packet for exactly one changeset,
@@ -352,8 +426,12 @@ delegated. Its ownership includes current-head CI, published feedback,
 ticket-scoped fixes, post-fix repository review, base drift, mergeability, and
 optional merge under passed-through authority. `carve-changesets` must not run a
 competing watcher or feedback loop during that delegation. After a verified
-merge result returns, `carve-changesets` resumes ownership only for chain
-rehydration and downstream propagation.
+merge result returns, `carve-changesets` resumes ownership for chain rehydration
+and downstream propagation. When a ticket-scoped fix changes the head after an
+earlier prefix merged and breaks root-source equivalence, `babysit-pr` instead
+returns the exact corrected candidate through the recovery handback.
+`carve-changesets` then exclusively owns successor creation or verification,
+suffix recovery, whole-chain equivalence, and fresh review before re-delegation.
 
 Neither delegated skill owns decomposition decisions, plan mutation, whole-chain
 equivalence, or propagation mechanics. Authority passed to either skill must not
@@ -388,7 +466,7 @@ the current candidate.
 
 Requires:
 
-- exact source and base commit identities;
+- exact root source and base commit identities;
 - a complete proposed sequence in `.carve-changesets/plan.json`;
 - documented intent, ordering, extraction boundaries, and proposed validation
   for every changeset;
@@ -399,11 +477,11 @@ Requires:
 
 Requires:
 
-- exact source and base commit identities;
+- exact root, active source, lineage, and base commit identities;
 - every planned changeset materialized as a local `<source>-N` branch;
 - required commit trailers and verified predecessor ancestry for every branch;
 - approved per-changeset validation and repository-owned review evidence;
-- whole-chain equivalence evidence against the immutable source; and
+- whole-chain equivalence evidence against the active immutable source; and
 - no published branch or PR created by the invocation unless it pre-existed and
   is reported without mutation.
 
@@ -411,11 +489,11 @@ Requires:
 
 Requires:
 
-- exact source and base commit identities;
+- exact root, active source, lineage, and base commit identities;
 - every changeset materialized with required commit trailers and verified
   predecessor ancestry;
 - approved per-changeset validation and repository-owned review evidence;
-- whole-chain equivalence evidence against the immutable source;
+- whole-chain equivalence evidence against the active immutable source;
 - exact remote head and predecessor base identity for every changeset PR;
 - one open PR per changeset with current metadata;
 - every applicable non-merge gate required at the requested boundary; and
@@ -431,7 +509,9 @@ Requires:
 - each merged result verified on the live base branch;
 - every downstream base update and propagation verified against live git and
   GitHub state;
-- final whole-chain tree and behavioral equivalence with the immutable source;
+- final whole-chain tree and behavioral equivalence with the active immutable
+  source;
+- exact root and successor-source identities and continuous lineage;
 - required validation passing on the resulting base; and
 - authorized cleanup complete or precisely limited with preserved artifacts
   identified.
@@ -464,18 +544,27 @@ Return `blocked` without widening scope when:
 - a branch or PR is owned by another active context;
 - safe propagation would require rewriting the base, source, or an unowned
   branch;
+- suffix recovery would require rewriting a merged position, mutating a source,
+  renumbering a materialized position, accepting discontinuous lineage, or
+  updating an unexpectedly advanced suffix branch;
 - a required suite dependency or GitHub capability is unavailable; or
 - a material product, architecture, data, migration, or rollout decision is
   unresolved.
 
 ### Compatibility
 
+Existing v1 chains remain valid ordinary single-source chains and require no
+migration. A published v1 chain may opt into recovery only when its exact live
+commit and PR metadata independently satisfy this contract, its merged prefix is
+represented on current base, and every suffix branch and PR is unambiguously
+same-repository and exclusively owned. Recovery upgrades only the unmerged
+suffix to v2; merged v1 metadata remains unchanged and reconstructs the root
+lineage prefix.
+
 No backwards compatibility is provided for cached predecessor-skill chain
-snapshots, old plan files, old commit conventions, or legacy chains. Those
+snapshots, old plan files, metadata predating v1, or legacy chains. Those
 artifacts are ignored rather than migrated or accepted as authoritative
-evidence. Live branches and PRs may be adopted only when they independently
-satisfy the `carve-changesets` contract and are explicitly brought into scope;
-old metadata alone never qualifies them.
+evidence. Old metadata alone never qualifies a chain for adoption or recovery.
 
 ### Non-goals
 
@@ -483,6 +572,7 @@ old metadata alone never qualifies them.
 
 - plan or implement new product work unrelated to the source branch;
 - mutate or rewrite the source branch;
+- mutate or rewrite any root or successor source;
 - optimize for the fewest possible changesets;
 - support non-git version-control systems or PR hosts other than GitHub;
 - replace a general-purpose stacked-PR tool;

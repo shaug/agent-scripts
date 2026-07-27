@@ -11,6 +11,7 @@ from typing import Iterable, Sequence
 from metadata import (
     ChangesetMetadata,
     MetadataError,
+    SourceIdentity,
     parse_commit_message,
     parse_pr_metadata,
 )
@@ -43,6 +44,7 @@ class ChangesetRecord:
     base: str
     pr_number: int | None = None
     pr_state: str | None = None
+    pr_metadata: ChangesetMetadata | None = None
 
 
 @dataclass(frozen=True)
@@ -50,7 +52,13 @@ class Chain:
     base_branch: str
     source_branch: str
     source_sha: str
+    root_source_sha: str
+    source_lineage: tuple[SourceIdentity, ...]
     changesets: tuple[ChangesetRecord, ...]
+
+    @property
+    def active_source(self) -> SourceIdentity:
+        return self.source_lineage[-1]
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -146,6 +154,122 @@ def _pr_by_branch(
     return {branch: prs[0] for branch, prs in grouped.items()}
 
 
+def _same_changeset_position(left: ChangesetMetadata, right: ChangesetMetadata) -> bool:
+    return (
+        left.slug == right.slug
+        and left.index == right.index
+        and left.root_source == right.root_source
+    )
+
+
+def _validate_lineage_sequence(
+    records: Sequence[ChangesetRecord],
+) -> tuple[SourceIdentity, ...]:
+    previous: tuple[SourceIdentity, ...] | None = None
+    previous_merged = False
+    open_lineage: tuple[SourceIdentity, ...] | None = None
+    for record in records:
+        lineage = record.metadata.source_lineage
+        if previous is not None and lineage != previous:
+            extends = (
+                previous_merged
+                and len(lineage) == len(previous) + 1
+                and lineage[: len(previous)] == previous
+            )
+            if not extends:
+                raise RehydrationError(
+                    f"Changeset branch {record.branch} has missing, conflicting, "
+                    "or discontinuous successor-source lineage."
+                )
+        if record.pr_state != "MERGED":
+            if open_lineage is None:
+                open_lineage = lineage
+            elif lineage != open_lineage:
+                raise RehydrationError(
+                    "Open changeset suffix has conflicting or discontinuous "
+                    "successor-source lineage."
+                )
+        previous = lineage
+        previous_merged = record.pr_state == "MERGED"
+    assert previous is not None
+    return previous
+
+
+def _validate_recovery_transition(
+    records: Sequence[ChangesetRecord], successor: SourceIdentity
+) -> tuple[SourceIdentity, ...]:
+    first_open = next(
+        (
+            offset
+            for offset, record in enumerate(records)
+            if record.pr_state != "MERGED"
+        ),
+        None,
+    )
+    if first_open is None or first_open == 0:
+        raise RehydrationError(
+            "Suffix recovery requires a non-empty merged prefix and an open suffix."
+        )
+    base_lineage = records[first_open - 1].metadata.source_lineage
+    if successor in base_lineage or any(
+        identity.branch == successor.branch for identity in base_lineage
+    ):
+        raise RehydrationError(
+            "Successor source repeats an existing lineage identity or branch."
+        )
+    target = (*base_lineage, successor)
+    _validate_lineage_sequence(records[:first_open])
+    prior_lineage_seen = False
+    for record in records[first_open:]:
+        commit_lineage = record.metadata.source_lineage
+        if commit_lineage not in (base_lineage, target):
+            raise RehydrationError(
+                f"Changeset branch {record.branch} has lineage outside the current "
+                "or requested successor recovery."
+            )
+        if commit_lineage == base_lineage:
+            prior_lineage_seen = True
+        elif prior_lineage_seen:
+            raise RehydrationError(
+                "Recovered changeset heads must form a leading prefix of the open "
+                "suffix; live recovery lineage is discontinuous."
+            )
+        if record.pr_metadata is not None:
+            pr_metadata = record.pr_metadata
+            if pr_metadata.source_lineage not in (base_lineage, target):
+                raise RehydrationError(
+                    f"PR #{record.pr_number} has lineage outside the current or "
+                    "requested successor recovery."
+                )
+            if not _same_changeset_position(record.metadata, pr_metadata):
+                raise RehydrationError(
+                    f"PR #{record.pr_number} metadata changes the stable changeset "
+                    "position during recovery."
+                )
+            if commit_lineage == base_lineage and pr_metadata != record.metadata:
+                raise RehydrationError(
+                    f"PR #{record.pr_number} metadata advances or conflicts before "
+                    "its changeset head is recovered."
+                )
+            if commit_lineage == target:
+                if (
+                    pr_metadata.source_lineage == target
+                    and pr_metadata != record.metadata
+                ):
+                    raise RehydrationError(
+                        f"PR #{record.pr_number} has conflicting recovered provenance."
+                    )
+                if (
+                    pr_metadata.source_lineage == base_lineage
+                    and record.metadata.recovery_from_head == record.head
+                ):
+                    raise RehydrationError(
+                        f"Changeset branch {record.branch} does not identify a distinct "
+                        "pre-recovery head."
+                    )
+    return target
+
+
 def rehydrate_chain(
     *,
     source_branch: str,
@@ -154,6 +278,7 @@ def rehydrate_chain(
     cwd: Path | str = Path.cwd(),
     remote: str = "origin",
     prefer_remote: bool = False,
+    recovery_successor: SourceIdentity | None = None,
 ) -> Chain:
     """Reconstruct an ordered chain without consulting local plan or state files."""
 
@@ -192,7 +317,7 @@ def rehydrate_chain(
         raise RehydrationError("Base branch must not be empty.")
 
     records: list[ChangesetRecord] = []
-    source_sha: str | None = None
+    root_source: SourceIdentity | None = None
     slugs: set[str] = set()
     prior_prs_merged = True
     for index in found:
@@ -215,17 +340,17 @@ def rehydrate_chain(
             raise RehydrationError(
                 f"Changeset branch {branch} has Changeset-Index {metadata.index}; expected {index}."
             )
-        if metadata.source_branch != source_branch:
+        if metadata.root_source.branch != source_branch:
             raise RehydrationError(
-                f"Changeset branch {branch} names source {metadata.source_branch!r}; "
-                f"expected {source_branch!r}."
+                f"Changeset branch {branch} names chain root "
+                f"{metadata.root_source.branch!r}; expected {source_branch!r}."
             )
-        if source_sha is None:
-            source_sha = metadata.source_sha
-        elif metadata.source_sha != source_sha:
+        if root_source is None:
+            root_source = metadata.root_source
+        elif metadata.root_source != root_source:
             raise RehydrationError(
-                f"Changeset branch {branch} names source SHA {metadata.source_sha}; "
-                f"expected {source_sha}."
+                f"Changeset branch {branch} names root source "
+                f"{metadata.root_source.trailer}; expected {root_source.trailer}."
             )
         if metadata.slug in slugs:
             raise RehydrationError(
@@ -235,6 +360,7 @@ def rehydrate_chain(
 
         predecessor_base = base_branch if index == 1 else f"{source_branch}-{index - 1}"
         pr = prs.get(branch)
+        pr_metadata: ChangesetMetadata | None = None
         if pr is not None:
             if pr.is_cross_repository:
                 raise RehydrationError(
@@ -258,7 +384,7 @@ def rehydrate_chain(
                 pr_metadata = parse_pr_metadata(pr.body)
             except MetadataError as exc:
                 raise RehydrationError(f"PR #{pr.number}: {exc}") from exc
-            if pr_metadata != metadata:
+            if pr_metadata != metadata and recovery_successor is None:
                 raise RehydrationError(
                     f"PR #{pr.number} metadata disagrees with commit trailers for {branch}."
                 )
@@ -270,16 +396,25 @@ def rehydrate_chain(
                 base=pr.base_branch if pr else predecessor_base,
                 pr_number=pr.number if pr else None,
                 pr_state=pr.state.upper() if pr else None,
+                pr_metadata=pr_metadata,
             )
         )
         prior_prs_merged = (
             prior_prs_merged and pr is not None and pr.state.upper() == "MERGED"
         )
 
-    assert source_sha is not None
+    assert root_source is not None
+    source_lineage = (
+        _validate_recovery_transition(records, recovery_successor)
+        if recovery_successor is not None
+        else _validate_lineage_sequence(records)
+    )
+    active_source = source_lineage[-1]
     return Chain(
         base_branch=base_branch,
         source_branch=source_branch,
-        source_sha=source_sha,
+        source_sha=active_source.sha,
+        root_source_sha=root_source.sha,
+        source_lineage=source_lineage,
         changesets=tuple(records),
     )

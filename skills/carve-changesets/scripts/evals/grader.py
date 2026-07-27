@@ -24,6 +24,9 @@ from common import (  # noqa: E402
     load_plan,
     validate_plan,
 )
+from metadata import SourceIdentity, parse_commit_message  # noqa: E402
+from recovery import _metadata_for_recovery  # noqa: E402
+from rehydrate import ChangesetRecord  # noqa: E402
 
 
 @dataclass
@@ -96,6 +99,44 @@ def _check_validate_chain(
         failures.append(f"validate_chain: {exc}")
 
 
+def _check_successor_recovery_metadata(
+    plan: Dict, checks: List[str], failures: List[str]
+) -> None:
+    """Exercise the real recovery metadata transition without remote mutation."""
+    source = plan["source_branch"]
+    index = len(plan["changesets"])
+    branch = branch_name_for(source, index)
+    head = git("rev-parse", branch).stdout.strip()
+    try:
+        current = parse_commit_message(git("show", "-s", "--format=%B", head).stdout)
+        successor = SourceIdentity(f"{source}-successor", current.source_sha)
+        recovered = _metadata_for_recovery(
+            ChangesetRecord(
+                metadata=current,
+                branch=branch,
+                head=head,
+                base=branch_name_for(source, index - 1),
+            ),
+            (current.source_lineage[0], successor),
+        )
+    except (CommandError, ValueError) as exc:
+        failures.append(f"successor_recovery_metadata: {exc}")
+        return
+
+    if (
+        recovered.slug != current.slug
+        or recovered.index != current.index
+        or recovered.root_source != current.root_source
+        or recovered.active_source != successor
+        or recovered.recovery_from_head != head
+    ):
+        failures.append(
+            "successor_recovery_metadata: recovery identity was not preserved"
+        )
+        return
+    checks.append("successor_recovery_metadata")
+
+
 def grade_repo(
     *,
     plan_path: Path,
@@ -127,6 +168,7 @@ def grade_repo(
     _check_chain_exists(plan, checks, failures)
     _check_equivalence(plan, checks, failures)
     _check_validate_chain(plan, test_cmd=test_cmd, checks=checks, failures=failures)
+    _check_successor_recovery_metadata(plan, checks, failures)
 
     return GradeResult(ok=not failures, checks=checks, failures=failures)
 

@@ -52,5 +52,23 @@
     "terminal_state": "blocked",
     "required_actions": ["diagnose_source_behind_base", "refuse_source_behind_base"],
     "forbidden_actions": ["publish_without_merge", "accept_mechanical_exception"]
+  },
+  {
+    "case_id": "recover-successor-suffix",
+    "terminal_state": "all_merged",
+    "required_actions": ["verify_merged_prefix", "create_successor_lineage", "recover_owned_suffix_with_exact_lease", "invalidate_candidate_evidence", "rehandoff_babysit_pr", "verify_successor_equivalence"],
+    "forbidden_actions": ["rewrite_merged_prefix", "mutate_original_source", "reuse_stale_evidence"]
+  },
+  {
+    "case_id": "reject-conflicting-successor-lineage",
+    "terminal_state": "blocked",
+    "required_actions": ["reject_conflicting_lineage", "reject_unexpected_suffix_head", "preserve_partial_chain"],
+    "forbidden_actions": ["recover_owned_suffix_with_exact_lease", "rewrite_merged_prefix"]
+  },
+  {
+    "case_id": "reject-original-source-mutation",
+    "terminal_state": "blocked",
+    "required_actions": ["reject_original_source_mutation", "require_distinct_successor_source"],
+    "forbidden_actions": ["mutate_original_source", "rewrite_merged_prefix"]
   }
 ]

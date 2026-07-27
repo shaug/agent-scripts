@@ -26,9 +26,10 @@ competing watcher, retry checks, disposition review threads, or mutate the
 delegated candidate.
 
 The reverse boundary is equally strict: `babysit-pr` does not rebase, renumber,
-or retarget the remaining stacked changesets and does not perform downstream
-propagation. After a verified merge result returns, those chain mechanics belong
-to `carve-changesets` again.
+retarget, or successor-restamp the remaining stacked changesets and does not
+perform downstream propagation. After a verified merge result or explicit
+recovery handback returns, those chain mechanics belong to `carve-changesets`
+again.
 
 ## Per-changeset review packet
 
@@ -97,10 +98,40 @@ instead of delegating it.
 | Merge-and-propagate                 | `merge_when_ready`  | Explicit merge authority is passed through without expansion. Reply and thread-resolution authority remain separate.                                      |
 
 Ordinary pending CI or review time is not a reason for `carve-changesets` to
-reclaim ownership. A head-changing fix made during the delegation requires
-`babysit-pr` to rerun affected and full validation, obtain a fresh
+reclaim ownership. A head-changing fix made before any prefix merge remains
+inside `babysit-pr`: rerun affected and full validation, obtain a fresh
 repository-owned review, push the new candidate, and rebuild invalidated remote
-gates before it can return a terminal result.
+gates before returning a terminal result.
+
+## Successor-source recovery handback
+
+When a ticket-scoped fix changes a suffix candidate after an earlier changeset
+has merged, `babysit-pr` must not merge a candidate that fails the chain's
+root-source equivalence and must not attempt chain mechanics itself. It returns
+exclusive ownership to `carve-changesets` with the exact PR, old stamped head,
+corrected head and tree, accepted ticket scope, current gates, and the merged
+prefix identity. This is a recovery handback, not a terminal success.
+
+`carve-changesets` may proceed only when the merged prefix remains valid and is
+represented on current base. It must create or receive a distinct immutable
+successor source containing all accepted fixes, then:
+
+1. rehydrate the root chain and exact open suffix from live git and GitHub;
+2. prove continuous source lineage and exclusive same-repository branch and PR
+   ownership;
+3. preview and exact-lease update only the unmerged suffix with v2 commit and PR
+   metadata while preserving stable indexes, slugs, branches, and PRs;
+4. prove current base plus the recovered suffix equals the successor source;
+5. invalidate every candidate-bound validation, review, CI, connector, feedback,
+   and mergeability result for each changed head;
+6. build fresh per-changeset review packets and obtain clean exact-head review;
+   and
+7. hand the corrected exact PR back to `babysit-pr` under the original bounded
+   authority.
+
+If the accepted fix invalidates the merged prefix, or lineage, ownership, exact
+leases, source immutability, or successor equivalence cannot be proved, return
+`blocked`. Recovery never rewrites or restamps the merged prefix.
 
 ## Terminal-result mapping
 
@@ -113,6 +144,7 @@ evidence must match the handoff. A stale or conflicting result maps to
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ready_to_merge`    | Accept only for the exact open, mergeable candidate after every applicable non-merge gate passes. With publish authority, this contributes to `prs_open`; merge remains withheld.                                                                                                                                                                                                |
 | `merged`            | Independently verify the exact PR merged and its result is represented on the live base. Rehydrate the chain, propagate the downstream branches and PR bases under merge-and-propagate authority, then hand the next exact PR to `babysit-pr`. Claim `all_merged` only after the final PR, propagation, equivalence, validation, and cleanup requirements in `SPEC.md` all pass. |
+| recovery handback   | Verify the corrected exact candidate and merged prefix, reclaim exclusive ownership, and run the successor-source recovery procedure above. Rebuild all invalidated evidence before re-delegating.                                                                                                                                                                               |
 | `closed`            | Return `blocked` with `PR closed without merge` unless a canonical replacement is independently verified; preserve partial artifacts.                                                                                                                                                                                                                                            |
 | `blocked`           | Return `blocked` with the concrete reason, exact candidate reached, preserved artifacts, and one action required to resume.                                                                                                                                                                                                                                                      |
 

@@ -426,22 +426,33 @@ def edit_pull_request(
     remote: str = "origin",
     base: str | None = None,
     title: str | None = None,
+    body: str | None = None,
     dry_run: bool,
 ) -> None:
     """Edit one explicit PR; never infer a target from the checked-out branch."""
 
-    if base is None and title is None:
+    if base is None and title is None and body is None:
         return
     repository = github_repo_for_remote(remote)
-    args: list[str] = ["pr", "edit", str(number), "-R", repository]
-    if base is not None:
-        args.extend(("--base", base))
-    if title is not None:
-        args.extend(("--title", title))
-    print(f"[STEP] Updating PR #{number}")
-    if dry_run:
-        print("[DRY-RUN] Would run:")
-        _print_command(("gh", *args))
+
+    def execute(body_path: str | None = None) -> None:
+        args: list[str] = ["pr", "edit", str(number), "-R", repository]
+        if base is not None:
+            args.extend(("--base", base))
+        if title is not None:
+            args.extend(("--title", title))
+        if body_path is not None:
+            args.extend(("--body-file", body_path))
+        print(f"[STEP] Updating PR #{number}")
+        if dry_run:
+            print("[DRY-RUN] Would run:")
+            _print_command(("gh", *args))
+            return
+        ensure_gh_ready(repository)
+        gh_capture(tuple(args))
+
+    if body is None:
+        execute()
         return
-    ensure_gh_ready(repository)
-    gh_capture(tuple(args))
+    with message_file(body) as body_path:
+        execute(body_path)

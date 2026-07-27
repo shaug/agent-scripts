@@ -52,5 +52,23 @@
     "request": "Start decomposing this source branch.",
     "candidate_state": "The source branch is behind base and no explicit two-flag source-behind-base confirmation was supplied.",
     "authority": "decompose_only"
+  },
+  {
+    "id": "recover-successor-suffix",
+    "request": "Finish the published two-PR chain after the delegated position-2 fix.",
+    "candidate_state": "Position 1 is merged and represented on current main. Position 2 is the exact owned open suffix and carries a valid ticket-scoped fix. A distinct immutable successor source contains the accepted fix and extends continuous source lineage.",
+    "authority": "merge_and_propagate plus explicit suffix recovery"
+  },
+  {
+    "id": "reject-conflicting-successor-lineage",
+    "request": "Adopt this corrected source for the remaining suffix.",
+    "candidate_state": "Position 1 is merged, but the open suffix has missing and conflicting lineage metadata and its remote branch advanced beyond the verified head.",
+    "authority": "merge_and_propagate plus explicit suffix recovery"
+  },
+  {
+    "id": "reject-original-source-mutation",
+    "request": "Restamp the remaining PR by advancing the original source branch.",
+    "candidate_state": "Position 1 is merged and the proposal mutates the original immutable source instead of creating a distinct successor source.",
+    "authority": "merge_and_propagate plus explicit suffix recovery"
   }
 ]

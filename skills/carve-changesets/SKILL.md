@@ -6,9 +6,11 @@ description: Recompose a large review-ready source branch into an ordered chain 
 # Carve Changesets
 
 Turn one existing review-ready source branch into a plain-git, plain-GitHub
-changeset chain. Preserve the source branch, keep each intermediate result safe
-and reviewable, and prove that the fully merged chain is equivalent to the
-source candidate.
+changeset chain. Preserve every immutable source identity, keep each
+intermediate result safe and reviewable, and prove that the fully merged chain
+is equivalent to the active intended result. When an accepted post-publication
+fix changes an unmerged suffix after a prefix has merged, recover that suffix
+onto a distinct immutable successor source without rewriting the prefix.
 
 This skill owns decomposition, truth promotion, chain mechanics, whole-chain
 equivalence, and downstream propagation. It delegates per-changeset review to
@@ -55,8 +57,8 @@ Before mutation, discover or receive and verify:
 
 - repository identity, current checkout, worktree state, and applicable
   repository instructions;
-- exact source and base branches and SHAs, their merge base, source freshness,
-  and the complete candidate diff;
+- exact root source, any successor-source lineage, and base branches and SHAs,
+  their merge bases, source freshness, and the complete active candidate diff;
 - the immutable source outcome and the behavior, schema, constraints, public
   interfaces, migrations, and rollout properties the final chain must preserve;
 - an explicitly approved test command and any required database, build,
@@ -70,9 +72,9 @@ Before mutation, discover or receive and verify:
   candidate repair, review communication, merge, propagation, and cleanup.
 
 Treat discovered validation commands as proposals until the user explicitly
-approves them. The source branch is immutable throughout the workflow. Stop if
-the source is behind the base unless the contract's explicit override and
-confirmation are both present.
+approves them. Every source in the lineage is immutable throughout the workflow.
+Stop if the active source is behind the base unless the contract's explicit
+override and confirmation are both present.
 
 ### Authority levels
 
@@ -86,6 +88,12 @@ confirmation are both present.
   changeset merges after all gates pass, and exact-lease downstream propagation.
   It never permits force-pushing the base, source, merged upstream, or an
   unowned branch.
+
+Suffix recovery is a separate acknowledgement within merge-and-propagate
+authority. It permits `recover-suffix` to restamp and exact-lease update only an
+owned, unmerged suffix onto a verified successor source. It does not permit
+changing the root source, a merged position, a stable index, or another owner's
+branch.
 
 Pass authority to delegated skills without expansion. Reply and thread
 resolution authority remain separate from branch mutation and merge authority.
@@ -138,6 +146,16 @@ independently verify the exact merged candidate on the live base, rehydrate the
 chain, use `propagate` to rewrite only the downstream suffix with exact leases,
 then hand the next exact PR back to `babysit-pr`.
 
+When `babysit-pr` instead returns a ticket-scoped head-changing fix after an
+earlier prefix has merged, reclaim ownership only through the recovery handback
+in the suite reference. Create or receive a distinct immutable successor source
+containing the accepted result. Preview, then run `recover-suffix` with the
+explicit recovery acknowledgement. The command must verify the merged prefix on
+current base, preserve stable positions and PRs, restamp only the exact owned
+suffix with ordered lineage, and prove current base plus that suffix equals the
+successor source. Rebuild all candidate-bound validation, review, CI, and
+feedback evidence before returning the corrected exact PR to `babysit-pr`.
+
 Use `merge-propagate` only when the resolved workflow explicitly assigns the
 direct merge to this CLI and no delegated owner controls that PR. Both execution
 paths are dry-run by default and require the merge-and-propagate acknowledgement
@@ -145,7 +163,8 @@ before mutation. Resume interrupted work from live git and GitHub state, not
 from the plan or a cache.
 
 Return `all_merged` only after every PR, propagation step, final equivalence
-check, required validation, and authorized cleanup has been verified.
+check against the active source, required validation, and authorized cleanup has
+been verified.
 
 ## Preserve safety and truth
 
@@ -154,6 +173,8 @@ check, required validation, and authorized cleanup has been verified.
   worktree immediately before acting.
 - Keep remote mutation dry-run by default and use explicit refspecs and exact
   leases where the contract permits force-push.
+- Preserve the exact root and successor-source identities and reconstruct their
+  ordered lineage from commit trailers and PR metadata.
 - Never use a plan edit or cached head to override materialized, published, or
   merged truth.
 - Never reset away, overwrite, or delete user work, credentials, environment
@@ -177,6 +198,8 @@ Return `blocked` without widening scope when:
 - stronger live truth conflicts with the plan or other weaker records;
 - safe progress would require rewriting the source, base, merged upstream, or an
   unowned branch;
+- recovery lineage is missing, conflicting, repeated, discontinuous, mutable, or
+  cannot be proved from live refs and PR metadata;
 - required authority, capability, infrastructure, or exclusive ownership is
   absent; or
 - a material product, data, architecture, migration, or rollout decision is
@@ -187,8 +210,8 @@ changeset is not a blocker.
 
 ## Return one terminal handoff
 
-Return exactly one terminal state with evidence bound to the current source,
-base, chain, and PR candidates:
+Return exactly one terminal state with evidence bound to the root source, active
+source, complete lineage, base, chain, and PR candidates:
 
 - `plan_ready`: exact source/base identity, complete validated plan and proposed
   validation, with no materialized branch or remote mutation.
@@ -198,8 +221,8 @@ base, chain, and PR candidates:
   based open PRs, current metadata, applicable non-merge gates, and merge
   withheld.
 - `all_merged`: every exact PR verified merged on the base, propagation and
-  final equivalence verified, required validation passing, and cleanup complete
-  or precisely limited.
+  final equivalence with the active immutable source verified, required
+  validation passing, and cleanup complete or precisely limited.
 - `blocked`: one concrete blocker, exact phase and identities reached, preserved
   partial artifacts and last trustworthy evidence, and one action or decision
   needed to resume.
