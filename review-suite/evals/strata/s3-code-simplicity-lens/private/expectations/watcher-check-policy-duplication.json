@@ -9,7 +9,7 @@
       "id": "rc.local-policy-duplicated-across-call-sites",
       "requirement": "A policy predicate with more than one call site must have exactly one implementation.",
       "trigger": "A remaining inline copy of a policy that a shared predicate now implements.",
-      "surface": "candidate_is_clear",
+      "surface": "build_is_mergeable",
       "consequence": "The packet's own diff replaces the inline copy with the shared predicate, which is the correction this case demonstrates: before this change, three call sites decided the same failed-check question with two different implementations, and the packet's own history states that exact drift previously produced a self-contradictory clear/not-clear result on the same candidate. Reviewing this diff for local complexity means recognising that the change is the fix, and that the requirement is precisely what motivated it.",
       "severity": "strong_recommendation",
       "equivalent_formulations": [
@@ -24,10 +24,10 @@
   "accepted_non_findings": [
     {
       "id": "anf.pending-check-inline",
-      "description": "The pending-check condition (`checks_summary[\"pending_count\"] > 0`) stays inline rather than moving into the shared predicate. A reviewer may ask why it was not folded in too; the packet's non-goals state that changing the pending condition is out of scope, and it is not part of the duplication the shared predicate was built to resolve.",
+      "description": "The waiting-run condition (`status[\"waiting_count\"] > 0`) stays inline rather than moving into the shared predicate. A reviewer may ask why it was not folded in too; the packet's non-goals state that changing the waiting condition is out of scope, and it is not part of the duplication the shared predicate was built to resolve.",
       "equivalent_formulations": [
-        "the pending check is still inline",
-        "why wasn't the pending condition also shared"
+        "the waiting check is still inline",
+        "why wasn't the waiting condition also shared"
       ]
     }
   ]

@@ -10,22 +10,22 @@
     "diff": {
       "format": "unified_diff",
       "complete": true,
-      "content": "diff --git a/watcher/status.py b/watcher/status.py\n--- a/watcher/status.py\n+++ b/watcher/status.py\n@@ -1058,13 +1058,9 @@ def candidate_is_clear(checks_summary, failed_runs, failed_jobs, new_review_items):\n     if not checks_summary[\"all_terminal\"]:\n         return False\n-    if checks_summary[\"failed_count\"] > 0 or checks_summary[\"pending_count\"] > 0:\n+    if checks_summary[\"pending_count\"] > 0:\n         return False\n-    if int(checks_summary.get(\"cancelled_count\") or 0) > 0:\n+    if has_failed_checks(checks_summary, failed_runs, failed_jobs):\n         return False\n-    # Cancelled or failed workflow runs can exist while every check bucket\n-    # looks terminal and green; a clear candidate requires both views clean.\n-    if failed_runs or failed_jobs:\n-        return False\n     if new_review_items:\n         return False\n     return True\ndiff --git a/tests/test_status.py b/tests/test_status.py\n--- a/tests/test_status.py\n+++ b/tests/test_status.py\n@@ -20,1 +20,10 @@ def test_candidate_is_clear_rejects_pending_checks():\n     assert not candidate_is_clear(pending_summary(), [], [], [])\n+\n+\n+def test_candidate_is_clear_uses_the_shared_failed_check_predicate():\n+    summary = terminal_summary(cancelled_count=1)\n+    assert not candidate_is_clear(summary, [], [], [])\n+\n+\n+def test_candidate_is_clear_still_rejects_a_failed_workflow_run(monkeypatch):\n+    assert not candidate_is_clear(terminal_summary(), [\"run-1\"], [], [])\n"
+      "content": "diff --git a/watcher/gate.py b/watcher/gate.py\n--- a/watcher/gate.py\n+++ b/watcher/gate.py\n@@ -1058,13 +1058,9 @@ def build_is_mergeable(status, run_failures, job_failures, unread_comments):\n     if not status[\"fully_settled\"]:\n         return False\n-    if status[\"red_count\"] > 0 or status[\"waiting_count\"] > 0:\n+    if status[\"waiting_count\"] > 0:\n         return False\n-    if int(status.get(\"aborted_count\") or 0) > 0:\n+    if has_gating_failure(status, run_failures, job_failures):\n         return False\n-    # A settled status view can still hide an aborted or red run underneath;\n-    # accept the candidate only once neither signal objects.\n-    if run_failures or job_failures:\n-        return False\n     if unread_comments:\n         return False\n     return True\ndiff --git a/tests/test_gate.py b/tests/test_gate.py\n--- a/tests/test_gate.py\n+++ b/tests/test_gate.py\n@@ -20,1 +20,10 @@ def test_build_is_mergeable_rejects_a_waiting_run():\n     assert not build_is_mergeable(waiting_status(), [], [], [])\n+\n+\n+def test_build_is_mergeable_uses_the_shared_gating_predicate():\n+    status = settled_status(aborted_count=1)\n+    assert not build_is_mergeable(status, [], [], [])\n+\n+\n+def test_build_is_mergeable_still_rejects_a_job_failure(monkeypatch):\n+    assert not build_is_mergeable(settled_status(), [], [\"job-1\"], [])\n"
     }
   },
   "change_contract": {
-    "goal": "Route the last inline copy of the failed-check policy through the shared `has_failed_checks` predicate that two other agreement sites already use.",
+    "goal": "Route the last inline copy of the gating-failure policy through the shared `has_gating_failure` predicate that two other agreement sites already use.",
     "acceptance_criteria": [
-      "`candidate_is_clear` uses the shared predicate instead of its own inline conditions for cancelled and failed checks.",
+      "`build_is_mergeable` uses the shared predicate instead of its own inline conditions for aborted and red runs.",
       "Existing pass/fail behaviour is unchanged."
     ],
     "non_goals": [
-      "Change what `has_failed_checks` itself considers a failure.",
-      "Change the pending-check condition."
+      "Change what `has_gating_failure` itself considers a failure.",
+      "Change the waiting-run condition."
     ],
     "preserved_behaviors": [
-      "A pending check still rejects the candidate.",
-      "A clean, fully-terminal candidate with no new review items is still accepted."
+      "A waiting run still rejects the candidate.",
+      "A settled, fully green candidate with no unread comments is still accepted."
     ]
   },
   "sources": {
@@ -38,11 +38,11 @@
     ],
     "named_documents": [
       {
-        "label": "Watcher clear-candidate contract",
+        "label": "Watcher mergeability contract",
         "location": "docs/watcher-contract.md"
       },
       {
-        "label": "Shared failed-check predicate",
+        "label": "Shared gating predicate",
         "location": "watcher/policy.py"
       }
     ],
@@ -52,15 +52,15 @@
         "location": "watcher/reconcile.py"
       },
       {
-        "label": "Status tests",
-        "location": "tests/test_status.py"
+        "label": "Gate tests",
+        "location": "tests/test_gate.py"
       }
     ]
   },
   "validation": [
     {
-      "name": "status tests",
-      "command": "pytest tests/test_status.py",
+      "name": "gate tests",
+      "command": "pytest tests/test_gate.py",
       "scope": "focused",
       "status": "passed",
       "result": "9 passed"
@@ -75,12 +75,12 @@
   ],
   "context": {
     "data": [
-      "`has_failed_checks(checks_summary, failed_runs, failed_jobs)` already exists in `watcher/policy.py` and is already called from two other agreement sites in `watcher/reconcile.py`.",
-      "This inline copy in `candidate_is_clear` predates the shared predicate and was never migrated when the predicate was introduced.",
-      "The same duplication class previously caused two separate incidents where one call site's copy drifted from another's and produced a self-contradictory clear/not-clear result for the same candidate."
+      "`has_gating_failure(status, run_failures, job_failures)` already exists in `watcher/policy.py` and is already called from two other agreement sites in `watcher/reconcile.py`.",
+      "This inline copy in `build_is_mergeable` predates the shared predicate and was never migrated when the predicate was introduced.",
+      "The same duplication class previously caused two separate incidents where one call site's copy drifted from another's and produced a self-contradictory result for the same candidate."
     ],
     "operational": [
-      "`candidate_is_clear` is the gate a merge automation checks before acting, so a wrong answer here is user-visible."
+      "`build_is_mergeable` is the gate a merge automation checks before acting, so a wrong answer here is user-visible."
     ]
   }
 }

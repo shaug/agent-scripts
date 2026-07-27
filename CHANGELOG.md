@@ -6,7 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- fix: sanitize the repository-history case and correct the changelog order
+- fix: reconcile records after folding s2 and s3 into one delivery
+  (`4a6319e37df5f55b91453d206d1bebc98441cb15`)
 - docs: record the code-simplicity delivery and close out corpus population
+  (`8fc442b2bbf8c77cfc846c0b6d7230845fe306d1`)
 - feat: populate the code-simplicity stratum with four adjudicated cases
   (`030042a0ee27f9da98413dfe49ed703904808f8b`)
 - fix: sweep sanitization across every reviewer-visible field, not only the diff
@@ -15,12 +19,12 @@ summary: Chronological history of repository and skill changes.
   (`5cb339d879aae87946b077fedb53fc3bab013dfd`)
 - fix: sanitize the solution-simplicity cases against source-vocabulary leakage
   (`8e8a1fbf4efd7d97d6573c97b9257ed92bebe055`)
-- feat: populate the solution-simplicity stratum with four adjudicated cases
-  (`df55335d2df85f0ba3064e671095d0621eeb145e`)
 - feat: require acceptance evidence for workflow closeout
   (`a3597c25ee2d76135d1f0c8642a620e673fc8e57`)
 - docs: record the solution-simplicity delivery and settle the grading method
   (`3fb600c57e2547d437d3a1a8ed9e0ad4595186cc`)
+- feat: populate the solution-simplicity stratum with four adjudicated cases
+  (`df55335d2df85f0ba3064e671095d0621eeb145e`)
 - fix: make every packet diff a valid patch, and gate the adjudication record
   (`06a5679643a0a5bcb1944c8bff4bd4986f4f77e1`)
 - fix: stop a grader formulation being quotable from its own packet

@@ -648,3 +648,29 @@ non-material near-miss in a future batch. `atelier` was searched for a
 better-fitting code-level candidate before this record was written and none was
 found quickly enough to hold up this delivery; a stronger candidate may still
 exist and is worth a fresh search rather than treated as exhausted.
+
+## 29. The repository-history case was itself only lightly renamed, in the same way s2's cases were
+
+The second review cycle on the combined s2+s3 candidate found that
+`watcher-check-policy-duplication` — the one `s3` case sourced from this
+repository's own delivery history rather than `atelier` — had exactly the defect
+limitation 21 already found and fixed for `s2`: only the two function names were
+renamed, while every local variable name, every dict key, and the removed code
+comment were copied verbatim from the real source commit. Provenance's own
+sanitization claim was false for this case, the same way it was false for all
+four `s2` cases before their fix.
+
+This is a sharper instance of the same lesson than limitation 21's original
+finding, for one reason: the source here is *this very repository's own git
+history*, so the real precedent is trivially discoverable with
+`git log`/`git show` inside the exact repository the corpus lives in - there is
+no cross-repository step required to find it. A repository-history case
+therefore needs the same rewrite discipline as a cross-repository one, not less,
+and arguably deserves more scrutiny precisely because verification is so cheap
+for anyone who looks.
+
+Fixed: every local variable, dict key, and the comment were independently
+authored rather than derived from the source. The general rule from limitation
+21 stands unchanged and evidently was not sufficient on its own to prevent a
+repeat instance three batches later - a mechanical check remains the more
+durable fix, and remains undone.
