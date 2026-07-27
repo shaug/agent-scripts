@@ -574,16 +574,22 @@ not have had. This defect predates every sanitization commit; it was present in
 the very first draft and simply went unnoticed until a cycle checked the diff's
 internal coherence rather than its wording.
 
-Both are now fixed. The lesson generalizes past this specific batch: **a
-minimization or a rename must be swept across the whole packet - goal,
-acceptance criteria, non-goals, preserved behaviors, repository instructions,
-named documents, nearby patterns, and context - not only the diff and the
-formulations that happen to be the field a grader reads.** A packet has many
-prose fields, and a real term or a real reviewer's sentence can hide in any of
-them. Nothing mechanical catches this today; it took three independent review
-passes on one four-case stratum to find every instance, which is itself evidence
-that curation discipline alone is not a durable defense and a future population
-batch should expect the same scrutiny.
+Both were fixed at the time this item was written, and the fix for the second
+one did not fully hold: a later review cycle (recorded in item 30) found the
+`setup-service-path-gateway` incoherence had only been relocated, not resolved,
+by the commit this item originally credited. Read item 30 alongside this one
+rather than trusting this item's own "now fixed" language in isolation - that
+overclaim is itself part of the lesson.
+
+The lesson generalizes past this specific batch: **a minimization or a rename
+must be swept across the whole packet - goal, acceptance criteria, non-goals,
+preserved behaviors, repository instructions, named documents, nearby patterns,
+and context - not only the diff and the formulations that happen to be the field
+a grader reads.** A packet has many prose fields, and a real term or a real
+reviewer's sentence can hide in any of them. Nothing mechanical catches this
+today; it took four independent review passes across two strata to find every
+instance, which is itself evidence that curation discipline alone is not a
+durable defense and a future population batch should expect the same scrutiny.
 
 ## 25. The code-simplicity stratum has no oracle either
 
@@ -674,3 +680,44 @@ authored rather than derived from the source. The general rule from limitation
 21 stands unchanged and evidently was not sufficient on its own to prevent a
 repeat instance three batches later - a mechanical check remains the more
 durable fix, and remains undone.
+
+## 30. A fix that relocates an inconsistency is not a fix, and one more verbatim term survived three prior sweeps
+
+The third and final scheduled review cycle on the combined s2+s3 candidate found
+two more real defects, after two prior cycles had each found and fixed real
+defects in the same two cases.
+
+**`setup-service-path-gateway`'s before-state was still impossible**, in a
+different place than the no-op line item 24 credited itself with fixing. The
+earlier fix removed the no-op diff line, but left `SetupService.run`'s
+before-image calling `self._path_gateway.project_dir(workspace_id)` while
+`commands/setup.py`'s before-image constructed `SetupService` with a bare
+function (`SetupService(resolve_workspace_root)`) - a function has no
+`.project_dir` method, so the pre-image still could not run. The incoherence had
+moved from the constructor call to the method-call pattern; it was never
+actually resolved. Fixed now by making `run`'s before-image call the injected
+gateway directly as a callable (`self._path_gateway(workspace_id)`), which is
+exactly what a bare function argument supports, and introducing the
+`.project_dir` method only in the after-image alongside the new wrapper class.
+
+**`record-status-transition-guard` still carried one verbatim real term**:
+`allow_failure=True`, the identical keyword argument name and value from the
+real `atelier` source commit (`79703c5`), through three prior review cycles that
+each rewrote other parts of the same case. Renamed to `raise_on_failure=False`.
+
+Two things are worth stating plainly rather than smoothing over. First, the "now
+fixed" language in item 24 was premature: it described one relocated symptom as
+resolved. A fix for an incoherent diff must be checked by asking whether the
+*whole* before-state can actually execute, not whether the one line a reviewer
+flagged has changed. Second, one leaked keyword argument survived being read by
+four independent review passes across two different cases before a fifth pass
+caught it - not because it was hidden, but because reviewers (including this
+ticket's own repeated sweeps) tend to check the same categories of surface
+(function names, class names, prose) and can each independently miss a keyword
+argument buried inside an otherwise-fully-rewritten call. Curation discipline
+caught this eventually, but "eventually, after five passes" is not a durable
+property of a curation process, and a mechanical diff-against-real-source check
+\- comparing every packet's diff token-for-token against its cited real source
+commit or PR patch - would have caught both defects on the first pass. That
+check does not exist today and is recorded here as unfinished work rather than
+implied solved by the fact that this batch, eventually, got there.

@@ -6,25 +6,27 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- fix: make the last two before-state and sanitization defects actually resolved
 - fix: sanitize the repository-history case and correct the changelog order
+  (`3d9fe4925c8908a311453c87ae740bfcf4de20bd`)
 - fix: reconcile records after folding s2 and s3 into one delivery
-  (`4a6319e37df5f55b91453d206d1bebc98441cb15`)
+  (`5070cf1bbea438e74149dfe0cf9b171a6f7cdb92`)
 - docs: record the code-simplicity delivery and close out corpus population
-  (`8fc442b2bbf8c77cfc846c0b6d7230845fe306d1`)
+  (`875091c32301eafd807d2d5a3e2b402e7ffaca53`)
 - feat: populate the code-simplicity stratum with four adjudicated cases
-  (`030042a0ee27f9da98413dfe49ed703904808f8b`)
+  (`f3c064a7bbaf3f89f7a6a5495846b254a54e9a0b`)
 - fix: sweep sanitization across every reviewer-visible field, not only the diff
-  (`fdbfdc33a252fe5c830bbc9b4e7c091fa46a441f`)
+  (`ab3921a904ec7835bc4d03ed40b7c8a28d12d2c1`)
 - fix: make every s2 packet internally consistent after the sanitization rename
-  (`5cb339d879aae87946b077fedb53fc3bab013dfd`)
+  (`1ec231bb17cd0c1db82258756aa7a78e8e7f63ab`)
 - fix: sanitize the solution-simplicity cases against source-vocabulary leakage
-  (`8e8a1fbf4efd7d97d6573c97b9257ed92bebe055`)
+  (`2b56c022c91a925b574a5748112e63bdcbbbf8f2`)
+- docs: record the solution-simplicity delivery and settle the grading method
+  (`da8f53b06072ba0380d01ce06fc4f4a324a6219e`)
+- feat: populate the solution-simplicity stratum with four adjudicated cases
+  (`3105b8e84da78c691f4f93883f39887ff9ae784f`)
 - feat: require acceptance evidence for workflow closeout
   (`a3597c25ee2d76135d1f0c8642a620e673fc8e57`)
-- docs: record the solution-simplicity delivery and settle the grading method
-  (`3fb600c57e2547d437d3a1a8ed9e0ad4595186cc`)
-- feat: populate the solution-simplicity stratum with four adjudicated cases
-  (`df55335d2df85f0ba3064e671095d0621eeb145e`)
 - fix: make every packet diff a valid patch, and gate the adjudication record
   (`06a5679643a0a5bcb1944c8bff4bd4986f4f77e1`)
 - fix: stop a grader formulation being quotable from its own packet
