@@ -385,6 +385,23 @@ def evaluate(
         "target_skill_documents": sorted(closure),
         "target_skill_digest": protocol.prompt_digest(skill_prompt),
         "suite_commit": commit,
+        # The stratum the corpus declares, carried verbatim. A report that names
+        # its target and closure but not its stratum cannot say which ground
+        # truth its expectations came from, whether it is scored, or whether its
+        # grading is a signal at all - so those properties would survive only as
+        # prose in some other file, and a report quoted on its own would silently
+        # lose them. `None` on a corpus that predates stratum labelling.
+        "stratum": loaded.stratum,
+        # Derived from the attempts rather than declared, because a stratum
+        # without a model identity is not comparable with any other. More than
+        # one model in this list means the run spans strata.
+        "executor_models": sorted(
+            {
+                model
+                for attempt in attempts
+                if (model := (attempt.get("executor") or {}).get("model"))
+            }
+        ),
         "runs_per_case": runs,
         "cases": len(loaded.cases),
         "timeout_seconds": timeout,

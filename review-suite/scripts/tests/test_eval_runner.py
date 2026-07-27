@@ -53,6 +53,11 @@ class EvaluationTests(unittest.TestCase):
 
         return runner.evaluate(shlex.split(fixture_command(mode)), **options)
 
+    @staticmethod
+    def stratum_root() -> Path:
+        """A shipped corpus that declares a stratum, for configuration checks."""
+        return corpus.STRATA_ROOT / "pilot-code-simplicity"
+
     def test_a_full_pass_produces_one_attempt_per_case_and_run(self):
         attempts, configuration = self.evaluate(runs=2)
         cases = len(corpus.load_corpus().cases)
@@ -362,19 +367,45 @@ class EvaluationTests(unittest.TestCase):
         """Retained output is evidence a committed record may already cite.
 
         An artifact is named for its case and run number only, so re-running a
-        stratum into the same directory replaces it. Refused before any attempt
-        launches, because raising afterwards would already have spent money on
-        the one command that can.
+        stratum into the same directory replaces it.
+
+        The launch log is the assertion that matters. Refusing at write time
+        would raise the same error, preserve the same bytes, and still bill a
+        paid attempt first, so checking only the exception would not tell the
+        pre-launch guard apart from the one that is too late to help.
         """
+        import shlex
+
         artifacts = self.temp / "artifacts"
         self.evaluate(artifact_dir=artifacts)
         retained = {path: path.read_text() for path in sorted(artifacts.iterdir())}
+
+        command, log = self._counting_executor()
         with self.assertRaises(runner.ConfigurationError) as raised:
-            self.evaluate(artifact_dir=artifacts)
+            runner.evaluate(
+                shlex.split(command),
+                corpus_root=None,
+                runs=1,
+                timeout=60.0,
+                max_output_bytes=runner.DEFAULT_MAX_OUTPUT_BYTES,
+                artifact_dir=artifacts,
+            )
         self.assertIn("would be overwritten", str(raised.exception))
+        self.assertFalse(
+            log.exists(), "an executor was launched before the overwrite was refused"
+        )
         self.assertEqual(
             retained, {path: path.read_text() for path in sorted(artifacts.iterdir())}
         )
+
+    def test_the_report_configuration_carries_the_declared_stratum(self):
+        """A report that cannot name its stratum cannot be compared with one."""
+        _, configuration = self.evaluate(corpus_root=self.stratum_root())
+        stratum = configuration["stratum"]
+        self.assertEqual("pilot-code-simplicity", stratum["id"])
+        self.assertEqual("human-review", stratum["ground_truth"])
+        self.assertIs(False, stratum["scored"])
+        self.assertIs(False, stratum["grading_is_signal"])
 
 
 class CommandLineTests(unittest.TestCase):

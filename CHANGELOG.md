@@ -6,7 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-26 — Added the replay evaluator, then froze the v1 baseline configuration
 
+- feat: report the stratum a run evaluated
+- fix: make the frozen baseline record auditable, and measure the envelope
+  (`f7787dcba681db1de079f57ce1f2f2941e0923b2`)
 - feat: add baseline strata, grader calibration, and the frozen v1 record
+  (`16b77e447dbcc844edd8f3fb58728d96826e177c`)
 - fix: skip the recipe-execution tests when `just` is absent
   (`f544aa0c19d97dd4f1aabd7dfab3df08b2ee6a6b`)
 - feat: record the evaluated skill closure with every run
