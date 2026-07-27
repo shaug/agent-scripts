@@ -54,8 +54,9 @@ causes the workflow to fail closed.
 ## Repository Layout
 
 - `skills/` — skill folders, each containing a `SKILL.md` and bundled resources
-- `review-suite/` — canonical code-review contracts, validators, and raw
-  evaluation fixtures shared by repository-owned review skills
+- `review-suite/` — canonical code-review contracts, validators, raw evaluation
+  fixtures, and the result-blind replay evaluator shared by repository-owned
+  review skills
 - `justfile` — common tasks for testing, validation, and formatting
 
 Current reusable agent skills:
@@ -174,6 +175,53 @@ observations with `--output-dir`. A Claude Code headless adapter is bundled:
 ```bash
 just eval-implement-ticket-claude
 ```
+
+### Result-blind review replay evaluation
+
+`review-suite/evals/` is the canonical evaluator that measures what the review
+skills actually do when a real agent runtime executes them repeatedly, rather
+than asserting quality through expected JSON. It changes no review behaviour.
+See [its README](review-suite/evals/README.md) for the protocol, the corpus
+contract, and the grading interface.
+
+Three commands cover it:
+
+```bash
+just test-review-suite                      # deterministic tests, no runtime
+just audit-review-corpus                    # corpus integrity, no runtime
+just eval-review-suite '<executor command>' # the only one that may cost money
+```
+
+`just test` includes the deterministic evaluator tests and never launches a paid
+runtime. `just eval-review-suite` is deliberately absent from `test`, `lint`,
+and `check`. The bundled real-runtime adapter needs the `claude` CLI on `PATH`:
+
+```bash
+just eval-review-suite "python3 review-suite/scripts/evals/claude_executor.py"
+```
+
+Each attempt starts a fresh process and receives one result-blind JSON request:
+the target skill text, the raw review packet, the review contracts, and public
+run identity. Expected findings, private grader labels, provenance, and even the
+case name stay out of the payload, and `just audit-review-corpus` proves it by
+inspecting the complete payload every case would produce. Spawn, timeout,
+runtime, oversized-output, malformed, and protocol failures are reported
+separately from a valid review and are never scored as clean.
+
+The bundled `fixture_executor.py` is a deterministic simulation of a compliant
+reviewer, not a model. Its runs are marked `simulation`, so no baseline report
+can be produced from them. Run the runner directly for repeated attempts,
+per-attempt records, and the aggregate report:
+
+```bash
+python3 review-suite/scripts/evals/runner.py \
+  --executor "python3 review-suite/scripts/evals/claude_executor.py" \
+  --runs 5 --report-out out/report.json
+```
+
+Corpus curation, grader calibration, and the frozen v1 baseline are separate
+follow-up work; this evaluator supplies only the synthetic cases needed to prove
+the protocol.
 
 ## Prerequisites
 

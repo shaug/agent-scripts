@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/pricing",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a",
+    "comparison_base_sha": "5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/pricing.py b/pricing.py\n--- a/pricing.py\n+++ b/pricing.py\n@@ -16,4 +16,4 @@ TIERS = load_tiers()\n def select_tier(units):\n-    for tier in load_tiers():\n-        if units <= tier.ceiling:\n+    for tier in TIERS:\n+        if units < tier.ceiling:\n             return tier\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Speed up tier selection for the quoting endpoint.",
+    "acceptance_criteria": [
+      "A quantity that sits exactly on a tier ceiling is quoted in that tier.",
+      "An updated tier table is used by later quotes."
+    ],
+    "non_goals": [
+      "Change the published tier ceilings."
+    ],
+    "preserved_behaviors": [
+      "Every caller of select_tier receives the same tier for the same quantity."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Pricing rules",
+        "location": "AGENTS.md",
+        "summary": "Published ceilings are inclusive."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Tier table",
+        "location": "docs/pricing.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Pricing tests",
+        "location": "tests/test_pricing.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "pricing tests",
+      "command": "pytest tests/test_pricing.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "7 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "64 passed"
+    }
+  ],
+  "context": {
+    "operational": [
+      "Operators edit the tier table while the service is running."
+    ]
+  }
+}

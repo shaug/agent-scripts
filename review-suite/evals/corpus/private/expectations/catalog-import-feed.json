@@ -1,0 +1,8 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "catalog-import-feed",
+  "packet_valid": false,
+  "expected_verdict": "blocked",
+  "material_root_causes": [],
+  "accepted_non_findings": []
+}

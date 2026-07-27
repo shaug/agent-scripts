@@ -1,0 +1,9 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "catalog-import-feed",
+  "origin": "synthetic",
+  "retention_authority": "Authored for this repository as protocol proof; no third-party or customer material is reproduced.",
+  "sanitization": "Fully invented module names, identifiers, and values; nothing derived from private code, credentials, or customer records.",
+  "recorded_at": "2026-07-26",
+  "notes": "Protocol and grader proof only. #58 owns the representative scored corpus."
+}

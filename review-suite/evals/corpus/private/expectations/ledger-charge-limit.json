@@ -1,0 +1,22 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "ledger-charge-limit",
+  "packet_valid": true,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.ledger-charge-boundary",
+      "requirement": "A charge equal to the available balance succeeds.",
+      "trigger": "the charged amount lands exactly on the computed availability",
+      "surface": "ledger.py:can_charge",
+      "consequence": "an account holder cannot spend the last cent they own",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "off by one at the boundary",
+        "rejects a charge equal to the available balance",
+        "strict comparison excludes equality"
+      ]
+    }
+  ],
+  "accepted_non_findings": []
+}

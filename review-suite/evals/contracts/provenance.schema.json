@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/provenance.schema.json",
+  "title": "Review replay case provenance",
+  "description": "Where one case came from and under what authority it is retained. Provenance is private: it never enters an executor request.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "provenance_version",
+    "case_id",
+    "origin",
+    "retention_authority",
+    "sanitization",
+    "recorded_at"
+  ],
+  "properties": {
+    "provenance_version": {"const": "1.0"},
+    "case_id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+    "origin": {
+      "enum": [
+        "synthetic",
+        "minimized_reproduction",
+        "repository_history",
+        "connector_outcome"
+      ]
+    },
+    "retention_authority": {"type": "string", "minLength": 1},
+    "sanitization": {"type": "string", "minLength": 1},
+    "recorded_at": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "notes": {"type": "string", "minLength": 1}
+  }
+}

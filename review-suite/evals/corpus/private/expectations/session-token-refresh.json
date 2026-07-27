@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "session-token-refresh",
+  "packet_valid": true,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.session-refresh-deadline",
+      "requirement": "Refreshing an active session keeps it usable for a further full window.",
+      "trigger": "an operator extends a session late in its original window",
+      "consequence": "an operator is signed out in the middle of active work",
+      "surface": "session.py:refresh",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "stale expiry clock",
+        "reuses the original issue time",
+        "deadline is not recomputed"
+      ]
+    },
+    {
+      "id": "rc.session-audit-record",
+      "requirement": "Every refresh is recorded so an operator can reconstruct it later.",
+      "trigger": "an operator reads the log after several extensions",
+      "consequence": "the recorded history cannot distinguish one extension from another",
+      "surface": "audit.py:write_entry",
+      "severity": "strong_recommendation",
+      "equivalent_formulations": [
+        "the recorded entry omits which moment the extension happened",
+        "no timestamp distinguishes repeated entries"
+      ]
+    }
+  ],
+  "accepted_non_findings": []
+}

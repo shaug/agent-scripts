@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/webhook",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a",
+    "comparison_base_sha": "4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/webhook.py b/webhook.py\n--- a/webhook.py\n+++ b/webhook.py\n@@ -20,2 +20,3 @@ def enqueue(event):\n def handle(event):\n-    apply_event(event)\n+    for _ in range(RETRIES):\n+        apply_event(event)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Keep applying an inbound event when the downstream call fails.",
+    "acceptance_criteria": [
+      "A transient downstream failure no longer drops the event.",
+      "A given delivery changes downstream state at most once."
+    ],
+    "non_goals": [
+      "Change how events are rendered for operators."
+    ],
+    "preserved_behaviors": [
+      "Events are applied in the order they were received."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Queue rules",
+        "location": "AGENTS.md",
+        "summary": "Handlers must tolerate redelivery."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Delivery contract",
+        "location": "docs/webhooks.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Queue tests",
+        "location": "tests/test_webhook.py"
+      },
+      {
+        "label": "Presentation helper",
+        "location": "presentation.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "webhook tests",
+      "command": "pytest tests/test_webhook.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "11 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "96 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "Each delivery carries a stable delivery identifier."
+    ],
+    "operational": [
+      "The upstream sender redelivers on any non-2xx reply."
+    ]
+  }
+}

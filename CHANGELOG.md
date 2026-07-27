@@ -4,10 +4,31 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-26 — Added the result-blind review replay evaluator
+
+- fix: skip the recipe-execution tests when `just` is absent
+- feat: record the evaluated skill closure with every run
+  (`b605051a7385dd310b0eff9dbf14c10dda87c633`)
+- docs: record the measured smoke evaluation and its variance
+  (`87ec303d949301c908c3a29cb220bed22d44c775`)
+- fix: evaluate the target skill's whole declared closure
+  (`62a9ed8fab166c7d380724e426449f0585714b07`)
+- docs: pin the recorded smoke evaluation to its run
+  (`f00ce2db80ed3a7bed6afb4962cf0bb5a68390fe`)
+- fix: complete the evaluated skill text and the audit ordering
+  (`67efd94339034674de6ca250f2b03e4a0213fc8b`)
+- fix: close the replay evaluator's review-gate gaps
+  (`6ef8e25ce2e0183ef270111549660461493da5f4`)
+- fix: stop misattributing review failures in the replay evaluator
+  (`e46184d6e856199fe0792d43e7f6e0c5a86e131f`)
+- feat: add the result-blind review replay evaluator
+  (`8f0e9d646ec4e959d7adc7448f5fc7a82f4334d8`)
+
 ## 2026-07-25 — Added coordinator-neutral delegated ticket execution
 
 - fix: pin CI to the established Ruff rule set so dependency drift cannot
   redefine the repository-wide lint gate
+  (`901dc3596207a88b6c8edcf548b5be3151ca7ab2`)
 - feat: add a versioned delegated-execution contract for `implement-ticket`
   (`b53efa674e929c181bdaac63ff0306cb756386db`)
 
