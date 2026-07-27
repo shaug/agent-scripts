@@ -3,7 +3,7 @@
   "case_id": "reconciliation-outcome-type",
   "origin": "minimized_reproduction",
   "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 417, review comment 2870710594, authored by the repository owner. The comment itself records acceptance: \"Implemented in 668f2c7\", describing the typed outcome. Public source, owner-authored review, no third-party or customer material.",
-  "sanitization": "Rewritten from scratch against a fictional registry runtime. Retains only the shape of the adjudicated exchange: a boolean reconciliation result is replaced by a typed outcome so an intentional block is never conflated with a genuine failure. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "sanitization": "Rewritten from scratch against a fictional registry runtime. Retains only the shape of the adjudicated exchange: a boolean reconciliation result is replaced by a typed outcome so an intentional block is never conflated with a genuine failure, with fictional member names and function names rather than the source's own. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 417 review comment 2870710594, which records its own acceptance: implemented in 668f2c7, adding the typed outcome exactly as the packet describes.",

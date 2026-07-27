@@ -6,7 +6,9 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Populated the solution-simplicity stratum, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- fix: sanitize the solution-simplicity cases against source-vocabulary leakage
 - feat: populate the solution-simplicity stratum with four adjudicated cases
+  (`df55335d2df85f0ba3064e671095d0621eeb145e`)
 - feat: require acceptance evidence for workflow closeout
   (`a3597c25ee2d76135d1f0c8642a620e673fc8e57`)
 - fix: make every packet diff a valid patch, and gate the adjudication record

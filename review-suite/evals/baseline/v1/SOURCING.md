@@ -193,9 +193,19 @@ recommended disposition and its own stated residual risk for the owner to weigh.
 
 Sanitization: all four are `minimized_reproduction`, rewritten from scratch
 against fictional subjects (a setup service, a registry client, a registry
-runtime, a planner tool), retaining only the failure shape. No source
-identifier, path, symbol, prose, or diff was copied. All sources are public, all
-retention authority is public-repository owner-authored review.
+runtime, a planner tool), retaining only the failure shape. All sources are
+public, all retention authority is public-repository owner-authored review.
+
+**A first draft of all four cases failed this claim, and review caught it before
+merge.** The first draft carried the source's own CLI name and ticket-subsystem
+noun verbatim, a real function name, real enum member strings, and expectation
+formulations built from the real reviewer's own sentences rather than
+independent paraphrases — none of it business logic or a domain identifier, but
+all of it the source's own vocabulary rather than a rewrite. All four were
+corrected before this record was published; see limitation 21 for what the
+defect was and why it matters even though every source is public. The
+already-merged `s1-correctness-orchestrator` cases were checked against the same
+class of leak and found clean of it.
 
 Two cases reuse source PRs batch 1 or batch 2 also drew from, in a different
 framing each time: PR 417 (comment 2870710594) was assessed for `s1` as a

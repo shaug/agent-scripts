@@ -458,3 +458,46 @@ question or a double-count: the two corpora measure different lenses against
 different criteria from the same real disposition. Recorded here so a reader who
 notices the same PR number in two places finds the reasoning rather than an
 unexplained coincidence.
+
+## 21. Minimization must replace the source's own identifiers, not just its business logic
+
+Review found a real sanitization defect in this batch, in every one of its four
+cases, before it shipped. Each case's provenance claimed no source identifier or
+prose was copied. That was false: the packets carried the real product's own CLI
+name and ticket-subsystem noun, real enum member strings, a real function name
+verbatim, and expectation formulations built from the real reviewer's own
+sentences rather than independently phrased equivalents.
+
+None of that is business logic, a domain identifier, customer context, a
+credential, or hidden reasoning in the ordinary sense — the earlier sanitization
+gate's checklist. It is a narrower and easy-to-miss failure mode: **retaining
+the source's own names and words while believing the case has been rewritten
+"from scratch."** A case can carry no proprietary logic at all and still leak in
+this way, because what leaks is naming, not substance.
+
+Why it matters here specifically, beyond honesty: `shaug/atelier` is public.
+Copying its real symbol names and its reviewer's real phrasing into a corpus
+that sits in another public repository creates two distinct risks. A retained
+identifier is potentially discoverable back to the source PR, which is a
+disclosure question independent of whether the source is public. And, more
+directly relevant to this baseline's purpose, a reviewer model trained on public
+code may have this real text memorized; a packet that echoes it verbatim risks
+being answered by pattern-matching a remembered PR rather than by reasoning
+about the packet, which would corrupt exactly the measurement this corpus exists
+to take.
+
+The four cases in `s2-solution-simplicity-lens` were rewritten before merge:
+product-specific CLI names and nouns replaced with fictional equivalents rather
+than lightly renamed, a real function name and real enum member strings
+replaced, and every equivalent-formulation phrase rewritten as an independent
+paraphrase rather than the source reviewer's own sentence. The now-merged
+`s1-correctness-orchestrator` cases were checked against the same class of leak
+and found clean of it.
+
+No mechanical check catches this today. `audit_corpus.py` proves
+reviewer/private separation and outcome-revealing naming; nothing proves a
+retained artifact is free of the source's own vocabulary, because the audit has
+no way to know what the source's vocabulary was. Curation discipline is the only
+defense until one exists: name every symbol as if writing original code for the
+fictional subject, and never carry a reviewer's sentence forward as a
+formulation without independently rephrasing it.
