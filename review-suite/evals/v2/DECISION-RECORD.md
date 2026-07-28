@@ -320,14 +320,32 @@ basis and two small guardrails.
 
 - **Baseline cases and metrics demonstrating the problem.** A real
   connector-outcome dataset exists and the repository owner has authorized its
-  use for v2-cycle analysis. Per the owner's explicit instruction, **the source
-  repository is described here only generically — "a private, owner-authorized
-  connector-review source" — and is never named in this record, in #56's revised
-  body, or in any other public artifact.** This record does not attempt to
-  characterize the dataset's contents beyond that description; doing so is out
-  of scope for this ticket and, per the owner's own boundary, would require
-  stopping and returning `blocked` rather than searching for or inferring the
-  source.
+  use for v2-cycle analysis. **Provenance of this claim, stated plainly so it is
+  auditable rather than implied:** this authorization was communicated directly
+  to this ticket's implementing session by the repository owner, as part of this
+  epic's delegated handoff, and is not yet recorded as a GitHub comment or other
+  tracker artifact the way every other owner adjudication cited elsewhere in
+  this record is (compare `LIMITATIONS.md` items 23 and 33, each of which cites
+  a specific comment URL). Unlike those, this authorization has no citable
+  tracker trail today. It is recorded here as a session-level owner instruction,
+  not fabricated or inferred, and the repository owner should add a
+  tracker-visible confirmation (a comment on #56 or #59) if a durable audit
+  trail is wanted before this disposition is acted on further.
+- **Reconciling this with the v1 baseline's recorded exclusion.**
+  `LIMITATIONS.md` item 1 records that a different private repository carrying
+  connector review history "was identified and deliberately excluded on
+  third-party authority and disclosure grounds" from **#58's frozen v1 corpus**,
+  and "was not read, and nothing here derives from it." That exclusion is scoped
+  to what #58 curates into `review-suite/evals/baseline/v1/` — a specific,
+  frozen, scored corpus with its own sourcing and retention rules — and stays
+  exactly as decided; this decision record does not reopen, reverse, or
+  contradict it. The authorization described above is a separate, later-granted
+  permission scoped only to #56's own v2-cycle intake/analysis workflow, not to
+  populating, rescoring, or otherwise touching the v1 corpus. Whether the two
+  describe the same underlying source repository or two different ones is
+  deliberately not stated here in either direction — doing so would risk
+  narrowing the generic description into something identifying, which the
+  owner's disclosure boundary forbids regardless of the answer.
 - **Explicit non-retroactivity note.** This source is a v2-cycle addition. It
   does **not** retroactively modify, extend, or rescore
   `review-suite/evals/baseline/v1/`, which stays exactly as merged and frozen in
