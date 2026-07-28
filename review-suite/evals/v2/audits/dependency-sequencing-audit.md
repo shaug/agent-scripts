@@ -10,18 +10,25 @@ exist. Independent of `scope-completeness-audit.md` and
 ## Live graph read-back
 
 `gh api graphql` query per issue, `blockedBy`/`blocking`/`parent`/`state`/
-`updatedAt`, 2026-07-28:
+`updatedAt`, re-fetched most recently on 2026-07-28 (the `updatedAt` column
+below reflects each issue's last edit, including this ticket's own title/body
+fixes — it is not a fixed snapshot moment, since those fixes landed at different
+times across this ticket's several audit-fix rounds):
 
-| issue | state | parent | blockedBy (state)      | blocking (state)       |
-| ----- | ----- | ------ | ---------------------- | ---------------------- |
-| #51   | OPEN  | #49    | #59 (OPEN)             | #52 (OPEN)             |
-| #52   | OPEN  | #49    | #51 (OPEN)             | #56 (OPEN), #53 (OPEN) |
-| #53   | OPEN  | #49    | #52 (OPEN)             | #54 (OPEN)             |
-| #54   | OPEN  | #49    | #53 (OPEN)             | #55 (OPEN)             |
-| #55   | OPEN  | #49    | #54 (OPEN)             | #57 (OPEN)             |
-| #56   | OPEN  | #49    | #52 (OPEN)             | #57 (OPEN)             |
-| #57   | OPEN  | #49    | #56 (OPEN), #55 (OPEN) | (none)                 |
-| #59   | OPEN  | #49    | #58 (CLOSED)           | #51 (OPEN)             |
+| issue | state | parent | blockedBy (state)      | blocking (state)       | updatedAt            |
+| ----- | ----- | ------ | ---------------------- | ---------------------- | -------------------- |
+| #51   | OPEN  | #49    | #59 (OPEN)             | #52 (OPEN)             | 2026-07-28T22:07:46Z |
+| #52   | OPEN  | #49    | #51 (OPEN)             | #56 (OPEN), #53 (OPEN) | 2026-07-28T22:25:08Z |
+| #53   | OPEN  | #49    | #52 (OPEN)             | #54 (OPEN)             | 2026-07-28T22:25:08Z |
+| #54   | OPEN  | #49    | #53 (OPEN)             | #55 (OPEN)             | 2026-07-28T22:09:45Z |
+| #55   | OPEN  | #49    | #54 (OPEN)             | #57 (OPEN)             | 2026-07-26T05:18:01Z |
+| #56   | OPEN  | #49    | #52 (OPEN)             | #57 (OPEN)             | 2026-07-28T22:09:46Z |
+| #57   | OPEN  | #49    | #56 (OPEN), #55 (OPEN) | (none)                 | 2026-07-28T22:08:01Z |
+| #59   | OPEN  | #49    | #58 (CLOSED)           | #51 (OPEN)             | 2026-07-26T05:20:17Z |
+
+For reference, #58's own `updatedAt` at the time of this audit is
+2026-07-28T04:52:48Z (its close event) — no field of #58 was touched by this
+ticket, consistent with the frozen-baseline boundary.
 
 No native edge was added or removed by this ticket. #51's `blockedBy #59` edge
 is deliberately left in place rather than deleted once #59 closes, matching this
