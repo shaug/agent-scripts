@@ -404,21 +404,33 @@ basis and two small guardrails.
 **Disposition: defer, unchanged.** Downstream of #55 and #56; #57's own
 "Definition status" already names #59 as its gate for the exact scored-v2
 configuration, which this record and `gate-manifest.json` provide. One prose
-correction is in scope: #57's current body reads "Run the evidence-backed v2
-experiment approved by #58" in its Goal section. #58 curated the frozen v1
-corpus and baseline; it is #59 — this ticket — that approves the v2 mechanism
-set and gate manifest #57 executes against. That single stale cross-reference is
-corrected in #57's revised body; #57's disposition, required inputs, and
+correction is in scope, still pending as of this record: #57's live body
+currently reads "Run the evidence-backed v2 experiment approved by #58" in its
+Goal section. #58 curated the frozen v1 corpus and baseline; it is #59 — this
+ticket — that approves the v2 mechanism set and gate manifest #57 executes
+against. That single stale cross-reference **must be corrected in #57's body
+when this ticket's later live issue-body edit step is carried out** — not by
+this repository candidate, which changes no live issue body itself, per #59's
+own validation/delivery boundary; #57's disposition, required inputs, and
 acceptance criteria are otherwise unchanged.
 
 ## Net effect on the dependency graph
 
-Applying the dispositions above to the native graph: `blockedBy #59` is removed
-from #51 once #59 closes, leaving #51 with no open `blockedBy` edge. Every other
-child (#52 through #57) keeps its existing `blockedBy` edge onto its current
-predecessor (#52→#51, #53→#52, #54→#53, #55→#54, #56→#52, #57→#55,#56), all of
-which stay open. **#51 is therefore the only open issue in this epic with zero
-open blockers once #59 closes** — the expected net effect #59's own text names.
-See `audits/dependency-sequencing-audit.md` for the verified read-back
-confirming this against the live graph after the edge and body mutations are
-applied.
+Applying the dispositions above to the native graph: #51's existing
+`blockedBy #59` edge is left in place rather than removed, matching this
+repository's own established convention — #58's `blockedBy #50` edge was
+likewise left in place after #50 closed (verified live: `gh api graphql` still
+returns it today). A `blockedBy` edge onto a closed issue is inert rather than
+deleted; #51 has no *open* blocker once #59 closes. Every other child (#52
+through #57) keeps its existing `blockedBy` edge onto its current predecessor
+(#52→#51, #53→#52, #54→#53, #55→#54, #56→#52, #57→#55,#56), all of which stay
+open. **#51 is therefore the only open issue in this epic with zero open
+blockers once #59 closes** — the expected net effect #59's own text names.
+
+This is a prediction to be checked, not yet a verified result: the graph audits
+required by #59's own sequencing (scope/completeness, dependency/sequencing,
+shovel-readiness) run only after the live `#51`–`#57` body and edge changes
+below are actually applied, as their own later step. Their findings — including
+the read-back that confirms or corrects this predicted net effect — belong in
+`audits/` once that step completes; no file exists there yet in this repository
+candidate, and none is claimed to.
