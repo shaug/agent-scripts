@@ -6,6 +6,7 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-27 — Bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 
+- fix: enforce owner_disposition exactly when owner_confirmed
 - feat: run the frozen v1 baseline and record real scored results
   (`28fb2e57474fbf776beff50f3fc3f0f5cedfcd6a`)
 - docs: freeze the v1 configuration for scoring, before any scored output
