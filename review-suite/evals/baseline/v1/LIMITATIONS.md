@@ -889,3 +889,37 @@ reader comparing only the three committed reports' `usage.total_cost_usd`
 figures (3.67623125 USD) would understate real spend by the discarded run's
 cost. This was an operator-side execution accident, not a defect in the suite,
 the grader, or the corpus, and required no code change.
+
+## 36. Every scored figure is a small-sample point estimate, not a measured capability
+
+The frozen protocol's step 6 requires recording confidence and uncertainty
+appropriate to the observed run count, and forbids presenting a point estimate
+as exact model capability. This is stated here explicitly because the three
+committed reports do not carry a confidence interval field, and a reader who
+only opens `quality` could otherwise read `material_finding_recall` or any other
+rate as more precise than the sample size supports.
+
+Every per-case figure in `s1-correctness-orchestrator.report.json`,
+`s2-solution-simplicity-lens.report.json`, and
+`s3-code-simplicity-lens.report.json` rests on exactly 5 attempts per case -
+`per_case[...].attempts` is 5 everywhere across all 15 cases. A per-case
+`mean_recall` can therefore only take the values 0.0, 0.2, 0.4, 0.6, 0.8, or
+1.0; a single attempt landing differently moves it by a fifth. Aggregate
+denominators are larger but still small: `recall_attempts` is 15 for
+`s1-correctness-orchestrator` and 10 for each of `s2-solution-simplicity-lens`
+and `s3-code-simplicity-lens`; `false_positive_denominator` is 35, 20, and 20
+respectively. None of these support a precise probability. A recall of 0.0 or
+1.0 in this baseline means exactly what the 5 (or 10, or 15, or 35) observed
+attempts did, not that the reviewer succeeds or fails on this case class with
+certainty.
+
+Read every reported rate as **this sample's outcome**, not as the true long-run
+rate for the target skill on this case class. This applies in both directions: a
+0.0 recall case (several appear in this baseline, all correctly bucketed to
+`referred` rather than `missed` per item 34's fix) does not prove the reviewer
+can never find that root cause, and a 1.0 verdict-stability figure does not
+prove the reviewer is deterministic on that packet beyond the 5 attempts
+actually run. Widening any of these estimates - larger `runs_per_case`, a
+held-out confirmation sample, or an explicit interval calculation - is a
+candidate decision for whoever owns #59's interpretation of this baseline, not
+something this delivery resolves.
