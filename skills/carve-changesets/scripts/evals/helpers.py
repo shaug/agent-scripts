@@ -56,7 +56,7 @@ def init_eval_repo() -> Tuple[Path, Dict, str]:
         "feature_title": "Eval feature",
         "base_branch": "main",
         "source_branch": "feature/test",
-        "test_command": "python3 -c \"print('ok')\"",
+        "test_argv": ["python3", "-c", "print('ok')"],
         "changesets": [
             {
                 "slug": "a-only",

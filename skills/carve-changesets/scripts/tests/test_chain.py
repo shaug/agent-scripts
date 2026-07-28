@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import unittest
+from unittest.mock import patch
 
 import helpers  # noqa: F401  # ensures sys.path is set
 from chain import compare_chain, create_chain, validate_chain
@@ -10,6 +11,17 @@ from legacy_helpers import chdir, commit, init_repo
 
 
 class ChainTests(unittest.TestCase):
+    def test_validate_chain_rejects_unknown_command_representations_before_git(
+        self,
+    ) -> None:
+        invalid_values = ["x", ("python3",), {"python3": "-V"}]
+        with patch("chain.ensure_git_repo") as ensure_git_repo:
+            for value in invalid_values:
+                with self.subTest(value=value):
+                    with self.assertRaises(CommandError):
+                        validate_chain({}, test_argv=value)
+            ensure_git_repo.assert_not_called()
+
     def test_create_chain_and_compare_equivalence(self) -> None:
         repo_dir, plan = init_repo()
         try:
@@ -38,7 +50,7 @@ class ChainTests(unittest.TestCase):
         try:
             with chdir(repo_dir):
                 create_chain(plan)
-                validate_chain(plan, test_cmd="python3 -c \"print('ok')\"")
+                validate_chain(plan, test_argv=["python3", "-c", "print('ok')"])
         finally:
             shutil.rmtree(repo_dir)
 
@@ -49,7 +61,7 @@ class ChainTests(unittest.TestCase):
                 create_chain(plan)
                 with self.assertRaises(CommandError):
                     validate_chain(
-                        plan, test_cmd='python3 -c "import sys; sys.exit(7)"'
+                        plan, test_argv=["python3", "-c", "import sys; sys.exit(7)"]
                     )
         finally:
             shutil.rmtree(repo_dir)
@@ -67,7 +79,7 @@ class ChainTests(unittest.TestCase):
             with chdir(repo_dir):
                 create_chain(plan)
                 with self.assertRaisesRegex(CommandError, "explicitly approved"):
-                    validate_chain(plan, test_cmd="")
+                    validate_chain(plan, test_argv=[])
         finally:
             shutil.rmtree(repo_dir)
 

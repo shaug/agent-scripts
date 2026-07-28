@@ -222,6 +222,21 @@ def validate_plan(plan: Dict) -> Tuple[bool, List[str]]:
     require_string("base_branch")
     require_string("source_branch")
 
+    if "test_command" in plan:
+        errors.append(
+            "Legacy plan.test_command is not supported; replace it with "
+            'test_argv, for example ["just", "test"] or '
+            '["sh", "-lc", "<approved shell command>"].'
+        )
+
+    test_argv = plan.get("test_argv", [])
+    from command_argv import validate_optional_argv
+
+    try:
+        validate_optional_argv(test_argv, label="plan.test_argv")
+    except CommandError as exc:
+        errors.append(str(exc))
+
     changesets = plan.get("changesets")
     if not isinstance(changesets, list) or not changesets:
         errors.append("Plan must include a non-empty 'changesets' array.")
@@ -328,9 +343,12 @@ def init_plan(
     source: str,
     title: str,
     changesets: int,
-    test_cmd: str,
+    test_argv: object,
     force: bool,
 ) -> None:
+    from command_argv import validate_optional_argv
+
+    approved_test_argv = validate_optional_argv(test_argv, label="test argv")
     plan_path.parent.mkdir(parents=True, exist_ok=True)
 
     if plan_path.exists() and not force:
@@ -342,7 +360,7 @@ def init_plan(
         "feature_title": title,
         "base_branch": base,
         "source_branch": source,
-        "test_command": test_cmd or "",
+        "test_argv": approved_test_argv,
         "changesets": [default_changeset(i) for i in range(1, changesets + 1)],
     }
 

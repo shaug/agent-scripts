@@ -21,6 +21,7 @@ DEFAULT_EXECUTOR = THIS_DIR / "fixture_executor.py"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from command_argv import parse_argv_json  # noqa: E402
 from common import DEFAULT_PLAN_PATH  # noqa: E402
 
 from evals.grader import GradeResult, grade_repo  # noqa: E402
@@ -119,7 +120,7 @@ def evaluate_forward(
     return observations, failures
 
 
-def run_integration_case(case: dict, *, test_cmd: str) -> dict:
+def run_integration_case(case: dict, *, test_argv: list[str]) -> dict:
     repo_dir, _plan, source_hash = init_eval_repo()
     original_cwd = Path.cwd()
     try:
@@ -127,7 +128,7 @@ def run_integration_case(case: dict, *, test_cmd: str) -> dict:
         grade: GradeResult = grade_repo(
             plan_path=repo_dir / DEFAULT_PLAN_PATH,
             expected_source_hash=source_hash,
-            test_cmd=test_cmd,
+            test_argv=test_argv,
             auto_create_chain=bool(case.get("auto_create_chain", True)),
         )
         expected_checks = set(case.get("objective_checks") or [])
@@ -146,9 +147,9 @@ def run_integration_case(case: dict, *, test_cmd: str) -> dict:
         cleanup_repo(repo_dir)
 
 
-def evaluate_integration(cases_path: Path, *, test_cmd: str) -> dict[str, dict]:
+def evaluate_integration(cases_path: Path, *, test_argv: list[str]) -> dict[str, dict]:
     return {
-        case["id"]: run_integration_case(case, test_cmd=test_cmd)
+        case["id"]: run_integration_case(case, test_argv=test_argv)
         for case in load_json(cases_path)
     }
 
@@ -180,19 +181,34 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--integration-cases", type=Path, default=DEFAULT_INTEGRATION_CASES
     )
-    parser.add_argument(
+    test_command = parser.add_mutually_exclusive_group()
+    test_command.add_argument(
+        "--test-argv",
+        default='["python3", "-c", "print(\\"ok\\")"]',
+        help="Approved argv JSON used by the objective chain grader",
+    )
+    test_command.add_argument(
         "--test-cmd",
-        default="python3 -c \"print('ok')\"",
-        help="Approved command used by the objective chain grader",
+        dest="legacy_test_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument("--output-dir", type=Path)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.legacy_test_cmd is not None:
+        parser.error(
+            "--test-cmd is no longer supported; use --test-argv with a JSON argv array"
+        )
     if args.integration_self_test:
-        results = evaluate_integration(args.integration_cases, test_cmd=args.test_cmd)
+        results = evaluate_integration(
+            args.integration_cases,
+            test_argv=parse_argv_json(args.test_argv, label="--test-argv"),
+        )
         failures = [
             f"{case_id}: {failure}"
             for case_id, result in results.items()

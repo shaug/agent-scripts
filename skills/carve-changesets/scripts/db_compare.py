@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import Dict
 
+from command_argv import display_argv, execute_argv, validate_argv
 from common import (
     CommandError,
     branch_name_for,
@@ -20,17 +20,26 @@ from common import (
 )
 
 
-def run_capture(command: str, outfile: Path) -> None:
-    result = subprocess.run(command, shell=True, text=True, capture_output=True)
+def run_capture(argv: object, outfile: Path) -> None:
+    approved_argv = validate_argv(argv, label="database command argv")
+    result = execute_argv(approved_argv, text=True, capture_output=True)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
-        raise CommandError(f"Command failed: {command}\n{detail}")
+        raise CommandError(f"Command failed: {display_argv(approved_argv)}\n{detail}")
     outfile.write_text(result.stdout)
 
 
-def db_compare(plan: Dict, *, source_cmd: str, chain_cmd: str, out_dir: Path) -> None:
-    if not source_cmd.strip() or not chain_cmd.strip():
-        raise CommandError("db-compare requires both --source-cmd and --chain-cmd.")
+def db_compare(
+    plan: Dict,
+    *,
+    source_argv: object,
+    chain_argv: object,
+    out_dir: Path,
+) -> None:
+    approved_source_argv = validate_argv(
+        source_argv, label="approved source schema argv"
+    )
+    approved_chain_argv = validate_argv(chain_argv, label="approved chain schema argv")
 
     ensure_git_repo()
     ensure_clean_tree()
@@ -53,7 +62,7 @@ def db_compare(plan: Dict, *, source_cmd: str, chain_cmd: str, out_dir: Path) ->
         try:
             git("checkout", source)
             print(f"[STEP] Running source command on {source}")
-            run_capture(source_cmd, source_out)
+            run_capture(approved_source_argv, source_out)
 
             git("checkout", "-B", temp_branch, base)
             for name in chain:
@@ -61,7 +70,7 @@ def db_compare(plan: Dict, *, source_cmd: str, chain_cmd: str, out_dir: Path) ->
                 git("merge", "--no-ff", "--no-edit", name)
 
             print(f"[STEP] Running chain command on {temp_branch}")
-            run_capture(chain_cmd, chain_out)
+            run_capture(approved_chain_argv, chain_out)
 
             print("[STEP] Diffing outputs (git diff --no-index)")
             diff = git(

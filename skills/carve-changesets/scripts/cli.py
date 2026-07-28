@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 from chain import compare_chain, create_chain, validate_chain
+from command_argv import parse_argv_json
 from common import (
     DEFAULT_PLAN_PATH,
     CommandError,
@@ -73,14 +74,39 @@ def _print_discovered_test_command() -> None:
     else:
         for suggestion in discovery.get("suggestions", []):
             print(f"[HINT] Test command proposal: {suggestion}")
-    print("[NEXT] Pass an approved command explicitly with --test-cmd.")
+    print("[NEXT] Pass approved argv explicitly as JSON with --test-argv.")
+
+
+def _reject_legacy_flag(
+    args: argparse.Namespace, *, attribute: str, old_flag: str, new_flag: str
+) -> None:
+    if getattr(args, attribute, None) is not None:
+        raise CommandError(
+            f"{old_flag} is no longer supported because command strings are "
+            f"ambiguous. Use {new_flag} with a JSON argv array; use "
+            '["sh", "-lc", "<approved shell command>"] only when shell '
+            "semantics are intentional."
+        )
+
+
+def _parse_optional_argv(raw: Optional[str], *, label: str) -> List[str]:
+    if raw is None:
+        return []
+    return parse_argv_json(raw, label=label)
 
 
 def cmd_preflight(args: argparse.Namespace) -> None:
+    _reject_legacy_flag(
+        args,
+        attribute="legacy_test_cmd",
+        old_flag="--test-cmd",
+        new_flag="--test-argv",
+    )
+    test_argv = _parse_optional_argv(args.test_argv, label="--test-argv")
     preflight(
         base=args.base,
         source=args.source,
-        test_cmd=args.test_cmd,
+        test_argv=test_argv,
         skip_tests=args.skip_tests,
         skip_merge_check=args.skip_merge_check,
         allow_source_behind_base=args.allow_source_behind_base,
@@ -90,8 +116,14 @@ def cmd_preflight(args: argparse.Namespace) -> None:
 
 
 def cmd_init_plan(args: argparse.Namespace) -> None:
-    test_cmd = str(args.test_cmd or "").strip()
-    if not test_cmd:
+    _reject_legacy_flag(
+        args,
+        attribute="legacy_test_cmd",
+        old_flag="--test-cmd",
+        new_flag="--test-argv",
+    )
+    test_argv = _parse_optional_argv(args.test_argv, label="--test-argv")
+    if not test_argv:
         _print_discovered_test_command()
     init_plan(
         plan_path=Path(args.plan),
@@ -99,7 +131,7 @@ def cmd_init_plan(args: argparse.Namespace) -> None:
         source=args.source,
         title=args.title,
         changesets=args.changesets,
-        test_cmd=test_cmd,
+        test_argv=test_argv,
         force=args.force,
     )
     print(f"[OK] Wrote plan template: {args.plan}")
@@ -179,9 +211,19 @@ def cmd_compare(args: argparse.Namespace) -> None:
 
 
 def cmd_validate_chain(args: argparse.Namespace) -> None:
+    _reject_legacy_flag(
+        args,
+        attribute="legacy_test_cmd",
+        old_flag="--test-cmd",
+        new_flag="--test-argv",
+    )
     plan = load_and_validate(Path(args.plan))
-    test_cmd = str(args.test_cmd or plan.get("test_command", "")).strip()
-    validate_chain(plan, test_cmd=test_cmd)
+    test_argv = (
+        _parse_optional_argv(args.test_argv, label="--test-argv")
+        if args.test_argv is not None
+        else list(plan.get("test_argv", []))
+    )
+    validate_chain(plan, test_argv=test_argv)
     pull_requests = (
         []
         if args.local_only
@@ -258,10 +300,28 @@ def cmd_recover_suffix(args: argparse.Namespace) -> None:
 
 
 def cmd_db_compare(args: argparse.Namespace) -> None:
+    _reject_legacy_flag(
+        args,
+        attribute="legacy_source_cmd",
+        old_flag="--source-cmd",
+        new_flag="--source-argv",
+    )
+    _reject_legacy_flag(
+        args,
+        attribute="legacy_chain_cmd",
+        old_flag="--chain-cmd",
+        new_flag="--chain-argv",
+    )
+    if args.source_argv is None or args.chain_argv is None:
+        raise CommandError(
+            "db-compare requires both --source-argv and --chain-argv JSON arrays."
+        )
+    source_argv = parse_argv_json(args.source_argv, label="--source-argv")
+    chain_argv = parse_argv_json(args.chain_argv, label="--chain-argv")
     db_compare(
         load_and_validate(Path(args.plan)),
-        source_cmd=args.source_cmd,
-        chain_cmd=args.chain_cmd,
+        source_argv=source_argv,
+        chain_argv=chain_argv,
         out_dir=Path(args.out_dir),
     )
 
@@ -348,8 +408,17 @@ def _add_plan(parser: argparse.ArgumentParser) -> None:
 def _add_preflight_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--base", required=True, help="Base branch")
     parser.add_argument("--source", required=True, help="Source branch")
-    parser.add_argument(
-        "--test-cmd", default="", help="Explicitly approved test command"
+    test_command = parser.add_mutually_exclusive_group()
+    test_command.add_argument(
+        "--test-argv",
+        default=None,
+        help="Explicitly approved test argv as a JSON array of strings",
+    )
+    test_command.add_argument(
+        "--test-cmd",
+        dest="legacy_test_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument("--skip-merge-check", action="store_true")
@@ -402,7 +471,14 @@ def build_parser() -> argparse.ArgumentParser:
     item.add_argument("--source", required=True)
     item.add_argument("--title", required=True)
     item.add_argument("--changesets", type=int, default=3)
-    item.add_argument("--test-cmd", default="")
+    test_command = item.add_mutually_exclusive_group()
+    test_command.add_argument("--test-argv", default=None)
+    test_command.add_argument(
+        "--test-cmd",
+        dest="legacy_test_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
+    )
     item.add_argument("--force", action="store_true")
     item.set_defaults(func=cmd_init_plan)
 
@@ -432,7 +508,14 @@ def build_parser() -> argparse.ArgumentParser:
         sub, "validate-chain", "Run approved step tests and live chain validation."
     )
     _add_plan(item)
-    item.add_argument("--test-cmd", default="")
+    test_command = item.add_mutually_exclusive_group()
+    test_command.add_argument("--test-argv", default=None)
+    test_command.add_argument(
+        "--test-cmd",
+        dest="legacy_test_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
+    )
     item.add_argument("--remote", default="origin")
     item.add_argument("--local-only", action="store_true")
     item.set_defaults(func=cmd_validate_chain)
@@ -496,8 +579,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     item = _command(sub, "db-compare", "Compare source and chain database schemas.")
     _add_plan(item)
-    item.add_argument("--source-cmd", required=True)
-    item.add_argument("--chain-cmd", required=True)
+    source_command = item.add_mutually_exclusive_group()
+    source_command.add_argument("--source-argv")
+    source_command.add_argument(
+        "--source-cmd",
+        dest="legacy_source_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    chain_command = item.add_mutually_exclusive_group()
+    chain_command.add_argument("--chain-argv")
+    chain_command.add_argument(
+        "--chain-cmd",
+        dest="legacy_chain_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
+    )
     item.add_argument("--out-dir", default=str(DEFAULT_PLAN_PATH.parent / "db-compare"))
     item.set_defaults(func=cmd_db_compare)
 

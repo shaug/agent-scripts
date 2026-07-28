@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
+## 2026-07-27 — Hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- fix: execute carve commands from explicit argv
 - fix: correct a stale reference, a stale validation entry, and an inverted case
+  (`c7a80c0fb51cc39bbb16b174a09b4cabf7d164b3`)
 - fix: make the last two before-state and sanitization defects actually resolved
   (`41de65daadc5d53bfbb299cb4ecd6d040ac47ab9`)
 - fix: sanitize the repository-history case and correct the changelog order

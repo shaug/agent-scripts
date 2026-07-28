@@ -8,13 +8,14 @@ import json
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Sequence
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from chain import compare_chain, create_chain, validate_chain  # noqa: E402
+from command_argv import parse_argv_json  # noqa: E402
 from common import (  # noqa: E402
     DEFAULT_PLAN_PATH,
     CommandError,
@@ -90,10 +91,10 @@ def _check_equivalence(plan: Dict, checks: List[str], failures: List[str]) -> No
 
 
 def _check_validate_chain(
-    plan: Dict, test_cmd: str, checks: List[str], failures: List[str]
+    plan: Dict, test_argv: Sequence[str], checks: List[str], failures: List[str]
 ) -> None:
     try:
-        validate_chain(plan, test_cmd=test_cmd)
+        validate_chain(plan, test_argv=test_argv)
         checks.append("validate_chain")
     except CommandError as exc:
         failures.append(f"validate_chain: {exc}")
@@ -141,7 +142,7 @@ def grade_repo(
     *,
     plan_path: Path,
     expected_source_hash: str,
-    test_cmd: str,
+    test_argv: Sequence[str],
     auto_create_chain: bool,
 ) -> GradeResult:
     checks: List[str] = []
@@ -167,7 +168,7 @@ def grade_repo(
 
     _check_chain_exists(plan, checks, failures)
     _check_equivalence(plan, checks, failures)
-    _check_validate_chain(plan, test_cmd=test_cmd, checks=checks, failures=failures)
+    _check_validate_chain(plan, test_argv=test_argv, checks=checks, failures=failures)
     _check_successor_recovery_metadata(plan, checks, failures)
 
     return GradeResult(ok=not failures, checks=checks, failures=failures)
@@ -183,10 +184,17 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Expected source branch hash before the run",
     )
-    parser.add_argument(
+    test_command = parser.add_mutually_exclusive_group()
+    test_command.add_argument(
+        "--test-argv",
+        default='["python3", "-c", "print(\\"ok\\")"]',
+        help="Test argv JSON for validate-chain",
+    )
+    test_command.add_argument(
         "--test-cmd",
-        default="python3 -c \"print('ok')\"",
-        help="Test command for validate-chain",
+        dest="legacy_test_cmd",
+        default=None,
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--auto-create-chain",
@@ -204,11 +212,15 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: List[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.legacy_test_cmd is not None:
+        parser.error(
+            "--test-cmd is no longer supported; use --test-argv with a JSON argv array"
+        )
 
     result = grade_repo(
         plan_path=Path(args.plan),
         expected_source_hash=args.expected_source_hash,
-        test_cmd=args.test_cmd,
+        test_argv=parse_argv_json(args.test_argv, label="--test-argv"),
         auto_create_chain=args.auto_create_chain,
     )
 

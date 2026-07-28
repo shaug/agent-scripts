@@ -64,7 +64,7 @@ def init_repo() -> tuple[Path, dict]:
         "feature_title": "Test feature",
         "base_branch": "main",
         "source_branch": "feature/test",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "a-only",
@@ -115,7 +115,7 @@ def init_conflict_repo() -> tuple[Path, dict]:
         "feature_title": "Conflict feature",
         "base_branch": "main",
         "source_branch": "feature/conflict",
-        "test_command": "",
+        "test_argv": [],
         "changesets": [
             {
                 "slug": "conflict",

@@ -69,8 +69,8 @@ class ScriptIntegrationTests(unittest.TestCase):
                 [
                     cli,
                     "validate-chain",
-                    "--test-cmd",
-                    "python3 -c \"print('ok')\"",
+                    "--test-argv",
+                    '["python3", "-c", "print(\\"ok\\")"]',
                     "--local-only",
                 ],
                 cwd=repo_dir,
@@ -99,6 +99,160 @@ class ScriptIntegrationTests(unittest.TestCase):
             self.assertIn(f"[{mutation_class}]", result.stdout)
         self.assertIn("remote mutation is dry-run", result.stdout)
         self.assertIn("by default", result.stdout)
+
+    def test_legacy_test_command_surfaces_fail_before_branch_mutation(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            cli = str(SCRIPTS_DIR / "cli.py")
+            marker = repo_dir / "legacy-test-command-ran"
+            legacy_command = f"touch {marker}"
+            branches_before = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            cases = [
+                (
+                    "preflight",
+                    [
+                        "preflight",
+                        "--base",
+                        plan["base_branch"],
+                        "--source",
+                        plan["source_branch"],
+                        "--test-cmd",
+                        legacy_command,
+                    ],
+                ),
+                (
+                    "init-plan",
+                    [
+                        "init-plan",
+                        "--base",
+                        plan["base_branch"],
+                        "--source",
+                        plan["source_branch"],
+                        "--title",
+                        "Legacy",
+                        "--test-cmd",
+                        legacy_command,
+                    ],
+                ),
+                (
+                    "validate-chain",
+                    ["validate-chain", "--test-cmd", legacy_command],
+                ),
+                (
+                    "run",
+                    [
+                        "run",
+                        "--base",
+                        plan["base_branch"],
+                        "--source",
+                        plan["source_branch"],
+                        "--title",
+                        "Legacy",
+                        "--test-cmd",
+                        legacy_command,
+                    ],
+                ),
+            ]
+            for name, arguments in cases:
+                with self.subTest(command=name):
+                    result = run([cli, *arguments], cwd=repo_dir, check=False)
+                    self.assertEqual(1, result.returncode)
+                    self.assertIn("--test-cmd is no longer supported", result.stdout)
+                    self.assertIn("--test-argv", result.stdout)
+            branches_after = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            self.assertEqual(branches_before, branches_after)
+            self.assertFalse(marker.exists())
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_legacy_database_command_surfaces_fail_before_branch_mutation(self) -> None:
+        repo_dir, _plan = init_repo()
+        try:
+            cli = str(SCRIPTS_DIR / "cli.py")
+            marker = repo_dir / "legacy-database-command-ran"
+            legacy_command = f"touch {marker}"
+            branches_before = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            cases = [
+                (
+                    "--source-cmd",
+                    [
+                        "db-compare",
+                        "--source-cmd",
+                        legacy_command,
+                        "--chain-argv",
+                        '["true"]',
+                    ],
+                    "--source-argv",
+                ),
+                (
+                    "--chain-cmd",
+                    [
+                        "db-compare",
+                        "--source-argv",
+                        '["true"]',
+                        "--chain-cmd",
+                        legacy_command,
+                    ],
+                    "--chain-argv",
+                ),
+            ]
+            for legacy_flag, arguments, replacement_flag in cases:
+                with self.subTest(flag=legacy_flag):
+                    result = run([cli, *arguments], cwd=repo_dir, check=False)
+                    self.assertEqual(1, result.returncode)
+                    self.assertIn(
+                        f"{legacy_flag} is no longer supported", result.stdout
+                    )
+                    self.assertIn(replacement_flag, result.stdout)
+            branches_after = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            self.assertEqual(branches_before, branches_after)
+            self.assertFalse(marker.exists())
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_malformed_test_argv_fails_before_branch_mutation(self) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            cli = str(SCRIPTS_DIR / "cli.py")
+            branches_before = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            result = run(
+                [
+                    cli,
+                    "preflight",
+                    "--base",
+                    plan["base_branch"],
+                    "--source",
+                    plan["source_branch"],
+                    "--test-argv",
+                    "not-json",
+                ],
+                cwd=repo_dir,
+                check=False,
+            )
+            branches_after = run(
+                ["git", "for-each-ref", "--format=%(refname)", "refs/heads/"],
+                cwd=repo_dir,
+            ).stdout
+            self.assertEqual(1, result.returncode)
+            self.assertIn("--test-argv must be valid JSON", result.stdout)
+            self.assertEqual(branches_before, branches_after)
+        finally:
+            shutil.rmtree(repo_dir)
 
     def test_status_rehydrates_without_a_plan(self) -> None:
         repo_dir, plan = init_repo()
