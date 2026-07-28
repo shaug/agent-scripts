@@ -163,14 +163,21 @@ class OracleCoverageTests(unittest.TestCase):
                         adjudication,
                         "a scored case must record how it was adjudicated",
                     )
-                    self.assertIn(adjudication["second"], {"oracle", "owner_required"})
+                    self.assertIn(
+                        adjudication["second"],
+                        {"oracle", "owner_confirmed"},
+                        "a scored case's second adjudication must be settled "
+                        "(oracle or owner_confirmed), not still owner_required",
+                    )
 
-    def test_a_case_without_an_oracle_routes_to_the_owner(self):
-        """`owner_required` is the only honest alternative to an oracle.
+    def test_a_case_without_an_oracle_never_claims_oracle_adjudication(self):
+        """No oracle exists, so `oracle` is never an honest second adjudication.
 
         A fresh agent context is not a second adjudicator for materiality when it
         shares a model family with the reviewer being measured, so a case with no
-        oracle has to say it needs the owner rather than quietly claiming two.
+        oracle must say it needs the owner (`owner_required`) or that the owner
+        has settled it (`owner_confirmed`) - never claim a machine adjudication
+        it does not have.
         """
         shipped = set(oracles.case_ids())
         for root in corpus.corpus_roots():
@@ -179,7 +186,9 @@ class OracleCoverageTests(unittest.TestCase):
                 if adjudication is None or case.case_id in shipped:
                     continue
                 with self.subTest(stratum=root.name, case_id=case.case_id):
-                    self.assertEqual("owner_required", adjudication["second"])
+                    self.assertIn(
+                        adjudication["second"], {"owner_required", "owner_confirmed"}
+                    )
 
 
 if __name__ == "__main__":

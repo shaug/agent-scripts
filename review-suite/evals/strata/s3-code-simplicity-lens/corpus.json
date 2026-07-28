@@ -7,9 +7,9 @@
   "stratum": {
     "id": "s3-code-simplicity-lens",
     "ground_truth": "human-review",
-    "scored": false,
+    "scored": true,
     "grading_is_signal": true,
-    "purpose": "Local code-complexity, reuse, and DRY cases for the self-sufficient code-simplicity lens. Populated and sourced from adjudicated human review and one adjudicated repository- history finding, with the recorded disposition as the first adjudication. NO executable oracle exists for this subject: 'this is a duplication defect' and 'this apparent duplication is justified' are design judgements a runnable check cannot decide. Every case therefore records adjudication.second: owner_required and a concrete recommended disposition for the owner to confirm or overturn. NOT scored: every expectation is uncalibrated and no case has been run through any runtime, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss must surface as referred rather than a silent reviewer-miss."
+    "purpose": "Local code-complexity, reuse, and DRY cases for the self-sufficient code-simplicity lens. No executable oracle exists for this subject - 'this is a duplication defect' and 'this apparent duplication is justified' are design judgements a runnable check cannot decide - so every case's second adjudication is `owner_confirmed`: the owner adjudicated all four directly, confirming every recommended disposition with no overturns. One pair, `metrics-label-formatting-duplication` here and `registry-client-layering` in s2, shares one source PR read at two levels; the owner confirmed this is deliberate dual-level coverage of one causal chain, not a double-count, and LIMITATIONS.md carries the resulting correlated-recall caveat. SCORED: both owner-gated inputs are satisfied, and every expectation stays `calibrated: false` permanently."
   },
   "cases": [
     "compat-accessor-boundary-duplication",

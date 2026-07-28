@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "This repository's commit 93516194388116f4841fc191a8c78c191d0da5b1: the code-simplicity lens found and this commit resolved an inline duplicate of a shared policy, with a stated history of that duplication class causing real drift. This case models a new instance of the same duplication class the commit's own message warns against, rather than reproducing the commit's diff directly.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for a local-complexity judgement like this. Recommended adjudication: MATERIAL. The packet states two other call sites already use the shared predicate and that this exact duplication class had already caused real drift twice, which are concrete, checkable facts rather than a stylistic preference for less code. Residual risk for the owner: the severity is recorded as strong_recommendation rather than blocking, since the packet shows no currently observed drift, only a stated history of it; a reviewer could reasonably argue for blocking severity given that history, and the owner should decide which is right."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for a local-complexity judgement like this. Recommended adjudication: MATERIAL. The packet states two other call sites already use the shared predicate and that this exact duplication class had already caused real drift twice, which are concrete, checkable facts rather than a stylistic preference for less code. Residual risk for the owner: the severity is recorded as strong_recommendation rather than blocking, since the packet shows no currently observed drift, only a stated history of it; a reviewer could reasonably argue for blocking severity given that history, and the owner should decide which is right.",
+    "owner_disposition": {
+      "outcome": "confirmed_material",
+      "reasoning": "Owner confirmed material, consistent with the recommended disposition and with this repository's own commit history recording the drift this case demonstrates.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }

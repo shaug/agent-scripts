@@ -770,3 +770,94 @@ across two strata found a defect at every prior stopping point; that is the
 strongest evidence yet in this record that curation discipline alone does not
 converge, and that a mechanical diff-to-expectation consistency check remains
 the more durable fix, still undone.
+
+## 32. Recall on `registry-client-layering` and `metrics-label-formatting-duplication` is not independent
+
+Both cases trace to the same source: `atelier` PR #410 review comment
+`2870262209`, read at two levels. `registry-client-layering` (`s2`) reads it as
+a whole-solution over-engineering finding - three overlapping client concepts
+that should converge on one already-bound client.
+`metrics-label-formatting-duplication` (`s3`) reads the same comment at the
+local-implementation level - the repeated argument-threading pattern the same
+reviewer separately flagged as a local reuse defect.
+
+The owner confirmed this is deliberate dual-level coverage of one causal chain,
+not an incidental double-count, and explained why in the owner's own words:
+"sometimes a local implementation smells because the whole design of the
+solution doesn't match the shape of the requirements, and the implementation
+must twist itself into suspect shapes to accommodate. prefer solving the
+whole-design first before addressing local implementation, but showing how a
+local implementation is suspect because the design itself doesn't fit can help
+emphasize the problem with both." Case 7's local duplication is case 3's design
+defect made visible at the implementation layer, not an independent finding that
+happens to share a source.
+
+**Consequence for any aggregate figure built from this pair: recall on cases 3
+and 7 is likely correlated, not independent.** A reviewer that catches the
+whole-solution design flaw is more likely to also catch its local symptom,
+because the two are causally linked rather than statistically unrelated; a
+reviewer that misses the design flaw may still surface only the narrower local
+finding, or neither. Treating five or seven scored root causes as seven
+independent Bernoulli trials when two of them are this tightly coupled
+overstates the precision of the resulting recall figure. This caveat is a
+required input to #59's interpretation of the baseline, not a defect in this
+delivery: both cases are real, both are correctly adjudicated, and neither
+should be dropped. What must not happen is reporting an aggregate recall figure
+without disclosing that this pair is not an independent sample.
+
+## 33. Owner adjudication is complete; both scoring gates are satisfied
+
+All 8 `owner_required` cases across `s2-solution-simplicity-lens` and
+`s3-code-simplicity-lens` are now `owner_confirmed`, each with a concrete
+recorded disposition (`provenance.adjudication.owner_disposition`) rather than
+only a recommendation. Every one of the 8 confirmed the recommendation already
+on record; none was overturned. Combined with `s1-correctness-orchestrator`'s 7
+oracle-settled cases, independent adjudication is complete for every populated
+stratum, and the per-stratum cost ceiling (9.00 / 3.00 / 3.00 USD, 15.00 total)
+is preregistered by the owner. Both inputs the frozen baseline protocol gated on
+are satisfied, and all three strata now declare `scored: true`.
+
+The full record of each owner disposition, including the standing
+over-engineering standard applied across all 8 cases, is in the tracker rather
+than duplicated here: see
+[the audit-trail comment](https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609)
+and
+[its follow-up](https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357).
+Each case's provenance carries a concise summary and links back to these two
+comments rather than re-deriving the reasoning.
+
+## 34. A miss from an unrecognized formulation was silently counted as a reviewer miss until this delivery
+
+The three-way grading method the owner settled after batch 2 - score every case
+matched, missed, or referred for adjudication, never calibrating a scored case
+on its own prose first - was recorded as policy but not implemented in the
+grader until this delivery. `grader.grade()` computed `missed_root_cause_ids` as
+"every expected root cause not matched," which counted a root cause with a
+`partial` or `ambiguous` candidate finding - exactly the case the referral
+bucket exists to catch - as a flat miss. Confirmed directly: the exact scenario
+the settled method describes (a finding at the right surface, using words the
+shipped formulations do not recognise) returned
+`missed_root_cause_ids: ["rc.deadline"]` and `recall: 0.0`, not a referral.
+
+Fixed: `grade()` now computes `referred_root_cause_ids` from every partial or
+ambiguous candidate not otherwise matched, and excludes those from
+`missed_root_cause_ids`. A root cause is now a scored miss only when nothing
+found pointed at it at all. `recall` is unchanged in formula (matched /
+expected) and remains a lower bound; the fix is entirely in what counts as a
+miss versus a referral. `report.py` surfaces the new bucket at both levels:
+`per_case[...].ever_referred_root_cause_ids` and the aggregate
+`quality.referred_rate` / `quality.referred_denominator`, so a reader never has
+to infer a referral from an unexplained gap between matched and expected root
+causes.
+
+This was found while implementing the frozen baseline, not by a separate audit
+pass: reading the settled method's own acceptance criterion ("a grader miss that
+stems from unmet formulations is a referral, not a silent reviewer-miss")
+against the code that was supposed to implement it. Recorded as a limitation
+rather than only a fix, because it means every scored-adjacent recall figure
+this suite has reported before this commit - including any figure derived by
+hand from `adjudication_required` output during earlier batches - undercounted
+recall by however many root causes were referred rather than missed. No such
+figure was published as a baseline result prior to this delivery, so nothing
+downstream needs correction; the record exists so #59 knows the method was
+policy-only, not code-enforced, until this exact commit.

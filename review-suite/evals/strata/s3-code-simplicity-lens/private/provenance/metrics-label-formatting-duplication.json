@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 410 review comment 2870262209, accepted in commit f631cb0, read at the local-implementation level rather than the whole-solution level this same comment grounds in s2: the repeated argument-threading pattern the reviewer flagged is a local reuse defect independent of the architectural over-engineering question.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for a local-reuse judgement like this. Recommended adjudication: MATERIAL. The packet states the shared formatter already exists in the same module and that a fourth exporter is already planned, which makes the compounding cost concrete rather than hypothetical. Residual risk for the owner: this case and s2's `registry-client-layering` trace to the same source PR and comment, read at two different levels (whole-design versus local-implementation); the owner should confirm this reuse is the deliberate, recorded kind rather than an unintended duplicate sample of one real finding across two strata."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for a local-reuse judgement like this. Recommended adjudication: MATERIAL. The packet states the shared formatter already exists in the same module and that a fourth exporter is already planned, which makes the compounding cost concrete rather than hypothetical. Residual risk for the owner: this case and s2's `registry-client-layering` trace to the same source PR and comment, read at two different levels (whole-design versus local-implementation); the owner should confirm this reuse is the deliberate, recorded kind rather than an unintended duplicate sample of one real finding across two strata.",
+    "owner_disposition": {
+      "outcome": "confirmed_material",
+      "reasoning": "Owner confirmed from direct recollection of the real PR, independent of the recommendation offered - including the difficulty at the time of getting the implementing agent to understand the point of the abstraction barrier. Resolved as case 3's downstream symptom, not a double-count of the same finding: deliberate dual-level coverage of one causal chain. See LIMITATIONS.md for the correlated-recall caveat this creates for any aggregate figure over the pair.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }

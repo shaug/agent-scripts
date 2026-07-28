@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 410 review comment 2870262209, accepted in commit f631cb0: all three client classes were converged onto one bound BeadsClient instance.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for a solution-shape judgement like this. Recommended adjudication: MATERIAL. The packet states all three classes call the same transport and that one is already bound to the exact two values the other two re-thread, which is the layering defect stated directly rather than inferred. The only real counter-consideration: the diff is scoped to a queue-message client only, so a reviewer might argue the mutation-client duplication predates this change and is out of scope for it - the owner should weigh whether introducing a third instance of an existing anti-pattern is itself gating."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for a solution-shape judgement like this. Recommended adjudication: MATERIAL. The packet states all three classes call the same transport and that one is already bound to the exact two values the other two re-thread, which is the layering defect stated directly rather than inferred. The only real counter-consideration: the diff is scoped to a queue-message client only, so a reviewer might argue the mutation-client duplication predates this change and is out of scope for it - the owner should weigh whether introducing a third instance of an existing anti-pattern is itself gating.",
+    "owner_disposition": {
+      "outcome": "confirmed_material",
+      "reasoning": "Owner confirmed, and reframed the standard rather than accepting it as given: the defect is not reaching through an abstraction barrier per se, it is failing to question and re-justify the barrier itself. A barrier that holds up under scrutiny should be maintained, not locally worked around. See the case 3/case 7 note for the shared-source resolution: case 7's local duplication is this case's downstream symptom, confirmed as deliberate dual-level coverage rather than a double-count.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }
