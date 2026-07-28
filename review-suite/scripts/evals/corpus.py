@@ -165,6 +165,35 @@ def _expectation_semantics(expectation: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _provenance_semantics(provenance: dict[str, Any]) -> list[str]:
+    """Cross-field adjudication rules JSON Schema cannot express clearly.
+
+    `owner_disposition` is documented as present only when `second` is
+    `owner_confirmed` - a claim the schema's own subset validator has no way
+    to enforce, since it supports no conditional (`if`/`then`/`else`) keyword.
+    Checked here instead, so a case cannot silently claim owner adjudication
+    with no recorded disposition, or carry a disposition under an
+    `oracle`/`owner_required`/`none` second adjudication it does not belong
+    to.
+    """
+    errors = []
+    adjudication = provenance.get("adjudication")
+    if not adjudication:
+        return errors
+    second = adjudication.get("second")
+    has_disposition = "owner_disposition" in adjudication
+    if second == "owner_confirmed" and not has_disposition:
+        errors.append(
+            "adjudication.second is owner_confirmed but owner_disposition is missing"
+        )
+    if second != "owner_confirmed" and has_disposition:
+        errors.append(
+            f"adjudication.owner_disposition is only valid when second is "
+            f"owner_confirmed, not {second!r}"
+        )
+    return errors
+
+
 def load_case(root: Path, case_id: str) -> Case:
     """Load and validate one case's reviewer-visible and private parts."""
     errors: list[str] = []
@@ -206,6 +235,7 @@ def load_case(root: Path, case_id: str) -> Case:
     errors.extend(
         f"expectation: {error}" for error in _expectation_semantics(expectation)
     )
+    errors.extend(f"provenance: {error}" for error in _provenance_semantics(provenance))
 
     packet_errors = protocol.VALIDATOR.validate_packet(packet)
     if expectation.get("packet_valid") and packet_errors:

@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 277 review comment 2861848880, accepted in reply 2861868165, which names implementing commit 79703c5 and the regression tests added for the fail-closed path.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for whether added robustness machinery is over-engineered versus requirement-justified. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the created record is runnable by default and picked up within seconds, which makes a silent transition failure a real hazard rather than a hypothetical one, and the sibling script already carries the identical protection, which is evidence of an established pattern rather than one-off scaffolding. Residual risk for the owner to weigh: retry count and backoff are unspecified in the packet, so a reviewer could reasonably ask for that detail without the request being about over-engineering at all."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for whether added robustness machinery is over-engineered versus requirement-justified. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the created record is runnable by default and picked up within seconds, which makes a silent transition failure a real hazard rather than a hypothetical one, and the sibling script already carries the identical protection, which is evidence of an established pattern rather than one-off scaffolding. Residual risk for the owner to weigh: retry count and backoff are unspecified in the packet, so a reviewer could reasonably ask for that detail without the request being about over-engineering at all.",
+    "owner_disposition": {
+      "outcome": "confirmed_clean",
+      "reasoning": "Owner confirmed: protecting against or recovering from an error case that falls within the scope of the stated requirements is good engineering, not over-engineering. Confirms the recommended CLEAN / NOT MATERIAL disposition.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }

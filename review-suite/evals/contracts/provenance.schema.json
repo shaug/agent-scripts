@@ -60,16 +60,43 @@
           "minLength": 1
         },
         "second": {
-          "description": "The second adjudication. `oracle` means a machine settled it: the stated requirement runs, fails against the candidate, and holds once the stated root cause is corrected. `owner_required` means no oracle exists and the owner must supply it - never a fresh agent context sharing a model family with the reviewer being measured, whose errors correlate with it. `none` means neither, which no case may ship with once it is scored.",
+          "description": "The second adjudication. `oracle` means a machine settled it: the stated requirement runs, fails against the candidate, and holds once the stated root cause is corrected. `owner_required` means no oracle exists and the owner must supply it - never a fresh agent context sharing a model family with the reviewer being measured, whose errors correlate with it. `owner_confirmed` means the owner has directly adjudicated the case; `owner_disposition` then records the outcome. `none` means neither, which no case may ship with once it is scored.",
           "enum": [
             "oracle",
             "owner_required",
+            "owner_confirmed",
             "none"
           ]
         },
         "notes": {
           "type": "string",
           "minLength": 1
+        },
+        "owner_disposition": {
+          "description": "Present only when `second` is `owner_confirmed`. A concise record of the owner's actual adjudication, distinct from the `notes` field's pre-adjudication recommendation: `outcome` is the owner's confirmed verdict on materiality, `reasoning` is a short summary in the owner's own terms rather than the recommender's framing, and `source` links to the full reasoning recorded in the tracker rather than duplicating it here.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "reasoning",
+            "source"
+          ],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "confirmed_material",
+                "confirmed_clean"
+              ]
+            },
+            "reasoning": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
       }
     }

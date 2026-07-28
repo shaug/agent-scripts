@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 417 review comment 2870710594, which records its own acceptance: implemented in 668f2c7, adding the typed outcome exactly as the packet describes.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for whether machinery is 'requirement-justified' rather than over-engineered - that is the judgement itself. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the caller must distinguish an intentional block from a real failure and that a boolean cannot express that distinction, which is a concrete, checkable requirement rather than a preference for more types. The residual risk: a reviewer could reasonably propose a smaller fix (e.g. a second boolean flag, or a single sentinel value) instead of a four-member enum: whether that counts as 'this change over-shoots the requirement' rather than 'this looks like unnecessary machinery' is a distinction the owner should draw, since this case's accepted non-finding treats the whole enum as justified rather than picking apart its size."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for whether machinery is 'requirement-justified' rather than over-engineered - that is the judgement itself. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states the caller must distinguish an intentional block from a real failure and that a boolean cannot express that distinction, which is a concrete, checkable requirement rather than a preference for more types. The residual risk: a reviewer could reasonably propose a smaller fix (e.g. a second boolean flag, or a single sentinel value) instead of a four-member enum: whether that counts as 'this change over-shoots the requirement' rather than 'this looks like unnecessary machinery' is a distinction the owner should draw, since this case's accepted non-finding treats the whole enum as justified rather than picking apart its size.",
+    "owner_disposition": {
+      "outcome": "confirmed_clean",
+      "reasoning": "Owner confirmed: over-engineering is rarely a boolean-vs-enum question. Booleans-as-state are often the real code smell; an enum is typed, self-descriptive, expandable, and boolean fields becoming boolean parameters is its own anti-pattern. Confirms the recommended CLEAN / NOT MATERIAL disposition.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }

@@ -7,7 +7,12 @@
   "recorded_at": "2026-07-27",
   "adjudication": {
     "first": "shaug/atelier PR 443 review comment 2880556753, the accepted resolution: bullet sections per variable were chosen specifically to stay valid under the repository's Markdown wrap formatter and remain diff-friendly.",
-    "second": "owner_required",
-    "notes": "No executable oracle exists for whether apparent verbosity is justified by a formatting constraint. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states a table previously produced malformed rows under the repository's own formatter, which is a concrete, checkable constraint rather than a stylistic preference for more text. Residual risk for the owner: a reviewer could reasonably propose a narrower fix (only wrapping the wide cell, or a two-column table) rather than the fully verbose bullet form, and this case's own accepted non-finding already flags the repeated owner field as one place that narrower fix could start."
+    "second": "owner_confirmed",
+    "notes": "No executable oracle exists for whether apparent verbosity is justified by a formatting constraint. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states a table previously produced malformed rows under the repository's own formatter, which is a concrete, checkable constraint rather than a stylistic preference for more text. Residual risk for the owner: a reviewer could reasonably propose a narrower fix (only wrapping the wide cell, or a two-column table) rather than the fully verbose bullet form, and this case's own accepted non-finding already flags the repeated owner field as one place that narrower fix could start.",
+    "owner_disposition": {
+      "outcome": "confirmed_clean",
+      "reasoning": "Owner confirmed: Markdown must stay readable in its raw form - that is the actual reason for the simplified syntax over a full markup language, and the same reason prose is wrapped and tables are formatted rather than left to a renderer.",
+      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+    }
   }
 }

@@ -187,9 +187,26 @@ def grade(expectation: dict[str, Any] | None, result: dict[str, Any]) -> dict[st
             claimed.add(record["root_cause_id"])
         records.append(record)
 
+    # Three-way scoring, settled by the owner on #58: a root cause with a
+    # partial or ambiguous candidate is referred for adjudication, not counted
+    # as a miss. Collapsing "unmatched because the formulation didn't
+    # recognise real prose" into "the reviewer missed this" is exactly the
+    # false reviewer-miss the referral bucket exists to prevent - a case is
+    # only a genuine miss when nothing pointed at it at all.
+    referred_ids = {
+        candidate_id
+        for record in records
+        if record["classification"] in {"partial", "ambiguous"}
+        for candidate_id in record["candidate_root_cause_ids"]
+    } - claimed
+
     expected_ids = [rc["id"] for rc in root_causes]
     matched_ids = sorted(claimed)
-    missed_ids = [item for item in expected_ids if item not in claimed]
+    missed_ids = [
+        item
+        for item in expected_ids
+        if item not in claimed and item not in referred_ids
+    ]
     expected_verdict = expectation["expected_verdict"]
     observed_verdict = result.get("verdict")
     gating = [
@@ -215,6 +232,14 @@ def grade(expectation: dict[str, Any] | None, result: dict[str, Any]) -> dict[st
         "expected_root_cause_ids": expected_ids,
         "matched_root_cause_ids": matched_ids,
         "missed_root_cause_ids": missed_ids,
+        "referred_root_cause_ids": sorted(referred_ids),
+        # Recall counts confirmed matches against the full expected set, never
+        # crediting a referral - a referred root cause is neither a match nor
+        # a scored miss, so it is absent from both the numerator and this
+        # denominator's alternative reading. It stays a lower bound: a case
+        # whose only unmatched root causes were all referred reports the same
+        # recall as one with genuine misses, and the referral bucket is what
+        # tells the two apart.
         "recall": (len(matched_ids) / len(expected_ids)) if expected_ids else None,
         "findings": records,
         "false_positive_finding_ids": [record["finding_id"] for record in gating],

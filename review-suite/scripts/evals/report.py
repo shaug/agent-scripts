@@ -93,10 +93,12 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
 
     union: set[str] = set()
     intersection: set[str] | None = None
+    referred_union: set[str] = set()
     for grade_record in grades:
         found = set(grade_record["matched_root_cause_ids"])
         union |= found
         intersection = found if intersection is None else (intersection & found)
+        referred_union |= set(grade_record["referred_root_cause_ids"])
     expected = grades[0]["expected_root_cause_ids"] if grades else []
 
     return {
@@ -107,6 +109,11 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
         "mean_recall": statistics.fmean(recalls) if recalls else None,
         "union_root_cause_ids": sorted(union),
         "intersection_root_cause_ids": sorted(intersection or set()),
+        # Three-way scoring: a root cause ever referred for adjudication on
+        # any attempt is neither a confirmed match nor a scored miss for this
+        # case. Reported separately so a reader never has to infer a referral
+        # from the absence of a match.
+        "ever_referred_root_cause_ids": sorted(referred_union),
         "verdict_stability": _modal_share([a["verdict"] for a in answered]),
         "finding_stability": _modal_share(matched_sets),
         "stability_denominator": len(answered),
@@ -189,6 +196,16 @@ def aggregate(
                 sum(1 for g in clean_expected if g["false_alarm"]), len(clean_expected)
             ),
             "false_alarm_denominator": len(clean_expected),
+            # Three-way scoring, settled on #58: a root cause referred for
+            # adjudication is neither a confirmed match nor a scored miss.
+            # Reported as its own rate over the same attempts recall is
+            # measured over, so a reader can see how much of the
+            # not-matched remainder is a genuine miss versus a referral
+            # awaiting the owner, rather than inferring it from a gap.
+            "referred_rate": _rate(
+                sum(1 for g in grades if g["referred_root_cause_ids"]), len(grades)
+            ),
+            "referred_denominator": len(grades),
             "unique_finding_contribution": unique_contribution,
         },
         "stability": {

@@ -11,9 +11,9 @@
   "stratum": {
     "id": "s1-correctness-orchestrator",
     "ground_truth": "human-review",
-    "scored": false,
+    "scored": true,
     "grading_is_signal": true,
-    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Populated and independently adjudicated: every case carries the recorded source disposition as its first adjudication and an executable oracle as its second. NOT yet scored, for one remaining reason: every expectation is uncalibrated, and no case has been run through any runtime, because observing a scored case's prose in order to calibrate it would fit the grader to the answer. Flip `scored` to true only once the owner preregisters how that conflict is resolved."
+    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Every case carries the recorded source disposition as its first adjudication and an executable oracle - a runnable module independent of the reviewer's model - as its second. SCORED: both owner-gated inputs are satisfied (the $15 total cost ceiling and complete independent adjudication across all three strata), and every expectation stays `calibrated: false` permanently, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss surfaces as `referred_root_cause_ids` rather than a silent reviewer-miss."
   },
   "cases": [
     "dependency-hint-parser-coverage",

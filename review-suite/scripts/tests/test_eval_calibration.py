@@ -1,4 +1,4 @@
-"""Calibration tests: every shipped expectation is graded as calibrated.
+"""Calibration tests: pilot cases are calibrated, scored cases never are.
 
 These tests are the executable half of grader calibration. The calibration sets
 hold the probe reviews; this module replays each probe through the real grader
@@ -6,6 +6,12 @@ against the real shipped expectation and asserts the classification the
 calibration set claims. A formulation that stops recognising a real reviewer's
 prose, or loosens far enough to credit an overlapping symptom, fails here rather
 than quietly changing what a baseline means.
+
+Calibration and scoring are mutually exclusive by the owner-settled method on
+#58: a scored case is never calibrated on its own prose, and a grader miss on a
+scored case is reported as `referred_root_cause_ids` (see `grader.py`) rather
+than silently becoming recall damage. Calibration sets exist only for the
+disjoint pilot corpus, whose cases are never scored.
 
 Nothing in this module launches a runtime or spends money.
 """
@@ -78,13 +84,24 @@ class CalibrationSetTests(unittest.TestCase):
                 for other in expectations[1:]:
                     self.assertEqual(expectations[0], other)
 
-    def test_every_scored_case_is_calibrated(self):
-        """A scored case without calibration reports its expectation, not a rate.
+    def test_a_scored_case_is_never_calibrated(self):
+        """Settled by the owner on #58: never calibrate a scored case's prose.
 
-        Measured twice, on two independent pilot cases: an uncalibrated
-        expectation returns recall 0.0 against a reviewer that found the defect
-        on every attempt. A scored stratum built on one would publish that as a
-        capability figure.
+        Batch 1 measured what an uncalibrated expectation reports - recall 0.0
+        against a reviewer that found the defect on every attempt - and batch 2
+        proposed calibrating scored cases against their own observed prose as
+        one fix. The owner rejected that: calibrating a case requires observing
+        its real reviewer prose, and a scored case must never have been
+        observed before scoring, or the baseline measures a case the corpus
+        author already looked at - the exact contamination the payload-blindness
+        tests exist to prevent, entering through the grader instead.
+
+        The settled replacement is three-way scoring (matched / missed /
+        referred), which needs no calibration at all: a formulation miss
+        surfaces as `referred_root_cause_ids` rather than a silently wrong
+        recall figure. So `calibrated: true` on a scored case is not a missing
+        nice-to-have, it is itself the contamination this method exists to rule
+        out.
         """
         for root in corpus.corpus_roots():
             loaded = corpus.load_corpus(root)
@@ -92,8 +109,29 @@ class CalibrationSetTests(unittest.TestCase):
                 continue
             for case in loaded.cases:
                 with self.subTest(stratum=root.name, case_id=case.case_id):
-                    self.assertIn(case.case_id, self.sets)
-                    self.assertIs(True, case.expectation.get("calibrated"))
+                    self.assertIs(
+                        False,
+                        case.expectation.get("calibrated"),
+                        "a scored case must never be calibrated on its own "
+                        "prose - see the three-way scoring method",
+                    )
+
+    def test_a_scored_case_records_a_complete_second_adjudication(self):
+        """A scored stratum may not carry a case still marked as needing one."""
+        for root in corpus.corpus_roots():
+            loaded = corpus.load_corpus(root)
+            if not loaded.scored:
+                continue
+            for case in loaded.cases:
+                with self.subTest(stratum=root.name, case_id=case.case_id):
+                    adjudication = case.provenance.get("adjudication")
+                    self.assertIsNotNone(adjudication)
+                    self.assertIn(
+                        adjudication["second"],
+                        {"oracle", "owner_confirmed"},
+                        "a scored case's second adjudication must be settled, "
+                        "not still owner_required or none",
+                    )
 
     def test_a_calibrated_expectation_ships_a_calibration_set(self):
         """`calibrated: true` is a claim the calibration set has to back."""
