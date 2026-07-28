@@ -444,9 +444,11 @@ Full findings are in
 and [`audits/shovel-readiness-audit.md`](audits/shovel-readiness-audit.md).
 Summary:
 
-- **Scope/completeness:** clean. Two stale cross-references (#56's mention of a
-  dropped #52 changed-surface concept, and #54's mention of a dropped #52 risk
-  profile) were found and corrected in the live tracker as part of this pass. No
+- **Scope/completeness:** clean. Two stale body cross-references (#56's mention
+  of a dropped #52 changed-surface concept, and #54's mention of a dropped #52
+  risk profile) and two stale titles (#52's and #53's, each still naming a
+  concept — "risk evidence," "specialist routing" — their own bodies say was
+  dropped) were found and corrected in the live tracker as part of this pass. No
   outcome is duplicated across siblings; none that demonstrates a reviewer
   defect is left unowned.
 - **Dependency/sequencing:** clean, with one flagged-but-unresolved open

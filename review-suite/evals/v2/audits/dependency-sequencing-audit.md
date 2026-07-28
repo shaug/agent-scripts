@@ -26,13 +26,16 @@ exist. Independent of `scope-completeness-audit.md` and
 No native edge was added or removed by this ticket. #51's `blockedBy #59` edge
 is deliberately left in place rather than deleted once #59 closes, matching this
 repository's own established convention: #58's `blockedBy #50` edge is still
-present today even though #50 has been closed since before #58 started (verified
-in the same query above, and independently re-confirmed via a direct `#58` query
-returning `blockedBy: [{number: 50, state: CLOSED}]`). `implement-epic`'s own
-readiness rule (`skills/implement-epic/references/github.md`: "Choose an
-in-scope child whose native `blockedBy` set has no open issue") keys off open
-blockers, not edge presence, so this is consistent with how the epic
-orchestrator actually selects work.
+present today even though #50 has been closed since 2026-07-27 (verified in the
+same query above, and independently re-confirmed via a direct `#58` query
+returning `blockedBy: [{number: 50, state: CLOSED}]`) — #58 itself was created
+2026-07-26, before #50 closed, and remained open doing its own work until
+2026-07-28, so the edge simply went inert in place rather than being removed
+once its blocker closed. `implement-epic`'s own readiness rule
+(`skills/implement-epic/references/github.md`: "Choose an in-scope child whose
+native `blockedBy` set has no open issue") keys off open blockers, not edge
+presence, so this is consistent with how the epic orchestrator actually selects
+work.
 
 ## Predicted vs. actual net effect once #59 closes
 

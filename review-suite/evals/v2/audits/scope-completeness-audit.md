@@ -74,7 +74,22 @@ both are re-verified present in the live bodies as of this pass (see
 `dependency-sequencing-audit.md`'s read-back table for the exact `updatedAt`
 timestamps).
 
-No other stale cross-reference was found in #51, #52, #53, #55, #56, or #57.
+No other stale cross-reference was found in #51, #52, #53, #55, #56, or #57
+bodies.
+
+**Titles were swept separately, and this found two more.** The body sweep above
+did not check issue *titles* on its first pass; a follow-up check found that
+#52's and #53's live titles still named exactly the concepts their own
+(already-corrected) bodies say were dropped: #52's title read "Evaluate compact
+review coverage, impact, and risk evidence" — "risk evidence" is the
+risk-profile apparatus the narrowing removed — and #53's title read "...and
+specialist routing," the mechanism #53's own body says is "dropped entirely."
+Both are the same class of staleness as the two body fixes above, just in a
+field the first pass didn't check. Fixed via `updateIssue` (title only, no body
+change): #52 is now "Add consumer/impact-traversal evidence to the shared review
+contract," and #53 is now "Add correctness traversal and
+verification-sufficiency passes." Re-checked: no other child's title claims
+scope its body no longer supports.
 
 ## Result
 
