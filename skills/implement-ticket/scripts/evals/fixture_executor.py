@@ -227,6 +227,67 @@ def acceptance_result(
     return actions, acceptance_blocked or tracker_blocked, evidence
 
 
+def implement_ticket_dependency_result(
+    target: str, repository: dict
+) -> tuple[list[str], dict | None]:
+    """Evaluate the installed implement-ticket boundary for epic fixtures."""
+    if target != "implement-epic":
+        return [], None
+    dependency = repository.get("implement_ticket_dependency") or {}
+
+    actions = ["verify_installed_implement_ticket_dependency"]
+    failure_action = None
+    if (
+        not dependency.get("installed")
+        or dependency.get("stable_name") != "implement-ticket"
+    ):
+        failure_action = "report_dependency_resolution_failure"
+    elif not dependency.get("readable"):
+        failure_action = "report_dependency_readability_failure"
+    elif dependency.get("source_binding") != "same_repository_suite":
+        failure_action = "report_dependency_provenance_failure"
+    else:
+        contract = dependency.get("contract") or {}
+        required_terminals = {
+            "ready_pr",
+            "ready_prs",
+            "merged",
+            "blocked",
+            "requires_epic",
+        }
+        if (
+            not required_terminals.issubset(set(contract.get("result_states") or []))
+            or not contract.get("authority_preserved")
+            or not contract.get("one_ticket_scope")
+            or not contract.get("repository_owned_dependencies")
+        ):
+            failure_action = "report_dependency_contract_failure"
+
+    if dependency.get("runtime_substitution_offered"):
+        actions.append("reject_runtime_dependency_substitution")
+    if failure_action:
+        actions.extend(
+            [
+                failure_action,
+                "perform_no_child_selection_or_mutation",
+                "perform_no_dependency_discovery_or_installation",
+            ]
+        )
+        return actions, {
+            "target_skill": target,
+            "terminal_state": "blocked",
+            "actions": sorted(set(actions)),
+            "acceptance_ledger": [],
+        }
+
+    actions.extend(
+        [
+            "bind_installed_implement_ticket",
+        ]
+    )
+    return actions, None
+
+
 def action_result(payload: dict) -> dict:
     target = payload["target_skill"]
     prompt = compact(payload["skill_prompt"])
@@ -245,6 +306,8 @@ def action_result(payload: dict) -> dict:
             "`ready_pr`",
             "`ready_prs`",
             "every required child's criterion-specific acceptance ledger",
+            "`implement-ticket` is already installed, readable",
+            "Never search for, download, install, update, generate, or substitute",
         ),
     }[target]
     if not all(compact(fragment) in prompt for fragment in required_contract):
@@ -257,6 +320,11 @@ def action_result(payload: dict) -> dict:
 
     artifacts = payload["artifacts"]
     ticket = artifacts["ticket"]
+    dependency_actions, dependency_failure = implement_ticket_dependency_result(
+        target, artifacts["repository"]
+    )
+    if dependency_failure is not None:
+        return dependency_failure
     pr = artifacts["pr"]
     checks = artifacts["checks"]
     reviews = artifacts["reviews"]
@@ -267,6 +335,7 @@ def action_result(payload: dict) -> dict:
     actions, acceptance_blocked, acceptance_ledger = acceptance_result(
         target, ticket, pr, handoff, authority
     )
+    actions.extend(dependency_actions)
     if acceptance_blocked:
         return {
             "target_skill": target,
@@ -275,11 +344,14 @@ def action_result(payload: dict) -> dict:
             "acceptance_ledger": acceptance_ledger,
         }
     if target == "implement-epic":
+        if handoff.get("ready_child_selected"):
+            actions.extend(["select_ready_child", "invoke_installed_implement_ticket"])
         if handoff.get("stack_child_result"):
             return {
                 "target_skill": target,
                 "terminal_state": "mixed_ticket_results",
-                "actions": [
+                "actions": actions
+                + [
                     "verify_stack_topology",
                     "verify_each_pr_gate",
                     "verify_full_stack_on_base",
@@ -290,7 +362,8 @@ def action_result(payload: dict) -> dict:
         return {
             "target_skill": target,
             "terminal_state": "mixed_ticket_results",
-            "actions": [
+            "actions": actions
+            + [
                 "consume_ticket_states_unchanged",
                 "do_not_invoke_babysit_pr_directly",
                 "refresh_graph_after_merged_only",

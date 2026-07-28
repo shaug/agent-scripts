@@ -31,7 +31,12 @@ class ImplementEpicContractTests(unittest.TestCase):
         cls.github = read(SKILL_ROOT / "references" / "github.md")
         cls.linear = read(SKILL_ROOT / "references" / "linear.md")
         cls.closeout = read(SKILL_ROOT / "references" / "closeout.md")
-        cls.contract = compact(cls.skill + cls.github + cls.linear + cls.closeout)
+        cls.dependency = read(
+            SKILL_ROOT / "references" / "implement-ticket-dependency.md"
+        )
+        cls.contract = compact(
+            cls.skill + cls.dependency + cls.github + cls.linear + cls.closeout
+        )
         cls.eval_contract = compact(
             read(SKILL_ROOT / "evals" / "cases.json")
             + read(SKILL_ROOT / "evals" / "expectations.json")
@@ -75,6 +80,70 @@ class ImplementEpicContractTests(unittest.TestCase):
     def test_child_terminal_states_are_stable(self):
         for state in ("ready_pr", "ready_prs", "merged", "blocked", "requires_epic"):
             self.assertIn(f"`{state}`", self.contract)
+
+    def test_ticket_dependency_is_bound_before_child_selection(self):
+        self.assertIn(
+            "[the implement-ticket dependency binding]"
+            "(references/implement-ticket-dependency.md)",
+            self.skill,
+        )
+        self.assertLess(
+            self.skill.index("## Require the ticket skill"),
+            self.skill.index("## Run the graph loop"),
+        )
+        self.assertIn("before child selection", self.dependency)
+        self.assertIn("before child selection or mutation", self.contract)
+
+    def test_ticket_dependency_binding_is_local_and_provenance_checked(self):
+        for required in (
+            "already-installed skill mechanism",
+            "same trusted repository-owned suite",
+            "trusted installation metadata",
+            "provenance is unverifiable",
+            "canonical name `implement-ticket`",
+            "same-name third-party skill",
+            "unreadable source",
+            "repository-owned copy with a missing or incompatible contract",
+        ):
+            self.assertIn(required, self.contract)
+
+        for forbidden_runtime_action in (
+            "browse a catalog",
+            "search the network or filesystem for alternatives",
+            "download",
+            "install",
+            "update",
+            "generate",
+            "substitute",
+        ):
+            self.assertIn(forbidden_runtime_action, self.contract)
+
+    def test_dependency_provenance_evals_are_paired_and_result_blind(self):
+        expected_states = {
+            "compatible-installed-implement-ticket": "waiting_for_child_merge",
+            "missing-implement-ticket": "blocked",
+            "third-party-same-name-implement-ticket": "blocked",
+            "incompatible-repository-implement-ticket": "blocked",
+            "runtime-offers-download-replacement": "blocked",
+            "unverifiable-implement-ticket-provenance": "blocked",
+            "unreadable-installed-implement-ticket": "blocked",
+        }
+        for case_id, expected_state in expected_states.items():
+            self.assertIn(case_id, self.cases)
+            self.assertIn(case_id, self.expectations)
+            self.assertEqual(
+                expected_state, self.expectations[case_id]["workflow_state"]
+            )
+            self.assertNotIn("workflow_state", self.cases[case_id])
+            self.assertNotIn("required_actions", self.cases[case_id])
+
+        for case_id, expected_state in expected_states.items():
+            if expected_state != "blocked":
+                continue
+            actions = compact(" ".join(self.expectations[case_id]["required_actions"]))
+            self.assertIn("before", actions)
+            self.assertIn("child selection", actions)
+            self.assertIn("mutation", actions)
 
     def test_epic_only_passes_authority_and_verifies_stack_results(self):
         self.assertIn("off by default", self.contract)

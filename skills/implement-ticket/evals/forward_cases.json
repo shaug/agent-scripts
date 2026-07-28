@@ -313,7 +313,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-319", "state": "open", "whole_epic": true, "children": ["G-320", "G-321", "G-322"], "acceptance_evidence": []},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic invokes implement-ticket only"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic invokes implement-ticket only", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "multiple", "merged": false, "head": null, "base": "base-2", "mergeable": null},
       "diff": {"base": "base-2", "head": null, "patch": "", "resulting_tree": "tree-epic"},
       "checks": {"status": "mixed", "items": []},
@@ -403,7 +403,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false, "carve_changesets": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-327", "state": "open", "whole_epic": true, "children": ["G-328", "G-329"], "acceptance_evidence": []},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic verifies ticket results without decomposition mechanics"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "epic verifies ticket results without decomposition mechanics", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "multiple_merged", "merged": true, "head": "stack-tip-328", "base": "base-2", "mergeable": null},
       "diff": {"base": "base-2", "head": "stack-tip-328", "patch": "three changesets", "resulting_tree": "tree-328"},
       "checks": {"status": "success", "items": [{"pr": 1}, {"pr": 2}, {"pr": 3}]},
@@ -457,7 +457,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-340", "state": "open", "whole_epic": true, "children": ["G-341", "G-342"], "acceptance_requirements": [{"criterion": "Authenticated workflow succeeds", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "authenticated browser run"}]},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "closed children are delivery state, not acceptance"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "closed children are delivery state, not acceptance", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "multiple_merged", "merged": true, "head": "head-340", "base": "main-340", "mergeable": null},
       "diff": {"base": "main-339", "head": "head-340", "patch": "epic changes", "resulting_tree": "tree-340"},
       "checks": {"status": "success", "items": []},
@@ -583,7 +583,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-410", "state": "open", "whole_epic": true, "children": ["G-411"], "acceptance_requirements": [{"criterion": "Escaped boundary regression passes", "required": true, "evidence_category": "regression", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "regression-run"}]},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "corrective merge alone does not reaccept the journey"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "corrective merge alone does not reaccept the journey", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "merged", "merged": true, "head": "head-411", "base": "main", "mergeable": null},
       "diff": {"base": "base-411", "head": "head-411", "patch": "focused correction", "resulting_tree": "tree-411"},
       "checks": {"status": "success", "items": []},
@@ -619,7 +619,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-431", "state": "closed", "whole_epic": false, "acceptance_requirements": [{"criterion": "Tests pass", "required": true, "evidence_category": "ci", "stage": "pre_merge", "identity": "candidate", "environment": "ci", "url": null, "source": "check-run"}, {"criterion": "Production journey passes", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "production browser run"}]},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "auto-closed child remains selectable until acceptance is complete"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "auto-closed child remains selectable until acceptance is complete", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "merged", "merged": true, "head": "head-431", "base": "main", "mergeable": null},
       "diff": {"base": "base-431", "head": "head-431", "patch": "child feature", "resulting_tree": "tree-431"},
       "checks": {"status": "success", "items": []},
@@ -727,7 +727,7 @@
     "capabilities": {"implement_ticket": true, "babysit_pr": false},
     "artifacts": {
       "ticket": {"tracker": "github", "id": "G-480", "state": "open", "whole_epic": true, "children": ["G-481"], "acceptance_requirements": [{"criterion": "Production journey passes", "required": true, "evidence_category": "manual_browser", "stage": "post_merge", "identity": "deployment", "environment": "production", "url": null, "source": "production browser run"}]},
-      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "refresh the complete graph after verified delivery even when acceptance blocks completion"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "refresh the complete graph after verified delivery even when acceptance blocks completion", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
       "pr": {"state": "merged", "merged": true, "head": "head-481", "base": "main", "mergeable": null},
       "diff": {"base": "base-481", "head": "head-481", "patch": "child feature", "resulting_tree": "tree-481"},
       "checks": {"status": "success", "items": []},
@@ -735,6 +735,132 @@
       "threads": {"items": [], "unresolved": 0},
       "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
       "handoff": {"result_well_formed": true, "verified_merged_delivery": true, "graph_state_changed": true, "acceptance_observations": []}
+    }
+  },
+  {
+    "id": "epic-compatible-installed-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-491 only after binding the installed trusted implement-ticket dependency.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-490", "state": "open", "whole_epic": true, "children": ["G-491"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "bind the installed ticket skill before child selection", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-490", "mergeable": null},
+      "diff": {"base": "main-490", "head": null, "patch": "", "resulting_tree": "tree-490"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true, "ticket_results": ["ready_pr"], "ready_child_selected": true}
+    }
+  },
+  {
+    "id": "epic-missing-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-493 when no implement-ticket is installed.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-492", "state": "open", "whole_epic": true, "children": ["G-493"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed before child work", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": false, "readable": false, "source_binding": null, "contract": null}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-492", "mergeable": null},
+      "diff": {"base": "main-492", "head": null, "patch": "", "resulting_tree": "tree-492"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "epic-third-party-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-495 with a same-name third-party ticket skill installed.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-494", "state": "open", "whole_epic": true, "children": ["G-495"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "reject untrusted provenance", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "third_party_distribution", "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-494", "mergeable": null},
+      "diff": {"base": "main-494", "head": null, "patch": "", "resulting_tree": "tree-494"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "epic-incompatible-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-497 with an installed ticket skill whose terminal and authority contract is incompatible.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-496", "state": "open", "whole_epic": true, "children": ["G-497"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "reject incompatible contract", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": "same_repository_suite", "contract": {"result_states": ["ready_pr", "merged", "blocked", "requires_epic"], "authority_preserved": false, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-496", "mergeable": null},
+      "diff": {"base": "main-496", "head": null, "patch": "", "resulting_tree": "tree-496"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "epic-runtime-download-offer",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-499 when the runtime offers to download a missing replacement ticket skill.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": false},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-498", "state": "open", "whole_epic": true, "children": ["G-499"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "reject runtime substitution", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": false, "readable": false, "source_binding": null, "contract": null, "runtime_substitution_offered": true}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-498", "mergeable": null},
+      "diff": {"base": "main-498", "head": null, "patch": "", "resulting_tree": "tree-498"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "epic-unverifiable-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-501 when the installed ticket skill has no trusted source binding.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-500", "state": "open", "whole_epic": true, "children": ["G-501"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed on unverifiable provenance", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": true, "source_binding": null, "contract": {"result_states": ["ready_pr", "ready_prs", "merged", "blocked", "requires_epic"], "authority_preserved": true, "one_ticket_scope": true, "repository_owned_dependencies": true}}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-500", "mergeable": null},
+      "diff": {"base": "main-500", "head": null, "patch": "", "resulting_tree": "tree-500"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
+    }
+  },
+  {
+    "id": "epic-unreadable-implement-ticket",
+    "target_skill": "implement-epic",
+    "request": "Implement ready child G-503 when the trusted installed ticket skill source cannot be read.",
+    "authority": {"merge": false},
+    "capabilities": {"implement_ticket": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-502", "state": "open", "whole_epic": true, "children": ["G-503"], "acceptance_evidence": []},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "fail closed on unreadable source", "implement_ticket_dependency": {"stable_name": "implement-ticket", "installed": true, "readable": false, "source_binding": "same_repository_suite", "contract": null}},
+      "pr": {"state": "none", "merged": false, "head": null, "base": "main-502", "mergeable": null},
+      "diff": {"base": "main-502", "head": null, "patch": "", "resulting_tree": "tree-502"},
+      "checks": {"status": "not_started", "items": []},
+      "reviews": {"initial": "not_started", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"result_well_formed": true}
     }
   }
 ]
