@@ -404,15 +404,17 @@ basis and two small guardrails.
 **Disposition: defer, unchanged.** Downstream of #55 and #56; #57's own
 "Definition status" already names #59 as its gate for the exact scored-v2
 configuration, which this record and `gate-manifest.json` provide. One prose
-correction is in scope, still pending as of this record: #57's live body
-currently reads "Run the evidence-backed v2 experiment approved by #58" in its
-Goal section. #58 curated the frozen v1 corpus and baseline; it is #59 — this
-ticket — that approves the v2 mechanism set and gate manifest #57 executes
-against. That single stale cross-reference **must be corrected in #57's body
-when this ticket's later live issue-body edit step is carried out** — not by
-this repository candidate, which changes no live issue body itself, per #59's
-own validation/delivery boundary; #57's disposition, required inputs, and
-acceptance criteria are otherwise unchanged.
+correction was in scope and **has since been applied to the live tracker**:
+#57's Goal section previously read "Run the evidence-backed v2 experiment
+approved by #58." #58 curated the frozen v1 corpus and baseline; it is #59 —
+this ticket — that approves the v2 mechanism set and gate manifest #57 executes
+against. That stale cross-reference, plus two further "#58" mentions in #57's
+own body with the same defect ("thresholds selected by #58" and "the #58 gate
+manifest"), were all corrected via `updateIssue` after this candidate's first
+repository PR merged, as part of this ticket's live issue-body edit step; #57's
+disposition, required inputs, and acceptance criteria are otherwise unchanged.
+`audits/scope-completeness-audit.md` independently confirms no stale
+cross-reference remains in #57's live body.
 
 ## Net effect on the dependency graph
 
