@@ -171,6 +171,11 @@ class MatchingTests(unittest.TestCase):
             ],
             grade["adjudication_required"],
         )
+        # Three-way scoring: a partial match is referred, not a scored miss.
+        # Collapsing it into `missed_root_cause_ids` would be exactly the
+        # silent reviewer-miss the owner-settled grading method forbids.
+        self.assertEqual([], grade["missed_root_cause_ids"])
+        self.assertEqual(["rc.deadline"], grade["referred_root_cause_ids"])
 
     def test_a_finding_matching_two_root_causes_is_ambiguous(self):
         grade = grader.grade(
@@ -191,6 +196,20 @@ class MatchingTests(unittest.TestCase):
             ["rc.deadline", "rc.record"],
             grade["adjudication_required"][0]["candidate_root_cause_ids"],
         )
+        # An ambiguous candidate is referred for both root causes, not a
+        # scored miss for either.
+        self.assertEqual([], grade["missed_root_cause_ids"])
+        self.assertEqual(["rc.deadline", "rc.record"], grade["referred_root_cause_ids"])
+
+    def test_a_root_cause_with_no_candidate_finding_is_a_genuine_miss(self):
+        """Nothing pointed at it at all: this is the one case referral must not swallow."""
+        grade = grader.grade(
+            expectation("changes_required", [ROOT_CAUSE]),
+            result("changes_required", []),
+        )
+        self.assertEqual(["rc.deadline"], grade["missed_root_cause_ids"])
+        self.assertEqual([], grade["referred_root_cause_ids"])
+        self.assertEqual(0.0, grade["recall"])
 
     def test_an_unexpected_gating_finding_is_a_false_positive(self):
         grade = grader.grade(

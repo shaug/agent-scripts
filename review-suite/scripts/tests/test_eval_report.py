@@ -51,6 +51,7 @@ def grade(
     observed="changes_required",
     expected_ids=("rc.one",),
     matched_ids=("rc.one",),
+    referred_ids=(),
     false_positives=(),
     adjudication=(),
 ):
@@ -63,7 +64,10 @@ def grade(
         "false_alarm": expected == "clean" and observed == "changes_required",
         "expected_root_cause_ids": list(expected_ids),
         "matched_root_cause_ids": list(matched_ids),
-        "missed_root_cause_ids": [i for i in expected_ids if i not in matched_ids],
+        "missed_root_cause_ids": [
+            i for i in expected_ids if i not in matched_ids and i not in referred_ids
+        ],
+        "referred_root_cause_ids": list(referred_ids),
         "recall": (len(matched_ids) / len(expected_ids)) if expected_ids else None,
         "findings": [],
         "false_positive_finding_ids": list(false_positives),
@@ -93,6 +97,33 @@ class MetricTests(unittest.TestCase):
         self.assertIn("mean_seconds", aggregate["latency"])
         self.assertIn("total_cost_usd", aggregate["usage"])
         self.assertEqual(report.REPORT_VERSION, aggregate["report_version"])
+
+    def test_a_referred_root_cause_is_reported_separately_from_a_miss(self):
+        """Three-way scoring, settled on #58: referred is neither match nor miss.
+
+        Reported at both levels - the per-case union and the aggregate rate -
+        so a reader never has to infer a referral from an unexplained gap
+        between `matched_root_cause_ids` and `expected_root_cause_ids`.
+        """
+        aggregate = report.aggregate(
+            [
+                attempt(
+                    "subject-one",
+                    1,
+                    grade=grade(
+                        expected_ids=("rc.one", "rc.two"),
+                        matched_ids=("rc.one",),
+                        referred_ids=("rc.two",),
+                    ),
+                )
+            ],
+            configuration=CONFIGURATION,
+        )
+        self.assertIn("referred_rate", aggregate["quality"])
+        self.assertEqual(1.0, aggregate["quality"]["referred_rate"])
+        self.assertEqual(1, aggregate["quality"]["referred_denominator"])
+        per_case = aggregate["per_case"][0]
+        self.assertEqual(["rc.two"], per_case["ever_referred_root_cause_ids"])
 
     def test_recall_averages_only_graded_attempts(self):
         aggregate = report.aggregate(
