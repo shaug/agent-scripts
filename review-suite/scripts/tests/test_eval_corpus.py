@@ -225,6 +225,37 @@ class MutatedCorpusTests(unittest.TestCase):
         path.write_text(json.dumps(document, indent=2))
         self.assertAuditFails("retention_authority")
 
+    def test_owner_confirmed_without_a_disposition_fails(self):
+        """The schema subset validator has no conditional keyword, so a case
+        claiming owner_confirmed with no recorded disposition must still be
+        caught - by the cross-field check in `corpus._provenance_semantics`,
+        not by JSON Schema."""
+        case_id = self._index()["cases"][0]
+        path = self.root / "private" / "provenance" / f"{case_id}.json"
+        document = json.loads(path.read_text())
+        document["adjudication"] = {
+            "first": "recorded source",
+            "second": "owner_confirmed",
+        }
+        path.write_text(json.dumps(document, indent=2))
+        self.assertAuditFails("owner_disposition is missing")
+
+    def test_a_disposition_without_owner_confirmed_fails(self):
+        case_id = self._index()["cases"][0]
+        path = self.root / "private" / "provenance" / f"{case_id}.json"
+        document = json.loads(path.read_text())
+        document["adjudication"] = {
+            "first": "recorded source",
+            "second": "oracle",
+            "owner_disposition": {
+                "outcome": "confirmed_material",
+                "reasoning": "irrelevant to an oracle-settled case",
+                "source": "https://example.invalid/irrelevant",
+            },
+        }
+        path.write_text(json.dumps(document, indent=2))
+        self.assertAuditFails("only valid when second is owner_confirmed")
+
     def test_gating_expectation_without_a_root_cause_fails(self):
         case_id = next(
             item
