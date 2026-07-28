@@ -861,3 +861,31 @@ recall by however many root causes were referred rather than missed. No such
 figure was published as a baseline result prior to this delivery, so nothing
 downstream needs correction; the record exists so #59 knows the method was
 policy-only, not code-enforced, until this exact commit.
+
+## 35. The first `s1-correctness-orchestrator` scored launch was killed mid-run by an operator-side shell timeout, and its partial spend is real
+
+The first attempt to run the scored `s1-correctness-orchestrator` suite (7
+cases, 5 runs each, 35 attempts) was terminated by an external shell-level
+timeout after 21 of 35 attempts completed (5 cases entirely or partially run),
+before the runner reached the point of writing `--attempts-out` or
+`--report-out`. No report or per-attempt record was ever produced from this run,
+so no committed figure is affected. The raw per-attempt `stdout.json` files this
+partial run did write were inspected only for their `usage.cost_usd` field, to
+account for spend, never for review content used to calibrate any case, and were
+then deleted; the stratum was relaunched in full, unmodified, from the same
+frozen commit (`2644c12`) and the same invocation template, this time run to
+completion. The committed `s1-correctness-orchestrator.report.json` reflects
+that one complete, coherent 35-attempt run.
+
+The killed partial run still spent real money: 1.54512325 USD across its 21
+completed attempts, on top of the 1.80750125 USD the complete run cost. Neither
+figure alone is the full cost of scoring this stratum; true total spend on
+`s1-correctness-orchestrator` across both the discarded and the complete run is
+3.35262450 USD, still comfortably under its 9.00 USD ceiling, and true total
+spend across all three strata's scoring activity this batch, including the
+discarded run, is 5.2213545 USD against the 15.00 USD total ceiling. This is
+recorded because the protocol requires reporting actual cost faithfully, and a
+reader comparing only the three committed reports' `usage.total_cost_usd`
+figures (3.67623125 USD) would understate real spend by the discarded run's
+cost. This was an operator-side execution accident, not a defect in the suite,
+the grader, or the corpus, and required no code change.

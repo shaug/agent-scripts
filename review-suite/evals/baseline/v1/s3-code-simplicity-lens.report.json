@@ -1,0 +1,294 @@
+{
+  "adjudication_required": [
+    {
+      "candidate_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "case_id": "metrics-label-formatting-duplication",
+      "finding_id": "cs.inline-label-duplicates-format-sample-point",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "case_id": "metrics-label-formatting-duplication",
+      "finding_id": "cs.inline-label-duplicates-format-sample-point",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "case_id": "metrics-label-formatting-duplication",
+      "finding_id": "cs.inline-label-duplicates-format-sample-point",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "case_id": "metrics-label-formatting-duplication",
+      "finding_id": "cs.inline-label-duplication",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "case_id": "metrics-label-formatting-duplication",
+      "finding_id": "cs.duplicated-label-format",
+      "reason": "partial",
+      "run_number": 5
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.inline-gating-policy-duplication",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.inline-gating-policy",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.unused-monkeypatch",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.inline-gating-policy",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.unused-monkeypatch",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.inline-gating-policy",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "case_id": "watcher-check-policy-duplication",
+      "finding_id": "cs.inline-gating-policy",
+      "reason": "partial",
+      "run_number": 5
+    }
+  ],
+  "attempts": 20,
+  "baseline_eligible": true,
+  "configuration": {
+    "artifacts_retained": true,
+    "cases": 4,
+    "corpus_version": "0.1-s3-populated",
+    "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
+    "grader_version": "1.0",
+    "max_output_bytes": 4000000,
+    "runs_per_case": 5,
+    "stratum": {
+      "grading_is_signal": true,
+      "ground_truth": "human-review",
+      "id": "s3-code-simplicity-lens",
+      "purpose": "Local code-complexity, reuse, and DRY cases for the self-sufficient code-simplicity lens. No executable oracle exists for this subject - 'this is a duplication defect' and 'this apparent duplication is justified' are design judgements a runnable check cannot decide - so every case's second adjudication is `owner_confirmed`: the owner adjudicated all four directly, confirming every recommended disposition with no overturns. One pair, `metrics-label-formatting-duplication` here and `registry-client-layering` in s2, shares one source PR read at two levels; the owner confirmed this is deliberate dual-level coverage of one causal chain, not a double-count, and LIMITATIONS.md carries the resulting correlated-recall caveat. SCORED: both owner-gated inputs are satisfied, and every expectation stays `calibrated: false` permanently.",
+      "scored": true
+    },
+    "suite_commit": "2644c129046f00a0191270aa555f0f3560796b1a",
+    "target_skill": "review-code-simplicity",
+    "target_skill_dependencies": [],
+    "target_skill_digest": "a6187d8971eaef24",
+    "target_skill_documents": [
+      "review-code-simplicity/SKILL.md",
+      "review-code-simplicity/references/code-simplicity-rubric.md"
+    ],
+    "timeout_seconds": 300.0
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 20,
+  "grader_version": "1.0",
+  "latency": {
+    "count": 20,
+    "max_seconds": 26.260644875001162,
+    "mean_seconds": 16.369523791619578,
+    "min_seconds": 9.683177208062261,
+    "p50_seconds": 15.369316895958036
+  },
+  "per_case": [
+    {
+      "attempts": 5,
+      "case_id": "compat-accessor-boundary-duplication",
+      "ever_referred_root_cause_ids": [],
+      "expected_root_cause_ids": [],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_recall": null,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    },
+    {
+      "attempts": 5,
+      "case_id": "env-inventory-bullet-format",
+      "ever_referred_root_cause_ids": [],
+      "expected_root_cause_ids": [],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_recall": null,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    },
+    {
+      "attempts": 5,
+      "case_id": "metrics-label-formatting-duplication",
+      "ever_referred_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "expected_root_cause_ids": [
+        "rc.label-expression-copied-into-two-new-functions"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    },
+    {
+      "attempts": 5,
+      "case_id": "watcher-check-policy-duplication",
+      "ever_referred_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "expected_root_cause_ids": [
+        "rc.local-policy-duplicated-across-call-sites"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 10,
+    "false_alarm_rate": 0.0,
+    "false_clean_denominator": 10,
+    "false_clean_rate": 0.0,
+    "false_positive_denominator": 20,
+    "false_positive_rate": 0.0,
+    "material_finding_recall": 0.0,
+    "recall_attempts": 10,
+    "referred_denominator": 20,
+    "referred_rate": 0.5,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 1.0,
+    "per_case_finding_stability": {
+      "compat-accessor-boundary-duplication": 1.0,
+      "env-inventory-bullet-format": 1.0,
+      "metrics-label-formatting-duplication": 1.0,
+      "watcher-check-policy-duplication": 1.0
+    },
+    "per_case_stability_denominator": {
+      "compat-accessor-boundary-duplication": 5,
+      "env-inventory-bullet-format": 5,
+      "metrics-label-formatting-duplication": 5,
+      "watcher-check-policy-duplication": 5
+    },
+    "per_case_verdict_stability": {
+      "compat-accessor-boundary-duplication": 1.0,
+      "env-inventory-bullet-format": 1.0,
+      "metrics-label-formatting-duplication": 1.0,
+      "watcher-check-policy-duplication": 1.0
+    },
+    "stability_denominator": 20
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 20,
+    "reporting_attempts_input_tokens": 20,
+    "reporting_attempts_output_tokens": 20,
+    "total_cost_usd": 0.9029865000000001,
+    "total_input_tokens": 515510.0,
+    "total_output_tokens": 12021.0
+  }
+}
