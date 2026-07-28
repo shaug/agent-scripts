@@ -33,7 +33,44 @@
     "id": "missing-implement-ticket",
     "request": "Implement epic G-150.",
     "graph": "One child is ready.",
-    "capabilities": []
+    "runtime_profile": "The normal installed-skill mechanism has no implement-ticket entry."
+  },
+  {
+    "id": "compatible-installed-implement-ticket",
+    "request": "Implement epic G-151.",
+    "graph": "G-152 is the only open ready child.",
+    "runtime_profile": "The normal installed-skill mechanism resolves a readable implement-ticket whose trusted distribution metadata binds it to the same repository-owned suite as implement-epic; its source declares the complete terminal and authority-preserving result contract.",
+    "ticket_results": ["G-152 ready_pr with internally consistent non-merge-gate evidence"]
+  },
+  {
+    "id": "third-party-same-name-implement-ticket",
+    "request": "Implement epic G-153.",
+    "graph": "G-154 is the only open ready child.",
+    "runtime_profile": "The normal installed-skill mechanism resolves a readable same-name implement-ticket whose trusted source metadata identifies a third-party distribution."
+  },
+  {
+    "id": "incompatible-repository-implement-ticket",
+    "request": "Implement epic G-155.",
+    "graph": "G-156 is the only open ready child.",
+    "runtime_profile": "The normal installed-skill mechanism resolves a readable repository-owned implement-ticket, but its contract omits ready_prs and treats ready_pr as merge authority."
+  },
+  {
+    "id": "runtime-offers-download-replacement",
+    "request": "Implement epic G-157.",
+    "graph": "G-158 is the only open ready child.",
+    "runtime_profile": "No installed implement-ticket is available; the runtime offers to search a catalog and download a replacement."
+  },
+  {
+    "id": "unverifiable-implement-ticket-provenance",
+    "request": "Implement epic G-159.",
+    "graph": "G-160 is the only open ready child.",
+    "runtime_profile": "A readable implement-ticket is present, but no trusted installation metadata, trusted installation record, or previously trusted suite source identity establishes its provenance."
+  },
+  {
+    "id": "unreadable-installed-implement-ticket",
+    "request": "Implement epic G-161.",
+    "graph": "G-162 is the only open ready child.",
+    "runtime_profile": "The installed-skill mechanism names implement-ticket and reports matching repository provenance, but its SKILL.md cannot be read."
   },
   {
     "id": "exclusive-delegated-worktree",

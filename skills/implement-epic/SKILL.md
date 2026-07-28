@@ -10,11 +10,20 @@ Orchestrate the live work graph. Delegate each selected child to
 
 ## Require the ticket skill
 
-Before an epic run, verify that `implement-ticket` is available, readable, and
-supports `ready_pr`, `ready_prs`, `merged`, `blocked`, and `requires_epic`
-terminal results. Return `blocked` before mutation when the dependency or result
-contract is missing or untrustworthy. Do not substitute a generic implementation
-agent, inline a copy of the ticket workflow, or weaken any gate.
+Before reading a child as selectable or performing any child mutation, follow
+[the implement-ticket dependency binding](references/implement-ticket-dependency.md).
+Verify that `implement-ticket` is already installed, readable, bound to the same
+trusted repository-owned suite, and compatible with the required terminal and
+authority-preserving result contract. Return `blocked` with the exact failed
+evidence when resolution, readability, provenance, or compatibility is missing
+or untrustworthy.
+
+Resolve only the exact installed dependency through the host's normal skill
+mechanism or a trusted direct installation record. Never search for, download,
+install, update, generate, or substitute a dependency during an epic run. Do not
+accept a generic implementation agent, a third-party same-name skill, an
+unreadable copy, an unverifiable source, or an incompatible repository-owned
+copy. Do not inline the ticket workflow or weaken any gate.
 
 `implement-ticket` owns ticket readiness, isolated implementation, validation,
 `review-code-change`, publication-path selection, PR or stack state, remote

@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
+## 2026-07-27 — Bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
 
+- feat: bind epic delegation to trusted ticket skill
 - fix: execute carve commands from explicit argv
+  (`7da1a75ad585bddec6be1cc4743e77a1744c4e98`)
 - fix: correct a stale reference, a stale validation entry, and an inverted case
   (`c7a80c0fb51cc39bbb16b174a09b4cabf7d164b3`)
 - fix: make the last two before-state and sanitization defects actually resolved

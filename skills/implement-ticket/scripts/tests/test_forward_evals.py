@@ -50,7 +50,7 @@ class ForwardEvaluationTests(unittest.TestCase):
             "worktree",
             "handoff",
         }
-        self.assertEqual(41, len(self.cases))
+        self.assertEqual(48, len(self.cases))
         for case in self.cases:
             self.assertEqual(required, set(case["artifacts"]), case["id"])
 
@@ -105,9 +105,9 @@ class ForwardEvaluationTests(unittest.TestCase):
             [sys.executable, str(EXECUTOR_PATH)],
         )
         self.assertEqual([], failures)
-        self.assertEqual(41, len(observations))
+        self.assertEqual(48, len(observations))
         process_ids = {result["executor_pid"] for result in observations.values()}
-        self.assertEqual(41, len(process_ids))
+        self.assertEqual(48, len(process_ids))
 
     def test_reference_executor_evaluates_the_supplied_skill_prompt(self):
         payload = RUNNER.build_payload(self.cases[2])
@@ -327,11 +327,106 @@ class ForwardEvaluationTests(unittest.TestCase):
             target_skill="implement-epic",
         )
         self.assertEqual([], failures)
-        self.assertEqual(6, len(observations))
+        self.assertEqual(13, len(observations))
         self.assertTrue(
             all(
                 result["target_skill"] == "implement-epic"
                 for result in observations.values()
+            )
+        )
+
+    def test_epic_dependency_boundary_executes_before_child_selection(self):
+        observations, failures = RUNNER.evaluate(
+            RUNNER.DEFAULT_CASES,
+            RUNNER.DEFAULT_EXPECTATIONS,
+            [sys.executable, str(EXECUTOR_PATH)],
+            target_skill="implement-epic",
+        )
+        self.assertEqual([], failures)
+        positive = observations["epic-compatible-installed-implement-ticket"]
+        self.assertEqual("mixed_ticket_results", positive["terminal_state"])
+        self.assertIn("select_ready_child", positive["actions"])
+        self.assertIn("invoke_installed_implement_ticket", positive["actions"])
+
+        negative_ids = (
+            "epic-missing-implement-ticket",
+            "epic-third-party-implement-ticket",
+            "epic-incompatible-implement-ticket",
+            "epic-runtime-download-offer",
+            "epic-unverifiable-implement-ticket",
+            "epic-unreadable-implement-ticket",
+        )
+        for case_id in negative_ids:
+            with self.subTest(case=case_id):
+                result = observations[case_id]
+                self.assertEqual("blocked", result["terminal_state"])
+                self.assertIn(
+                    "perform_no_child_selection_or_mutation", result["actions"]
+                )
+                self.assertNotIn("select_ready_child", result["actions"])
+                self.assertNotIn("invoke_installed_implement_ticket", result["actions"])
+
+        child_work_actions = {
+            "select_ready_child",
+            "invoke_installed_implement_ticket",
+            "select_auto_closed_incomplete_child",
+            "invoke_implement_ticket_for_recovery",
+        }
+        for case_id, result in observations.items():
+            if child_work_actions.isdisjoint(result["actions"]):
+                continue
+            with self.subTest(case=case_id):
+                self.assertIn(
+                    "verify_installed_implement_ticket_dependency", result["actions"]
+                )
+                self.assertIn("bind_installed_implement_ticket", result["actions"])
+
+    def test_epic_dependency_grading_rejects_unbound_or_failed_child_work(self):
+        expectations = {
+            item["case_id"]: item for item in json.loads(self.expectations_text)
+        }
+        cases = {item["id"]: item for item in self.cases}
+
+        recovery_case = cases["epic-auto-closed-child-incomplete"]
+        unbound_recovery = FIXTURE_EXECUTOR.action_result(
+            RUNNER.build_payload(recovery_case)
+        )
+        unbound_recovery["actions"] = [
+            action
+            for action in unbound_recovery["actions"]
+            if action
+            not in {
+                "verify_installed_implement_ticket_dependency",
+                "bind_installed_implement_ticket",
+            }
+        ]
+        recovery_failures = RUNNER.grade(
+            recovery_case["id"],
+            unbound_recovery,
+            expectations[recovery_case["id"]],
+        )
+        self.assertTrue(
+            any("missing actions" in failure for failure in recovery_failures)
+        )
+
+        failed_case = cases["epic-missing-implement-ticket"]
+        failed_with_child_work = FIXTURE_EXECUTOR.action_result(
+            RUNNER.build_payload(failed_case)
+        )
+        failed_with_child_work["actions"].extend(
+            [
+                "select_auto_closed_incomplete_child",
+                "invoke_implement_ticket_for_recovery",
+            ]
+        )
+        failed_dependency_failures = RUNNER.grade(
+            failed_case["id"],
+            failed_with_child_work,
+            expectations[failed_case["id"]],
+        )
+        self.assertTrue(
+            any(
+                "forbidden actions" in failure for failure in failed_dependency_failures
             )
         )
 

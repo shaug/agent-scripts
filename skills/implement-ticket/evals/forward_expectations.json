@@ -362,7 +362,7 @@
     "case_id": "epic-auto-closed-child-incomplete",
     "acceptance_statuses": {"Tests pass": "pass", "Production journey passes": "missing"},
     "forbidden_actions": ["allow_acceptance_completion", "refresh_graph_after_merged_only"],
-    "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery", "reopen_auto_closed_ticket", "reject_missing_required_acceptance", "keep_tracker_open", "use_non_closing_reference"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "bind_installed_implement_ticket", "build_acceptance_ledger", "verify_child_acceptance_ledgers", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery", "reopen_auto_closed_ticket", "reject_missing_required_acceptance", "keep_tracker_open", "use_non_closing_reference"],
     "target_skill": "implement-epic",
     "terminal_state": "blocked"
   },
@@ -411,6 +411,55 @@
     "acceptance_statuses": {"Production journey passes": "missing"},
     "forbidden_actions": ["allow_acceptance_completion"],
     "required_actions": ["build_acceptance_ledger", "verify_child_acceptance_ledgers", "verify_epic_acceptance", "reject_missing_required_acceptance", "keep_tracker_open", "refresh_graph_after_verified_delivery"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-compatible-installed-implement-ticket",
+    "forbidden_actions": ["perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation", "report_dependency_contract_failure", "report_dependency_provenance_failure", "report_dependency_readability_failure", "report_dependency_resolution_failure"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket"],
+    "target_skill": "implement-epic",
+    "terminal_state": "mixed_ticket_results"
+  },
+  {
+    "case_id": "epic-missing-implement-ticket",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_resolution_failure", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-third-party-implement-ticket",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_provenance_failure", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-incompatible-implement-ticket",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_contract_failure", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-runtime-download-offer",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_resolution_failure", "reject_runtime_dependency_substitution", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-unverifiable-implement-ticket",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_provenance_failure", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
+    "target_skill": "implement-epic",
+    "terminal_state": "blocked"
+  },
+  {
+    "case_id": "epic-unreadable-implement-ticket",
+    "forbidden_actions": ["bind_installed_implement_ticket", "select_ready_child", "invoke_installed_implement_ticket", "select_auto_closed_incomplete_child", "invoke_implement_ticket_for_recovery"],
+    "required_actions": ["verify_installed_implement_ticket_dependency", "report_dependency_readability_failure", "perform_no_child_selection_or_mutation", "perform_no_dependency_discovery_or_installation"],
     "target_skill": "implement-epic",
     "terminal_state": "blocked"
   }
