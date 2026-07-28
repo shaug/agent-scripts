@@ -76,7 +76,7 @@ tickets carry out the actual change.
   which no evidence here supports; #57 verifies the invariant holds rather than
   testing whether removing it changes anything.
 
-## #52 — Evaluate compact review coverage, impact, and risk evidence
+## #52 — Add consumer/impact-traversal evidence to the shared review contract
 
 **Disposition: narrow.** The full changed-surface ledger, acceptance-trace,
 risk-profile, and aggregate-coverage apparatus in #52's current body is **not**
@@ -167,7 +167,7 @@ consumer/impact-traversal gap.
   structural complexity. This is the explicit removal condition #57's ablation
   protocol must check.
 
-## #53 — Evaluate correctness traversal, verification sufficiency, and specialist routing
+## #53 — Add correctness traversal and verification-sufficiency passes
 
 **Disposition: retain the traversal and verification-sufficiency work; drop
 specialist routing entirely.** Nothing in the baseline supports specialist
@@ -404,15 +404,17 @@ basis and two small guardrails.
 **Disposition: defer, unchanged.** Downstream of #55 and #56; #57's own
 "Definition status" already names #59 as its gate for the exact scored-v2
 configuration, which this record and `gate-manifest.json` provide. One prose
-correction is in scope, still pending as of this record: #57's live body
-currently reads "Run the evidence-backed v2 experiment approved by #58" in its
-Goal section. #58 curated the frozen v1 corpus and baseline; it is #59 — this
-ticket — that approves the v2 mechanism set and gate manifest #57 executes
-against. That single stale cross-reference **must be corrected in #57's body
-when this ticket's later live issue-body edit step is carried out** — not by
-this repository candidate, which changes no live issue body itself, per #59's
-own validation/delivery boundary; #57's disposition, required inputs, and
-acceptance criteria are otherwise unchanged.
+correction was in scope and **has since been applied to the live tracker**:
+#57's Goal section previously read "Run the evidence-backed v2 experiment
+approved by #58." #58 curated the frozen v1 corpus and baseline; it is #59 —
+this ticket — that approves the v2 mechanism set and gate manifest #57 executes
+against. That stale cross-reference, plus two further "#58" mentions in #57's
+own body with the same defect ("thresholds selected by #58" and "the #58 gate
+manifest"), were all corrected via `updateIssue` after this candidate's first
+repository PR merged, as part of this ticket's live issue-body edit step; #57's
+disposition, required inputs, and acceptance criteria are otherwise unchanged.
+`audits/scope-completeness-audit.md` independently confirms no stale
+cross-reference remains in #57's live body.
 
 ## Net effect on the dependency graph
 
@@ -432,5 +434,42 @@ required by #59's own sequencing (scope/completeness, dependency/sequencing,
 shovel-readiness) run only after the live `#51`–`#57` body and edge changes
 below are actually applied, as their own later step. Their findings — including
 the read-back that confirms or corrects this predicted net effect — belong in
-`audits/` once that step completes; no file exists there yet in this repository
-candidate, and none is claimed to.
+`audits/` once that step completes.
+
+## Audit results (post-mutation)
+
+The live `#51`–`#57` body edits and the read-back above were applied, and all
+three required audits were run independently against the resulting live graph.
+Full findings are in
+[`audits/scope-completeness-audit.md`](audits/scope-completeness-audit.md),
+[`audits/dependency-sequencing-audit.md`](audits/dependency-sequencing-audit.md),
+and [`audits/shovel-readiness-audit.md`](audits/shovel-readiness-audit.md).
+Summary:
+
+- **Scope/completeness:** clean. Two stale body cross-references (#56's mention
+  of a dropped #52 changed-surface concept, and #54's mention of a dropped #52
+  risk profile) and two stale titles (#52's and #53's, each still naming a
+  concept — "risk evidence," "specialist routing" — their own bodies say was
+  dropped) were found and corrected in the live tracker as part of this pass. No
+  outcome is duplicated across siblings; none that demonstrates a reviewer
+  defect is left unowned.
+- **Dependency/sequencing:** clean, with one flagged-but-unresolved open
+  question that does not change the audited outcome: #56's `blockedBy #52` edge
+  has a weaker technical justification after #52's narrowing than the other
+  edges in the graph, but no evidence shows it is actively wrong, and severing
+  it was outside this ticket's settled disposition for #56, so it is reported to
+  the owner rather than unilaterally changed. The predicted net effect — #51 is
+  the sole open issue with zero open blockers once #59 closes — is confirmed
+  against the live graph read directly through GraphQL.
+- **Shovel-readiness:** clean. Every retained child (#51, #52, #53, #56) has a
+  settled observable outcome, change surface, compatibility/failure behavior,
+  positive and negative tests, validation, non-goals, and a plausible one-PR
+  boundary (two children carry an explicit note on that boundary rather than an
+  unstated assumption). Deferred children (#54, #55, #57) are correctly
+  excluded, per #59's own text that provisional markers persist on children that
+  do not become unblocked in this round.
+
+No finding from any of the three audits required a materially different
+architecture or a ticket split, so none of #51–#57's dispositions changed as a
+result of running them, and no second iteration of this repository candidate or
+the live graph was needed.
