@@ -40,6 +40,11 @@ review-suite/evals/
 │   ├── SOURCING.md                     ground truth, sanitization, batches
 │   ├── LIMITATIONS.md                  explicit inputs to interpretation
 │   └── pilot/<stratum>.report.json     the unscored pilot's compact reports
+├── v2/                                 the v2 planning/definition record (#59)
+│   ├── FAILURE-TAXONOMY.md             every v1 material outcome, classified
+│   ├── DECISION-RECORD.md              per-mechanism evidence and disposition
+│   ├── gate-manifest.json              preregistered v2 gates, before scoring
+│   └── audits/                         the three graph audits (later step, empty for now)
 └── artifacts/                          opt-in captured output, not in git
 
 review-suite/scripts/evals/
@@ -69,6 +74,14 @@ and latency envelope, and
 figure. In particular: **the connector stratum is deferred, not satisfied.**
 Connector-escape recall has never been measured here, and no human-review figure
 may be reported as a connector figure.
+
+## v2 planning
+
+[`v2/README.md`](v2/README.md) records the planning/definition gate that reads
+this frozen v1 baseline and turns it into an implementation-ready decision for
+the review suite's next mechanisms, before any scored v2 output exists. It
+changes no review prompt, schema, rubric, orchestration, or caller runtime
+behavior by itself.
 
 ## Calibration
 

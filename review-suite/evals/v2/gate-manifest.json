@@ -1,0 +1,171 @@
+{
+  "manifest_version": "1.0",
+  "status": "preregistered_before_scoring",
+  "status_detail": "Committed before any scored v2 output exists, per #59's own validation/delivery boundary. Every threshold below is a proposal grounded in the frozen v1 baseline's actual small-sample uncertainty (LIMITATIONS.md item 36) and must be confirmed or replaced by the repository owner before #57 treats it as a pass/fail gate. This manifest binds only #52 and #53's mechanisms; #54, #55, and #57 remain deferred and add nothing here until their own evidence exists.",
+  "predecessor_baseline": {
+    "v1_frozen_configuration": "review-suite/evals/baseline/v1/frozen-configuration.json",
+    "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+    "v1_scoring_suite_commit": "2644c12",
+    "decision_record": "review-suite/evals/v2/DECISION-RECORD.md",
+    "failure_taxonomy": "review-suite/evals/v2/FAILURE-TAXONOMY.md"
+  },
+  "corpus_and_grader_versions": {
+    "grader_version": "1.0",
+    "grader_version_note": "Unchanged from v1. The one-token surface-match-strength limitation (LIMITATIONS.md item 4) and the containment-only formulation matching (item 3) are known open issues escalated to #59 by name, but no #51-#57 child owns a grader.py change and no baseline evidence assigns one. Not resolved by this manifest; carried forward explicitly as unresolved rather than silently dropped. A future ticket must adopt it before grader.py changes.",
+    "grading_method": "three-way: matched, missed, or referred for adjudication; never calibrate a scored case on its own prose first (LIMITATIONS.md item 14, unchanged for v2)",
+    "corpus_version_scheme": "v2 corpus versions for s1-correctness-orchestrator use the suffix '-v2-<mechanism>', e.g. '0.2-s1-v2-traversal', so a re-scored stratum is never confused with its v1 '0.1-s1-populated' predecessor. s2 and s3 corpus versions are unchanged for this cycle: no #51-#57 mechanism in this manifest touches review-solution-simplicity or review-code-simplicity prompts."
+  },
+  "runtime_model_stratum": {
+    "runtime": "claude",
+    "runtime_cli_version": "2.1.92",
+    "model": "claude-opus-4-6[1m]",
+    "stratum_rule": "Unchanged from v1: a change of runtime, runtime version, or model creates a new stratum and must never be compared with this manifest's thresholds. If the runtime/model available at #57's execution time differs from this pin, #57 must return blocked and this manifest must be revised and re-preregistered before scoring, not silently reinterpreted."
+  },
+  "executor_and_suite_configuration": {
+    "executor_command": "python3 review-suite/scripts/evals/claude_executor.py",
+    "invocation_template": "just eval-review-suite '<executor command>' --corpus review-suite/evals/strata/<stratum> --runs <runs> --timeout <timeout> --artifact-dir review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version> --attempts-out review-suite/evals/artifacts/<stratum>/<commit>-<corpus_version>.attempts.jsonl --report-out <path>",
+    "process_isolation": "one fresh executor process per attempt, unchanged from v1"
+  },
+  "run_count_timeout_retry_cost": {
+    "runs_per_case": {
+      "value": 5,
+      "rationale_proposal": "Kept identical to v1 so s1's re-scored cases remain comparable to their v1 counterparts across the same stratum boundary. LIMITATIONS.md item 36 documents that 5 runs is a small-sample point estimate, not a measured capability; a larger runs_per_case would tighten every stability and recall estimate below, but changing it now would also break v1-to-v2 comparability for the two target cases. Recorded as a genuine judgment call: this manifest chooses comparability over precision, and the owner may prefer the opposite trade."
+    },
+    "retry_policy": "none, unchanged from v1 — a failed attempt is an evaluation failure, never retried",
+    "timeout_seconds": {
+      "s1-correctness-orchestrator": {
+        "value": 300,
+        "conditional_raise_proposal": "If a pilot run of the two added review-correctness passes (traversal, verification-sufficiency) approaches 300s on the orchestrator stratum's larger packet, raise to 450s before the scored run, not after seeing scored output. Proposal only; not yet observed to be necessary."
+      },
+      "s2-solution-simplicity-lens": { "value": 300, "note": "unchanged; no #51-#57 mechanism in this manifest touches this stratum's prompts" },
+      "s3-code-simplicity-lens": { "value": 300, "note": "unchanged; no #51-#57 mechanism in this manifest touches this stratum's prompts" }
+    },
+    "cost_ceiling_usd_proposal": {
+      "s1-correctness-orchestrator": {
+        "v1_ceiling": 9.0,
+        "v2_proposed_ceiling": 12.0,
+        "rationale": "Two added reasoning passes (consumer/impact traversal, verification-sufficiency) are expected to increase output tokens and cost. Sized from the v1 pilot's worst observed cold cost per attempt ($0.2021) times the same 35-attempt run, with headroom for larger per-attempt output; not derived from any actual v2 measurement, since none exists yet. Proposal requiring owner preregistration before #57 spends against it, exactly as the v1 ceiling required owner preregistration in #58."
+      },
+      "s2-solution-simplicity-lens": { "v1_ceiling": 3.0, "v2_proposed_ceiling": 3.0, "note": "unchanged; no mechanism in this manifest touches this stratum" },
+      "s3-code-simplicity-lens": { "v1_ceiling": 3.0, "v2_proposed_ceiling": 3.0, "note": "unchanged; no mechanism in this manifest touches this stratum" },
+      "cost_ceiling_exhaustion_policy": "unchanged from v1: exceeding a stratum's preregistered ceiling stops further runs in that stratum and records an incomplete baseline for it; repetitions are never reduced after outputs are visible"
+    }
+  },
+  "deterministic_invariants": [
+    {
+      "id": "invariant.v1_1-validation-verdict-crosscheck",
+      "owner": "#51",
+      "schema_version": "review-result.schema.json 1.1",
+      "statement": "No `clean` aggregate may pair with any required focused/full validation entry whose status is `failed` or `unavailable`.",
+      "verified_by": "canonical deterministic fixtures, not scored corpus runs"
+    },
+    {
+      "id": "invariant.v1_1-current-head-lens-evidence",
+      "owner": "#51",
+      "schema_version": "review-result.schema.json 1.1",
+      "statement": "`clean` requires exactly one fresh, current-head/current-base execution from each of the three required lenses; no old-head result may contribute.",
+      "verified_by": "canonical deterministic fixtures, not scored corpus runs"
+    },
+    {
+      "id": "invariant.v1_2-consumer-impact-evidence-structure",
+      "owner": "#52",
+      "schema_version": "review-result.schema.json 1.2",
+      "statement": "When a changed shared symbol/contract has other call sites, `clean` requires a non-empty, structurally valid `consumer_impact_evidence` entry for it, or an explicitly evidenced `no_other_consumers` disposition.",
+      "verified_by": "canonical deterministic fixtures, not scored corpus runs"
+    },
+    {
+      "id": "invariant.v1_3-verification-sufficiency-evidence-structure",
+      "owner": "#53",
+      "schema_version": "review-result.schema.json 1.3",
+      "statement": "For every claimed validation command/test touching a materially risky change, `clean` requires a `verification_sufficiency_evidence` entry recording whether it exercises the material risk.",
+      "verified_by": "canonical deterministic fixtures, not scored corpus runs"
+    },
+    {
+      "id": "invariant.canonical-bundled-byte-identical",
+      "owner": "all schema-touching children (#51, #52, #53)",
+      "statement": "Canonical and bundled review-suite contract copies remain byte-identical after `just sync-contracts`.",
+      "verified_by": "existing bundled-contract drift test"
+    }
+  ],
+  "quality_stability_non_regression_thresholds": {
+    "note": "Proposals only. All figures below are judgment calls sized from a 5-attempts-per-case sample (LIMITATIONS.md item 36) and require explicit owner confirmation before #57 gates on them.",
+    "target_cases": [
+      {
+        "case_id": "dependency-strictness-propagation",
+        "stratum": "s1-correctness-orchestrator",
+        "owner": "#52 (schema) + #53 (traversal pass)",
+        "v1_mean_recall": 0.0,
+        "v2_proposed_quality_gate": "mean_recall >= 0.6 (>= 3 of 5 attempts matched), or combined matched+referred rate >= 0.8 with referred attempts showing genuine content overlap with the expected root cause",
+        "v2_proposed_stability_floor": "verdict_stability and finding_stability must not fall below the v1 floor of 1.0"
+      },
+      {
+        "case_id": "stale-claim-release-guard",
+        "stratum": "s1-correctness-orchestrator",
+        "owner": "#53 (verification-sufficiency pass)",
+        "v1_mean_recall": 0.0,
+        "v2_proposed_quality_gate": "mean_recall >= 0.6 (>= 3 of 5 attempts matched), or combined matched+referred rate >= 0.8 with referred attempts showing genuine content overlap with the expected root cause",
+        "v2_proposed_stability_floor": "verdict_stability and finding_stability must not fall below the v1 floor of 1.0"
+      }
+    ],
+    "non_regression_floors": [
+      {
+        "cases": ["dependency-hint-parser-coverage", "post-bootstrap-module-load", "session-continuation-summary"],
+        "requirement": "false_positive_attempts stays at 0 for each; no new gating finding introduced by the two added passes"
+      },
+      {
+        "case": "process-isolation-assertion",
+        "requirement": "false_alarm_attempts must not exceed its v1 value of 2 of 5; improvement is welcome but not required"
+      },
+      {
+        "case": "optional-tool-probe",
+        "requirement": "recorded as an open question in FAILURE-TAXONOMY.md, not gated here; re-scoring must not regress its v1 mean_recall of 0.2 but no target above that is set, since its v1 shape is not attributed to a mechanism this manifest addresses"
+      },
+      {
+        "stratum": "s2-solution-simplicity-lens and s3-code-simplicity-lens",
+        "requirement": "all 8 cases must replay with identical statuses to their v1 report, since no mechanism in this manifest touches either lens's prompt or schema consumption; any change here is itself a gate failure requiring investigation before #57 proceeds"
+      }
+    ],
+    "correlated_pair_caveat": "registry-client-layering (s2) and metrics-label-formatting-duplication (s3) remain correlated, not independent (LIMITATIONS.md item 32). Any future aggregate figure spanning both strata must disclose this and must not report their combined recall as two independent trials."
+  },
+  "mechanism_ablations": [
+    {
+      "mechanism": "#52 consumer_impact_evidence schema + validator requirement",
+      "ablation_design": "Deterministic, not stochastic: replay the dependency-strictness-propagation-shaped fixture against the v1.1 validator (no requirement) and the v1.2 validator (requirement present). The v1.1 validator must accept the fixture without evidence; the v1.2 validator must reject it. This proves the structural gate does what it claims before any stochastic run is spent on it.",
+      "removal_rule": "If, after #53's traversal pass is scored, dependency-strictness-propagation does not move per the quality gate above and no other case benefits from the evidence array, remove the schema requirement as unjustified complexity."
+    },
+    {
+      "mechanism": "#53 consumer/impact-traversal pass",
+      "ablation_design": "Run s1-correctness-orchestrator with only the traversal pass enabled (verification-sufficiency pass disabled/no-op) for 5 runs against the full stratum.",
+      "removal_rule": "Remove if dependency-strictness-propagation does not move per the quality gate above in this isolated configuration."
+    },
+    {
+      "mechanism": "#53 verification-sufficiency pass",
+      "ablation_design": "Run s1-correctness-orchestrator with only the verification-sufficiency pass enabled (traversal pass disabled/no-op) for 5 runs against the full stratum.",
+      "removal_rule": "Remove if stale-claim-release-guard does not move per the quality gate above in this isolated configuration."
+    },
+    {
+      "mechanism": "#53 both passes combined",
+      "ablation_design": "Run s1-correctness-orchestrator with both passes enabled for 5 runs against the full stratum (this is the configuration actually shipped if both individual ablations pass).",
+      "removal_rule": "Ship only if both individual ablations above independently justify their own pass; a combined-only improvement with either isolated ablation failing is not sufficient, per #57's unique-contribution requirement."
+    }
+  ],
+  "efficiency_bounds": {
+    "note": "See run_count_timeout_retry_cost above for the authoritative cost/timeout proposals. This section restates the ceiling rule for clarity.",
+    "rule": "Exceeding any stratum's preregistered cost ceiling or timeout stops further scored runs in that stratum. A ceiling is never raised after scored output for that stratum has been examined; raising it requires a new manifest version preregistered before the next run."
+  },
+  "invalid_runs_missing_data_drift_and_threshold_change_rules": {
+    "invalid_run": "An attempt classified spawn_failure, timeout, runtime_failure, output_too_large, malformed_output, or protocol_mismatch is never graded and never silently retried, per the unchanged v1 retry_policy.",
+    "missing_data": "A stratum that cannot complete its full runs_per_case x cases matrix within its cost ceiling is reported as an incomplete baseline for that stratum, not padded or extrapolated.",
+    "runtime_drift": "A runtime, runtime-version, or model change from runtime_model_stratum above creates a new, non-comparable stratum. #57 must return blocked rather than score against this manifest's thresholds if drift is detected before scoring.",
+    "threshold_change": "Every threshold in quality_stability_non_regression_thresholds is frozen the moment any scored v2 output for the affected stratum is examined. A threshold change after that point voids the affected comparison and requires a new manifest version (manifest_version bump) preregistered before any further scored run, exactly as this manifest itself was preregistered before v2 scoring begins. This is the mechanical enforcement of #59's own non-goal against tuning gates after seeing results."
+  },
+  "scope_boundary": {
+    "mechanisms_bound_by_this_manifest": ["#51", "#52", "#53"],
+    "mechanisms_explicitly_out_of_scope": [
+      "#54 (deferred; no evidence yet to bind a gate to)",
+      "#55 (deferred; downstream of #54)",
+      "#56 (evidence-backed but not itself scored against s1/s2/s3 by this manifest; see DECISION-RECORD.md)",
+      "#57 (executes against this manifest; does not itself add mechanisms here)"
+    ]
+  }
+}
