@@ -59,6 +59,13 @@ are intentional, make that boundary explicit with an argv such as
 - Legacy `--test-cmd`, `--source-cmd`, `--chain-cmd`, and plan `test_command`
   strings fail with migration guidance; they are never whitespace-split or
   passed to a shell.
+- `db-compare` keeps raw source and chain output in an automatically removed,
+  owner-only temporary directory by default. Use `--keep-output-dir PATH` only
+  when retaining both raw outputs is intentional. The legacy `--out-dir PATH`
+  spelling is an explicit alias for the same retention request. Retained files
+  use owner-only permissions, their resolved paths are reported, and any
+  destination inside the repository must be `.carve-changesets/` or another
+  ignored path.
 
 ### Explicit shell migrations
 
@@ -120,6 +127,20 @@ python3 scripts/cli.py db-compare \
   --source-argv '["./scripts/schema-source"]' \
   --chain-argv '["./scripts/schema-chain"]'
 ```
+
+That default leaves no raw output behind. To retain exact raw results for an
+audited debugging session, select the destination explicitly:
+
+```bash
+python3 scripts/cli.py db-compare \
+  --source-argv '["./scripts/schema-source"]' \
+  --chain-argv '["./scripts/schema-chain"]' \
+  --keep-output-dir .carve-changesets/db-compare-investigation
+```
+
+Difference and failure diagnostics are bounded in terminal output. Retention
+does not redact or transform `source.txt` or `chain.txt`; review them as
+potentially sensitive operational data.
 
 ## Publication walkthrough
 
