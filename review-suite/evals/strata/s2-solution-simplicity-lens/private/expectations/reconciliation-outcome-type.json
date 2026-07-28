@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "reconciliation-outcome-type",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.new-enum-type-added",
+      "description": "A reviewer may observe that introducing `SyncOutcome` is new machinery for what used to be a boolean. This is the finding this case is built from, and it was adjudicated NOT material: the caller genuinely needs to distinguish an intentional block from a real failure, which a boolean cannot express, and the packet's operational context states why that distinction matters to a paged operator. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "this introduces a new outcome type where a boolean existed before",
+        "the typed result is new machinery for what was a flag",
+        "a boolean was replaced with more structure than it needs",
+        "this looks like extra abstraction for a simple return value"
+      ]
+    },
+    {
+      "id": "anf.four-member-enum-two-used-by-caller",
+      "description": "Only two of the four `SyncOutcome` members (`AMBIGUOUS_HOLD`, `WRITE_FAILED`) are branched on by the startup caller shown here. Worth noting; the packet does not claim every consumer is shown.",
+      "equivalent_formulations": [
+        "not every enum member is handled here",
+        "only two outcomes are branched on"
+      ]
+    }
+  ]
+}

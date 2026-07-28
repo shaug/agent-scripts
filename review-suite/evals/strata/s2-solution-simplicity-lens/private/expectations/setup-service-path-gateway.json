@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "setup-service-path-gateway",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.gateway-abstracts-a-pure-function-with-one-implementation",
+      "requirement": "The service tier should call the concrete function it needs directly unless a demonstrated reason requires indirection.",
+      "trigger": "Reading `SetupPathGateway`, `SetupDependencies`, and the changed constructor next to the function they wrap.",
+      "surface": "SetupPathGateway",
+      "consequence": "A gateway class, a dependency-bag class, and a constructor wiring both are introduced to indirect a pure function that has one production implementation and no I/O to isolate. The sibling service in the same package calls the same kind of function directly and is tested by monkeypatching, so the abstraction buys nothing the existing pattern does not already provide and makes this service's construction path materially harder to follow than its neighbour's.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "the wrapped call has no need for any layer of indirection",
+        "a single-implementation helper is hidden behind an injected interface",
+        "call the workspace-root resolver directly instead of through a gateway",
+        "the service tier is acting as a pass-through rather than holding logic",
+        "the injected collaborator does not earn its own existence"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.dependencies-bag-shape",
+      "description": "A reviewer may separately note that `SetupDependencies` is a bag with one field, which is thin. Real, but it is downstream of the same root cause rather than a second one: removing the gateway removes the reason the bag exists.",
+      "equivalent_formulations": [
+        "the dependency bag has only one field",
+        "SetupDependencies is thin"
+      ]
+    }
+  ]
+}

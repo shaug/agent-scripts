@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "env-inventory-bullet-format",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 443, review comment 2880556753, authored by the repository owner, describing the accepted resolution of a formatting concern raised earlier in the same review. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional worker-runtime inventory document. Retains only the shape of the adjudicated exchange: per-item bullet blocks are chosen over a table because a table previously produced malformed rows under the repository's line-wrap formatter. No source identifier, path, symbol, prose, or diff was copied.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 443 review comment 2880556753, the accepted resolution: bullet sections per variable were chosen specifically to stay valid under the repository's Markdown wrap formatter and remain diff-friendly.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for whether apparent verbosity is justified by a formatting constraint. Recommended adjudication: CLEAN / NOT MATERIAL to gate on. The packet states a table previously produced malformed rows under the repository's own formatter, which is a concrete, checkable constraint rather than a stylistic preference for more text. Residual risk for the owner: a reviewer could reasonably propose a narrower fix (only wrapping the wide cell, or a two-column table) rather than the fully verbose bullet form, and this case's own accepted non-finding already flags the repeated owner field as one place that narrower fix could start."
+  }
+}

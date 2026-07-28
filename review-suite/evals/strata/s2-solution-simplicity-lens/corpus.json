@@ -1,0 +1,20 @@
+{
+  "corpus_version": "0.1-s2-populated",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-solution-simplicity",
+  "target_skill_dependencies": [],
+  "stratum": {
+    "id": "s2-solution-simplicity-lens",
+    "ground_truth": "human-review",
+    "scored": false,
+    "grading_is_signal": true,
+    "purpose": "Whole-solution over-engineering and requirement-justified near-miss cases for the self-sufficient solution-simplicity lens. Populated and sourced from adjudicated human review, with the recorded disposition as the first adjudication. NO executable oracle exists for this subject: 'over-engineered' and 'requirement-justified' are design judgements a runnable check cannot decide. Every case therefore records adjudication.second: owner_required and a concrete recommended disposition for the owner to confirm or overturn. NOT scored: every expectation is uncalibrated and no case has been run through any runtime, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss must surface as referred rather than a silent reviewer-miss."
+  },
+  "cases": [
+    "reconciliation-outcome-type",
+    "record-status-transition-guard",
+    "registry-client-layering",
+    "setup-service-path-gateway"
+  ]
+}

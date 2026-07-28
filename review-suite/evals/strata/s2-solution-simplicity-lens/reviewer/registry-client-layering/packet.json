@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/registry-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "3d7f9a6014c2b8e57610fda934c86e21b508d7a3",
+    "comparison_base_sha": "9e0a2c76d18b543f0e9127ad46b3c105e78f3961",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/registry/client.py b/registry/client.py\n--- a/registry/client.py\n+++ b/registry/client.py\n@@ -20,4 +20,12 @@ class Record:\n     identifier: str\n     status: str\n \n \n+class _QueueMessageOps:\n+    \\\"\\\"\\\"Queue message operations, threading root and cwd through every call.\\\"\\\"\\\"\n+\n+    def enqueue(self, message, *, registry_root, cwd):\n+        return run_cli(\"enqueue\", message, root=registry_root, cwd=cwd)\n+\n+    def drain(self, *, registry_root, cwd):\n+        return run_cli(\"drain\", root=registry_root, cwd=cwd)\ndiff --git a/tests/test_client.py b/tests/test_client.py\n--- a/tests/test_client.py\n+++ b/tests/test_client.py\n@@ -10,2 +10,9 @@ def test_record_mutation_ops_close_calls_run_cli():\n     ops.close(\"r-1\", registry_root=ROOT, cwd=CWD)\n     assert last_run_cli_call().kwargs[\"root\"] == ROOT\n+\n+\n+def test_queue_message_ops_enqueue_threads_root_and_cwd():\n+    ops = _QueueMessageOps()\n+    ops.enqueue({\"kind\": \"sync\"}, registry_root=ROOT, cwd=CWD)\n+    assert last_run_cli_call().kwargs[\"root\"] == ROOT\n+    assert last_run_cli_call().kwargs[\"cwd\"] == CWD\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Add queue message operations (enqueue, drain) to the registry client.",
+    "acceptance_criteria": [
+      "Queue messages can be enqueued and drained through the registry client.",
+      "The new operations reach the registry through the existing transport."
+    ],
+    "non_goals": [
+      "Change record mutation behaviour.",
+      "Change the CLI transport itself."
+    ],
+    "preserved_behaviors": [
+      "`_RecordMutationOps` and `_TransportSession` are unchanged."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Client layering rules",
+        "location": "AGENTS.md",
+        "summary": "When one caller already threads a root and working directory through every method of a client, a second client added for a different operation family should not repeat the same threading - converge on one client already bound to those values."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Registry client contract",
+        "location": "docs/registry-client.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Existing bound transport session",
+        "location": "registry/client.py:_TransportSession"
+      },
+      {
+        "label": "Existing record mutation client",
+        "location": "registry/client.py:_RecordMutationOps"
+      },
+      {
+        "label": "Client tests",
+        "location": "tests/test_client.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "client tests",
+      "command": "pytest tests/test_client.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "176 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`registry/client.py` already defines `_TransportSession`, bound to `registry_root` and `cwd` at construction, calling `run_cli` through `self._call`. This diff does not touch it.",
+      "`registry/client.py` also already defines `_RecordMutationOps`, whose `create`/`update`/`close` methods each take `registry_root` and `cwd` as parameters rather than using the already-bound transport session. This diff does not touch it either.",
+      "All client classes in this module call the same underlying `run_cli` transport function."
+    ],
+    "operational": [
+      "Every runtime module that calls the registry constructs its own root/cwd pair from the same two configuration values."
+    ]
+  }
+}

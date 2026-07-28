@@ -125,7 +125,32 @@ the answer. Limitation 14 in
 [the limitations record](../baseline/v1/LIMITATIONS.md) sets out the four
 resolutions and the owner picks one before `scored` flips.
 
-`s2-solution-simplicity-lens` and `s3-code-simplicity-lens` remain unpopulated.
+`s2-solution-simplicity-lens` is populated with four cases: two whole-solution
+over-engineering escapes and two requirement-justified near-miss controls, all
+minimized from adjudicated `shaug/atelier` review history. It has **no
+executable oracle** — "over-engineered" and "requirement-justified" have no
+runnable form — so every case records `adjudication.second: owner_required` with
+a recommended disposition and residual risk in
+[SOURCING.md](../baseline/v1/SOURCING.md) and
+[the adjudication plan](../baseline/v1/ADJUDICATION-PLAN.md). It declares
+`scored: false` for the same reason `s1` does: the owner-settled three-way
+grading method (limitation 14) forbids calibrating a scored case on its own
+prose, and no case here has been run through any runtime.
+
+`s3-code-simplicity-lens` is populated with four cases: two local
+code-complexity/reuse escapes (one from this repository's own delivery history,
+one from `shaug/atelier`) and two near-miss controls, one behaviour-clarifying
+and one non-material. Like `s2`, it has **no executable oracle** and every case
+records `adjudication.second: owner_required` with a recommended disposition,
+recorded in [SOURCING.md](../baseline/v1/SOURCING.md) and
+[the adjudication plan](../baseline/v1/ADJUDICATION-PLAN.md). It declares
+`scored: false` for the same reason the other two strata do.
+
+**All three declared strata are now populated.** Corpus minima are met across
+`s1-correctness-orchestrator`, `s2-solution-simplicity-lens`, and
+`s3-code-simplicity-lens`. That is a necessary condition for a scored baseline,
+not a sufficient one: the owner's direct adjudication of 8 cases across `s2` and
+`s3`, and the frozen-baseline freeze itself, remain outstanding.
 
 ## Adding a stratum
 

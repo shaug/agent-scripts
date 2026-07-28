@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/registry-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "1f6b8d24a973ce051d8f4b26907ac351e08d7f4a",
+    "comparison_base_sha": "d2a7091fc536b4e0a812f6dc95371ea48b60ce9d",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/registry/migration.py b/registry/migration.py\n--- a/registry/migration.py\n+++ b/registry/migration.py\n@@ -1740,1 +1740,12 @@ def _apply_runtime_database_sync(*, registry_root, database_name):\n     existing = payload.get(\"database\")\n+    normalized_existing = _canonical_database_label(existing)\n+    local_candidates = _discover_local_databases(registry_root)\n+    if len(local_candidates) > 1:\n+        if normalized_existing == database_name:\n+            return SyncOutcome.NO_CHANGE\n+        if normalized_existing is None:\n+            log.warning(\n+                \"Runtime DB reconciliation blocked: multiple local databases found \"\n+                f\"and no prior recorded database to disambiguate ({', '.join(local_candidates)}).\"\n+            )\n+            return SyncOutcome.AMBIGUOUS_HOLD\ndiff --git a/registry/startup.py b/registry/startup.py\n--- a/registry/startup.py\n+++ b/registry/startup.py\n@@ -30,5 +30,9 @@ def _reconcile_startup_sync(registry_root, database_name):\n-    updated = _apply_runtime_database_sync(\n+    outcome = _apply_runtime_database_sync(\n         registry_root=registry_root, database_name=database_name,\n     )\n-    if not updated:\n-        log.warning(\"Runtime DB reconciliation failed\")\n+    if outcome is SyncOutcome.AMBIGUOUS_HOLD:\n+        log.warning(\n+            \"Runtime DB reconciliation intentionally blocked: ambiguous local state.\"\n+        )\n+    elif outcome is SyncOutcome.WRITE_FAILED:\n+        log.warning(\"Runtime DB reconciliation failed\")\ndiff --git a/tests/test_startup.py b/tests/test_startup.py\n--- a/tests/test_startup.py\n+++ b/tests/test_startup.py\n@@ -12,1 +12,8 @@ def test_reconcile_startup_sync_logs_on_failure():\n     assert \"reconciliation failed\" in caplog.text\n+\n+\n+def test_reconcile_startup_sync_logs_intentional_block_not_generic_failure():\n+    with ambiguous_local_databases():\n+        reconcile_startup_database(ROOT, \"db-1\")\n+    assert \"intentionally blocked\" in caplog.text\n+    assert \"reconciliation failed\" not in caplog.text\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Replace a boolean reconciliation result with a typed outcome so an intentional ambiguity block is never logged as a generic failure.",
+    "acceptance_criteria": [
+      "An intentional ambiguity block is logged distinctly from a genuine read/write failure.",
+      "The startup caller can tell the two outcomes apart without inspecting log text."
+    ],
+    "non_goals": [
+      "Change how ambiguity is detected.",
+      "Change what counts as multiple local databases."
+    ],
+    "preserved_behaviors": [
+      "A genuine failure still logs \"reconciliation failed\"."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Outcome typing rules",
+        "location": "AGENTS.md",
+        "summary": "A boolean return that conflates two operator-meaningfully different outcomes must become a typed outcome once a caller needs to tell them apart. Do not resolve this by adding a second boolean."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Runtime database reconciliation contract",
+        "location": "docs/db-reconciliation.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Local-database detection",
+        "location": "registry/migration.py"
+      },
+      {
+        "label": "Startup tests",
+        "location": "tests/test_startup.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "startup tests",
+      "command": "pytest tests/test_startup.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "7 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "162 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "Before this change, `_apply_runtime_database_sync` returned a plain `bool`, and `True` covered both a successful reconciliation and an intentional preserve-ambiguous-state no-op.",
+      "The startup caller only had the boolean to decide what to log, so an intentional block and a real failure were indistinguishable to an operator reading the log."
+    ],
+    "operational": [
+      "Operators triage a running system from log text; a false \"reconciliation failed\" during an intentional block would page someone for nothing to fix."
+    ]
+  }
+}

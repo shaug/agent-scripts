@@ -191,6 +191,40 @@ the opposite of what the table assumed:
 The clean-control question the table flagged as the weakest slot is now settled
 by the owner, and the corpus is built to that standard.
 
+## 2c. Outcome: `s2-solution-simplicity-lens`, no oracle available
+
+Every case in this stratum records `adjudication.second: owner_required`, and a
+test now enforces that a case with no shipped oracle may not record anything
+other than that value. Each case's provenance carries a recommended disposition
+and the specific counter-argument that could overturn it, so the owner is
+confirming or correcting a stated argument rather than starting from a bare case
+description.
+
+| case                             | recommended | the strongest counter-argument, for the owner to weigh                                                                                                                                                                                                              |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setup-service-path-gateway`     | MATERIAL    | A reviewer could value the injected gateway as forward consistency with a future second implementation the packet does not rule out.                                                                                                                                |
+| `registry-client-layering`       | MATERIAL    | The diff only touches the queue-message client; a reviewer could argue the mutation-client duplication predates this change and is out of scope for it.                                                                                                             |
+| `reconciliation-outcome-type`    | CLEAN       | A reviewer could reasonably propose a smaller fix (a second boolean, or one sentinel) instead of a four-member enum - whether that is "over-shoots the requirement" or "unnecessary machinery" is a distinction this case's own accepted non-finding does not draw. |
+| `record-status-transition-guard` | CLEAN       | Retry count and backoff are unspecified in the packet; a reviewer could reasonably ask for that detail without the request being about over-engineering at all.                                                                                                     |
+
+None of these four is settled. They are recommendations, not adjudications, and
+the record is explicit about the distinction so a recommendation is never
+mistaken for a second party's judgement.
+
+## 2d. Outcome: `s3-code-simplicity-lens`, no oracle available
+
+Same shape as `s2`: every case records `adjudication.second: owner_required`,
+enforced by the same test.
+
+| case                                   | recommended | the strongest counter-argument, for the owner to weigh                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `watcher-check-policy-duplication`     | MATERIAL    | Severity is recorded as strong_recommendation rather than blocking, since the packet shows no currently observed drift, only a stated history of it; a reviewer could argue for blocking given that history.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `metrics-label-formatting-duplication` | MATERIAL    | This case and s2's `registry-client-layering` trace to the same source PR and comment, read at two different levels; the owner should confirm this reuse is deliberate and recorded rather than an unintended duplicate sample of one finding across two strata.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `compat-accessor-boundary-duplication` | CLEAN       | A reviewer could reasonably ask whether the two independently scheduled callers could still share one function with two call sites rather than two functions with one body each - a smaller version of the question this case's own accepted non-finding already tolerates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `env-inventory-bullet-format`          | CLEAN       | **Weakest case in this batch.** A reviewer could reasonably propose a narrower fix (wrapping only the wide cell, or a two-column table) instead of the fully verbose bullet form. More importantly: this diff is pure Markdown, and `review-code-simplicity`'s own rubric instructs a reviewer to omit formatting concerns unconditionally. A compliant reviewer therefore says clean regardless of whether the verbosity is justified, which means this case mostly tests rubric compliance rather than the near-miss judgement it was built to demonstrate. The owner should weigh whether to keep it as-is, treat its clean verdict as validating the omission rule rather than a discrimination test, or substitute a code-level (non-Markdown) non-material near-miss in a future batch. |
+
+None of these four is settled. They are recommendations, not adjudications.
+
 ## 3. Expected workload
 
 Fifteen scored cases across three strata: roughly 12–16 material root causes,

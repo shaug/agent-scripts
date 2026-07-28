@@ -161,14 +161,22 @@ quote the recall or false-clean figure from
 metric consumes it. Severity agreement is not measured. Either score it or drop
 the requirement; do not assume it is being measured.
 
-## 7. The scored corpus is not yet populated
+## 7. Corpus minima are met; the corpus is not yet scored
 
-`frozen-configuration.json` declares three scored strata in state
-`declared_unpopulated`. No scored case exists yet, so **no baseline figure
-exists yet**. The corpus-population batches, their sourced ground truth, and the
-case classes each will carry are recorded in [SOURCING.md](SOURCING.md). Every
-case class required of the corpus is named there; none has been silently
+`frozen-configuration.json` now records all three declared strata as
+`populated_not_scored` — `s1-correctness-orchestrator`,
+`s2-solution-simplicity-lens`, and `s3-code-simplicity-lens` each carry their
+required minimum case set, sourced and minimized in three population batches
+recorded in [SOURCING.md](SOURCING.md). No stratum remains
+`declared_unpopulated`, and no case class required of the corpus was silently
 omitted.
+
+**No scored case exists, and no baseline figure exists.** Corpus completeness is
+a necessary condition for a scored baseline, not a sufficient one. Two gates
+stay open regardless of the corpus being complete: the independent adjudication
+of every `owner_required` case (see item 8, and items 19 and 25), and the frozen
+baseline protocol itself, which this population work does not perform. See item
+27 for the full statement of what is and is not closed by corpus completeness.
 
 ## 8. Independent adjudication is outstanding
 
@@ -288,41 +296,38 @@ different control class — a candidate adjudicated clean by construction rather
 than by rejection — which this corpus does not contain and which the standard
 above deliberately declines to fake.
 
-## 14. A scored stratum cannot be both calibrated and result-blind
+## 14. Grading method — SETTLED by the owner: score three-way, never calibrate a scored case first
 
-This is the sharpest open question the corpus has, and it blocks scoring rather
-than merely qualifying it.
+This was the sharpest open question the corpus had. Batch 1 measured what an
+uncalibrated expectation reports: recall 0.0 over five attempts against a
+reviewer that found the defect every time, because grader matching is
+containment and the shipped formulations had never met real prose. Calibration
+fixed it — recall 1.0 — but calibration requires *observing the reviewer's prose
+for that case*, and observing a scored case's prose to tune its formulations is
+fitting the grader to the answer, which the non-goals forbid outright.
 
-Batch 1 measured what an uncalibrated expectation reports: recall 0.0 over five
-attempts against a reviewer that found the defect every time, because grader
-matching is containment and the shipped formulations had never met real prose.
-Calibration fixed it — recall 1.0 — but calibration requires *observing the
-reviewer's prose for that case*. Observing a scored case's prose and then tuning
-its formulations is fitting the grader to the answer, which is exactly what the
-non-goals forbid.
+**Resolution: score every case three-way — matched, missed, or referred for
+adjudication — and never calibrate a scored case on its own prose first.** A
+grader miss that stems from an unmet formulation is a `referred` outcome, not a
+silent reviewer-miss and not a scored match. This reuses the
+`adjudication_required` machinery already built by the grading interface rather
+than shrinking an already-tight corpus by splitting each case class into
+calibrate/score halves, or gambling on untuned transfer as the sole method,
+which is unproven at corpus scale and biases recall downward if it fails.
 
-`s1-correctness-orchestrator` is therefore populated with `scored: false` and
-every expectation `calibrated: false`, and **no case in it has been run through
-any runtime**. Both states are honest, and neither is a resting place: scored as
-it stands, it would report a number about the corpus. Four resolutions exist,
-and the owner has to pick one:
+Every populated scored stratum therefore ships `scored: false` and every
+expectation `calibrated: false`, with **no case run through any runtime**, until
+the owner unblocks scoring under this method. Once enough scored runs exist, a
+post-hoc check of whether untuned transfer would have matched the referred
+bucket is deferred evidence for #59's v2 grading design — it does not gate this
+baseline and is not built here.
 
-1. **Rely on transfer.** Calibrate only on the disjoint pilot cases and accept
-   that scored formulations are untuned. Measured to transfer once — the pilot's
-   calibrated formulations held on two later runs — but transfer is not
-   guaranteed, and untuned formulations bias recall **downward**, so the
-   baseline would understate the reviewer.
-2. **Split each case class.** Calibrate on half, score the other half. Costs
-   corpus size, which the per-stratum minima already constrain.
-3. **Report referrals as a first-class bucket.** Score matched, missed, and
-   *referred for adjudication* separately, so a containment miss is visible as a
-   grader limitation instead of silently becoming a reviewer miss. Cheapest, and
-   it makes the existing `adjudication_required` output load-bearing.
-4. **Replace containment matching** with semantic matching or a standing
-   adjudication queue. A v2 mechanism, so it belongs to #59.
-
-Whichever is chosen, it must be preregistered with the rest of the frozen
-configuration, because it decides what recall means.
+The three rejected alternatives, recorded for context rather than
+reconsideration: relying on untuned transfer alone (unproven at scale, biases
+recall downward); splitting each case class into calibrate/score halves (shrinks
+corpus size the per-stratum minima already constrain); and replacing containment
+matching itself with semantic matching or a standing adjudication queue (a
+genuine v2 mechanism, so it belongs to #59, not to this baseline).
 
 ## 15. An oracle adjudicates a requirement, not a diff
 
@@ -422,3 +427,346 @@ merge verdict on it is behaving correctly under its own contract — which a
 scored run would then record as a verdict mismatch, charging the reviewer for a
 curation defect. All seventeen now parse, and the check runs across every corpus
 rather than one.
+
+## 19. The solution-simplicity stratum has no oracle at all
+
+Every correctness case in `s1-correctness-orchestrator` has an executable oracle
+because a correctness requirement is a statement about behaviour, so it can be
+run. Nothing in `s2-solution-simplicity-lens` can be, because there is no
+runnable form of "this abstraction is unnecessary" or "this machinery is
+requirement-justified" — both are judgements about whether a design decision
+matches its requirement, not properties a program can check.
+
+Every case in this stratum therefore records
+`adjudication.second: owner_required` rather than `oracle`, and a test enforces
+that a case may not claim anything else without one. Each case's provenance also
+records a recommended disposition and the specific residual risk that could
+overturn it, so the owner is confirming or correcting a stated argument rather
+than starting from a bare case description. That is not a substitute for the
+owner's adjudication — it is scoped as a recommendation precisely so it is not
+mistaken for one.
+
+The same will be true of `s3-code-simplicity-lens` in the next batch: local
+code-complexity and reuse judgements have the same property.
+
+## 20. Two sources were reused across strata under different questions
+
+`shaug/atelier` PR 417, comment 2870710594, was assessed once for
+`s1-correctness-orchestrator` as a candidate clean-correctness control and
+dropped there, because the owner's clean-control standard requires an
+adjudicated-rejected finding and this comment records an accepted *fix* —
+acceptance is the opposite disposition. The same accepted change is sourced
+again here, in `s2-solution-simplicity-lens`, as a requirement-justified
+near-miss control, where the relevant question is not "was a finding rejected"
+but "is the added machinery justified by a stated requirement" — a question the
+same accepted change answers cleanly.
+
+This is a deliberate reuse under a different standard, not a retention-authority
+question or a double-count: the two corpora measure different lenses against
+different criteria from the same real disposition. Recorded here so a reader who
+notices the same PR number in two places finds the reasoning rather than an
+unexplained coincidence.
+
+## 21. Minimization must replace the source's own identifiers, not just its business logic
+
+Review found a real sanitization defect in this batch, in every one of its four
+cases, before it shipped. Each case's provenance claimed no source identifier or
+prose was copied. That was false: the packets carried the real product's own CLI
+name and ticket-subsystem noun, real enum member strings, a real function name
+verbatim, and expectation formulations built from the real reviewer's own
+sentences rather than independently phrased equivalents.
+
+None of that is business logic, a domain identifier, customer context, a
+credential, or hidden reasoning in the ordinary sense — the earlier sanitization
+gate's checklist. It is a narrower and easy-to-miss failure mode: **retaining
+the source's own names and words while believing the case has been rewritten
+"from scratch."** A case can carry no proprietary logic at all and still leak in
+this way, because what leaks is naming, not substance.
+
+Why it matters here specifically, beyond honesty: `shaug/atelier` is public.
+Copying its real symbol names and its reviewer's real phrasing into a corpus
+that sits in another public repository creates two distinct risks. A retained
+identifier is potentially discoverable back to the source PR, which is a
+disclosure question independent of whether the source is public. And, more
+directly relevant to this baseline's purpose, a reviewer model trained on public
+code may have this real text memorized; a packet that echoes it verbatim risks
+being answered by pattern-matching a remembered PR rather than by reasoning
+about the packet, which would corrupt exactly the measurement this corpus exists
+to take.
+
+The four cases in `s2-solution-simplicity-lens` were rewritten before merge:
+product-specific CLI names and nouns replaced with fictional equivalents rather
+than lightly renamed, a real function name and real enum member strings
+replaced, and every equivalent-formulation phrase rewritten as an independent
+paraphrase rather than the source reviewer's own sentence. The now-merged
+`s1-correctness-orchestrator` cases were checked against the same class of leak
+and found clean of it.
+
+No mechanical check catches this today. `audit_corpus.py` proves
+reviewer/private separation and outcome-revealing naming; nothing proves a
+retained artifact is free of the source's own vocabulary, because the audit has
+no way to know what the source's vocabulary was. Curation discipline is the only
+defense until one exists: name every symbol as if writing original code for the
+fictional subject, and never carry a reviewer's sentence forward as a
+formulation without independently rephrasing it.
+
+## 22. A minimization rewrite must update every field that names the changed symbols, not only the diff
+
+The second review cycle on this batch found that the first sanitization fix
+(item 21) renamed symbols inside the diff but left two packets' `context.data`
+naming the pre-rename symbol — a function or class the diff no longer defines.
+That is a narrower defect than a leak: it makes the packet internally
+self-contradictory, independent of whether either name is real or fictional. A
+reviewer reading `context.data` would be told to look for a symbol its own diff
+had already renamed away.
+
+The same cycle also found a packet whose diff had never been consistent in the
+first place: it introduced three classes as brand-new code while a downstream
+file's hunk implied two of them already existed under different names. That
+predates the sanitization fix; renaming inside an already-incoherent diff cannot
+make it coherent.
+
+Both are now fixed: `registry-client-layering`'s case was rebuilt as a purely
+additive diff — one new class next to two explicitly pre-existing, untouched
+ones named only in context — and every context reference across the stratum was
+checked against its own diff. The general lesson: **a rename or a fix inside a
+diff must be swept across the whole packet, and a packet's diff must be checked
+for internal consistency independently of whatever sanitization or grading
+concern prompted editing it.** Neither check is mechanical today; both are
+curation discipline until a tool exists to enforce them.
+
+## 23. Naming the real source in private provenance is retention, not a leak
+
+The same review cycle raised the real source's class name (`BeadsClient`)
+appearing in a case's `retention_authority` and `adjudication.first` fields as a
+possible sanitization defect. It is not: those two fields are private,
+structurally separated from every reviewer-visible artifact, and their entire
+purpose is to record *what the real source actually was* — the PR, the comment,
+the accepted commit, and, where useful for a future audit, what that commit's
+outcome was named. Every provenance record in this corpus already cites real PR
+numbers, comment ids, and commit SHAs for exactly this reason, and this case is
+consistent with that established pattern rather than an exception to it.
+
+The sanitization rule in items 16 and 21 governs what reaches a
+**reviewer-visible artifact or a grader formulation a reviewer's payload could
+echo** — the packet, the equivalent formulations, anything `audit_corpus.py` can
+reach. It was never a rule against a private, human-facing provenance record
+describing its own real source, and applying it there would make provenance
+unable to do the one job it exists for: letting a later reader verify where a
+case actually came from.
+
+## 24. Sanitization must sweep every reviewer-visible field, not only the diff and its formulations
+
+The third review cycle on this batch found the sanitization fix (items 21-23)
+had covered the diff and the grader's `equivalent_formulations`, and still
+missed two other places the same real prose and real domain nouns reached a
+reviewer-visible packet: `sources.repository_instructions[].summary` reused the
+real reviewer's own phrasing ("abstract away the calls it needs to make",
+"deferred-by-default semantics") almost verbatim, and one packet's
+`change_contract` kept the real source's own domain noun (`enlistment`) in three
+fields the earlier pass never touched.
+
+The same cycle also found a fourth packet (`setup-service-path-gateway`) carried
+a no-op diff line — an identical `-`/`+` pair — that made its before-state
+impossible: the pre-image called a zero-argument constructor while the very next
+line inside the same hunk already referenced a dependency that constructor could
+not have had. This defect predates every sanitization commit; it was present in
+the very first draft and simply went unnoticed until a cycle checked the diff's
+internal coherence rather than its wording.
+
+Both were fixed at the time this item was written, and the fix for the second
+one did not fully hold: a later review cycle (recorded in item 30) found the
+`setup-service-path-gateway` incoherence had only been relocated, not resolved,
+by the commit this item originally credited. Read item 30 alongside this one
+rather than trusting this item's own "now fixed" language in isolation - that
+overclaim is itself part of the lesson.
+
+The lesson generalizes past this specific batch: **a minimization or a rename
+must be swept across the whole packet - goal, acceptance criteria, non-goals,
+preserved behaviors, repository instructions, named documents, nearby patterns,
+and context - not only the diff and the formulations that happen to be the field
+a grader reads.** A packet has many prose fields, and a real term or a real
+reviewer's sentence can hide in any of them. Nothing mechanical catches this
+today; it took four independent review passes across two strata to find every
+instance, which is itself evidence that curation discipline alone is not a
+durable defense and a future population batch should expect the same scrutiny.
+
+## 25. The code-simplicity stratum has no oracle either
+
+Same reason as `s2-solution-simplicity-lens`: "this is a duplication defect" and
+"this apparent duplication is justified" are design judgements, not properties a
+runnable check can decide. Every case in `s3-code-simplicity-lens` records
+`adjudication.second: owner_required` with a recommended disposition and
+residual risk, and the same test that holds `s2` to this also holds `s3` to it.
+
+## 26. One source PR grounds an escape in two strata, read at two levels
+
+`atelier` PR 410 comment 2870262209 grounds both `s2`'s
+`registry-client-layering` (read at the whole-solution level: three overlapping
+client classes should converge) and `s3`'s
+`metrics-label-formatting-duplication` (read at the local-implementation level:
+the same comment separately observed repeated argument-threading as a local
+reuse defect). This is the same kind of deliberate reuse already recorded in
+limitation 20 for a different source (`atelier` PR 417, reused across `s1` and
+`s2` under two different standards), now happening a second time across `s2` and
+`s3`.
+
+The two cases are built against deliberately different fictional subjects — a
+registry client and a metrics exporter — specifically so they do not read as the
+same scenario duplicated across strata. Recorded here, as with limitation 20, so
+a reader who notices the same PR number twice finds the reasoning rather than an
+unexplained coincidence, and so a future population batch does not repeat the
+same real source a third time without noticing the pattern.
+
+## 27. Corpus minima are now met across all three declared strata; scoring is not
+
+With this batch, `s1-correctness-orchestrator`, `s2-solution-simplicity-lens`,
+and `s3-code-simplicity-lens` are all `populated_not_scored`. No stratum remains
+`declared_unpopulated`. That closes one gate and leaves two open, both stated
+plainly rather than implied closed by the corpus being complete:
+
+- **Independent adjudication** is satisfied by executable oracle for every case
+  in `s1`, and needs the owner directly for every case in `s2` and `s3` — 8
+  cases across the two strata, each with a recommended disposition recorded
+  rather than a bare list.
+- **The frozen baseline** cannot be captured until the owner's adjudications
+  land, regardless of corpus completeness. Populating every stratum is a
+  necessary condition for scoring, not a sufficient one.
+
+## 28. The non-material near-miss control for code-simplicity may not discriminate
+
+`s3-code-simplicity-lens`'s non-material near-miss control,
+`env-inventory-bullet-format`, is a pure Markdown-formatting diff.
+`review-code-simplicity`'s own rubric instructs a reviewer to omit formatting
+concerns unconditionally, which means a fully compliant reviewer returns clean
+on this packet regardless of whether the specific formatting choice is
+justified. The case therefore mostly tests rubric compliance - does the reviewer
+correctly decline to flag formatting - rather than the near-miss judgement (is
+this apparent verbosity actually justified) it was built to demonstrate, since
+both a reviewer that reasons about the justification and one that reflexively
+ignores all formatting land on the identical clean verdict.
+
+This was flagged by review before merge and is recorded rather than silently
+accepted. Recommended path for the owner: keep the case and read its clean
+verdict as validating the omission rule specifically, not as evidence the
+reviewer weighed the justification; or substitute a code-level (non-Markdown)
+non-material near-miss in a future batch. `atelier` was searched for a
+better-fitting code-level candidate before this record was written and none was
+found quickly enough to hold up this delivery; a stronger candidate may still
+exist and is worth a fresh search rather than treated as exhausted.
+
+## 29. The repository-history case was itself only lightly renamed, in the same way s2's cases were
+
+The second review cycle on the combined s2+s3 candidate found that
+`watcher-check-policy-duplication` — the one `s3` case sourced from this
+repository's own delivery history rather than `atelier` — had exactly the defect
+limitation 21 already found and fixed for `s2`: only the two function names were
+renamed, while every local variable name, every dict key, and the removed code
+comment were copied verbatim from the real source commit. Provenance's own
+sanitization claim was false for this case, the same way it was false for all
+four `s2` cases before their fix.
+
+This is a sharper instance of the same lesson than limitation 21's original
+finding, for one reason: the source here is *this very repository's own git
+history*, so the real precedent is trivially discoverable with
+`git log`/`git show` inside the exact repository the corpus lives in - there is
+no cross-repository step required to find it. A repository-history case
+therefore needs the same rewrite discipline as a cross-repository one, not less,
+and arguably deserves more scrutiny precisely because verification is so cheap
+for anyone who looks.
+
+Fixed: every local variable, dict key, and the comment were independently
+authored rather than derived from the source. The general rule from limitation
+21 stands unchanged and evidently was not sufficient on its own to prevent a
+repeat instance three batches later - a mechanical check remains the more
+durable fix, and remains undone.
+
+## 30. A fix that relocates an inconsistency is not a fix, and one more verbatim term survived three prior sweeps
+
+The third and final scheduled review cycle on the combined s2+s3 candidate found
+two more real defects, after two prior cycles had each found and fixed real
+defects in the same two cases.
+
+**`setup-service-path-gateway`'s before-state was still impossible**, in a
+different place than the no-op line item 24 credited itself with fixing. The
+earlier fix removed the no-op diff line, but left `SetupService.run`'s
+before-image calling `self._path_gateway.project_dir(workspace_id)` while
+`commands/setup.py`'s before-image constructed `SetupService` with a bare
+function (`SetupService(resolve_workspace_root)`) - a function has no
+`.project_dir` method, so the pre-image still could not run. The incoherence had
+moved from the constructor call to the method-call pattern; it was never
+actually resolved. Fixed now by making `run`'s before-image call the injected
+gateway directly as a callable (`self._path_gateway(workspace_id)`), which is
+exactly what a bare function argument supports, and introducing the
+`.project_dir` method only in the after-image alongside the new wrapper class.
+
+**`record-status-transition-guard` still carried one verbatim real term**:
+`allow_failure=True`, the identical keyword argument name and value from the
+real `atelier` source commit (`79703c5`), through three prior review cycles that
+each rewrote other parts of the same case. Renamed to `raise_on_failure=False`.
+
+Two things are worth stating plainly rather than smoothing over. First, the "now
+fixed" language in item 24 was premature: it described one relocated symptom as
+resolved. A fix for an incoherent diff must be checked by asking whether the
+*whole* before-state can actually execute, not whether the one line a reviewer
+flagged has changed. Second, one leaked keyword argument survived being read by
+four independent review passes across two different cases before a fifth pass
+caught it - not because it was hidden, but because reviewers (including this
+ticket's own repeated sweeps) tend to check the same categories of surface
+(function names, class names, prose) and can each independently miss a keyword
+argument buried inside an otherwise-fully-rewritten call. Curation discipline
+caught this eventually, but "eventually, after five passes" is not a durable
+property of a curation process, and a mechanical diff-against-real-source check
+\- comparing every packet's diff token-for-token against its cited real source
+commit or PR patch - would have caught both defects on the first pass. That
+check does not exist today and is recorded here as unfinished work rather than
+implied solved by the fact that this batch, eventually, got there.
+
+## 31. A packet's own narrative must agree with its own diff, verdict, and evidence
+
+A fifth review cycle - the first entirely on the rebased head, with no case
+content changed since the fourth - still found three real defects by reading the
+fixture content directly rather than trusting the passing automated checks, none
+of which check narrative or evidentiary self-consistency:
+
+- **A stale symbol reference survived a rename.**
+  `reconciliation-outcome-type`'s accepted non-finding still named
+  `BLOCKED_AMBIGUOUS`/`FAILED`, the pre-rename enum members, after the case's
+  sanitization pass (item 21) had already renamed them to
+  `AMBIGUOUS_HOLD`/`WRITE_FAILED` everywhere else. One more instance of the
+  sweep-every-field lesson (item 24), in a field none of the prior four cycles
+  happened to check.
+- **A validation entry named the wrong test file.** `registry-client-layering`'s
+  focused validation cited `pytest tests/test_worker.py`, left over from an
+  earlier, larger version of the case before it was rebuilt as a purely additive
+  diff (item 20's fix) touching only `tests/test_client.py`. The evidence didn't
+  test the change the packet actually shows.
+- **A case's polarity was inverted.** `watcher-check-policy-duplication`'s diff
+  showed the real fix - removing the last inline duplicate of a shared policy -
+  which is what a clean diff looks like, while the case declared
+  `expected_verdict: changes_required` and a root cause arguing the diff itself
+  was the correction. A reviewer given this packet would be right to say
+  `clean`, and the case would have scored that correct answer as a miss. Rebuilt
+  so the diff instead *adds* a new call site that duplicates the shared
+  predicate inline rather than calling it - the failure shape the source
+  commit's own drift history actually warns against - which is both internally
+  consistent and closer in spirit to what a "local code-complexity escape" case
+  needs to demonstrate.
+
+The third of these is the more serious one: it was not a stale reference but a
+logic error in the case's own design, present since the case was first authored
+and undetected through three full review cycles plus one rebase-focused cycle,
+because every one of those checked identifiers, terms, and diff coherence in
+isolation without checking whether the packet's *diagnosis of itself* - what
+verdict and root cause its own diff should produce - was actually consistent
+with the diff shown.
+
+The general lesson this adds to items 21, 24, and 29: **sweeping a rename or a
+sanitization fix across every field is necessary but not sufficient. Each case
+also needs one pass that asks, independent of any wording concern, "if I read
+only this diff, what verdict would I reach, and does it match what the case
+declares?"** Nothing mechanical asks that question today. Five review cycles
+across two strata found a defect at every prior stopping point; that is the
+strongest evidence yet in this record that curation discipline alone does not
+converge, and that a mechanical diff-to-expectation consistency check remains
+the more durable fix, still undone.

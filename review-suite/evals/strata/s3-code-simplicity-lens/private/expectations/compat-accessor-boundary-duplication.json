@@ -1,0 +1,28 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "compat-accessor-boundary-duplication",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "clean",
+  "material_root_causes": [],
+  "accepted_non_findings": [
+    {
+      "id": "anf.two-identical-conversion-functions",
+      "description": "A reviewer may observe that `record_value` and `record_payload` have identical bodies and ask why they are not one function. This is the finding this case is built from, and it was adjudicated NOT material: the packet states the two callers are on independent migration schedules and are tracked separately by the migration plan, so merging the accessors would couple two release schedules that are deliberately kept apart. Tolerated as an observation; gating on it is a false alarm.",
+      "equivalent_formulations": [
+        "these two functions have identical bodies",
+        "why are there two conversion functions instead of one",
+        "record_value and record_payload duplicate each other",
+        "this compatibility accessor is duplicated at the migration edge"
+      ]
+    },
+    {
+      "id": "anf.bare-except-message-formatting",
+      "description": "The typed-path error branch formats `detail` from `str(exc)` without the whitespace normalisation the old branch had. Worth noting; the packet's preserved behaviour is the return shape, not the log detail text.",
+      "equivalent_formulations": [
+        "the error detail formatting changed slightly",
+        "whitespace normalisation was dropped from the error path"
+      ]
+    }
+  ]
+}

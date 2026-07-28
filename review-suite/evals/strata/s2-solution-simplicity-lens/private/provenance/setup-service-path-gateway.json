@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "setup-service-path-gateway",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 160, review comment 2848776499, authored by the repository owner and accepted in commit fcbf469, which removed the gateway indirection entirely. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional setup service. Retains only the failure shape: a pure, single-implementation path-resolution function is wrapped in a gateway class and a dependency bag purely to make the caller injectable, while a sibling service in the same package achieves the same testability by monkeypatching the concrete function. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "recorded_at": "2026-07-27",
+  "adjudication": {
+    "first": "shaug/atelier PR 160 review comment 2848776499, accepted in commit fcbf469: the gateway indirection was removed entirely and the service now calls the concrete functions directly.",
+    "second": "owner_required",
+    "notes": "No executable oracle exists for over-engineering: whether an abstraction is 'unnecessary' given only one production implementation is a design judgement, not a property a runnable check can decide. Recommended adjudication: MATERIAL. The packet states one implementation exists, no second is planned, and a sibling service in the same package solves the identical testability need without an injected gateway - three converging facts a reviewer can point to without inventing a policy against dependency injection in general. The risk of over-adjudicating: a reviewer could reasonably value the injected-gateway pattern as forward consistency with a future second implementation the packet does not rule out; that is the strongest counter-argument for a NOT MATERIAL disposition and the owner should weigh it, not this record."
+  }
+}

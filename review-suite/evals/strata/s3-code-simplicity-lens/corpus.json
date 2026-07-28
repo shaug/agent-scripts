@@ -1,0 +1,20 @@
+{
+  "corpus_version": "0.1-s3-populated",
+  "protocol_version": "1.0",
+  "grader_version": "1.0",
+  "target_skill": "review-code-simplicity",
+  "target_skill_dependencies": [],
+  "stratum": {
+    "id": "s3-code-simplicity-lens",
+    "ground_truth": "human-review",
+    "scored": false,
+    "grading_is_signal": true,
+    "purpose": "Local code-complexity, reuse, and DRY cases for the self-sufficient code-simplicity lens. Populated and sourced from adjudicated human review and one adjudicated repository- history finding, with the recorded disposition as the first adjudication. NO executable oracle exists for this subject: 'this is a duplication defect' and 'this apparent duplication is justified' are design judgements a runnable check cannot decide. Every case therefore records adjudication.second: owner_required and a concrete recommended disposition for the owner to confirm or overturn. NOT scored: every expectation is uncalibrated and no case has been run through any runtime, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss must surface as referred rather than a silent reviewer-miss."
+  },
+  "cases": [
+    "compat-accessor-boundary-duplication",
+    "env-inventory-bullet-format",
+    "metrics-label-formatting-duplication",
+    "watcher-check-policy-duplication"
+  ]
+}

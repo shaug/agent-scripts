@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/registry-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "5b09e2a748dc31f6087bad219c576e04a3f81b6d",
+    "comparison_base_sha": "0d84c7a52e6b19347f81cd60ae8b2d4319eca705",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/registry/compat.py b/registry/compat.py\n--- a/registry/compat.py\n+++ b/registry/compat.py\n@@ -90,8 +90,17 @@ def try_show_record(record_id, *, registry_root, cwd):\n         return None\n-    result = client.run_cli(\n-        \"show\", cleaned, root=registry_root, cwd=cwd,\n-    )\n-    if result.returncode != 0:\n-        detail = (result.stderr or result.stdout or \"\").strip()\n+    try:\n+        typed = _client(registry_root=registry_root, cwd=cwd).show(cleaned)\n+    except ClientError as exc:\n+        detail = str(exc)\n         return None\n-    return json.loads(result.stdout)\n+    return record_value(typed)\n+\n+\n+def record_value(typed):\n+    \\\"\\\"\\\"Convert a typed record to the plain dict shape untouched callers expect.\\\"\\\"\\\"\n+    return {\"identifier\": typed.identifier, \"status\": typed.status}\n+\n+\n+def record_payload(typed):\n+    \\\"\\\"\\\"Same conversion, named for the write-path callers that use this shape.\\\"\\\"\\\"\n+    return {\"identifier\": typed.identifier, \"status\": typed.status}\ndiff --git a/tests/test_compat.py b/tests/test_compat.py\n--- a/tests/test_compat.py\n+++ b/tests/test_compat.py\n@@ -14,1 +14,9 @@ def test_try_show_record_returns_none_on_error():\n     assert try_show_record(\"bad-id\", registry_root=ROOT, cwd=CWD) is None\n+\n+\n+def test_try_show_record_returns_the_typed_path_directly(monkeypatch):\n+    typed = FakeTypedRecord(identifier=\"r-1\", status=\"open\")\n+    monkeypatch.setattr(compat, \"_client\", lambda **kw: FakeClient(show=typed))\n+    assert try_show_record(\"r-1\", registry_root=ROOT, cwd=CWD) == {\n+        \"identifier\": \"r-1\", \"status\": \"open\",\n+    }\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Move `try_show_record` onto the typed client, keeping the plain-dict shape only where untouched read and write callers still need it.",
+    "acceptance_criteria": [
+      "The typed client path is used directly for the show operation.",
+      "A plain-dict conversion remains available for callers that have not migrated to the typed record.",
+      "Both conversion helpers return the same untouched dict shape."
+    ],
+    "non_goals": [
+      "Migrate every remaining caller onto the typed record.",
+      "Change the typed record's own fields."
+    ],
+    "preserved_behaviors": [
+      "`try_show_record`'s return shape for an untouched caller is unchanged."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Migration boundary rules",
+        "location": "AGENTS.md",
+        "summary": "A compatibility accessor may be duplicated at the true downstream edge where distinct untouched callers each need it, rather than merged into one, when the callers are on different migration paths."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Typed record migration plan",
+        "location": "docs/typed-record-migration.md"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Read-path caller still on the dict shape",
+        "location": "registry/reporting.py"
+      },
+      {
+        "label": "Write-path caller still on the dict shape",
+        "location": "registry/sync.py"
+      },
+      {
+        "label": "Compat tests",
+        "location": "tests/test_compat.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "compat tests",
+      "command": "pytest tests/test_compat.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "5 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "188 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`registry/reporting.py` reads records through `record_value` and has no plan to migrate to the typed record this release.",
+      "`registry/sync.py` writes records through `record_payload` and is on a separate, later migration schedule.",
+      "Both functions return an identical dict shape today, and the migration plan tracks them as two independent callers rather than one."
+    ],
+    "operational": [
+      "Reporting and sync run on different deploy cadences, so merging their compatibility accessors would couple two independent release schedules."
+    ]
+  }
+}

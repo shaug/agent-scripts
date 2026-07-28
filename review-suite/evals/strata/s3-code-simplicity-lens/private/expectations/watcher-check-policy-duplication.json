@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "watcher-check-policy-duplication",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.local-policy-duplicated-across-call-sites",
+      "requirement": "A new call site that needs a gating question an existing shared predicate already answers must call that predicate rather than re-deriving it inline.",
+      "trigger": "Adding a new predicate that needs the same gating question an existing shared predicate already answers.",
+      "surface": "build_is_archivable",
+      "consequence": "The new `build_is_archivable` re-derives the aborted-or-red-or-failed-run question inline instead of calling `has_gating_failure`, which `build_is_mergeable` in the same module already uses for exactly this question. The packet's own history states that this class of inline duplication previously drifted between two call sites and produced a self-contradictory result for the same candidate - the risk this diff reintroduces by adding a second inline copy instead of calling the existing shared predicate.",
+      "severity": "strong_recommendation",
+      "equivalent_formulations": [
+        "this re-derives the gating check instead of calling the shared predicate",
+        "build_is_archivable duplicates has_gating_failure inline",
+        "the same policy is now implemented in two places again",
+        "call has_gating_failure instead of repeating its logic",
+        "this reintroduces the duplication the shared predicate was built to remove"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.pending-check-inline",
+      "description": "The retention-window check (`retention_days < MIN_RETENTION_DAYS`) stays inline rather than moving into a shared helper. A reviewer may ask why; the packet's non-goals state that archive-specific logic is out of scope for centralisation, and it is not part of the gating-failure duplication this case demonstrates.",
+      "equivalent_formulations": [
+        "the retention check is inline",
+        "why isn't the retention window also shared"
+      ]
+    }
+  ]
+}

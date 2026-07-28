@@ -176,23 +176,86 @@ The correction is worth recording plainly: batch 1's adjudication plan named PR
 and PR 356 were accepted and are unusable as controls; PR 335 **was** accepted,
 which makes it a valid escape rather than a valid control.
 
-### Batch 3 — `s2-solution-simplicity-lens`, 4 cases
+### Batch 3 — `s2-solution-simplicity-lens`, 4 cases — **DELIVERED**
 
-| class                                   | candidate ground truth                                                                                                                                                                                                        |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| whole-solution over-engineering         | `shaug/atelier` PR 160, comment 2848776499: a service tier given an injected abstraction purely to make calls it could make directly, with the reviewer asking why any abstraction is needed.                                 |
-| whole-solution over-engineering         | `shaug/atelier` PR 410, comment 2870262209: three overlapping client concepts threading the same root and working directory through every method, to be converged on one already-bound client.                                |
-| requirement-justified near-miss control | `shaug/atelier` PR 417, comment 2870710594: replacing a boolean with a typed outcome looks like extra machinery and is required, because the caller must distinguish an intentional fail-closed block from a genuine failure. |
-| requirement-justified near-miss control | `shaug/atelier` PR 277, comments 2861848880 and 2861868165: retry plus fail-closed auto-close after a two-step create looks like defensive scaffolding and is required by deferred-by-default semantics.                      |
+Populated but not scored, and unlike the correctness stratum, this one has no
+executable oracle available for its subject at all: "over-engineered" and
+"requirement-justified" are design judgements, not properties a runnable check
+can decide. Every case's second adjudication is `owner_required`, each with a
+recommended disposition and its own stated residual risk for the owner to weigh.
 
-### Batch 4 — `s3-code-simplicity-lens`, 4 cases
+| case                             | class                                   | source disposition                                                                                     | expected | recommended adjudication |
+| -------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------- | ------------------------ |
+| `setup-service-path-gateway`     | whole-solution over-engineering         | atelier PR 160, comment 2848776499 — **accepted** in `fcbf469`, gateway indirection removed entirely   | gating   | MATERIAL                 |
+| `registry-client-layering`       | whole-solution over-engineering         | atelier PR 410, comment 2870262209 — **accepted** in `f631cb0`, three client concepts converged to one | gating   | MATERIAL                 |
+| `reconciliation-outcome-type`    | requirement-justified near-miss control | atelier PR 417, comment 2870710594 — accepted, the comment records its own implementation              | clean    | CLEAN / NOT MATERIAL     |
+| `record-status-transition-guard` | requirement-justified near-miss control | atelier PR 277, comment 2861848880 — **accepted** in reply 2861868165, naming commit `79703c5`         | clean    | CLEAN / NOT MATERIAL     |
 
-| class                                  | candidate ground truth                                                                                                                                                                                                                                     |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| local code-complexity or reuse         | `shaug/agent-scripts` commit `9351619`: **the code-simplicity lens under evaluation itself** flagged the last inline copy of a policy predicate on PR 27; all three agreement sites now share one predicate. Adjudicated by this repository's own history. |
-| local code-complexity or reuse         | `shaug/atelier` PR 410, comment 2870262209, read at the local level: the duplicated client concepts and the repeated argument threading at every call site.                                                                                                |
-| behaviour-clarifying near-miss control | `shaug/atelier` PR 630, comment 2906875752: compatibility accessors retained at the true downstream edge where untouched callers still need them — apparent duplication that is justified by the migration boundary.                                       |
-| non-material near-miss control         | `shaug/atelier` PR 443, comment 2880556753: per-item bullet blocks chosen over a table for formatter stability and diff-friendliness — apparent verbosity that is justified.                                                                               |
+Sanitization: all four are `minimized_reproduction`, rewritten from scratch
+against fictional subjects (a setup service, a registry client, a registry
+runtime, a planner tool), retaining only the failure shape. All sources are
+public, all retention authority is public-repository owner-authored review.
+
+**A first draft of all four cases failed this claim, and review caught it before
+merge.** The first draft carried the source's own CLI name and ticket-subsystem
+noun verbatim, a real function name, real enum member strings, and expectation
+formulations built from the real reviewer's own sentences rather than
+independent paraphrases — none of it business logic or a domain identifier, but
+all of it the source's own vocabulary rather than a rewrite. All four were
+corrected before this record was published; see limitation 21 for what the
+defect was and why it matters even though every source is public. The
+already-merged `s1-correctness-orchestrator` cases were checked against the same
+class of leak and found clean of it.
+
+Two cases reuse source PRs batch 1 or batch 2 also drew from, in a different
+framing each time: PR 417 (comment 2870710594) was assessed for `s1` as a
+**correctness** clean control and dropped there because acceptance of a *fix*
+contradicts what a clean-control standard needs; here it is sourced as a
+**solution-simplicity** near-miss control instead, where the same accepted
+change is evidence for a different, legitimate question — is the added machinery
+requirement-justified — and the standard for that question is not the
+adjudicated-rejected-finding standard `s1` uses. Recorded so the reuse is a
+decision, not an oversight.
+
+One case id needed renaming during audit: the natural name
+`deferred-status-fail-closed-retry` triggered the outcome-revealing-token check
+twice (`defer`, `fail`); a second attempt, `changeset-status-transition-guard`,
+still matched on `changes` as a substring of `changeset`. It shipped as
+`record-status-transition-guard`.
+
+### Batch 4 — `s3-code-simplicity-lens`, 4 cases — **DELIVERED**
+
+Populated but not scored. Like `s2`, this stratum has no executable oracle for
+its subject: "this is a duplication defect" and "this apparent duplication is
+justified" are design judgements, not properties a runnable check can decide.
+Every case records `adjudication.second: owner_required` with a recommended
+disposition and residual risk.
+
+| case                                   | class                                  | source disposition                                                                                              | expected | recommended adjudication |
+| -------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------- | ------------------------ |
+| `watcher-check-policy-duplication`     | local code-complexity or reuse         | this repository's own commit `9351619` — the code-simplicity lens under evaluation flagged the last inline copy | gating   | MATERIAL                 |
+| `metrics-label-formatting-duplication` | local code-complexity or reuse         | atelier PR 410, comment 2870262209 — **accepted**, read at the local-implementation level                       | gating   | MATERIAL                 |
+| `compat-accessor-boundary-duplication` | behaviour-clarifying near-miss control | atelier PR 630, comment 2906875752 — accepted resolution of concern raised in 2906745973                        | clean    | CLEAN / NOT MATERIAL     |
+| `env-inventory-bullet-format`          | non-material near-miss control         | atelier PR 443, comment 2880556753 — accepted resolution of an earlier formatting concern                       | clean    | CLEAN / NOT MATERIAL     |
+
+Sanitization: all four are rewritten from scratch against fictional subjects (a
+watch-tool, a metrics exporter, a registry runtime, a worker-runtime inventory
+doc), including the one sourced from this repository's own history, which is
+fictionalized so it cannot be recognised as or confused with this suite's own
+code. No source identifier, path, symbol, prose, or diff was copied; every
+packet and expectation was checked against the specific classes of leak found
+and fixed in `s2` (real product terms, real symbol names, verbatim reviewer
+phrasing) before this record was written, not after.
+
+One source is reused a second time across strata. `atelier` PR 410 comment
+2870262209 already grounds `s2`'s `registry-client-layering` (the whole-solution
+over-engineering reading) and now also grounds
+`metrics-label-formatting-duplication` here (the local-implementation reading:
+the same comment separately observed "repeated argument-threading" as a local
+reuse defect). The two cases are built against deliberately different fictional
+subjects — a registry client versus a metrics exporter — so they do not read as
+one scenario duplicated across two strata, and the reuse is recorded plainly
+rather than left for a reader to notice and wonder about.
 
 ## Guarantees this record makes
 
@@ -206,7 +269,14 @@ which makes it a valid escape rather than a valid control.
   corpus.
 - Every case in `s1-correctness-orchestrator` is adjudicated twice: the recorded
   source disposition, and an executable oracle that runs the stated requirement.
-  No case in that stratum needs the owner. The simplicity strata will, because
-  their claims have no executable form.
+  No case in that stratum needs the owner.
+- Every case in `s2-solution-simplicity-lens` has no executable oracle and needs
+  the owner directly, with a concrete recommended disposition and its residual
+  risk recorded per case rather than left as a bare list.
+- Every case in `s3-code-simplicity-lens` likewise needs the owner directly, for
+  the same reason: a duplication judgement has no executable oracle.
+- All corpus minima across all three declared strata are now met. The three
+  scored-plus-deferred strata are `populated_not_scored`; no stratum remains
+  `declared_unpopulated`.
 - No case in any populated scored stratum has been run through a runtime. They
   are unobserved, which is what keeps a later baseline result-blind.

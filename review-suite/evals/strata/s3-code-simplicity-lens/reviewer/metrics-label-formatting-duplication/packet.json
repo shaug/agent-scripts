@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/metrics-runtime",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "2c81e9f047ab536d1c907ea52b8f61d3c079a6de",
+    "comparison_base_sha": "f56a3c19082de5b74c1093f2a76d81e504b8c3af",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/metrics/exporters.py b/metrics/exporters.py\n--- a/metrics/exporters.py\n+++ b/metrics/exporters.py\n@@ -40,6 +40,16 @@ def format_sample_point(timestamp, tags):\n     return f\"{timestamp.isoformat()}Z|{','.join(f'{k}={v}' for k, v in sorted(tags.items()))}\"\n \n \n+def export_latency(sample, timestamp, tags):\n+    label = f\"{timestamp.isoformat()}Z|{','.join(f'{k}={v}' for k, v in sorted(tags.items()))}\"\n+    return f\"latency {sample} {label}\"\n+\n+\n+def export_throughput(sample, timestamp, tags):\n+    label = f\"{timestamp.isoformat()}Z|{','.join(f'{k}={v}' for k, v in sorted(tags.items()))}\"\n+    return f\"throughput {sample} {label}\"\n+\n+\n def export_error_rate(sample, timestamp, tags):\n     label = f\"{timestamp.isoformat()}Z|{','.join(f'{k}={v}' for k, v in sorted(tags.items()))}\"\n     return f\"error_rate {sample} {label}\"\ndiff --git a/tests/test_exporters.py b/tests/test_exporters.py\n--- a/tests/test_exporters.py\n+++ b/tests/test_exporters.py\n@@ -12,1 +12,9 @@ def test_export_error_rate_includes_the_label():\n     assert \"error_rate\" in export_error_rate(0.01, NOW, {\"region\": \"east\"})\n+\n+\n+def test_export_latency_includes_the_label():\n+    assert \"latency\" in export_latency(120, NOW, {\"region\": \"east\"})\n+\n+\n+def test_export_throughput_includes_the_label():\n+    assert \"throughput\" in export_throughput(1000, NOW, {\"region\": \"east\"})\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Add latency and throughput exporters alongside the existing error-rate exporter.",
+    "acceptance_criteria": [
+      "Latency samples can be exported with the same label format as error-rate samples.",
+      "Throughput samples can be exported with the same label format."
+    ],
+    "non_goals": [
+      "Change the label format itself.",
+      "Change what `format_sample_point` does."
+    ],
+    "preserved_behaviors": [
+      "`export_error_rate`'s existing output is unchanged."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Reuse rules",
+        "location": "AGENTS.md",
+        "summary": "When a new function needs formatting behaviour a shared helper already implements, call the helper rather than re-deriving the same expression inline."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Sample point formatting contract",
+        "location": "docs/metrics-format.md"
+      },
+      {
+        "label": "Shared formatter",
+        "location": "metrics/exporters.py:format_sample_point"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Existing error-rate exporter this change sits beside",
+        "location": "metrics/exporters.py"
+      },
+      {
+        "label": "Exporter tests",
+        "location": "tests/test_exporters.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "exporter tests",
+      "command": "pytest tests/test_exporters.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "134 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`format_sample_point(timestamp, tags)` already exists in this module and returns exactly the label string this diff's two new functions each re-derive inline.",
+      "`export_error_rate`, already in this module, calls the same inline expression rather than `format_sample_point` - this diff adds two more copies of it rather than fixing the existing one."
+    ],
+    "operational": [
+      "A fourth exporter is planned for the next release."
+    ]
+  }
+}
