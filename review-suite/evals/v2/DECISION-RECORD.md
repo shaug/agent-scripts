@@ -432,5 +432,40 @@ required by #59's own sequencing (scope/completeness, dependency/sequencing,
 shovel-readiness) run only after the live `#51`–`#57` body and edge changes
 below are actually applied, as their own later step. Their findings — including
 the read-back that confirms or corrects this predicted net effect — belong in
-`audits/` once that step completes; no file exists there yet in this repository
-candidate, and none is claimed to.
+`audits/` once that step completes.
+
+## Audit results (post-mutation)
+
+The live `#51`–`#57` body edits and the read-back above were applied, and all
+three required audits were run independently against the resulting live graph.
+Full findings are in
+[`audits/scope-completeness-audit.md`](audits/scope-completeness-audit.md),
+[`audits/dependency-sequencing-audit.md`](audits/dependency-sequencing-audit.md),
+and [`audits/shovel-readiness-audit.md`](audits/shovel-readiness-audit.md).
+Summary:
+
+- **Scope/completeness:** clean. Two stale cross-references (#56's mention of a
+  dropped #52 changed-surface concept, and #54's mention of a dropped #52 risk
+  profile) were found and corrected in the live tracker as part of this pass. No
+  outcome is duplicated across siblings; none that demonstrates a reviewer
+  defect is left unowned.
+- **Dependency/sequencing:** clean, with one flagged-but-unresolved open
+  question that does not change the audited outcome: #56's `blockedBy #52` edge
+  has a weaker technical justification after #52's narrowing than the other
+  edges in the graph, but no evidence shows it is actively wrong, and severing
+  it was outside this ticket's settled disposition for #56, so it is reported to
+  the owner rather than unilaterally changed. The predicted net effect — #51 is
+  the sole open issue with zero open blockers once #59 closes — is confirmed
+  against the live graph read directly through GraphQL.
+- **Shovel-readiness:** clean. Every retained child (#51, #52, #53, #56) has a
+  settled observable outcome, change surface, compatibility/failure behavior,
+  positive and negative tests, validation, non-goals, and a plausible one-PR
+  boundary (two children carry an explicit note on that boundary rather than an
+  unstated assumption). Deferred children (#54, #55, #57) are correctly
+  excluded, per #59's own text that provisional markers persist on children that
+  do not become unblocked in this round.
+
+No finding from any of the three audits required a materially different
+architecture or a ticket split, so none of #51–#57's dispositions changed as a
+result of running them, and no second iteration of this repository candidate or
+the live graph was needed.

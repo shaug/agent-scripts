@@ -44,7 +44,7 @@ review-suite/evals/
 │   ├── FAILURE-TAXONOMY.md             every v1 material outcome, classified
 │   ├── DECISION-RECORD.md              per-mechanism evidence and disposition
 │   ├── gate-manifest.json              preregistered v2 gates, before scoring
-│   └── audits/                         the three graph audits (later step, empty for now)
+│   └── audits/                         the three graph audits, each its own pass
 └── artifacts/                          opt-in captured output, not in git
 
 review-suite/scripts/evals/

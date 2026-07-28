@@ -19,11 +19,12 @@ implementation-ready decision for #51–#57.
   efficiency bounds, and the rules for invalid runs, missing data, runtime
   drift, and threshold changes. Committed before any scored v2 output exists;
   every numeric threshold is marked as a proposal requiring owner confirmation.
-- `audits/` — **not yet produced by this repository candidate.** #59's own
-  sequencing runs the three independent graph audits (scope/completeness,
-  dependency/sequencing, shovel-readiness) only after the live `#51`–`#57` body
-  and native-edge mutations are applied as a later, separate step; each pass's
-  findings will be recorded here, as its own file, once that step completes.
+- [`audits/scope-completeness-audit.md`](audits/scope-completeness-audit.md),
+  [`audits/dependency-sequencing-audit.md`](audits/dependency-sequencing-audit.md),
+  [`audits/shovel-readiness-audit.md`](audits/shovel-readiness-audit.md) — the
+  three required graph audits, each run as its own independent pass against the
+  live `#51`–`#57` graph after the body and native-edge mutations described
+  above, with findings and fixes recorded separately per pass.
 
 ## What this is not
 
