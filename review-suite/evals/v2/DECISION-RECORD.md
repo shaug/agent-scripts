@@ -76,7 +76,7 @@ tickets carry out the actual change.
   which no evidence here supports; #57 verifies the invariant holds rather than
   testing whether removing it changes anything.
 
-## #52 — Evaluate compact review coverage, impact, and risk evidence
+## #52 — Add consumer/impact-traversal evidence to the shared review contract
 
 **Disposition: narrow.** The full changed-surface ledger, acceptance-trace,
 risk-profile, and aggregate-coverage apparatus in #52's current body is **not**
@@ -167,7 +167,7 @@ consumer/impact-traversal gap.
   structural complexity. This is the explicit removal condition #57's ablation
   protocol must check.
 
-## #53 — Evaluate correctness traversal, verification sufficiency, and specialist routing
+## #53 — Add correctness traversal and verification-sufficiency passes
 
 **Disposition: retain the traversal and verification-sufficiency work; drop
 specialist routing entirely.** Nothing in the baseline supports specialist

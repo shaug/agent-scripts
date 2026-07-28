@@ -25,7 +25,7 @@ and #59's own acceptance criteria only require provisional markers to be removed
 
 **Shovel-ready.**
 
-## #52 — Evaluate compact review coverage, impact, and risk evidence (narrowed)
+## #52 — Add consumer/impact-traversal evidence to the shared review contract (narrowed)
 
 | requirement                    | present? | evidence                                                                                                                                                  |
 | ------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -41,7 +41,7 @@ and #59's own acceptance criteria only require provisional markers to be removed
 cross-referenced by a now-corrected stale line in #56; that correction did not
 require any change to #52's own body.
 
-## #53 — Evaluate correctness traversal and verification sufficiency (specialist routing dropped)
+## #53 — Add correctness traversal and verification-sufficiency passes (specialist routing dropped)
 
 | requirement                    | present?         | evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
