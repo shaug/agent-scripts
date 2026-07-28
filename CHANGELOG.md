@@ -4,13 +4,22 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, and recovered carved suffixes
+## 2026-07-27 — Bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 
+- feat: run the frozen v1 baseline and record real scored results
+  (`28fb2e57474fbf776beff50f3fc3f0f5cedfcd6a`)
+- docs: freeze the v1 configuration for scoring, before any scored output
+  (`07066d22a64bb218938a60d905e52745ca717c1a`)
+- feat: fold owner adjudications into the corpus and mark all strata scored
+  (`bf99b86b3844bea2bd248bd0828283158bee85dd`)
+- fix: score a partial or ambiguous match as referred, not a silent reviewer-miss
+  (`732e975391d0ea1b92d6d1ec312bdf4fb44d5948`)
 - feat: bind epic delegation to trusted ticket skill
+  (`569b11ec60977c19c66092690ffdada0dbac1eb4`)
 - fix: execute carve commands from explicit argv
   (`7da1a75ad585bddec6be1cc4743e77a1744c4e98`)
 - fix: correct a stale reference, a stale validation entry, and an inverted case
-  (`c7a80c0fb51cc39bbb16b174a09b4cabf7d164b3`)
+  (`c7a80c0e05ea76c0a7626c02dbf0b1605da37739`)
 - fix: make the last two before-state and sanitization defects actually resolved
   (`41de65daadc5d53bfbb299cb4ecd6d040ac47ab9`)
 - fix: sanitize the repository-history case and correct the changelog order
