@@ -322,7 +322,9 @@ def cmd_db_compare(args: argparse.Namespace) -> None:
         load_and_validate(Path(args.plan)),
         source_argv=source_argv,
         chain_argv=chain_argv,
-        out_dir=Path(args.out_dir),
+        keep_output_dir=(
+            Path(args.keep_output_dir) if args.keep_output_dir is not None else None
+        ),
     )
 
 
@@ -595,7 +597,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help=argparse.SUPPRESS,
     )
-    item.add_argument("--out-dir", default=str(DEFAULT_PLAN_PATH.parent / "db-compare"))
+    item.add_argument(
+        "--keep-output-dir",
+        "--out-dir",
+        dest="keep_output_dir",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Explicitly retain raw outputs at PATH; --out-dir is a legacy alias. "
+            "The default uses an automatically removed restricted directory."
+        ),
+    )
     item.set_defaults(func=cmd_db_compare)
 
     item = _command(sub, "hunk-preview", "Preview explicit textual hunk selectors.")

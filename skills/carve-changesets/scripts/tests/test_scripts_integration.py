@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import stat
 import unittest
 
 from common import DEFAULT_PLAN_PATH
@@ -219,6 +220,55 @@ class ScriptIntegrationTests(unittest.TestCase):
             ).stdout
             self.assertEqual(branches_before, branches_after)
             self.assertFalse(marker.exists())
+        finally:
+            shutil.rmtree(repo_dir)
+
+    def test_db_compare_cli_defaults_to_ephemeral_and_accepts_explicit_legacy_retention(
+        self,
+    ) -> None:
+        repo_dir, plan = init_repo()
+        try:
+            cli = str(SCRIPTS_DIR / "cli.py")
+            plan_path = repo_dir / DEFAULT_PLAN_PATH
+            write_plan(plan_path, plan)
+            run([cli, "create-chain"], cwd=repo_dir)
+
+            default_result = run(
+                [
+                    cli,
+                    "db-compare",
+                    "--source-argv",
+                    '["cat", "a.txt"]',
+                    "--chain-argv",
+                    '["cat", "a.txt"]',
+                ],
+                cwd=repo_dir,
+            )
+            historical_default = repo_dir / ".carve-changesets" / "db-compare"
+            self.assertIn(
+                "Raw comparison outputs are ephemeral.", default_result.stdout
+            )
+            self.assertFalse(historical_default.exists())
+
+            retained = repo_dir / ".carve-changesets" / "legacy-retained"
+            retained_result = run(
+                [
+                    cli,
+                    "db-compare",
+                    "--source-argv",
+                    '["cat", "a.txt"]',
+                    "--chain-argv",
+                    '["cat", "a.txt"]',
+                    "--out-dir",
+                    str(retained),
+                ],
+                cwd=repo_dir,
+            )
+            for name in ("source.txt", "chain.txt"):
+                output = retained / name
+                self.assertTrue(output.is_file())
+                self.assertEqual(0o600, stat.S_IMODE(output.stat().st_mode))
+                self.assertIn(str(output.resolve()), retained_result.stdout)
         finally:
             shutil.rmtree(repo_dir)
 

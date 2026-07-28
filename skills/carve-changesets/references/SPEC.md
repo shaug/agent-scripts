@@ -457,6 +457,15 @@ preserve user changes, credentials, environment files, local databases, and
 non-reproducible artifacts. Temporary integration worktrees and branches may be
 removed only after exact ownership and clean disposable state are proven.
 
+Database comparison captures approved command stdout without changing equality
+semantics. By default both raw outputs live only in an owner-only temporary
+directory that is removed after success, difference detection, command or diff
+failure, interruption, and checkout restoration. Raw `source.txt` and
+`chain.txt` outputs persist only through an explicit retention destination;
+those files use owner-only permissions, the resolved paths are reported, and an
+in-repository destination must participate in ignored recordkeeping state.
+Operator-visible command and difference diagnostics remain useful but bounded.
+
 ### Terminal states
 
 Every invocation returns exactly one named terminal state with evidence bound to

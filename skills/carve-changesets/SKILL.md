@@ -170,6 +170,9 @@ been verified.
 ## Preserve safety and truth
 
 - Keep `.carve-changesets/` ignored and out of commits and PRs.
+- Keep `db-compare` raw outputs ephemeral by default. Retain exact raw output
+  only at an explicitly selected, reported, permission-restricted destination;
+  bound terminal diagnostics without transforming comparison inputs.
 - Resolve every mutation target to an exact repository, ref, SHA, PR, and
   worktree immediately before acting.
 - Keep remote mutation dry-run by default and use explicit refspecs and exact

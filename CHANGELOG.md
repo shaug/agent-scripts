@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Enforced untrusted-content boundaries, bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
+## 2026-07-27 — Made database comparison output ephemeral, enforced untrusted-content boundaries, bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 
+- fix: keep database comparison output ephemeral by default
 - feat: enforce untrusted content boundaries
+  (`ff3f4b9cca9b062a7113b95ab08bd1d36331a27c`)
 - docs: record the small-sample caveat the frozen protocol's step 6 requires
   (`e720e656cd3729a857aa4bcb6f6592fae1facc57`)
 - fix: enforce owner_disposition exactly when owner_confirmed
