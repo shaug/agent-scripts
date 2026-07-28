@@ -12,8 +12,8 @@ summary: Chronological history of repository and skill changes.
   (`07066d22a64bb218938a60d905e52745ca717c1a`)
 - feat: fold owner adjudications into the corpus and mark all strata scored
   (`bf99b86b3844bea2bd248bd0828283158bee85dd`)
-- fix: score a partial or ambiguous match as referred, not a silent reviewer-miss
-  (`732e975391d0ea1b92d6d1ec312bdf4fb44d5948`)
+- fix: score a partial or ambiguous match as referred, not a silent
+  reviewer-miss (`732e975391d0ea1b92d6d1ec312bdf4fb44d5948`)
 - feat: bind epic delegation to trusted ticket skill
   (`569b11ec60977c19c66092690ffdada0dbac1eb4`)
 - fix: execute carve commands from explicit argv
