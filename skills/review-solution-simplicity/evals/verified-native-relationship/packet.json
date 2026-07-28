@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/exporter",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "8787878787878787878787878787878787878787",
+    "comparison_base_sha": "9797979797979797979797979797979797979797",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/export.py b/export.py\n--- a/export.py\n+++ b/export.py\n@@ -1,2 +1,5 @@\n+from pathlib import Path\n+\n+def export(path, value):\n+    Path(path).write_text(value)\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Add the parent-defined local report export helper.",
+    "acceptance_criteria": [
+      "The exact generated value is written to the requested path."
+    ],
+    "non_goals": [
+      "Remote storage providers and deployment changes."
+    ],
+    "preserved_behaviors": [
+      "Filesystem errors continue to propagate."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Local export convention",
+        "location": "CONTRIBUTING.md",
+        "summary": "Local exporters call Path.write_text directly."
+      }
+    ],
+    "named_documents": [],
+    "nearby_patterns": [
+      {
+        "label": "Local snapshot writer",
+        "location": "snapshots.py:write_snapshot",
+        "summary": "Writes the supplied value directly and propagates filesystem errors."
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "export tests",
+      "command": "pytest tests/test_export.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "3 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "8 passed"
+    }
+  ],
+  "context": {
+    "operational": [
+      "Ticket G-90 is a child of parent G-80 and has no native blockers."
+    ]
+  }
+}

@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-27 — Bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
+## 2026-07-27 — Enforced untrusted-content boundaries, bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 
+- feat: enforce untrusted content boundaries
 - docs: record the small-sample caveat the frozen protocol's step 6 requires
+  (`e720e656cd3729a857aa4bcb6f6592fae1facc57`)
 - fix: enforce owner_disposition exactly when owner_confirmed
   (`e0027dd24be391706a8269d84a9766abb95ca95b`)
 - feat: run the frozen v1 baseline and record real scored results

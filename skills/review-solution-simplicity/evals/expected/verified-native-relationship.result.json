@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "lens": "solution_simplicity",
+  "candidate": {
+    "head_sha": "8787878787878787878787878787878787878787",
+    "comparison_base_sha": "9797979797979797979797979797979797979797"
+  },
+  "verdict": "clean",
+  "findings": [],
+  "blocking_reasons": [],
+  "next_action": "No material solution-simplicity action is required."
+}
