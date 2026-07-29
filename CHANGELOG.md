@@ -4,10 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-28 — Required passing validation and current-head lens evidence for a clean review verdict
+## 2026-07-28 — Added consumer/impact-traversal evidence and required passing validation and current-head lens evidence for a clean review verdict
 
+- feat: add consumer/impact-traversal evidence to the shared review contract
 - feat: require passing validation and current-head lens evidence for a clean
-  review verdict
+  review verdict (`b1e51979628652e4ef60adad44089bf54f4551e7`)
 
 ## 2026-07-27 — Made database comparison output ephemeral, enforced untrusted-content boundaries, bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 

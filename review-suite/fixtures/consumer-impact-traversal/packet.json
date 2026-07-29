@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/pipeline", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "6262626262626262626262626262626262626262",
+    "comparison_base_sha": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/lib/dependency_finalized.py b/lib/dependency_finalized.py\n--- a/lib/dependency_finalized.py\n+++ b/lib/dependency_finalized.py\n@@ -1,4 +1,4 @@\n-def dependency_finalized(status, strict=False):\n+def dependency_finalized(status, strict=True):\n     if strict and status != \"ready\":\n         raise DependencyError(status)\n     return status == \"ready\"\ndiff --git a/lib/orchestrator.py b/lib/orchestrator.py\n--- a/lib/orchestrator.py\n+++ b/lib/orchestrator.py\n@@ -9,2 +9,2 @@\n def finalize_stage(status):\n-    return dependency_finalized(status)\n+    return dependency_finalized(status, strict=True)\ndiff --git a/lib/summary.py b/lib/summary.py\n--- a/lib/summary.py\n+++ b/lib/summary.py\n@@ -1,7 +1,7 @@\n def render_summary(counts):\n-    return _format_summary(counts, verbose=False)\n+    return _format_summary(counts, verbose=True)\n \n-def _format_summary(counts, verbose=False):\n+def _format_summary(counts, verbose=True):\n     if verbose:\n         return \", \".join(f\"{key}={value}\" for key, value in counts.items())\n     return str(len(counts))\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Make dependency finalization strict by default and render summaries verbosely by default.",
+    "acceptance_criteria": ["dependency_finalized defaults to strict verification.", "Every existing call site of dependency_finalized behaves consistently under the new default.", "Summary rendering defaults to verbose output."],
+    "non_goals": ["Change the summary output format itself."],
+    "preserved_behaviors": ["dependency_finalized still raises DependencyError for a non-ready status under strict mode."]
+  },
+  "sources": {"repository_instructions": [], "named_documents": [], "nearby_patterns": []},
+  "validation": [
+    {"name": "pipeline tests", "command": "pytest tests/test_pipeline.py", "scope": "focused", "status": "passed", "result": "6 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "48 passed"}
+  ]
+}

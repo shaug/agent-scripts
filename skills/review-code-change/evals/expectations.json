@@ -8,7 +8,7 @@
     ],
     "stopped_reason": "all_required_lenses_clean",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "1010101010101010101010101010101010101010",
@@ -50,7 +50,7 @@
     ],
     "stopped_reason": "solution_strategy_replacement_required",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "2020202020202020202020202020202020202020",
@@ -89,7 +89,7 @@
     ],
     "stopped_reason": "unsafe_simplification_rejected_and_remaining_lenses_clean",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "3030303030303030303030303030303030303030",
@@ -147,7 +147,7 @@
     ],
     "stopped_reason": "code_simplicity_gating_finding",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "4040404040404040404040404040404040404040",
@@ -207,7 +207,7 @@
     ],
     "stopped_reason": "all_required_results_clean_after_full_restart",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "5050505050505050505050505050505050505050",
@@ -247,7 +247,7 @@
     "observed_sequence": [],
     "stopped_reason": "missing_required_dependency",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "6060606060606060606060606060606060606060",
@@ -266,7 +266,7 @@
     "observed_sequence": [],
     "stopped_reason": "evidence_packet_incomplete",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "7070707070707070707070707070707070707070",
@@ -293,7 +293,7 @@
     ],
     "stopped_reason": "all_required_lenses_clean_with_deferred_finding",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "8080808080808080808080808080808080808080",
@@ -354,7 +354,7 @@
     ],
     "stopped_reason": "cycle_budget_exhausted_with_correctness_finding",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "9090909090909090909090909090909090909090",
@@ -391,7 +391,7 @@
     ],
     "stopped_reason": "untrustworthy_lens_result",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
@@ -416,7 +416,7 @@
     ],
     "stopped_reason": "all_required_results_clean_after_full_restart",
     "result": {
-      "schema_version": "1.1",
+      "schema_version": "1.2",
       "lens": "aggregate",
       "candidate": {
         "head_sha": "5151515151515151515151515151515151515151",

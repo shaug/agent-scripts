@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.2",
+  "lens": "aggregate",
+  "candidate": {
+    "head_sha": "6262626262626262626262626262626262626262",
+    "comparison_base_sha": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2"
+  },
+  "verdict": "clean",
+  "findings": [],
+  "blocking_reasons": [],
+  "lens_executions": [
+    {
+      "lens": "solution_simplicity",
+      "head_sha": "6262626262626262626262626262626262626262",
+      "comparison_base_sha": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+      "verdict": "clean",
+      "freshly_executed": true
+    },
+    {
+      "lens": "correctness",
+      "head_sha": "6262626262626262626262626262626262626262",
+      "comparison_base_sha": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+      "verdict": "clean",
+      "freshly_executed": true
+    },
+    {
+      "lens": "code_simplicity",
+      "head_sha": "6262626262626262626262626262626262626262",
+      "comparison_base_sha": "d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2d2",
+      "verdict": "clean",
+      "freshly_executed": true
+    }
+  ],
+  "consumer_impact_evidence": [
+    {
+      "changed_symbol": "dependency_finalized",
+      "location": "lib/dependency_finalized.py:1",
+      "consumer_search_evidence": [
+        {
+          "location": "lib/orchestrator.py:10",
+          "detail": "Call site updated in this diff to pass strict=True explicitly, matching the new default."
+        },
+        {
+          "location": "lib/worker.py:9",
+          "detail": "Repository-wide search found this existing call site already passes strict=True; confirmed consistent with the hardened default, no change required."
+        }
+      ],
+      "disposition": "all_consumers_consistent"
+    },
+    {
+      "changed_symbol": "_format_summary",
+      "location": "lib/summary.py:4",
+      "consumer_search_evidence": [
+        {
+          "location": "lib/summary.py:2",
+          "detail": "Repository-wide search found exactly one caller, render_summary in the same file; no other module imports _format_summary."
+        }
+      ],
+      "disposition": "no_other_consumers"
+    }
+  ],
+  "next_action": "No material review action is required."
+}

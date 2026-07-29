@@ -13,7 +13,7 @@
     "blocking_reasons"
   ],
   "properties": {
-    "schema_version": {"const": "1.1"},
+    "schema_version": {"const": "1.2"},
     "lens": {
       "enum": [
         "correctness",
@@ -107,6 +107,43 @@
     "validation_limitations": {
       "type": "array",
       "items": {"type": "string", "minLength": 1}
+    },
+    "consumer_impact_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "changed_symbol",
+          "location",
+          "consumer_search_evidence",
+          "disposition"
+        ],
+        "properties": {
+          "changed_symbol": {"type": "string", "minLength": 1},
+          "location": {"type": "string", "minLength": 1},
+          "consumer_search_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["location", "detail"],
+              "properties": {
+                "location": {"type": "string", "minLength": 1},
+                "detail": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "disposition": {
+            "enum": [
+              "all_consumers_consistent",
+              "inconsistency_found",
+              "no_other_consumers"
+            ]
+          }
+        }
+      }
     },
     "proposal_dispositions": {
       "type": "array",
