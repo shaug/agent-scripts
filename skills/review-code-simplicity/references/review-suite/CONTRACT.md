@@ -206,6 +206,39 @@ the same way this contract family already judges any other lens-specific finding
 (a duplicated-policy or behavior-bug miss is likewise never something this
 schema-and-structure validator can detect on its own).
 
+### Verification-sufficiency evidence
+
+A `correctness` or `aggregate` result may record
+`verification_sufficiency_evidence`: one entry per claimed validation command or
+test that touches a materially risky change, each naming the
+`claimed_test_or_command`, whether it `exercises_material_risk` (`yes`, `no`, or
+`not_applicable`), and `reasoning` describing what specific triggering condition
+was or was not exercised.
+
+This makes a reviewer's verification-sufficiency judgment machine-checkable:
+asking whether a claimed test would actually fail for the specific triggering
+condition a change addresses, not merely whether it passes. It closes a baseline
+verification-sufficiency miss, where the added test exercised an already-safe
+branch (an owned entry) rather than the actual risk (an owner-absent
+interleaving), so the passing test proved nothing about the risk it was meant to
+cover.
+
+Given a supplied entry:
+
+- only `correctness` or `aggregate` results may include this evidence;
+- an entry exists only because a claimed test or command touches a materially
+  risky change, so `exercises_material_risk: "no"` is itself the gating fact — a
+  `clean` verdict must not pair with such an entry, because that would silently
+  hide exactly the gap this evidence exists to surface; and
+- `exercises_material_risk: "yes"` or `"not_applicable"` may pair with `clean`
+  when no other gating finding remains.
+
+As with consumer/impact evidence, this validator cannot itself decide which
+claimed tests required an entry — that judgment belongs to the lens performing
+the pass. An omitted `verification_sufficiency_evidence` array remains
+schema-valid; completeness of a given pass is judged by forward-testing the
+lens's actual output against a fixture's expected result.
+
 ## Simplification proposal dispositions
 
 When an orchestrator asks correctness to assess a validated simplification

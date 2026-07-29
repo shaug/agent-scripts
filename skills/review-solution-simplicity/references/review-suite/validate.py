@@ -44,7 +44,7 @@ CONSUMER_IMPACT_DISPOSITIONS_IMPLYING_OTHER_CONSUMERS = (
 # migrated to. Extend this mapping, never overwrite it, on the next additive
 # schema bump so every prior stale version keeps failing with its own useful
 # migration error.
-STALE_RESULT_SCHEMA_VERSIONS = {"1.0": "1.1", "1.1": "1.2"}
+STALE_RESULT_SCHEMA_VERSIONS = {"1.0": "1.1", "1.1": "1.2", "1.2": "1.3"}
 
 BLOCKABLE_PACKET_ERROR_PATTERNS = (
     re.compile(
@@ -241,6 +241,7 @@ def validate_result(result: dict[str, Any]) -> list[str]:
         )
 
     errors.extend(_check_consumer_impact_evidence(result))
+    errors.extend(_check_verification_sufficiency_evidence(result))
 
     if result.get("lens") == "aggregate" and verdict == "clean":
         errors.extend(_check_aggregate_clean_lens_executions(result))
@@ -296,6 +297,47 @@ def _check_consumer_impact_evidence(result: dict[str, Any]) -> list[str]:
                 "claims other consumers were found and requires search evidence "
                 "covering more than the changed symbol's own location"
             )
+    return errors
+
+
+def _check_verification_sufficiency_evidence(result: dict[str, Any]) -> list[str]:
+    """Check verification-sufficiency evidence structure and clean consistency.
+
+    #53: `verification_sufficiency_evidence` records, per claimed validation
+    command or test touching a materially risky change, whether it actually
+    exercises the specific triggering condition the change addresses
+    (`exercises_material_risk`) rather than merely whether it passes. This
+    closes a baseline verification-sufficiency miss, where the added test
+    exercised an already-safe branch instead of the actual risk.
+
+    Unlike `consumer_impact_evidence`, this validator does enforce one
+    cross-field rule: an entry only exists because a claimed test or command
+    touches a materially risky change, so `exercises_material_risk: "no"` is
+    itself the gating fact — the claimed validation does not prove the risk
+    is handled. A `clean` verdict paired with such an entry would silently
+    hide exactly the gap this evidence exists to surface, so it is rejected
+    here rather than left to lens judgment alone.
+    """
+    errors: list[str] = []
+    entries = result.get("verification_sufficiency_evidence")
+    if not isinstance(entries, list):
+        return errors
+    if entries and result.get("lens") not in {"correctness", "aggregate"}:
+        errors.append(
+            "$.verification_sufficiency_evidence: only correctness or aggregate "
+            "results may include verification-sufficiency evidence"
+        )
+    if result.get("verdict") == "clean":
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("exercises_material_risk") == "no":
+                errors.append(
+                    f"$.verification_sufficiency_evidence[{index}]: "
+                    "exercises_material_risk 'no' contradicts a clean verdict; "
+                    "the claimed test or command does not exercise the material "
+                    "risk the change addresses"
+                )
     return errors
 
 

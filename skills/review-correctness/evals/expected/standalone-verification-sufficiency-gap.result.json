@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.3",
+  "lens": "correctness",
+  "candidate": {
+    "head_sha": "5959595959595959595959595959595959595959",
+    "comparison_base_sha": "9595959595959595959595959595959595959595"
+  },
+  "verdict": "changes_required",
+  "findings": [
+    {
+      "id": "correctness.claim-release-guard-unverified",
+      "lens": "correctness",
+      "severity": "blocking",
+      "confidence": "high",
+      "rule": "A claimed test covering a materially risky change must exercise the actual triggering condition it addresses, not merely a passing suite.",
+      "evidence": [
+        {
+          "location": "candidate.diff:lib/claims.py",
+          "detail": "The new guard clause only applies when owner is None, but repository-evidence.md states no test constructs a snapshot with an absent owner."
+        },
+        {
+          "location": "repository-evidence.md",
+          "detail": "The only existing test, test_release_denied_for_mismatched_owner, constructs a snapshot with a present but mismatched owner -- the pre-existing branch, not the new owner-absent branch."
+        }
+      ],
+      "concern": "The claimed passing test suite exercises only the already-safe owner-mismatch branch, never the owner-absent interleaving this change addresses.",
+      "impact": "A claim could be released while its snapshot owner is transiently absent and the claim has not expired, with no test proving the new guard denies it.",
+      "proposed_change": "Add a test that constructs a snapshot with an absent owner and an unexpired claim, and assert release_if_stale still denies release.",
+      "expected_effect": "The guard clause addressing the owner-absent interleaving is proven by a test that actually exercises it.",
+      "location": "lib/claims.py"
+    }
+  ],
+  "blocking_reasons": [],
+  "verification_sufficiency_evidence": [
+    {
+      "claimed_test_or_command": "tests/test_claims.py::test_release_denied_for_mismatched_owner",
+      "exercises_material_risk": "no",
+      "reasoning": "This test sets a present but mismatched owner; it never sets the snapshot owner absent, so the new `owner is None and not claim.is_expired()` guard clause is never exercised."
+    }
+  ],
+  "next_action": "Add a test that exercises the owner-absent-and-unexpired branch before merging."
+}

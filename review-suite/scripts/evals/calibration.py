@@ -88,7 +88,7 @@ class CalibrationSet:
 def probe_result(probe: dict[str, Any], candidate: dict[str, Any]) -> dict[str, Any]:
     """Render one probe as a review result bound to the case's candidate."""
     return {
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "lens": "aggregate",
         "candidate": candidate,
         "verdict": probe["verdict"],

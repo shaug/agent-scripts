@@ -416,7 +416,8 @@ class UnchangedHeadBaseDriftRegressionTest(unittest.TestCase):
 class StaleSchemaVersionTests(unittest.TestCase):
     """#51 item 11 and #52 item 5: a stale result is rejected with a useful
     error rather than silently reinterpreted as newer evidence. Extended by
-    #52 to also reject a stale v1.1 aggregate now that schema 1.2 exists."""
+    #52 to also reject a stale v1.1 aggregate now that schema 1.2 exists, and
+    by #53 to reject a stale v1.2 aggregate now that schema 1.3 exists."""
 
     def test_stale_v1_0_aggregate_result_is_rejected_with_a_useful_error(self):
         result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
@@ -433,6 +434,14 @@ class StaleSchemaVersionTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertTrue(any("stale v1.1" in error for error in errors))
         self.assertTrue(any("1.2" in error for error in errors))
+
+    def test_stale_v1_2_aggregate_result_is_rejected_with_a_useful_error(self):
+        result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+        result["schema_version"] = "1.2"
+        errors = VALIDATOR.validate_result(result)
+        self.assertTrue(errors)
+        self.assertTrue(any("stale v1.2" in error for error in errors))
+        self.assertTrue(any("1.3" in error for error in errors))
 
 
 class ConsumerImpactEvidenceTests(unittest.TestCase):
@@ -524,6 +533,116 @@ class ConsumerImpactEvidenceTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertTrue(
             any("only correctness or aggregate results" in error for error in errors)
+        )
+
+
+class VerificationSufficiencyEvidenceTests(unittest.TestCase):
+    """#53: `verification_sufficiency_evidence` records whether a claimed test
+    or command actually exercises the specific triggering condition a change
+    addresses, not merely whether it passes. Modeled on a baseline
+    verification-sufficiency miss, where the added test exercised an
+    already-safe branch (a present, matching owner) instead of the actual risk
+    (an absent snapshot owner paired with a not-yet-expired claim)."""
+
+    def setUp(self):
+        self.packet = load(
+            ROOT / "fixtures" / "verification-sufficiency-guard" / "packet.json"
+        )
+        self.result = load(
+            ROOT / "fixtures" / "verification-sufficiency-guard" / "expected.json"
+        )
+
+    def test_test_exercising_the_triggering_condition_is_valid_clean(self):
+        # Required fixture: the claimed test sets the snapshot owner absent
+        # and the claim unexpired -- the actual triggering condition -- and
+        # `verification_sufficiency_evidence` records `exercises_material_risk:
+        # yes`.
+        self.assertEqual([], VALIDATOR.validate_pair(self.packet, self.result))
+
+    def test_no_risk_exercised_cannot_pair_with_a_silent_clean(self):
+        # Required fixture: the same guard clause, but the claimed test only
+        # exercises the already-safe owned-entry branch, so
+        # `verification_sufficiency_evidence` correctly records
+        # `exercises_material_risk: no`. That fact must gate the verdict, not
+        # disappear into a silent `clean`.
+        entry = self.result["verification_sufficiency_evidence"][0]
+        entry["claimed_test_or_command"] = (
+            "tests/test_claims.py::test_release_denied_for_mismatched_owner"
+        )
+        entry["exercises_material_risk"] = "no"
+        entry["reasoning"] = (
+            "Only sets a mismatched present owner; no test sets the snapshot "
+            "owner absent, so the new `owner is None and not "
+            "claim.is_expired()` guard clause is never exercised."
+        )
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any(
+                "exercises_material_risk 'no' contradicts a clean verdict" in error
+                for error in errors
+            )
+        )
+
+    def test_no_risk_exercised_is_valid_as_a_gating_finding(self):
+        # The same unexercised-risk evidence is valid once paired with a
+        # gating verdict and finding, proving the rule targets the silent
+        # `clean`, not the evidence shape itself.
+        entry = self.result["verification_sufficiency_evidence"][0]
+        entry["claimed_test_or_command"] = (
+            "tests/test_claims.py::test_release_denied_for_mismatched_owner"
+        )
+        entry["exercises_material_risk"] = "no"
+        entry["reasoning"] = (
+            "Only sets a mismatched present owner; no test sets the snapshot "
+            "owner absent, so the new `owner is None and not "
+            "claim.is_expired()` guard clause is never exercised."
+        )
+        self.result["verdict"] = "changes_required"
+        self.result["findings"] = [
+            {
+                "id": "correctness.claim-release-guard-unverified",
+                "lens": "correctness",
+                "severity": "blocking",
+                "confidence": "high",
+                "rule": "A claimed test covering a materially risky change must exercise the actual triggering condition it addresses.",
+                "evidence": [
+                    {
+                        "location": "lib/claims.py:5",
+                        "detail": "The new guard clause only applies when `owner is None`, but no test constructs a snapshot with an absent owner.",
+                    }
+                ],
+                "concern": "The added test exercises the pre-existing owner-mismatch branch, not the new owner-absent interleaving.",
+                "impact": "A claim could be released while its snapshot owner is transiently absent and the claim has not expired, with no test proving the guard denies it.",
+                "proposed_change": "Add a test that sets the snapshot owner absent and the claim unexpired, and assert release_if_stale still denies release.",
+                "expected_effect": "The guard clause addressing the owner-absent interleaving is proven by a test that actually exercises it.",
+                "location": "lib/claims.py:5",
+            }
+        ]
+        self.assertEqual([], VALIDATOR.validate_pair(self.packet, self.result))
+
+    def test_not_applicable_risk_may_pair_with_clean(self):
+        entry = self.result["verification_sufficiency_evidence"][0]
+        entry["exercises_material_risk"] = "not_applicable"
+        entry["reasoning"] = (
+            "This claimed command does not touch the materially risky branch."
+        )
+        self.assertEqual([], VALIDATOR.validate_result(self.result))
+
+    def test_an_omitted_evidence_array_is_a_lens_judgment_gap_not_a_schema_gap(self):
+        del self.result["verification_sufficiency_evidence"]
+        self.assertEqual([], VALIDATOR.validate_result(self.result))
+
+    def test_only_correctness_or_aggregate_results_may_include_the_evidence(self):
+        self.result["lens"] = "code_simplicity"
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any(
+                "only correctness or aggregate results may include "
+                "verification-sufficiency evidence" in error
+                for error in errors
+            )
         )
 
 

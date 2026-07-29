@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.3",
+  "lens": "correctness",
+  "candidate": {
+    "head_sha": "6767676767676767676767676767676767676767",
+    "comparison_base_sha": "7676767676767676767676767676767676767676"
+  },
+  "verdict": "changes_required",
+  "findings": [
+    {
+      "id": "correctness.legacy-importer-keeps-permissive-mode",
+      "lens": "correctness",
+      "severity": "blocking",
+      "confidence": "high",
+      "rule": "AGENTS.md requires every caller of check_dependency to run under strict verification unless AGENTS.md itself records a dated, reasoned exception for that caller.",
+      "evidence": [
+        {
+          "location": "repository-evidence.md",
+          "detail": "lib/legacy_importer.py calls check_dependency(status, mode=\"permissive\") explicitly, and this call site predates the change, is not touched by this diff, and has no exception recorded anywhere in AGENTS.md."
+        },
+        {
+          "location": "candidate.diff:lib/policy.py",
+          "detail": "The shared default flips from permissive to strict, but only lib/orchestrator.py's call site is updated to name mode explicitly in this diff."
+        }
+      ],
+      "concern": "lib/legacy_importer.py keeps its own explicit permissive override, so it is unaffected by the tightened shared default.",
+      "impact": "A dependency status considered unready under the new strict policy still passes silently through lib/legacy_importer.py, defeating the ticket's goal for that caller.",
+      "proposed_change": "Update lib/legacy_importer.py's call site to pass mode=\"strict\" (or record and justify an explicit, documented opt-out) to match lib/orchestrator.py and the AGENTS.md convention.",
+      "expected_effect": "Every caller of check_dependency is verified under the new strict default or explicitly and intentionally opted out.",
+      "location": "lib/legacy_importer.py"
+    }
+  ],
+  "blocking_reasons": [],
+  "consumer_impact_evidence": [
+    {
+      "changed_symbol": "check_dependency",
+      "location": "lib/policy.py:1",
+      "consumer_search_evidence": [
+        {
+          "location": "lib/orchestrator.py:9",
+          "detail": "Call site updated in this diff to pass mode=\"strict\" explicitly, matching the new default and the AGENTS.md convention."
+        },
+        {
+          "location": "lib/legacy_importer.py",
+          "detail": "Repository evidence names this as the other caller of check_dependency, still passing mode=\"permissive\" explicitly; not touched by this diff."
+        }
+      ],
+      "disposition": "inconsistency_found"
+    }
+  ],
+  "next_action": "Update lib/legacy_importer.py's call site to pass mode explicitly before merging."
+}

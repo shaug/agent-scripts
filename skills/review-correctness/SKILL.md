@@ -59,6 +59,41 @@ to the caller.
 Do not mechanically emit every category. Follow evidence into the dimensions
 that can materially affect this candidate.
 
+## Perform the required traversal and verification-sufficiency passes
+
+Perform both of these passes on every review and record their evidence in the
+shared result. They are dimensions of this single correctness lens, not routed
+specialist modules; do not build or delegate to a separate security,
+concurrency-as-a-context, compatibility/migration, operations, or UI module.
+
+1. **Consumer/impact-traversal pass.** For each changed shared symbol, public
+   contract, or behavior toggle, search the repository for other call sites,
+   importers, or consumers — including ones the candidate diff does not touch.
+   Inspect material negative space: unchanged consumers or paths that must still
+   honor the changed contract. Record one `consumer_impact_evidence` entry per
+   changed symbol that requires one: the `changed_symbol`, its defining
+   `location`, one or more concrete `consumer_search_evidence` items describing
+   what the search actually found, and a `disposition` of
+   `all_consumers_consistent`, `inconsistency_found`, or `no_other_consumers`. A
+   disposition claiming other consumers exist requires evidence covering more
+   than the changed symbol's own location. Treat a genuine inconsistency as a
+   blocking correctness finding; recording the disposition alone does not
+   satisfy the review.
+2. **Verification-sufficiency pass.** For each claimed validation command or
+   test that touches a materially risky change, ask whether it would actually
+   fail for the specific triggering condition the change addresses — not merely
+   whether it passes. Restate the relevant acceptance or preserved-behavior
+   contract and inspect the changed or added tests before concluding. Detect
+   mocks, fixtures, stubs, happy-path assertions, or partial-suite selection
+   that bypass the risky behavior, including a test that exercises an
+   already-safe branch instead of the actual triggering condition. Record one
+   `verification_sufficiency_evidence` entry per claimed test or command
+   inspected under this pass: the `claimed_test_or_command`, whether it
+   `exercises_material_risk` (`yes`, `no`, or `not_applicable`), and `reasoning`
+   naming the specific condition exercised or missed. Treat a claimed test that
+   does not exercise the material risk as a blocking finding; never let it back
+   a `clean` verdict.
+
 ## Apply the finding threshold
 
 Raise a finding only when concrete ticket, code, test, repository, or runtime
@@ -104,6 +139,10 @@ lens `correctness`.
 - Keep deferred findings non-gating.
 - Include proposal dispositions when the orchestrator supplied simplification
   proposals, using the shared contract shape.
+- Include `consumer_impact_evidence` and `verification_sufficiency_evidence`
+  entries for every changed symbol or claimed test the two required passes above
+  examined. Omit an entry only when the pass genuinely found nothing applicable
+  to record.
 - Do not add praise, a scorecard, generic resources, or prose outside the shared
   result.
 

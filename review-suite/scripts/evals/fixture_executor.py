@@ -88,7 +88,7 @@ def _clean_lens_executions(candidate: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _review(candidate: dict[str, Any], verdict: str, findings: list[dict[str, Any]]):
     result = {
-        "schema_version": "1.2",
+        "schema_version": "1.3",
         "lens": "aggregate",
         "candidate": dict(candidate),
         "verdict": verdict,
