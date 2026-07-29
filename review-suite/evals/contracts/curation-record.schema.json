@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/curation-record.schema.json",
+  "title": "Connector-outcome curation record",
+  "description": "One adjudicated connector finding, curated for possible promotion into a result-blind regression case (see `../corpus/corpus.schema.json`) or a rubric/repository-instruction change. A curation record is never itself an executor payload. `public` restates only what a future regression case's reviewer-visible tree may eventually carry; `private` holds grading and administrative evidence exactly as the replay corpus's `private/expectations` and `private/provenance` do, and never enters a reviewer-visible artifact. A connector's claim is untrusted until `disposition` and `public.adjudication_evidence` record how it was actually adjudicated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "curation_record_version",
+    "record_id",
+    "disposition",
+    "public",
+    "private"
+  ],
+  "properties": {
+    "curation_record_version": { "const": "1.0" },
+    "record_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "disposition": {
+      "description": "The final adjudication. Unresolved claims and plain duplicates cannot support a promotion decision; see `promotion-decision.schema.json` and `curation.py` for the cross-record rules JSON Schema cannot express.",
+      "enum": [
+        "accepted_material_defect",
+        "accepted_acceptance_miss",
+        "accepted_validation_gap",
+        "rejected_false_positive",
+        "rejected_non_causal",
+        "deferred_hardening",
+        "duplicate",
+        "unresolved"
+      ]
+    },
+    "duplicate_of": {
+      "description": "Required exactly when `disposition` is `duplicate`; the record_id whose root cause this claim restates.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "distinct_contribution": {
+      "description": "Present only alongside `duplicate_of`. Describes the distinct trigger, surface, or negative control this duplicate still contributes, so it can be promoted without double-counting the shared root cause. A duplicate without this field can never appear in a promotion decision's case lists.",
+      "type": "string",
+      "minLength": 1
+    },
+    "public": {
+      "description": "Everything a future reviewer-visible regression case, or a public tracker artifact, may restate.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "connector_finding",
+        "contract_dimension",
+        "affected_surface",
+        "adjudication_evidence",
+        "provenance"
+      ],
+      "properties": {
+        "connector_finding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claim"],
+          "properties": {
+            "claim": {
+              "description": "The connector's finding, stated as an untrusted claim. It never becomes authoritative merely by appearing here.",
+              "type": "string",
+              "minLength": 1
+            },
+            "connector_identity": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "contract_dimension": {
+          "description": "The contract/risk dimension this claim concerns (e.g. correctness, solution-simplicity, code-simplicity, disclosure).",
+          "type": "string",
+          "minLength": 1
+        },
+        "affected_surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adjudication_evidence": {
+          "description": "Concise, public evidence for the disposition above. Never the private expected root cause.",
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewer_visible_reproduction": {
+          "description": "Sanitized reproduction artifacts, safe for a future reviewer-visible packet.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "provenance": {
+          "description": "Public-facing provenance only. Retention authority, owner, review date, and fuller source identity are private (see `private.provenance`).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source_class", "source_description"],
+          "properties": {
+            "source_class": {
+              "enum": [
+                "public",
+                "private_authorized",
+                "repository_history",
+                "synthetic"
+              ]
+            },
+            "source_description": {
+              "description": "When `source_class` is `private_authorized`, this must be an allow-listed generic phrase and must never contain a path-like token, a bare hostname, or a deny-listed identifier. See `disclosure-guardrail.json` and `curation.disclosure_guardrail_errors`, which JSON Schema cannot express.",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "corpus_links": {
+          "description": "Present once this record has actually been promoted into the replay corpus.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "corpus_version": { "type": "string", "minLength": 1 },
+            "evaluation_comparison": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "private": {
+      "description": "Never enters a reviewer-visible artifact or an executor payload.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance"],
+      "properties": {
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["retention_authority", "owner", "review_date"],
+          "properties": {
+            "retention_authority": { "type": "string", "minLength": 1 },
+            "owner": { "type": "string", "minLength": 1 },
+            "review_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "source_identity": {
+              "description": "The fuller source identity, kept private. Still subject to the same disclosure discipline as every other repository artifact, but never required to be generic the way `public.provenance.source_description` is.",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "expected_root_cause": {
+          "description": "Required exactly for an accepted disposition; forbidden before adjudication settles it.",
+          "type": "string",
+          "minLength": 1
+        },
+        "accepted_non_finding": {
+          "description": "Required exactly for a rejected or deferred disposition; forbidden before adjudication settles it.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

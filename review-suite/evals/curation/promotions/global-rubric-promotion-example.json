@@ -1,0 +1,29 @@
+{
+  "promotion_decision_version": "1.0",
+  "decision_id": "global-rubric-promotion-example",
+  "decision": "global_rubric_update",
+  "rationale": "Two accepted material outcomes on distinct surfaces (a config-loader migration miss and a retry-scheduler acceptance miss) share one repository-independent invariant - a candidate's own stated migration/acceptance criterion must actually be enforced, not merely asserted in prose - and a rejected false positive on an unrelated cache TTL gives a negative control that the new rubric wording must not gate on. This is a synthetic worked example proving the promotion schema and its representativeness gate; it does not itself change `review-suite/CONTRACT.md`.",
+  "positive_case_ids": ["stale-config-schema-defect", "retry-jitter-defect"],
+  "negative_control_case_ids": ["cache-ttl-false-positive"],
+  "target": {
+    "kind": "global_rubric",
+    "path": "review-suite/CONTRACT.md",
+    "summary": "Add an explicit correctness invariant: when a candidate's own acceptance criteria or a schema migration state a requirement, verify it is actually enforced by the merged code, not merely asserted in a comment or acceptance-criteria bullet."
+  },
+  "evidence": {
+    "before": {
+      "recall": 0.5,
+      "false_positive_rate": 0.2,
+      "stability": 0.7,
+      "latency_seconds": 32.5,
+      "cost": { "usd": 0.85 }
+    },
+    "after": {
+      "recall": 0.9,
+      "false_positive_rate": 0.05,
+      "stability": 0.9,
+      "latency_seconds": 33.1,
+      "cost": { "usd": 0.87 }
+    }
+  }
+}

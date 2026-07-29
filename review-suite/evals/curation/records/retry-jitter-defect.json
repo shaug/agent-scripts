@@ -1,0 +1,29 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "retry-jitter-defect",
+  "disposition": "accepted_acceptance_miss",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged that the webhook retry helper's backoff has no jitter, so a batch of retries can synchronize into a thundering herd.",
+      "connector_identity": "synthetic-connector-beta"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "webhook retry backoff scheduler",
+    "adjudication_evidence": "The candidate's own acceptance criteria required exponential backoff \"to reduce retry load\", but the merged implementation used a fixed multiplier with no jitter term, so concurrent retries from one failure window remain synchronized.",
+    "reviewer_visible_reproduction": [
+      "schedule_retry(attempt=3) returns the same delay on every call in the same process"
+    ],
+    "provenance": {
+      "source_class": "synthetic",
+      "source_description": "hand-written synthetic fixture for this ticket's infrastructure proof"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    },
+    "expected_root_cause": "The retry scheduler's backoff computation omits a jitter term, so retries scheduled from the same failure window remain synchronized rather than spread, missing the candidate's own stated acceptance criterion."
+  }
+}

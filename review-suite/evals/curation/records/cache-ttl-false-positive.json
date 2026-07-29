@@ -1,0 +1,29 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "cache-ttl-false-positive",
+  "disposition": "rejected_false_positive",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged the response cache's TTL constant as too short, claiming it would cause excess upstream load.",
+      "connector_identity": "synthetic-connector-alpha"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "response cache TTL constant",
+    "adjudication_evidence": "The cited constant is the *client-side* negative-result cache, which the packet's own acceptance criteria intentionally keep short to avoid stale negative results; the connector conflated it with the unrelated, separately-configured upstream cache. No behavior changed and no consequence follows.",
+    "reviewer_visible_reproduction": [
+      "NEGATIVE_CACHE_TTL_SECONDS = 30 is a client-local negative-result cache, not the upstream cache the claim describes"
+    ],
+    "provenance": {
+      "source_class": "private_authorized",
+      "source_description": "a private, owner-authorized connector-review source"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    },
+    "accepted_non_finding": "A short TTL on the client-side negative-result cache is the intended behavior from the packet's own acceptance criteria; the connector's claim conflated it with an unrelated, separately-configured upstream cache and cites no consequence that actually follows."
+  }
+}

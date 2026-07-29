@@ -246,6 +246,21 @@ quoting any figure — in particular, **the connector stratum is deferred, not
 satisfied**, so connector-escape recall has never been measured and no
 human-review figure may be reported as a connector figure.
 
+### Connector-outcome curation and promotion
+
+`review-suite/evals/curation/` turns a newly adjudicated connector finding into
+a versioned curation record, and turns a group of curation records into a
+conservative, evidence-backed promotion decision: a corpus case only, a global
+rubric change, a repository-instruction change, or nothing. It is infrastructure
+only, proven with synthetic fixtures, and never touches `baseline/v1/` or `v2/`.
+See [its README](review-suite/evals/curation/README.md) for the disposition
+vocabulary, the mechanical disclosure guardrail that fails closed on a leaked
+source identifier, and the promotion rules.
+
+```bash
+just audit-review-curation  # curation and promotion-decision integrity, no runtime
+```
+
 ## Prerequisites
 
 - Python 3.11+

@@ -1,0 +1,24 @@
+{
+  "promotion_decision_version": "1.0",
+  "decision_id": "no-promotion-example",
+  "decision": "no_promotion",
+  "rationale": "The cache-TTL claim was rejected as a false positive; on its own it is a negative control, not evidence that any guidance is missing or wrong, so nothing is promoted. Measured only to show the workflow's own step 3 (measure before changing guidance) still runs even when the answer is 'no change'. This is a synthetic worked example.",
+  "positive_case_ids": [],
+  "negative_control_case_ids": ["cache-ttl-false-positive"],
+  "evidence": {
+    "before": {
+      "recall": 0.8,
+      "false_positive_rate": 0.1,
+      "stability": 0.85,
+      "latency_seconds": 29.4,
+      "cost": { "unavailable": true, "reason": "measured from a fixture replay, not a paid runtime run" }
+    },
+    "after": {
+      "recall": 0.8,
+      "false_positive_rate": 0.1,
+      "stability": 0.85,
+      "latency_seconds": 29.4,
+      "cost": { "unavailable": true, "reason": "measured from a fixture replay, not a paid runtime run" }
+    }
+  }
+}

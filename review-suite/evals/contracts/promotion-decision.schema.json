@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/promotion-decision.schema.json",
+  "title": "Connector-outcome promotion decision",
+  "description": "Records the narrowest-owner decision the promotion workflow makes for one or more curation records: keep as a corpus case only, update the global correctness rubric, update a repository-owned instruction file, or promote nothing. `curation.py` enforces every cross-record rule this schema cannot express: which dispositions may support a positive or negative case, representativeness for a rubric change, and that a repository-instruction change only ever targets an existing repository-owned instruction mechanism.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "promotion_decision_version",
+    "decision_id",
+    "decision",
+    "rationale",
+    "positive_case_ids",
+    "negative_control_case_ids",
+    "evidence"
+  ],
+  "properties": {
+    "promotion_decision_version": { "const": "1.0" },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "decision": {
+      "enum": [
+        "global_rubric_update",
+        "repository_instruction_update",
+        "corpus_case_only",
+        "no_promotion"
+      ]
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "positive_case_ids": {
+      "description": "Curation record ids whose accepted material outcome supports this decision.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "negative_control_case_ids": {
+      "description": "Curation record ids whose rejected or deferred tuning outcome supports this decision as a negative control.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "target": {
+      "description": "Required exactly when `decision` is `global_rubric_update` or `repository_instruction_update`; forbidden otherwise.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "summary"],
+      "properties": {
+        "kind": { "enum": ["global_rubric", "repository_instruction"] },
+        "path": {
+          "description": "Repository-relative path. A `repository_instruction` target must name an existing repository-owned instruction file (AGENTS.md or CLAUDE.md); this ticket ships no new shared path-rule subsystem.",
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence": {
+      "description": "Before/after quality, stability, latency, and available cost evidence from the approved evaluation slice. Required for every decision, including `no_promotion` and `corpus_case_only`, because the measurement is what justifies not changing guidance just as much as it justifies changing it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "after"],
+      "properties": {
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "recall",
+            "false_positive_rate",
+            "stability",
+            "latency_seconds",
+            "cost"
+          ],
+          "properties": {
+            "recall": {
+              "description": "Left untyped: this repository's schema-subset validator has no numeric type. `curation.py` checks it is actually numeric."
+            },
+            "false_positive_rate": {},
+            "stability": {},
+            "latency_seconds": {},
+            "cost": {
+              "description": "Either `usd` is reported, or `unavailable` is true with a `reason` - never both, never neither.",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "usd": {},
+                "unavailable": { "type": "boolean" },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "recall",
+            "false_positive_rate",
+            "stability",
+            "latency_seconds",
+            "cost"
+          ],
+          "properties": {
+            "recall": {},
+            "false_positive_rate": {},
+            "stability": {},
+            "latency_seconds": {},
+            "cost": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "usd": {},
+                "unavailable": { "type": "boolean" },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

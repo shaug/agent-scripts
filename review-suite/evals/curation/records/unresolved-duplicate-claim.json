@@ -1,0 +1,27 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "unresolved-duplicate-claim",
+  "disposition": "duplicate",
+  "duplicate_of": "unpatched-token-scope-claim",
+  "distinct_contribution": "Same session-token scope concern, raised against a distinct refresh entry point, giving a second surface if the original claim ever resolves.",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged, on an unrelated candidate, that a second session-token refresh entry point may also request a broader scope.",
+      "connector_identity": "synthetic-connector-gamma"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "secondary session-token refresh entry point",
+    "adjudication_evidence": "Restates unpatched-token-scope-claim's still-unresolved concern on a distinct entry point. Adjudication of the underlying concern has not settled, so this record cannot be promoted either, regardless of its distinct surface.",
+    "provenance": {
+      "source_class": "synthetic",
+      "source_description": "hand-written synthetic fixture for this ticket's infrastructure proof"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    }
+  }
+}

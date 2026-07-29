@@ -56,6 +56,14 @@ test-review-suite:
 audit-review-corpus:
   python3 review-suite/scripts/evals/audit_corpus.py
 
+# Validate connector-outcome curation records and promotion decisions: intake
+# schema, disposition vocabulary, duplicate/unresolved handling, provenance and
+# retention fields, reviewer/private separation, the mechanical disclosure
+# guardrail, and promotion-decision evidence and target rules. Never scrapes
+# GitHub, never mutates a review thread, and never launches a model.
+audit-review-curation:
+  python3 review-suite/scripts/evals/audit_curation.py
+
 # Result-blind replay evaluation through an explicit real-runtime executor.
 # Deliberately excluded from `test`, `lint`, and `check`: this is the only
 # review-suite command that may spend money.

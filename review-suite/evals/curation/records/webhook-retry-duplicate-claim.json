@@ -1,0 +1,26 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "webhook-retry-duplicate-claim",
+  "disposition": "duplicate",
+  "duplicate_of": "retry-jitter-defect",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged, in a second pass over the same candidate, that retries can synchronize because backoff has no randomization.",
+      "connector_identity": "synthetic-connector-beta"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "webhook retry backoff scheduler",
+    "adjudication_evidence": "Restates the same root cause already recorded under retry-jitter-defect: the same missing jitter term, on the same scheduler, from the same acceptance criterion. No distinct trigger, surface, or negative control is contributed, so this claim is retained only as a duplicate and must not be separately counted.",
+    "provenance": {
+      "source_class": "synthetic",
+      "source_description": "hand-written synthetic fixture for this ticket's infrastructure proof"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    }
+  }
+}

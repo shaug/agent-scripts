@@ -1,0 +1,29 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "stale-config-schema-defect",
+  "disposition": "accepted_material_defect",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged that the config loader accepts a field renamed in the last schema bump without rejecting the old name.",
+      "connector_identity": "synthetic-connector-alpha"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "config loader schema-version migration",
+    "adjudication_evidence": "Reproduced by loading a config fixture with the pre-bump field name: the loader silently accepted it and applied a stale default instead of the migrated value. A merge verdict was reached on this candidate before the miss was caught downstream.",
+    "reviewer_visible_reproduction": [
+      "load_config({'old_field_name': 'x'}) returns defaults instead of raising a migration error"
+    ],
+    "provenance": {
+      "source_class": "private_authorized",
+      "source_description": "a private, owner-authorized connector-review source"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    },
+    "expected_root_cause": "The config loader's schema-version migration path does not reject a field name retired by a prior schema bump, so a stale default is silently applied instead of the migrated value."
+  }
+}

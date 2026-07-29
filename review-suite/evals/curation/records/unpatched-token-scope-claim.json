@@ -1,0 +1,25 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "unpatched-token-scope-claim",
+  "disposition": "unresolved",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged that a session-token refresh path may request a broader scope than the original session, without a reproducible trigger.",
+      "connector_identity": "synthetic-connector-gamma"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "session-token refresh path",
+    "adjudication_evidence": "Adjudication has not settled: the claim's own reproduction attempt could not confirm the scope actually widens rather than being restated identically, and no independent adjudicator has confirmed or rejected it yet.",
+    "provenance": {
+      "source_class": "private_authorized",
+      "source_description": "a private, owner-authorized connector-review source"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    }
+  }
+}
