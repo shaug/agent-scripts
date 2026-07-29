@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-GRADER_VERSION = "1.0"
+GRADER_VERSION = "1.1"
 
 #: How one observed finding relates to the private expectation.
 CLASSIFICATIONS = (
@@ -82,8 +82,17 @@ def _surface_tokens(text: str) -> set[str]:
     }
 
 
+def finding_text(finding: dict[str, Any]) -> str:
+    """Return the normalized prose a formulation may be found in."""
+    parts = [str(finding.get(field) or "") for field in FINDING_TEXT_FIELDS]
+    parts.extend(
+        str(item.get("detail") or "") for item in finding.get("evidence") or []
+    )
+    return normalize(" ".join(parts))
+
+
 def finding_surfaces(finding: dict[str, Any]) -> set[str]:
-    """Return the surface tokens a finding points at."""
+    """Return the surface tokens a finding's structured location points at."""
     locations = [finding.get("location") or ""]
     locations.extend(
         item.get("location") or "" for item in finding.get("evidence") or []
@@ -94,17 +103,43 @@ def finding_surfaces(finding: dict[str, Any]) -> set[str]:
     return tokens
 
 
-def finding_text(finding: dict[str, Any]) -> str:
-    """Return the normalized prose a formulation may be found in."""
-    parts = [str(finding.get(field) or "") for field in FINDING_TEXT_FIELDS]
-    parts.extend(
-        str(item.get("detail") or "") for item in finding.get("evidence") or []
-    )
-    return normalize(" ".join(parts))
-
-
 def _signal_match(formulations: list[str], text: str) -> bool:
     return any(normalize(item) and normalize(item) in text for item in formulations)
+
+
+def surface_named_in_prose(expected: dict[str, Any], finding: dict[str, Any]) -> bool:
+    """True when the finding's own prose names the expected surface outright.
+
+    Checks whether the expectation's whole `surface` string, normalized to a
+    phrase (`dependency_finalized` -> `"dependency finalized"`), appears as a
+    contiguous substring of the finding's prose (`finding_text`: `rule`,
+    `concern`, `impact`, `proposed_change`, `expected_effect`,
+    `evidence[].detail`) - the same substring-of-normalized-text test
+    `_signal_match` already uses for formulations, applied to the surface
+    field instead.
+
+    This is deliberately a whole-phrase check, not a token-set union with
+    `finding_surfaces`. A real-runtime reviewer routinely names the exact
+    affected symbol only in prose ("`x` still calls `y` without the strict
+    flag") while every structured `location` field carries a bare file path
+    with no symbol in it - `finding_surfaces` alone then misses a
+    concretely-correct finding entirely (discovered by reading raw attempts
+    where 10/10 correctly-reasoned findings on two real cases were
+    misclassified `unexpected` for exactly this reason). But a naive token-set
+    union of prose into `finding_surfaces` is too loose: this repository's own
+    `probe.partial-claim-wrong-surface` calibration case deliberately puts a
+    finding at the wrong surface (`storectl/cli.py`, not
+    `render_rollback_guidance`) whose prose incidentally contains the single
+    common word "guidance" ("the guidance cannot run") - a token-set union
+    would credit that coincidence as a surface hit and silently break a
+    calibration boundary built to keep a partially-correct, wrong-surface
+    claim referred rather than matched. Requiring the whole normalized surface
+    phrase to appear keeps that boundary intact (a lone "guidance" is not
+    "render rollback guidance") while still catching a real reviewer that
+    plainly names the exact symbol.
+    """
+    surface = normalize(expected.get("surface", ""))
+    return bool(surface) and surface in finding_text(finding)
 
 
 def match_signals(
@@ -112,16 +147,20 @@ def match_signals(
 ) -> tuple[bool, bool]:
     """Return `(surface_hit, signal_hit)` for one expectation/finding pair.
 
-    `surface_hit` is the concrete signal: the finding's location or evidence
-    names a token from the expectation's `surface` - the actual file,
-    function, or symbol the root cause turns on. `signal_hit` is the
+    `surface_hit` is the concrete signal: the finding's location, evidence, or
+    own prose names the expectation's `surface` - the actual file, function,
+    or symbol the root cause turns on - via `finding_surfaces` (structured
+    locations) or `surface_named_in_prose` (the whole surface phrase named
+    outright in the finding's explanation). `signal_hit` is the
     accepted-formulation prose match alone, which vaguer commentary can
     satisfy without ever naming where the defect lives. Split out from
     `match_strength` so a referred (partial or ambiguous) candidate can be
     judged concrete or not, rather than only judged matched or not.
     """
     surface = _surface_tokens(expected.get("surface", ""))
-    surface_hit = bool(surface & finding_surfaces(finding))
+    surface_hit = bool(surface & finding_surfaces(finding)) or surface_named_in_prose(
+        expected, finding
+    )
     signal_hit = _signal_match(
         expected.get("equivalent_formulations") or [], finding_text(finding)
     )

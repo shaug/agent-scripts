@@ -1,7 +1,7 @@
 {
   "corpus_version": "0.1-s1-populated",
   "protocol_version": "1.0",
-  "grader_version": "1.0",
+  "grader_version": "1.1",
   "target_skill": "review-code-change",
   "target_skill_dependencies": [
     "review-solution-simplicity",

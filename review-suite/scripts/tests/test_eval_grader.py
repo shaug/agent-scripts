@@ -361,6 +361,69 @@ class NormalizationTests(unittest.TestCase):
             ),
         )
 
+    def test_a_symbol_named_only_in_prose_is_a_surface_hit(self):
+        """Regression: real-runtime attempts named the exact symbol only in
+        prose (`concern`/`evidence[].detail`), with every `location` field
+        carrying a bare file path that shares no token with the expectation's
+        `surface` - discovered when 10/10 raw attempts on two real cases were
+        misclassified `unexpected` despite correctly identifying the exact
+        root cause, because `finding_surfaces` read only `location` fields.
+        """
+        root_cause = dict(ROOT_CAUSE, surface="dependency_finalized")
+        real_shaped_finding = finding(
+            "corr.dependency-finalized-missing-strict-proof",
+            location=None,
+            concern=(
+                "`dependency_finalized` still uses the permissive integration "
+                "check for closed records."
+            ),
+        )
+        real_shaped_finding["evidence"] = [
+            {"location": "pipeline/dependencies.py", "detail": "no strict flag"},
+            {"location": "pipeline/integration.py:21-23", "detail": "default False"},
+        ]
+        surface_hit, signal_hit = grader.match_signals(root_cause, real_shaped_finding)
+        self.assertTrue(surface_hit)
+        # The accepted formulations are deliberately uncalibrated against real
+        # prose (paraphrase, not verbatim), so this stays a referred `partial`
+        # match rather than a silently-invented `full` one - the fix widens
+        # where a surface can be found, not what counts as a formulation.
+        self.assertFalse(signal_hit)
+        self.assertEqual(
+            "partial", grader.match_strength(root_cause, real_shaped_finding)
+        )
+
+    def test_a_lone_common_word_shared_with_the_surface_is_not_a_surface_hit(self):
+        """The precision boundary the phrase-based prose check exists for.
+
+        `probe.partial-claim-wrong-surface` (review-suite/evals/calibration/
+        rollback-guidance-render.json) deliberately points a finding at the
+        wrong surface whose prose happens to contain the single common word
+        "guidance" - one token of the multi-word expected surface
+        `render_rollback_guidance` - without ever naming the surface as a
+        whole phrase. A token-set union of prose into `finding_surfaces`
+        would credit that coincidence as a surface hit and turn a
+        deliberately partial, wrong-surface claim into a full match. The
+        surface must be named as a phrase, not merely echoed one word at a
+        time, to stay a `partial` referral.
+        """
+        root_cause = dict(ROOT_CAUSE, surface="render_rollback_guidance")
+        wrong_surface_finding = finding(
+            "corr.cli-surface-incomplete",
+            severity="strong_recommendation",
+            location="storectl/cli.py",
+            concern="The command registry is missing an export operation.",
+            detail=(
+                "The registry is the reason the guidance cannot run: the "
+                "export subcommand does not exist."
+            ),
+        )
+        self.assertFalse(
+            grader.surface_named_in_prose(root_cause, wrong_surface_finding)
+        )
+        surface_hit, _ = grader.match_signals(root_cause, wrong_surface_finding)
+        self.assertFalse(surface_hit)
+
     def test_match_signals_splits_surface_and_prose_independently(self):
         surface_only = grader.match_signals(
             ROOT_CAUSE,
