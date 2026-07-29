@@ -4,9 +4,15 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-29 — Rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect
+
+- docs(review-suite): recheck s2/s3 strata under grader 1.1 for the same
+  surface-in-prose defect
+
 ## 2026-07-28 — Added correctness traversal and verification-sufficiency passes, consumer/impact-traversal evidence, and required passing validation and current-head lens evidence for a clean review verdict
 
 - feat: add correctness traversal and verification-sufficiency passes
+  (`85ccf13b45bad8f162d81963a3ac910ea0b49590`)
 - feat: add consumer/impact-traversal evidence to the shared review contract
   (`8e4fdbdaad8f70751d45f8c2ca87e88288f8ba5b`)
 - feat: require passing validation and current-head lens evidence for a clean
