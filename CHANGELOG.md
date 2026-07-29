@@ -4,9 +4,14 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, and added a skill-root override for mechanism ablation runs
+## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, and ran the preregistered v2 ablation and integration closeout
 
+- docs(review-suite): run the preregistered v2 s1 ablation matrix and
+  integration closeout (#57)
+- docs: add the CHANGELOG entry for the skill-root ablation override
+  (`e2c56f68fe56094a6c92fd4a220539f47d6f9f98`)
 - feat(review-suite): add a skill-root override for mechanism ablation runs
+  (`8e959ffbff00152341a961350d3fbdd12d01b5df`)
 - refactor(review-suite): simplify duplicate-chain resolution and unify its
   membership check (`16fc32a90eaea16ac98ff2a34bbabafed7a4681f`)
 - fix(review-suite): resolve a duplicate's disposition through its duplicate_of
