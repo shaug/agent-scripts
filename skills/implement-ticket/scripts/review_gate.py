@@ -23,10 +23,27 @@ import sys
 from pathlib import Path
 from typing import Any
 
-HERE = Path(__file__).resolve().parent
+
+def _validate_module_path() -> Path:
+    """Locate the bundled `validate.py` in either supported layout.
+
+    Installed layout (each consuming skill): `scripts/review_gate.py` beside
+    `references/review-suite/validate.py`. Canonical layout (this monorepo):
+    `review-suite/scripts/review_gate.py` beside `review-suite/scripts/
+    validate.py`, in the same directory as this file.
+    """
+    here = Path(__file__).resolve().parent
+    for candidate in (
+        here.parent / "references" / "review-suite" / "validate.py",
+        here / "validate.py",
+    ):
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(f"Cannot locate validate.py near {here}")
+
+
 VALIDATE_SPEC = importlib.util.spec_from_file_location(
-    "implement_ticket_review_suite_validate",
-    HERE.parent / "references" / "review-suite" / "validate.py",
+    "caller_review_suite_validate", _validate_module_path()
 )
 assert VALIDATE_SPEC and VALIDATE_SPEC.loader
 VALIDATE = importlib.util.module_from_spec(VALIDATE_SPEC)

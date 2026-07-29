@@ -1,4 +1,4 @@
-"""Prove `implement-ticket` rejects untrustworthy review-code-change evidence.
+"""Prove a bundled `review_gate.py` rejects untrustworthy review evidence.
 
 The bundled `references/review-suite/validate.py` enforces the shared schema
 and cross-field semantics; `scripts/review_gate.py` adds the one caller-side
@@ -18,7 +18,7 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 GATE_PATH = SKILL_ROOT / "scripts" / "review_gate.py"
 
-SPEC = importlib.util.spec_from_file_location("implement_ticket_review_gate", GATE_PATH)
+SPEC = importlib.util.spec_from_file_location("caller_review_gate", GATE_PATH)
 assert SPEC and SPEC.loader
 GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GATE)
