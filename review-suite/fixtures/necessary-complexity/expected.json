@@ -1,7 +1,10 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "lens": "solution_simplicity",
-  "candidate": {"head_sha": "4444444444444444444444444444444444444444", "comparison_base_sha": "dddddddddddddddddddddddddddddddddddddddd"},
+  "candidate": {
+    "head_sha": "4444444444444444444444444444444444444444",
+    "comparison_base_sha": "dddddddddddddddddddddddddddddddddddddddd"
+  },
   "verdict": "clean",
   "findings": [],
   "blocking_reasons": [],

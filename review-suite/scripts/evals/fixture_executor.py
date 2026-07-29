@@ -69,15 +69,35 @@ def _finding(
     }
 
 
+REQUIRED_AGGREGATE_LENSES = ("solution_simplicity", "correctness", "code_simplicity")
+
+
+def _clean_lens_executions(candidate: dict[str, Any]) -> list[dict[str, Any]]:
+    """Fresh current-head/current-base clean evidence for every required lens."""
+    return [
+        {
+            "lens": lens,
+            "head_sha": candidate["head_sha"],
+            "comparison_base_sha": candidate["comparison_base_sha"],
+            "verdict": "clean",
+            "freshly_executed": True,
+        }
+        for lens in REQUIRED_AGGREGATE_LENSES
+    ]
+
+
 def _review(candidate: dict[str, Any], verdict: str, findings: list[dict[str, Any]]):
-    return {
-        "schema_version": "1.0",
+    result = {
+        "schema_version": "1.1",
         "lens": "aggregate",
         "candidate": dict(candidate),
         "verdict": verdict,
         "findings": findings,
         "blocking_reasons": [],
     }
+    if verdict == "clean":
+        result["lens_executions"] = _clean_lens_executions(candidate)
+    return result
 
 
 def _ledger_review(candidate: dict[str, Any]) -> dict[str, Any]:

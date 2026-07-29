@@ -267,5 +267,164 @@ class ResultValidationTests(unittest.TestCase):
         self.assertTrue(VALIDATOR.validate_pair(packet, result))
 
 
+class CleanRequiresPassingValidationTests(unittest.TestCase):
+    """#51: a `clean` verdict must prove its own packet validation passed.
+
+    Pair validation previously never cross-checked packet validation status
+    against verdict: a schema-valid `clean` result could pair with every
+    focused and full validation entry set to `failed`.
+    """
+
+    def setUp(self):
+        self.packet = load(ROOT / "fixtures" / "clean-change" / "packet.json")
+        self.result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+
+    def _index(self, scope: str) -> int:
+        return next(
+            index
+            for index, validation in enumerate(self.packet["validation"])
+            if validation["scope"] == scope
+        )
+
+    def test_failed_focused_validation_invalidates_a_clean_pair(self):
+        index = self._index("focused")
+        self.packet["validation"][index]["status"] = "failed"
+        self.packet["validation"][index]["result"] = "1 failed"
+        errors = VALIDATOR.validate_pair(self.packet, self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("clean cannot pair with failed" in error for error in errors)
+        )
+
+    def test_failed_full_validation_invalidates_a_clean_pair(self):
+        index = self._index("full")
+        self.packet["validation"][index]["status"] = "failed"
+        self.packet["validation"][index]["result"] = "1 failed"
+        errors = VALIDATOR.validate_pair(self.packet, self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("clean cannot pair with failed" in error for error in errors)
+        )
+
+    def test_unavailable_validation_invalidates_a_clean_pair(self):
+        index = self._index("full")
+        self.packet["validation"][index] = {
+            "name": "full tests",
+            "command": "pytest",
+            "scope": "full",
+            "status": "unavailable",
+            "reason": "The sandboxed runtime has no network access.",
+        }
+        errors = VALIDATOR.validate_pair(self.packet, self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("clean cannot pair with unavailable" in error for error in errors)
+        )
+
+    def test_all_required_validation_passed_produces_a_valid_clean_pair(self):
+        self.assertEqual([], VALIDATOR.validate_pair(self.packet, self.result))
+
+
+class AggregateLensExecutionEvidenceTests(unittest.TestCase):
+    """#51: aggregate `clean` requires one fresh, current-head lens execution
+    for every required lens, so a new-head aggregate cannot smuggle in an
+    old-head or missing lens result."""
+
+    def setUp(self):
+        self.result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+
+    def test_missing_required_lens_execution_invalidates_clean_aggregate(self):
+        self.result["lens_executions"] = [
+            execution
+            for execution in self.result["lens_executions"]
+            if execution["lens"] != "solution_simplicity"
+        ]
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("missing required lens execution" in error for error in errors)
+        )
+
+    def test_duplicate_required_lens_execution_invalidates_clean_aggregate(self):
+        self.result["lens_executions"].append(
+            copy.deepcopy(self.result["lens_executions"][0])
+        )
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("duplicate lens execution" in error for error in errors))
+
+    def test_stale_head_lens_execution_invalidates_clean_aggregate(self):
+        self.result["lens_executions"][0]["head_sha"] = "9" * 40
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("stale head or base" in error for error in errors))
+
+    def test_stale_base_lens_execution_invalidates_clean_aggregate(self):
+        self.result["lens_executions"][0]["comparison_base_sha"] = "9" * 40
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("stale head or base" in error for error in errors))
+
+    def test_fresh_current_head_clean_executions_produce_a_valid_clean_aggregate(self):
+        self.assertEqual([], VALIDATOR.validate_result(self.result))
+
+
+class NewHeadFullRestartTests(unittest.TestCase):
+    """#51 items 8-9: any head-changing fix restarts the full three-lens
+    sequence. The pre-#51 re-review matrix let a correctness fix or a
+    code-simplicity fix reach a new-head aggregate with only two of the three
+    required lenses re-executed; both must now fail validation."""
+
+    def setUp(self):
+        self.result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+
+    def _drop_solution_simplicity(self):
+        self.result["lens_executions"] = [
+            execution
+            for execution in self.result["lens_executions"]
+            if execution["lens"] != "solution_simplicity"
+        ]
+
+    def test_new_head_after_correctness_fix_requires_all_three_executions(self):
+        # Pre-#51 matrix: "correctness fix -> correctness and downstream
+        # lenses", which never re-ran solution simplicity on the new head.
+        self._drop_solution_simplicity()
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("solution_simplicity" in error for error in errors))
+
+    def test_new_head_after_code_simplicity_fix_requires_all_three_executions(self):
+        # Pre-#51 matrix: "code-simplicity fix -> code, then targeted
+        # correctness", which never re-ran solution simplicity on the new head.
+        self._drop_solution_simplicity()
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("solution_simplicity" in error for error in errors))
+
+
+class UnchangedHeadBaseDriftRegressionTest(unittest.TestCase):
+    """#51 item 10: unchanged-head base drift keeps the existing retain rules,
+    unaffected by the validation and lens-execution repairs above."""
+
+    def test_unrelated_base_drift_remains_a_valid_clean_pair_at_v1_1(self):
+        packet = load(ROOT / "fixtures" / "unrelated-base-drift" / "packet.json")
+        result = load(ROOT / "fixtures" / "unrelated-base-drift" / "expected.json")
+        self.assertEqual("retain", packet["base_drift"]["decision"])
+        self.assertEqual([], VALIDATOR.validate_pair(packet, result))
+
+
+class StaleSchemaVersionTests(unittest.TestCase):
+    """#51 item 11: a stale v1.0 result is rejected with a useful error rather
+    than silently reinterpreted as v1.1 evidence."""
+
+    def test_stale_v1_0_aggregate_result_is_rejected_with_a_useful_error(self):
+        result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+        result["schema_version"] = "1.0"
+        errors = VALIDATOR.validate_result(result)
+        self.assertTrue(errors)
+        self.assertTrue(any("stale v1.0" in error for error in errors))
+        self.assertTrue(any("1.1" in error for error in errors))
+
+
 if __name__ == "__main__":
     unittest.main()

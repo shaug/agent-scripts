@@ -223,7 +223,7 @@ class EvaluationTests(unittest.TestCase):
             '    "outcome": "review_result", "simulation": False,\n'
             '    "executor": {"name": "always-gating"},\n'
             '    "result": {\n'
-            '        "schema_version": "1.0", "lens": "aggregate",\n'
+            '        "schema_version": "1.1", "lens": "aggregate",\n'
             '        "candidate": request["run"]["candidate"],\n'
             '        "verdict": "changes_required", "findings": [finding],\n'
             '        "blocking_reasons": [],\n'
@@ -549,10 +549,17 @@ class RealRuntimeAdapterTests(unittest.TestCase):
             "import json, sys\n"
             "prompt = sys.stdin.read()\n"
             "candidate = json.loads(prompt.strip().splitlines()[-1])\n"
+            "lens_executions = [\n"
+            '    {"lens": lens, "head_sha": candidate["head_sha"],\n'
+            '     "comparison_base_sha": candidate["comparison_base_sha"],\n'
+            '     "verdict": "clean", "freshly_executed": True}\n'
+            '    for lens in ("solution_simplicity", "correctness", "code_simplicity")\n'
+            "]\n"
             "result = {\n"
-            '    "schema_version": "1.0", "lens": "aggregate",\n'
+            '    "schema_version": "1.1", "lens": "aggregate",\n'
             '    "candidate": candidate, "verdict": "clean",\n'
             '    "findings": [], "blocking_reasons": [],\n'
+            '    "lens_executions": lens_executions,\n'
             "}\n"
             "json.dump({\n"
             '    "result": json.dumps(result),\n'
@@ -605,10 +612,17 @@ class RealRuntimeAdapterTests(unittest.TestCase):
             "import json, sys\n"
             "prompt = sys.stdin.read()\n"
             "candidate = json.loads(prompt.strip().splitlines()[-1])\n"
+            "lens_executions = [\n"
+            '    {"lens": lens, "head_sha": candidate["head_sha"],\n'
+            '     "comparison_base_sha": candidate["comparison_base_sha"],\n'
+            '     "verdict": "clean", "freshly_executed": True}\n'
+            '    for lens in ("solution_simplicity", "correctness", "code_simplicity")\n'
+            "]\n"
             "result = {\n"
-            '    "schema_version": "1.0", "lens": "aggregate",\n'
+            '    "schema_version": "1.1", "lens": "aggregate",\n'
             '    "candidate": candidate, "verdict": "clean",\n'
             '    "findings": [], "blocking_reasons": [],\n'
+            '    "lens_executions": lens_executions,\n'
             "}\n"
             f"envelope = {envelope_body}\n"
             'envelope["result"] = json.dumps(result)\n'

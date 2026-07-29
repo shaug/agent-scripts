@@ -65,11 +65,11 @@ lenses ends the review.
 The orchestrator is read-only. Return the required fix and next lens; the caller
 applies changes and supplies a new packet bound to the new head.
 
-- After solution redesign, restart the full sequence.
-- After a correctness fix, rerun correctness and every downstream lens whose
-  assumptions changed.
-- After a code-simplicity fix, rerun code simplicity and then targeted
-  correctness.
+- After solution redesign, a correctness fix, or a code-simplicity fix, restart
+  the complete three-lens sequence — solution simplicity, correctness, then code
+  simplicity — on the new head. No old-head lens result may contribute to the
+  new-head aggregate; a partial rerun cannot produce a valid `clean` aggregate
+  (see the shared contract's lens execution evidence requirement).
 - Use at most three full fix/re-review cycles by default. On the final cycle,
   return unresolved material findings without requesting another automatic
   cycle.
@@ -90,7 +90,16 @@ limitations, and the next required action.
 - `changes_required`: a blocking or strong-recommendation finding remains.
 - `blocked`: evidence, a required dependency, or a lens verdict is
   untrustworthy.
-- `clean`: every required lens completed and no gating finding remains.
+- `clean`: every required lens completed and no gating finding remains, every
+  required packet validation entry passed, and `lens_executions` records one
+  fresh, current-head, `clean` execution for each of solution simplicity,
+  correctness, and code simplicity.
+
+For every `clean` aggregate, populate `lens_executions` from the exact lens
+results just validated: each entry names its lens, the aggregate's own head and
+comparison-base SHA, its verdict, and `freshly_executed: true`. Never count an
+unavailable, skipped, or old-head lens result as clean, and never reuse a prior
+aggregate's `lens_executions` for a new head.
 
 Never count an unavailable or skipped required lens as clean.
 

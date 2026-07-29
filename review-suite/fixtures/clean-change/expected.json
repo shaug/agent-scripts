@@ -1,9 +1,35 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "lens": "aggregate",
-  "candidate": {"head_sha": "5555555555555555555555555555555555555555", "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},
+  "candidate": {
+    "head_sha": "5555555555555555555555555555555555555555",
+    "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
   "verdict": "clean",
   "findings": [],
   "blocking_reasons": [],
+  "lens_executions": [
+    {
+      "lens": "solution_simplicity",
+      "head_sha": "5555555555555555555555555555555555555555",
+      "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "verdict": "clean",
+      "freshly_executed": true
+    },
+    {
+      "lens": "correctness",
+      "head_sha": "5555555555555555555555555555555555555555",
+      "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "verdict": "clean",
+      "freshly_executed": true
+    },
+    {
+      "lens": "code_simplicity",
+      "head_sha": "5555555555555555555555555555555555555555",
+      "comparison_base_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "verdict": "clean",
+      "freshly_executed": true
+    }
+  ],
   "next_action": "No material review action is required."
 }

@@ -4,9 +4,15 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-28 — Required passing validation and current-head lens evidence for a clean review verdict
+
+- feat: require passing validation and current-head lens evidence for a clean
+  review verdict
+
 ## 2026-07-27 — Made database comparison output ephemeral, enforced untrusted-content boundaries, bound epic delegation, hardened command execution, populated the solution-simplicity and code-simplicity strata, enforced acceptance-gated closeout, populated the correctness stratum, recovered carved suffixes, folded owner adjudications, and ran the frozen v1 baseline
 
 - fix: keep database comparison output ephemeral by default
+  (`2f13a2d6c27fda2ced66558460a72c11c4d43c26`)
 - feat: enforce untrusted content boundaries
   (`ff3f4b9cca9b062a7113b95ab08bd1d36331a27c`)
 - docs: record the small-sample caveat the frozen protocol's step 6 requires
