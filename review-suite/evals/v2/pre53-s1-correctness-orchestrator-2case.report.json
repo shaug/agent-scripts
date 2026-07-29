@@ -1,0 +1,250 @@
+{
+  "adjudication_required": [
+    {
+      "candidate_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "case_id": "dependency-strictness-propagation",
+      "finding_id": "dep-finalized-missing-strict-proof",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "case_id": "dependency-strictness-propagation",
+      "finding_id": "dep-finalized-missing-strict-proof",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "case_id": "dependency-strictness-propagation",
+      "finding_id": "corr.dependency-finalized-missing-strict-proof",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "case_id": "dependency-strictness-propagation",
+      "finding_id": "dep-finalized-missing-strict-proof",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "case_id": "dependency-strictness-propagation",
+      "finding_id": "missing-strict-proof-in-dependency-finalized",
+      "reason": "partial",
+      "run_number": 5
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "reaper.null-owner-bypass",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "reaper.null-owner-bypass",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "reaper.null-owner-bypass",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "corr.owner-none-bypass",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "corr.missing-none-owner-test",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "reaper-null-owner-bypass",
+      "reason": "partial",
+      "run_number": 5
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "case_id": "stale-claim-release-guard",
+      "finding_id": "missing-null-owner-test",
+      "reason": "partial",
+      "run_number": 5
+    }
+  ],
+  "attempts": 10,
+  "baseline_eligible": true,
+  "configuration": {
+    "cases": 2,
+    "corpus_version": "0.1-s1-pre53-2case",
+    "executor": null,
+    "grader_version": "1.1",
+    "regrade_note": "No executor process ran in this pass. Every non-grading attempt field is carried over unchanged from the source attempts file; only `grade` was recomputed, from the retained raw artifact, using the grader version above.",
+    "regraded": true,
+    "regraded_from_artifact_dir": "review-suite/evals/artifacts/s1-correctness-orchestrator/pre53-8e4fdbd-0.1-s1-pre53-2case",
+    "regraded_from_attempts": "review-suite/evals/artifacts/s1-correctness-orchestrator/pre53-8e4fdbd-0.1-s1-pre53-2case.attempts.jsonl",
+    "regraded_grader_version": "1.1",
+    "runs_per_case": 5,
+    "stratum": null,
+    "suite_commit": "8e4fdbdaad8f70751d45f8c2ca87e88288f8ba5b",
+    "target_skill": "review-code-change",
+    "target_skill_dependencies": [
+      "review-solution-simplicity",
+      "review-correctness",
+      "review-code-simplicity"
+    ]
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 10,
+  "grader_version": "1.1",
+  "latency": {
+    "count": 10,
+    "max_seconds": 55.89703541621566,
+    "mean_seconds": 35.65590632092208,
+    "min_seconds": 19.295959250070155,
+    "p50_seconds": 33.305865792091936
+  },
+  "per_case": [
+    {
+      "attempts": 5,
+      "case_id": "dependency-strictness-propagation",
+      "ever_referred_relevant_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "ever_referred_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "expected_root_cause_ids": [
+        "rc.sibling-call-site-keeps-permissive-mode"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_combined_recall": 1.0,
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    },
+    {
+      "attempts": 5,
+      "case_id": "stale-claim-release-guard",
+      "ever_referred_relevant_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "ever_referred_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "expected_root_cause_ids": [
+        "rc.guard-skipped-when-snapshot-owner-absent"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_combined_recall": 1.0,
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 0,
+    "false_alarm_rate": null,
+    "false_clean_denominator": 10,
+    "false_clean_rate": 0.0,
+    "false_positive_denominator": 10,
+    "false_positive_rate": 0.0,
+    "material_finding_recall": 0.0,
+    "recall_attempts": 10,
+    "referred_denominator": 10,
+    "referred_rate": 1.0,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 1.0,
+    "per_case_finding_stability": {
+      "dependency-strictness-propagation": 1.0,
+      "stale-claim-release-guard": 1.0
+    },
+    "per_case_stability_denominator": {
+      "dependency-strictness-propagation": 5,
+      "stale-claim-release-guard": 5
+    },
+    "per_case_verdict_stability": {
+      "dependency-strictness-propagation": 1.0,
+      "stale-claim-release-guard": 1.0
+    },
+    "stability_denominator": 10
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 10,
+    "reporting_attempts_input_tokens": 10,
+    "reporting_attempts_output_tokens": 10,
+    "total_cost_usd": 0.8221815,
+    "total_input_tokens": 354210.0,
+    "total_output_tokens": 14472.0
+  }
+}
