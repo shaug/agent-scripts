@@ -1,0 +1,124 @@
+{
+  "adjudication_required": [],
+  "attempts": 5,
+  "baseline_eligible": true,
+  "configuration": {
+    "artifacts_retained": true,
+    "cases": 1,
+    "corpus_version": "0.1-s1-populated",
+    "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
+    "grader_version": "1.1",
+    "max_output_bytes": 4000000,
+    "runs_per_case": 5,
+    "skill_root": "/private/tmp/claude-501/-Users-scott--claude-worktrees-agent-scripts-epic-49-implementation-eab73d/d2c1ed44-f510-4ae0-8cdd-ed14e9491168/scratchpad/rerun/skills-verification-only",
+    "stratum": {
+      "grading_is_signal": true,
+      "ground_truth": "human-review",
+      "id": "s1-correctness-orchestrator",
+      "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Every case carries the recorded source disposition as its first adjudication and an executable oracle - a runnable module independent of the reviewer's model - as its second. SCORED: both owner-gated inputs are satisfied (the $15 total cost ceiling and complete independent adjudication across all three strata), and every expectation stays `calibrated: false` permanently, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss surfaces as `referred_root_cause_ids` rather than a silent reviewer-miss.",
+      "scored": true
+    },
+    "suite_commit": "b4e061f7847b3fc911a05fe4c8e50218f4f957b7",
+    "target_skill": "review-code-change",
+    "target_skill_dependencies": [
+      "review-solution-simplicity",
+      "review-correctness",
+      "review-code-simplicity"
+    ],
+    "target_skill_digest": "6e05fb283aa9ed69",
+    "target_skill_documents": [
+      "review-code-change/SKILL.md",
+      "review-code-change/references/orchestration-protocol.md",
+      "review-code-simplicity/SKILL.md",
+      "review-code-simplicity/references/code-simplicity-rubric.md",
+      "review-correctness/SKILL.md",
+      "review-correctness/references/correctness-rubric.md",
+      "review-solution-simplicity/SKILL.md",
+      "review-solution-simplicity/references/solution-simplicity-rubric.md"
+    ],
+    "timeout_seconds": 300.0
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 5,
+  "grader_version": "1.1",
+  "latency": {
+    "count": 5,
+    "max_seconds": 73.99658524990082,
+    "mean_seconds": 60.707393758092074,
+    "min_seconds": 40.967696791980416,
+    "p50_seconds": 65.64288329100236
+  },
+  "per_case": [
+    {
+      "attempts": 5,
+      "case_id": "session-continuation-summary",
+      "ever_referred_relevant_root_cause_ids": [],
+      "ever_referred_root_cause_ids": [],
+      "expected_root_cause_ids": [],
+      "false_alarm_attempts": 3,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 3,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_combined_recall": null,
+      "mean_recall": null,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 0.6
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 5,
+    "false_alarm_rate": 0.6,
+    "false_clean_denominator": 0,
+    "false_clean_rate": null,
+    "false_positive_denominator": 5,
+    "false_positive_rate": 0.6,
+    "material_finding_recall": null,
+    "recall_attempts": 0,
+    "referred_denominator": 5,
+    "referred_rate": 0.0,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 0.6,
+    "per_case_finding_stability": {
+      "session-continuation-summary": 1.0
+    },
+    "per_case_stability_denominator": {
+      "session-continuation-summary": 5
+    },
+    "per_case_verdict_stability": {
+      "session-continuation-summary": 0.6
+    },
+    "stability_denominator": 5
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 5,
+    "reporting_attempts_input_tokens": 5,
+    "reporting_attempts_output_tokens": 5,
+    "total_cost_usd": 0.5690740000000001,
+    "total_input_tokens": 183610.0,
+    "total_output_tokens": 13126.0
+  }
+}
