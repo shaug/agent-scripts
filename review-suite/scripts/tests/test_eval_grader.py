@@ -176,6 +176,39 @@ class MatchingTests(unittest.TestCase):
         # silent reviewer-miss the owner-settled grading method forbids.
         self.assertEqual([], grade["missed_root_cause_ids"])
         self.assertEqual(["rc.deadline"], grade["referred_root_cause_ids"])
+        # Referred-path relevance guard: this referral fired on the right
+        # surface (`session.py:31` shares a token with `session.py:refresh`),
+        # so it concretely names where the root cause lives and counts as
+        # relevant even though the prose itself was not recognized.
+        self.assertEqual(["rc.deadline"], grade["referred_relevant_root_cause_ids"])
+        self.assertEqual(1.0, grade["combined_recall"])
+
+    def test_a_referral_on_prose_alone_is_not_relevance_guard_eligible(self):
+        """Right formulation words, wrong location: referred but not concrete.
+
+        The relevance guard exists precisely to keep this apart from the case
+        above: matching accepted-formulation prose without ever naming the
+        actual file, function, or symbol must not count toward the combined
+        matched+referred rate, even though the grader still refers it rather
+        than scoring it a miss.
+        """
+        grade = grader.grade(
+            expectation("changes_required", [ROOT_CAUSE]),
+            result(
+                "changes_required",
+                [
+                    finding(
+                        "correctness.one",
+                        location="unrelated_module.py:4",
+                        concern="A stale expiry clock.",
+                    )
+                ],
+            ),
+        )
+        self.assertEqual("partial", classification_of(grade, "correctness.one"))
+        self.assertEqual(["rc.deadline"], grade["referred_root_cause_ids"])
+        self.assertEqual([], grade["referred_relevant_root_cause_ids"])
+        self.assertEqual(0.0, grade["combined_recall"])
 
     def test_a_finding_matching_two_root_causes_is_ambiguous(self):
         grade = grader.grade(
@@ -200,6 +233,12 @@ class MatchingTests(unittest.TestCase):
         # scored miss for either.
         self.assertEqual([], grade["missed_root_cause_ids"])
         self.assertEqual(["rc.deadline", "rc.record"], grade["referred_root_cause_ids"])
+        # `full` always implies surface_hit, so an ambiguous candidate (two
+        # `full` matches) is always relevance-guard eligible for both.
+        self.assertEqual(
+            ["rc.deadline", "rc.record"], grade["referred_relevant_root_cause_ids"]
+        )
+        self.assertEqual(1.0, grade["combined_recall"])
 
     def test_a_root_cause_with_no_candidate_finding_is_a_genuine_miss(self):
         """Nothing pointed at it at all: this is the one case referral must not swallow."""
@@ -210,6 +249,8 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(["rc.deadline"], grade["missed_root_cause_ids"])
         self.assertEqual([], grade["referred_root_cause_ids"])
         self.assertEqual(0.0, grade["recall"])
+        self.assertEqual([], grade["referred_relevant_root_cause_ids"])
+        self.assertEqual(0.0, grade["combined_recall"])
 
     def test_an_unexpected_gating_finding_is_a_false_positive(self):
         grade = grader.grade(
@@ -319,6 +360,29 @@ class NormalizationTests(unittest.TestCase):
                 ROOT_CAUSE, finding("correctness.one", location="other.py:9")
             ),
         )
+
+    def test_match_signals_splits_surface_and_prose_independently(self):
+        surface_only = grader.match_signals(
+            ROOT_CAUSE,
+            finding("correctness.one", concern="Something feels off here."),
+        )
+        self.assertEqual((True, False), surface_only)
+
+        signal_only = grader.match_signals(
+            ROOT_CAUSE,
+            finding(
+                "correctness.one",
+                location="unrelated_module.py:4",
+                concern="A stale expiry clock.",
+            ),
+        )
+        self.assertEqual((False, True), signal_only)
+
+        both = grader.match_signals(
+            ROOT_CAUSE,
+            finding("correctness.one", concern="A stale expiry clock."),
+        )
+        self.assertEqual((True, True), both)
 
 
 if __name__ == "__main__":

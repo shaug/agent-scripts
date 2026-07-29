@@ -107,6 +107,27 @@ def _signal_match(formulations: list[str], text: str) -> bool:
     return any(normalize(item) and normalize(item) in text for item in formulations)
 
 
+def match_signals(
+    expected: dict[str, Any], finding: dict[str, Any]
+) -> tuple[bool, bool]:
+    """Return `(surface_hit, signal_hit)` for one expectation/finding pair.
+
+    `surface_hit` is the concrete signal: the finding's location or evidence
+    names a token from the expectation's `surface` - the actual file,
+    function, or symbol the root cause turns on. `signal_hit` is the
+    accepted-formulation prose match alone, which vaguer commentary can
+    satisfy without ever naming where the defect lives. Split out from
+    `match_strength` so a referred (partial or ambiguous) candidate can be
+    judged concrete or not, rather than only judged matched or not.
+    """
+    surface = _surface_tokens(expected.get("surface", ""))
+    surface_hit = bool(surface & finding_surfaces(finding))
+    signal_hit = _signal_match(
+        expected.get("equivalent_formulations") or [], finding_text(finding)
+    )
+    return surface_hit, signal_hit
+
+
 def match_strength(expected: dict[str, Any], finding: dict[str, Any]) -> str:
     """Return `full`, `partial`, or `none` for one expectation/finding pair.
 
@@ -114,11 +135,7 @@ def match_strength(expected: dict[str, Any], finding: dict[str, Any]) -> str:
     describes the root cause in an accepted way. One signal alone is `partial`
     and is reported for adjudication rather than silently scored either way.
     """
-    surface = _surface_tokens(expected.get("surface", ""))
-    surface_hit = bool(surface & finding_surfaces(finding))
-    signal_hit = _signal_match(
-        expected.get("equivalent_formulations") or [], finding_text(finding)
-    )
+    surface_hit, signal_hit = match_signals(expected, finding)
     if surface_hit and signal_hit:
         return "full"
     if surface_hit or signal_hit:
@@ -135,16 +152,28 @@ def _classify_finding(
     strengths = [(rc, match_strength(rc, finding)) for rc in root_causes]
     full = [rc for rc, strength in strengths if strength == "full"]
     partial = [rc for rc, strength in strengths if strength == "partial"]
+    # Referred-path relevance guard (settled by the repository owner in #53's
+    # preregistered v2 scoring gate): a referred candidate only counts toward
+    # the combined matched+referred rate if this finding concretely names the
+    # candidate's actual surface, not merely if the grader marked it ambiguous
+    # or partial. `full` always implies surface_hit by construction, so an
+    # ambiguous candidate (two `full` matches) is always relevant; a `partial`
+    # candidate is relevant only when its own surface signal fired.
+    surface_relevant = {rc["id"] for rc in root_causes if match_signals(rc, finding)[0]}
 
     record: dict[str, Any] = {
         "finding_id": finding.get("id"),
         "severity": finding.get("severity"),
         "root_cause_id": None,
         "candidate_root_cause_ids": [],
+        "candidate_surface_relevant_root_cause_ids": [],
     }
     if len(full) > 1:
         record["classification"] = "ambiguous"
         record["candidate_root_cause_ids"] = [rc["id"] for rc in full]
+        record["candidate_surface_relevant_root_cause_ids"] = sorted(
+            surface_relevant & {rc["id"] for rc in full}
+        )
         return record
     if len(full) == 1:
         root_cause_id = full[0]["id"]
@@ -164,6 +193,9 @@ def _classify_finding(
     if partial:
         record["classification"] = "partial"
         record["candidate_root_cause_ids"] = [rc["id"] for rc in partial]
+        record["candidate_surface_relevant_root_cause_ids"] = sorted(
+            surface_relevant & {rc["id"] for rc in partial}
+        )
         return record
 
     record["classification"] = "unexpected"
@@ -200,6 +232,18 @@ def grade(expectation: dict[str, Any] | None, result: dict[str, Any]) -> dict[st
         for candidate_id in record["candidate_root_cause_ids"]
     } - claimed
 
+    # Referred-path relevance guard: the subset of `referred_ids` where some
+    # referring finding concretely named the candidate's surface, rather than
+    # only matching on accepted-formulation prose or being marked ambiguous.
+    # `claimed` is not re-subtracted here beyond what `referred_ids` already
+    # excludes, since relevant ids are always a subset of referred ids.
+    relevant_referred_ids = {
+        candidate_id
+        for record in records
+        if record["classification"] in {"partial", "ambiguous"}
+        for candidate_id in record.get("candidate_surface_relevant_root_cause_ids", [])
+    } & referred_ids
+
     expected_ids = [rc["id"] for rc in root_causes]
     matched_ids = sorted(claimed)
     missed_ids = [
@@ -233,6 +277,14 @@ def grade(expectation: dict[str, Any] | None, result: dict[str, Any]) -> dict[st
         "matched_root_cause_ids": matched_ids,
         "missed_root_cause_ids": missed_ids,
         "referred_root_cause_ids": sorted(referred_ids),
+        # Referred-path relevance guard, settled by the repository owner in
+        # #53's preregistered v2 scoring gate: the subset of
+        # `referred_root_cause_ids` where a referring finding concretely named
+        # the candidate's actual surface. A referred candidate that only hit
+        # on prose (vaguer commentary echoing an accepted formulation without
+        # ever pointing at the right place) is excluded here even though it is
+        # still reported under `referred_root_cause_ids` above.
+        "referred_relevant_root_cause_ids": sorted(relevant_referred_ids),
         # Recall counts confirmed matches against the full expected set, never
         # crediting a referral - a referred root cause is neither a match nor
         # a scored miss, so it is absent from both the numerator and this
@@ -241,6 +293,17 @@ def grade(expectation: dict[str, Any] | None, result: dict[str, Any]) -> dict[st
         # recall as one with genuine misses, and the referral bucket is what
         # tells the two apart.
         "recall": (len(matched_ids) / len(expected_ids)) if expected_ids else None,
+        # Combined matched+referred rate with the relevance guard applied:
+        # the preregistered v2 scoring gate's alternative path to a passing
+        # case when `recall` alone falls short. `matched_ids` and
+        # `relevant_referred_ids` are disjoint by construction (the latter is
+        # already `referred_ids - claimed`, and `referred_ids` itself excludes
+        # `claimed`), so a plain sum is exact, not an overcount.
+        "combined_recall": (
+            (len(matched_ids) + len(relevant_referred_ids)) / len(expected_ids)
+        )
+        if expected_ids
+        else None,
         "findings": records,
         "false_positive_finding_ids": [record["finding_id"] for record in gating],
         "accepted_finding_ids": [

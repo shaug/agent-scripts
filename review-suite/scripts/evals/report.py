@@ -94,11 +94,22 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
     union: set[str] = set()
     intersection: set[str] | None = None
     referred_union: set[str] = set()
+    referred_relevant_union: set[str] = set()
+    combined_recalls: list[float] = []
     for grade_record in grades:
         found = set(grade_record["matched_root_cause_ids"])
         union |= found
         intersection = found if intersection is None else (intersection & found)
         referred_union |= set(grade_record["referred_root_cause_ids"])
+        # `.get(..., [])` keeps this readable against a grade dict built before
+        # the referred-path relevance guard existed (e.g. hand-built test
+        # fixtures), which never claims the combined path passes.
+        referred_relevant_union |= set(
+            grade_record.get("referred_relevant_root_cause_ids", [])
+        )
+        combined_recall = grade_record.get("combined_recall")
+        if combined_recall is not None:
+            combined_recalls.append(combined_recall)
     expected = grades[0]["expected_root_cause_ids"] if grades else []
 
     return {
@@ -114,6 +125,16 @@ def _case_summary(case_id: str, attempts: list[dict[str, Any]]) -> dict[str, Any
         # case. Reported separately so a reader never has to infer a referral
         # from the absence of a match.
         "ever_referred_root_cause_ids": sorted(referred_union),
+        # Referred-path relevance guard: the subset of the line above where a
+        # referring finding concretely named the root cause's actual surface,
+        # not merely prose the grader could not fully resolve either way.
+        "ever_referred_relevant_root_cause_ids": sorted(referred_relevant_union),
+        # The preregistered v2 scoring gate's alternative pass path: mean, per
+        # attempt, of (matched + relevance-guarded referred) / expected. A
+        # case may pass on `mean_recall` alone, on this alone, or on neither.
+        "mean_combined_recall": (
+            statistics.fmean(combined_recalls) if combined_recalls else None
+        ),
         "verdict_stability": _modal_share([a["verdict"] for a in answered]),
         "finding_stability": _modal_share(matched_sets),
         "stability_denominator": len(answered),
