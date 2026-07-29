@@ -289,10 +289,7 @@ def load_records(root: Path | None = None) -> RecordSet:
 
 
 def _resolve_duplicate_disposition(
-    record_id: str,
-    records: dict[str, dict[str, Any]],
-    *,
-    _seen: frozenset[str] = frozenset(),
+    record_id: str, records: dict[str, dict[str, Any]]
 ) -> tuple[str | None, str | None]:
     """Follow `duplicate_of` to the disposition a duplicate's role must match.
 
@@ -304,18 +301,20 @@ def _resolve_duplicate_disposition(
     the chain is missing a record or cycles back on itself; callers must treat
     that as a validation error rather than silently permitting the duplicate.
     """
-    record = records.get(record_id)
-    if record is None or record_id in _seen:
-        return None, None
-    disposition = record.get("disposition")
-    if disposition != "duplicate":
-        return record_id, disposition
-    duplicate_of = record.get("duplicate_of")
-    if not duplicate_of:
-        return None, None
-    return _resolve_duplicate_disposition(
-        duplicate_of, records, _seen=_seen | {record_id}
-    )
+    seen: set[str] = set()
+    current = record_id
+    while True:
+        record = records.get(current)
+        if record is None or current in seen:
+            return None, None
+        disposition = record.get("disposition")
+        if disposition != "duplicate":
+            return current, disposition
+        seen.add(current)
+        duplicate_of = record.get("duplicate_of")
+        if not duplicate_of:
+            return None, None
+        current = duplicate_of
 
 
 def _promotable_errors(
@@ -334,7 +333,10 @@ def _promotable_errors(
     contribution may only fill the positive/negative role its resolved
     root-cause record actually supports - a distinct duplicate of a rejected
     claim is still evidence the claim was rejected, not a second accepted
-    outcome, and vice versa.
+    outcome, and vice versa. Once resolved, a direct record and a resolved
+    duplicate share exactly one disposition-membership check below; only the
+    error message's phrasing differs, selected by whether the resolved id is
+    the record's own id.
     """
     disposition = record.get("disposition")
     if disposition == "unresolved":
@@ -342,6 +344,7 @@ def _promotable_errors(
             f"{record_id}: unresolved claims cannot enter grading expectations or "
             "modify active review guidance"
         ]
+
     if disposition == "duplicate":
         if not record.get("distinct_contribution"):
             return [
@@ -349,42 +352,46 @@ def _promotable_errors(
                 "negative control cannot be promoted without double-counting its root "
                 "cause"
             ]
-        resolved_id, resolved_disposition = _resolve_duplicate_disposition(
+        effective_id, effective_disposition = _resolve_duplicate_disposition(
             record_id, records
         )
-        if resolved_disposition is None:
+        if effective_disposition is None:
             return [
                 f"{record_id}: duplicate_of chain could not be resolved to a "
                 "non-duplicate disposition (a missing record or a cycle)"
             ]
-        if resolved_disposition == "unresolved":
+        if effective_disposition == "unresolved":
             return [
-                f"{record_id}: duplicates an unresolved claim ({resolved_id!r}), which "
-                "cannot enter grading expectations or modify active review guidance "
-                "either"
+                f"{record_id}: duplicates an unresolved claim ({effective_id!r}), "
+                "which cannot enter grading expectations or modify active review "
+                "guidance either"
             ]
-        if as_positive and resolved_disposition not in ACCEPTED_DISPOSITIONS:
+    else:
+        effective_id, effective_disposition = record_id, disposition
+
+    if as_positive and effective_disposition not in ACCEPTED_DISPOSITIONS:
+        if effective_id == record_id:
             return [
-                f"{record_id}: duplicates {resolved_id!r} whose disposition "
-                f"{resolved_disposition!r} is not an accepted material outcome, so it "
-                "cannot support a positive regression case"
+                f"{record_id}: disposition {effective_disposition!r} is not an "
+                "accepted material outcome and cannot support a positive regression "
+                "case"
             ]
-        if not as_positive and resolved_disposition not in REJECTED_TUNING_DISPOSITIONS:
-            return [
-                f"{record_id}: duplicates {resolved_id!r} whose disposition "
-                f"{resolved_disposition!r} is not rejected/deferred tuning evidence, "
-                "so it cannot support a negative control"
-            ]
-        return []
-    if as_positive and disposition not in ACCEPTED_DISPOSITIONS:
         return [
-            f"{record_id}: disposition {disposition!r} is not an accepted material "
-            "outcome and cannot support a positive regression case"
+            f"{record_id}: duplicates {effective_id!r} whose disposition "
+            f"{effective_disposition!r} is not an accepted material outcome, so it "
+            "cannot support a positive regression case"
         ]
-    if not as_positive and disposition not in REJECTED_TUNING_DISPOSITIONS:
+    if not as_positive and effective_disposition not in REJECTED_TUNING_DISPOSITIONS:
+        if effective_id == record_id:
+            return [
+                f"{record_id}: disposition {effective_disposition!r} is not "
+                "rejected/deferred tuning evidence and cannot support a negative "
+                "control"
+            ]
         return [
-            f"{record_id}: disposition {disposition!r} is not rejected/deferred "
-            "tuning evidence and cannot support a negative control"
+            f"{record_id}: duplicates {effective_id!r} whose disposition "
+            f"{effective_disposition!r} is not rejected/deferred tuning evidence, "
+            "so it cannot support a negative control"
         ]
     return []
 
