@@ -6,11 +6,13 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, and rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect
 
+- docs: fix stale CHANGELOG SHAs left by the main rebase
 - docs: backfill the CHANGELOG entry for the review_gate.py canonicalization fix
+  (`e2310bff8cc9c3a38b690a57844436d5357fa471`)
 - fix: canonicalize review_gate.py through the existing sync-contracts mechanism
-  (`1dc2a492bd3b54961b264dec84b4f00cefe5b4e3`)
+  (`161424571551676c5e8009c2de2c2a102ab7c305`)
 - feat: migrate implement-ticket and babysit-pr to the schema 1.3 review-result
-  contract (`501c4375d8aad136a62836c9f435441efe0b8315`)
+  contract (`016ffaa826dddf72a822e555796827a396a4041f`)
 - docs(review-suite): recheck s2/s3 strata under grader 1.1 for the same
   surface-in-prose defect (`7cf4a3b3fe3dd38f3d1a9da2e6ab82058a77f064`)
 
