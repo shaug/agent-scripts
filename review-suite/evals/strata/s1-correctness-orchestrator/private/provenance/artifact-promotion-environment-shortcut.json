@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "artifact-promotion-environment-shortcut",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 315, review comment 2866874599, authored by the repository owner and accepted in the reply (comment 2866898151, \"Good catch; this is now aligned\") naming the tests added to cover it. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional artifact-release system, deliberately reshaped to be less salient than this stratum's existing `dependency-strictness-propagation` case: the untouched sibling path is reached two calls deep (`resolve_rollout_environment` -> `_pick_rollout_defaults` -> `artifact_promotable`) rather than by one direct call, and it lives in a module (`rollout/targeting.py`) whose name and docstrings describe staging-environment defaults, not dependency or promotion checking. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 315 review comment 2866874599, accepted in reply 2866898151 (tests named: test_changeset_base_branch_uses_same_dependency_integration_signal_as_pr_gate, test_attempt_create_pr_passes_repo_slug_to_base_resolver).",
+    "second": "oracle"
+  },
+  "recorded_at": "2026-07-29",
+  "notes": "Sourced for #89 as a harder discriminating sibling to `dependency-strictness-propagation`, per #57's ablation matrix finding that the existing traversal-pass target case resolves identically whether or not the traversal pass is enabled. Multi-file, multi-hop case: the defect is only visible by reading a caller the diff does not touch and tracing one further call through a helper. Second adjudication is available by oracle."
+}

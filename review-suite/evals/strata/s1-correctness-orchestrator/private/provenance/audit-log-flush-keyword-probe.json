@@ -1,0 +1,13 @@
+{
+  "provenance_version": "1.0",
+  "case_id": "audit-log-flush-keyword-probe",
+  "origin": "minimized_reproduction",
+  "retention_authority": "Minimized from an adjudicated human review finding in the public repository shaug/atelier, pull request 755, review comment 3031027866, authored by the repository owner and accepted in the reply (comment 3031075465, describing the tightened regression) naming the concrete fix. Public source, owner-authored review, no third-party or customer material.",
+  "sanitization": "Rewritten from scratch against a fictional audit-log flush module. Retains only the failure shape: a retry path resends a stale precondition, and the accompanying fake test session grants success on a superficial keyword match in the request text rather than modelling whether the request actually persisted - the exact shape of `stale-claim-release-guard`'s test-insufficiency finding but disguised behind a mocked session boundary rather than an initial-state choice, so it is less visually obvious on a first read. No source identifier, path, symbol, prose, or diff was copied. No business logic, domain identifier, customer context, credential, or hidden reasoning.",
+  "adjudication": {
+    "first": "shaug/atelier PR 755 review comment 3031027866, accepted in reply 3031075465 (regression tightened around the session boundary; a malformed-helper-evidence failure case added).",
+    "second": "oracle"
+  },
+  "recorded_at": "2026-07-29",
+  "notes": "Sourced for #89 as a harder discriminating sibling to `stale-claim-release-guard`, per #57's ablation matrix finding that the existing verification-sufficiency target case resolves identically whether or not the verification-sufficiency pass is enabled. The insufficiency is carried by a fake session's keyword-only success check rather than by the test's initial state, which is the harder-to-notice shape #89 asks for. Second adjudication is available by oracle."
+}

@@ -1,5 +1,5 @@
 {
-  "corpus_version": "0.1-s1-populated",
+  "corpus_version": "0.2-s1-populated",
   "protocol_version": "1.0",
   "grader_version": "1.1",
   "target_skill": "review-code-change",
@@ -13,9 +13,11 @@
     "ground_truth": "human-review",
     "scored": true,
     "grading_is_signal": true,
-    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Every case carries the recorded source disposition as its first adjudication and an executable oracle - a runnable module independent of the reviewer's model - as its second. SCORED: both owner-gated inputs are satisfied (the $15 total cost ceiling and complete independent adjudication across all three strata), and every expectation stays `calibrated: false` permanently, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss surfaces as `referred_root_cause_ids` rather than a silent reviewer-miss."
+    "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Every case carries the recorded source disposition as its first adjudication and an executable oracle - a runnable module independent of the reviewer's model - as its second. SCORED: both owner-gated inputs are satisfied (the $15 total cost ceiling and complete independent adjudication across all three strata), and every expectation stays `calibrated: false` permanently, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss surfaces as `referred_root_cause_ids` rather than a silent reviewer-miss. `0.2` adds two cases (#89): a harder, disguised sibling to `dependency-strictness-propagation` and to `stale-claim-release-guard`, sourced after #57's ablation matrix found neither original target case demonstrates unique causal contribution to the pass meant to fix it."
   },
   "cases": [
+    "artifact-promotion-environment-shortcut",
+    "audit-log-flush-keyword-probe",
     "dependency-hint-parser-coverage",
     "dependency-strictness-propagation",
     "optional-tool-probe",

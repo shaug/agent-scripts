@@ -4,9 +4,13 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-29 — Designed the review-fix-loop skill, migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
+## 2026-07-29 — Sourced two harder discriminating cases for the traversal and verification-sufficiency passes, designed the review-fix-loop skill, migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
 
+- feat(review-suite): source two harder discriminating
+  `s1-correctness-orchestrator` cases for the traversal and
+  verification-sufficiency passes and preregister their validation ceiling (#89)
 - docs: design the review-fix-loop skill
+  (`06538e5c097ff8e6ef15b12d5fbf61b3d959abf7`)
 - docs(review-suite): add a confirming rerun of the session-continuation-summary
   verification-only regression (#57 follow-up)
   (`cd8efa444018d036a5749a1955e1f34ebe06b51f`)

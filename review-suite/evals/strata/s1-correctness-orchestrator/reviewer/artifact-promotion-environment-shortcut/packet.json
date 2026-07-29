@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/releases",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "4c960743db89826d0a87dc5b3558bbae8566593c",
+    "comparison_base_sha": "59d8eb504311bc773d02d2d1975b707672441318",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/promotion/gate.py b/promotion/gate.py\nindex 2cb8a07..01d515d 100644\n--- a/promotion/gate.py\n+++ b/promotion/gate.py\n@@ -1,8 +1,15 @@\n from promotion.model import Artifact\n \n \n-def artifact_promotable(artifact):\n-    \"\"\"Return whether this artifact may be treated as promoted.\"\"\"\n+def artifact_promotable(artifact, *, external_proof=None):\n+    \"\"\"Return whether this artifact may be treated as promoted.\n+\n+    With `external_proof`, only a ledger-confirmed record counts. The\n+    promotion marker alone is written by the release tool and can be present\n+    on an artifact whose release announcement was never confirmed.\n+    \"\"\"\n+    if external_proof is not None:\n+        return bool(external_proof.verified)\n     return bool(artifact.promotion_marker or artifact.external_ref)\n \n \n@@ -12,5 +19,10 @@ def hold_release(record):\n \n def decide_promotion(artifact, ledger):\n     for record in [artifact]:\n-        if not artifact_promotable(record):\n+        proof = (\n+            ledger.lookup(record.external_ref)\n+            if record.verification_required\n+            else None\n+        )\n+        if not artifact_promotable(record, external_proof=proof):\n             hold_release(record)\ndiff --git a/tests/test_promotion_gate.py b/tests/test_promotion_gate.py\nindex 16ed52a..985aa13 100644\n--- a/tests/test_promotion_gate.py\n+++ b/tests/test_promotion_gate.py\n@@ -8,3 +8,16 @@ def test_artifact_promotable_accepts_a_promotion_marker():\n \n def test_artifact_promotable_accepts_an_external_ref():\n     assert artifact_promotable(Artifact(external_ref=\"rel-9\"))\n+\n+\n+def test_artifact_promotable_rejects_a_marker_only_artifact_under_ledger_proof():\n+    artifact = Artifact(promotion_marker=True, external_ref=None)\n+    assert not artifact_promotable(artifact, external_proof=UnverifiedProof())\n+\n+\n+def test_decide_promotion_holds_a_verification_required_artifact_without_ledger_proof():\n+    artifact = Artifact(\n+        verification_required=True, promotion_marker=True, external_ref=None\n+    )\n+    decide_promotion(artifact, ledger=EmptyLedger())\n+    assert artifact.held\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Stop treating an artifact as promoted on the strength of its promotion marker alone once that artifact requires mandatory verification, because the marker is written by the release tool and can be present before the ledger confirms the release actually landed.",
+    "acceptance_criteria": [
+      "An artifact that requires mandatory verification is only treated as promoted when the ledger confirms proof.",
+      "An artifact that does not require mandatory verification keeps today's marker/external-ref check."
+    ],
+    "non_goals": [
+      "Change how the ledger records proof.",
+      "Change staging/rollout default selection."
+    ],
+    "preserved_behaviors": [
+      "`artifact_promotable` keeps its permissive result when verification is not required.",
+      "`decide_promotion` keeps its existing signature."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Verification rules",
+        "location": "AGENTS.md",
+        "summary": "Once an artifact requires mandatory verification, only ledger-confirmed proof may satisfy a promotion decision; the promotion marker alone is not sufficient once that requirement applies."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Promotion proof contract",
+        "location": "docs/promotion.md"
+      },
+      {
+        "label": "Artifact model",
+        "location": "promotion/model.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Ledger client",
+        "location": "promotion/ledger.py"
+      },
+      {
+        "label": "Rollout defaults",
+        "location": "rollout/targeting.py"
+      },
+      {
+        "label": "Promotion gate tests",
+        "location": "tests/test_promotion_gate.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "promotion gate tests",
+      "command": "pytest tests/test_promotion_gate.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "7 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "146 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`promotion/gate.py` and `rollout/targeting.py` are the only two modules that call `artifact_promotable`. This diff does not touch `rollout/targeting.py`, whose relevant part is:\n\n    def _pick_rollout_defaults(artifact):\n        \"\"\"Choose default staging parameters for an artifact entering the environment.\"\"\"\n        if not artifact_promotable(artifact):\n            return STAGED_DEFAULTS\n        return PROMOTED_DEFAULTS\n\n    def resolve_rollout_environment(artifact):\n        \"\"\"Return the environment config used when a worker enters an artifact into staging.\"\"\"\n        defaults = _pick_rollout_defaults(artifact)\n        return build_environment(defaults, artifact)",
+      "`resolve_rollout_environment` is called by the environment-selection worker whenever an artifact enters staging.",
+      "An artifact with `verification_required=True` can still carry a `promotion_marker` from the release tool whenever the tool ran before the ledger recorded confirmation; this happens whenever a release is announced before its ledger entry settles."
+    ],
+    "operational": [
+      "The environment-selection worker runs once per staging entry and does not re-evaluate later; whatever defaults it assigns at entry persist for the artifact's whole staging window."
+    ]
+  }
+}

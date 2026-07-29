@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "audit-log-flush-keyword-probe",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.retry-reuses-stale-optimistic-concurrency-script",
+      "requirement": "A retried flush re-derives its script from a fresh read of the entry's current version before resending.",
+      "trigger": "The first flush attempt reports a transient session error, and a concurrent flush advances the entry's stored version before the retry runs.",
+      "surface": "flush_entry",
+      "consequence": "The retry resends the exact same already-rendered script, whose `WHERE version = ...` clause now names a version older than the row's current one, so the session reports the script as syntactically successful while it matches zero rows and nothing is actually persisted on retry; `flush_entry` still records the entry as flushed. The added `_FakeSession` treats any script containing `COMMIT` as a persisted success and never models whether the version clause would actually match a row, so it exercises the retry path in name only and cannot tell a real persisted retry from this silent no-op.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "the retry resends the same stale script instead of re-rendering it",
+        "the version used on retry is not refreshed from a fresh read",
+        "a concurrent flush between attempts can make the retry a silent no-op",
+        "the fake session only checks for COMMIT in the script text, not whether it actually persisted",
+        "the added test cannot distinguish a real persisted retry from a no-op retry"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.template-rendered-sql",
+      "description": "Building the script from a string template rather than a parameterized query API is unusual, but it is how this session boundary's script interface is used everywhere else in this module; not a defect here.",
+      "equivalent_formulations": [
+        "string templating is used to build the script",
+        "the script is built via string formatting instead of bound parameters"
+      ]
+    }
+  ]
+}
