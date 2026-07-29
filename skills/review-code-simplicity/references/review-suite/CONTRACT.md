@@ -189,6 +189,23 @@ child consumes this schema to populate it). Given a supplied entry:
   `no_other_consumers` requires only the one concrete search that found nothing
   else.
 
+This validator deliberately cannot decide *whether* a given changed symbol
+needed an entry at all, and an aggregate `clean` result that omits
+`consumer_impact_evidence` entirely is schema-valid. That is not an oversight:
+`scripts/validate.py` takes only a packet and a result as input and has no
+repository checkout to search, so it cannot itself determine whether a changed
+symbol has other call sites — the real baseline miss this evidence exists to
+surface involved a sibling call site the diff never touched, which only live
+repository access (available to the reviewing agent, not to this validator) can
+find. Building that determination into the validator would be exactly the
+independent correctness explorer and static call-graph tooling this contract
+family's non-goals rule out. Completeness of a given traversal — did the lens
+find every consumer that mattered — is judged by the lens performing the
+traversal and by forward-testing its output against a fixture's expected result,
+the same way this contract family already judges any other lens-specific finding
+(a duplicated-policy or behavior-bug miss is likewise never something this
+schema-and-structure validator can detect on its own).
+
 ## Simplification proposal dispositions
 
 When an orchestrator asks correctness to assess a validated simplification

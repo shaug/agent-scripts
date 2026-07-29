@@ -490,13 +490,29 @@ class ConsumerImpactEvidenceTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertTrue(any("expected at least 1 item" in error for error in errors))
 
-    def test_omitted_evidence_array_does_not_itself_fail_schema_validation(self):
-        # The validator cannot determine, from the result alone, which
-        # changed symbols require an entry; that judgment belongs to the lens
-        # performing the traversal (a later child). An aggregate clean result
-        # that omits `consumer_impact_evidence` entirely remains
-        # schema-valid; completeness of the traversal is a lens-judgment and
-        # forward-testing concern, not a mechanical validator check.
+    def test_an_omitted_evidence_array_is_a_lens_judgment_gap_not_a_schema_gap(
+        self,
+    ):
+        # This is a deliberate boundary, not an oversight: #52's own text
+        # ("the validator enforces structure and non-emptiness; lens judgment
+        # determines which changed symbols require an entry") and non-goals
+        # ("Add independent correctness explorers or finding validators";
+        # "Implement a complete static call graph ... or mandatory AST
+        # tooling") both rule out having this validator inspect the packet's
+        # diff to decide whether a changed symbol needed an entry. This
+        # validator receives only a packet and a result — no repository
+        # checkout to search — so it structurally cannot make that
+        # determination; the real baseline miss this evidence exists to
+        # surface involved a sibling call site the diff never touched, which
+        # only live repository access (available to the reviewing agent, not
+        # to this validator) can find. An aggregate `clean` result that omits
+        # `consumer_impact_evidence` entirely therefore remains schema-valid;
+        # whether a given traversal was actually complete is judged by
+        # forward-testing the populating lens's real output against a
+        # fixture's expected result, exactly as this contract family already
+        # judges every other lens-specific finding (a duplicated-policy or
+        # behavior-bug miss is likewise never something this validator can
+        # detect unaided).
         del self.result["consumer_impact_evidence"]
         self.assertEqual([], VALIDATOR.validate_result(self.result))
 

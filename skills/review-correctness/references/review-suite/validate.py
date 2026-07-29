@@ -259,6 +259,18 @@ def _check_consumer_impact_evidence(result: dict[str, Any]) -> list[str]:
     disposition that claims other consumers exist must be backed by evidence
     covering more than the changed symbol's own location, and every entry
     (including `no_other_consumers`) must cite at least one concrete search.
+
+    This function deliberately never inspects `packet["candidate"]["diff"]` to
+    decide whether a changed symbol *should* have an entry: this validator
+    receives only a packet and a result, with no repository checkout to
+    search, so it cannot itself determine whether a changed symbol has other
+    call sites (the baseline miss this evidence exists to surface involved a
+    sibling call site the diff never touched, which only live repository
+    access can find). Adding that determination here would be exactly the
+    independent correctness explorer and static call-graph tooling #52's
+    non-goals rule out; an omitted `consumer_impact_evidence` array is
+    schema-valid by design, and its completeness is judged by forward-testing
+    the populating lens's actual output, not by this structural check.
     """
     errors: list[str] = []
     entries = result.get("consumer_impact_evidence")
