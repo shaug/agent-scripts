@@ -49,13 +49,13 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _skill_documents(skill: str) -> dict[str, str]:
+def _skill_documents(skill: str, skill_root: Path) -> dict[str, str]:
     """One skill's reviewer-visible Markdown, namespaced by skill name.
 
     The bundled `references/review-suite/` mirror is excluded: `contract_documents`
     already supplies those files from their canonical location.
     """
-    root = TARGET_SKILL_ROOT / skill
+    root = skill_root / skill
     skill_md = root / "SKILL.md"
     if not skill_md.is_file():
         raise ConfigurationError(f"missing target skill prompt {skill_md}")
@@ -71,7 +71,10 @@ def _skill_documents(skill: str) -> dict[str, str]:
 
 
 def target_skill_documents(
-    target_skill: str, dependencies: Sequence[str] = ()
+    target_skill: str,
+    dependencies: Sequence[str] = (),
+    *,
+    skill_root: Path = TARGET_SKILL_ROOT,
 ) -> dict[str, str]:
     """Return the target skill's declared dependency closure as text.
 
@@ -95,12 +98,20 @@ def target_skill_documents(
     The corpus declares the closure so a target can be swapped without changing
     this code. Which target a scored corpus should measure, and the cost envelope
     that follows from its closure, are corpus-composition decisions.
+
+    `skill_root` defaults to the repository's real, shipped `skills/` tree.
+    A caller may point it at an alternate directory that mirrors that tree with
+    one skill's `SKILL.md` deliberately altered - the only supported way to run
+    a mechanism ablation (for example, a pass disabled/no-op) without editing
+    the shipped skill itself. The override is recorded verbatim in the report's
+    `configuration.skill_root`, so an ablation run can never be mistaken for a
+    standard-configuration one.
     """
-    documents = _skill_documents(target_skill)
+    documents = _skill_documents(target_skill, skill_root)
     for dependency in dependencies:
         if dependency == target_skill:
             raise ConfigurationError(f"{target_skill} declares itself as a dependency")
-        documents.update(_skill_documents(dependency))
+        documents.update(_skill_documents(dependency, skill_root))
     return documents
 
 
@@ -119,7 +130,12 @@ def render_skill_prompt(target_skill: str, documents: Mapping[str, str]) -> str:
     return "".join(sections)
 
 
-def target_skill_prompt(target_skill: str, dependencies: Sequence[str] = ()) -> str:
+def target_skill_prompt(
+    target_skill: str,
+    dependencies: Sequence[str] = (),
+    *,
+    skill_root: Path = TARGET_SKILL_ROOT,
+) -> str:
     """Render the target skill and its whole declared closure as one prompt.
 
     `prompt_digest` hashes this string, so the recorded `target_skill_digest`
@@ -127,7 +143,8 @@ def target_skill_prompt(target_skill: str, dependencies: Sequence[str] = ()) -> 
     whole point of pinning it across baseline strata.
     """
     return render_skill_prompt(
-        target_skill, target_skill_documents(target_skill, dependencies)
+        target_skill,
+        target_skill_documents(target_skill, dependencies, skill_root=skill_root),
     )
 
 
@@ -291,8 +308,18 @@ def evaluate(
     timeout: float,
     max_output_bytes: int,
     artifact_dir: Path | None,
+    skill_root: Path = TARGET_SKILL_ROOT,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Audit the corpus, then replay every case the configured number of times."""
+    """Audit the corpus, then replay every case the configured number of times.
+
+    `skill_root` defaults to the repository's real `skills/` tree. Passing an
+    alternate directory is the only supported way to run a mechanism ablation
+    (a pass deliberately disabled/no-op in one skill's `SKILL.md`) without
+    editing the shipped skill; see `target_skill_documents` for the full
+    contract. The resolved root is always recorded in the returned
+    `configuration`, so an ablation run is never indistinguishable from a
+    standard-configuration one.
+    """
     loaded = corpus.load_corpus(corpus_root)
     if loaded.grader_version != grader.GRADER_VERSION:
         raise corpus.CorpusError(
@@ -303,7 +330,7 @@ def evaluate(
     # two runs sent the same text but cannot say what that text was, and a
     # baseline stratum has to be able to state which skills it evaluated.
     closure = target_skill_documents(
-        loaded.target_skill, loaded.target_skill_dependencies
+        loaded.target_skill, loaded.target_skill_dependencies, skill_root=skill_root
     )
     skill_prompt = render_skill_prompt(loaded.target_skill, closure)
     documents = contract_documents()
@@ -384,6 +411,7 @@ def evaluate(
         "target_skill_dependencies": list(loaded.target_skill_dependencies),
         "target_skill_documents": sorted(closure),
         "target_skill_digest": protocol.prompt_digest(skill_prompt),
+        "skill_root": str(skill_root),
         "suite_commit": commit,
         # The stratum the corpus declares, carried verbatim. A report that names
         # its target and closure but not its stratum cannot say which ground
@@ -419,6 +447,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fresh-process command receiving one result-blind JSON request on stdin",
     )
     parser.add_argument("--corpus", type=Path, default=None)
+    parser.add_argument(
+        "--skill-root",
+        type=Path,
+        default=None,
+        help=(
+            "Directory mirroring the repository's skills/ tree, used instead of "
+            "it. The only supported way to run a mechanism ablation (a pass "
+            "deliberately disabled/no-op in one skill's SKILL.md) without "
+            "editing the shipped skill. Defaults to the real skills/ tree; "
+            "always recorded verbatim in the report's configuration.skill_root."
+        ),
+    )
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument(
@@ -469,6 +509,7 @@ def main(argv: list[str] | None = None) -> int:
             timeout=args.timeout,
             max_output_bytes=args.max_output_bytes,
             artifact_dir=args.artifact_dir,
+            skill_root=args.skill_root or TARGET_SKILL_ROOT,
         )
     except (ConfigurationError, corpus.CorpusError, grader.GradingError) as error:
         print(f"evaluation rejected: {error}", file=sys.stderr)

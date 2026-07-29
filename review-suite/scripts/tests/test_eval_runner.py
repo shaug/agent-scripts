@@ -125,6 +125,39 @@ class EvaluationTests(unittest.TestCase):
                     attempt["target_skill_digest"],
                 )
 
+    def test_skill_root_defaults_to_the_real_skills_tree(self):
+        _, configuration = self.evaluate()
+        self.assertEqual(str(runner.TARGET_SKILL_ROOT), configuration["skill_root"])
+
+    def test_an_overridden_skill_root_is_recorded_and_changes_the_closure(self):
+        """The only supported way to run a mechanism ablation.
+
+        Mirroring the target skill under an alternate root with a deliberately
+        altered `SKILL.md` must change what gets sent and must be visible in
+        the report, so an ablation run can never be mistaken for a standard one.
+        """
+        baseline_attempts, baseline_configuration = self.evaluate()
+        mirrored_root = self.temp / "ablation-skill-root"
+        shutil.copytree(runner.TARGET_SKILL_ROOT, mirrored_root)
+        mirrored_target = mirrored_root / "review-code-simplicity"
+        altered = (mirrored_target / "SKILL.md").read_text() + "\n<!-- ablated -->\n"
+        (mirrored_target / "SKILL.md").write_text(altered)
+
+        attempts, configuration = self.evaluate(skill_root=mirrored_root)
+
+        self.assertEqual(str(mirrored_root), configuration["skill_root"])
+        self.assertNotEqual(
+            baseline_configuration["target_skill_digest"],
+            configuration["target_skill_digest"],
+        )
+        self.assertIn(
+            "ablated",
+            runner.target_skill_documents(
+                "review-code-simplicity", skill_root=mirrored_root
+            )["review-code-simplicity/SKILL.md"],
+        )
+        self.assertEqual(len(baseline_attempts), len(attempts))
+
     def test_only_valid_review_results_are_graded(self):
         attempts, _ = self.evaluate()
         for attempt in attempts:
