@@ -13,7 +13,7 @@
     "blocking_reasons"
   ],
   "properties": {
-    "schema_version": {"const": "1.0"},
+    "schema_version": {"const": "1.1"},
     "lens": {
       "enum": [
         "correctness",
@@ -82,6 +82,27 @@
     "blocking_reasons": {
       "type": "array",
       "items": {"type": "string", "minLength": 1}
+    },
+    "lens_executions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lens",
+          "head_sha",
+          "comparison_base_sha",
+          "verdict",
+          "freshly_executed"
+        ],
+        "properties": {
+          "lens": {"enum": ["solution_simplicity", "correctness", "code_simplicity"]},
+          "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "comparison_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "verdict": {"enum": ["clean", "changes_required", "blocked"]},
+          "freshly_executed": {"type": "boolean"}
+        }
+      }
     },
     "validation_limitations": {
       "type": "array",

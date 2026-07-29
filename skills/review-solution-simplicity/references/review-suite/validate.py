@@ -33,6 +33,10 @@ SCHEMAS = {
     "result": _schema_file("review-result.schema.json"),
 }
 
+REQUIRED_AGGREGATE_LENSES = ("solution_simplicity", "correctness", "code_simplicity")
+
+STALE_RESULT_SCHEMA_VERSIONS = {"1.0"}
+
 BLOCKABLE_PACKET_ERROR_PATTERNS = (
     re.compile(
         r"^\$: missing required property "
@@ -161,6 +165,14 @@ def validate_packet(packet: dict[str, Any]) -> list[str]:
 
 
 def validate_result(result: dict[str, Any]) -> list[str]:
+    if (
+        isinstance(result, dict)
+        and result.get("schema_version") in STALE_RESULT_SCHEMA_VERSIONS
+    ):
+        return [
+            "$.schema_version: stale v1.0 result rejected; v1.0 results are not "
+            "accepted as v1.1 evidence, rebuild review evidence at schema 1.1"
+        ]
     schema = json.loads(SCHEMAS["result"].read_text())
     errors = validate_schema(result, schema)
     if errors:
@@ -217,6 +229,63 @@ def validate_result(result: dict[str, Any]) -> list[str]:
             "$.proposal_dispositions: duplicate finding id(s): "
             + ", ".join(duplicate_dispositions)
         )
+
+    if result.get("lens") == "aggregate" and verdict == "clean":
+        errors.extend(_check_aggregate_clean_lens_executions(result))
+    return errors
+
+
+def _check_aggregate_clean_lens_executions(result: dict[str, Any]) -> list[str]:
+    """Require one fresh current-head/current-base clean execution per lens.
+
+    An aggregate `clean` is only trustworthy when every required lens actually
+    completed against the exact aggregate candidate. This closes the gap where
+    a new-head aggregate could be reached without a fresh solution-simplicity,
+    correctness, or code-simplicity execution for that exact head, and rejects
+    any old-head or old-base execution smuggled into a new aggregate.
+    """
+    errors: list[str] = []
+    candidate = result.get("candidate")
+    head = candidate.get("head_sha") if isinstance(candidate, dict) else None
+    base = candidate.get("comparison_base_sha") if isinstance(candidate, dict) else None
+    executions = result.get("lens_executions")
+    if not isinstance(executions, list) or not executions:
+        return ["$.lens_executions: aggregate clean requires lens execution evidence"]
+
+    seen: list[str] = []
+    for index, execution in enumerate(executions):
+        if not isinstance(execution, dict):
+            continue
+        lens_name = execution.get("lens")
+        seen.append(lens_name)
+        at = f"$.lens_executions[{index}]"
+        if (
+            execution.get("head_sha") != head
+            or execution.get("comparison_base_sha") != base
+        ):
+            errors.append(
+                f"{at}: stale head or base cannot contribute to a new-head "
+                "aggregate clean"
+            )
+        if execution.get("verdict") != "clean":
+            errors.append(f"{at}: aggregate clean requires a clean lens execution")
+        if execution.get("freshly_executed") is not True:
+            errors.append(
+                f"{at}: aggregate clean requires a freshly executed lens result"
+            )
+
+    missing = [lens for lens in REQUIRED_AGGREGATE_LENSES if lens not in seen]
+    if missing:
+        errors.append(
+            "$.lens_executions: aggregate clean is missing required lens "
+            "execution(s): " + ", ".join(missing)
+        )
+    duplicates = sorted({lens for lens in seen if lens and seen.count(lens) > 1})
+    if duplicates:
+        errors.append(
+            "$.lens_executions: aggregate clean has duplicate lens execution(s): "
+            + ", ".join(duplicates)
+        )
     return errors
 
 
@@ -253,6 +322,35 @@ def validate_pair(packet: dict[str, Any], result: dict[str, Any]) -> list[str]:
             errors.append(f"candidate.{field}: result omits identity present in packet")
         elif packet_has_field and packet_candidate[field] != result_candidate[field]:
             errors.append(f"candidate.{field}: result does not match packet")
+    errors.extend(_check_clean_requires_passing_validation(packet, result))
+    return errors
+
+
+def _check_clean_requires_passing_validation(
+    packet: dict[str, Any], result: dict[str, Any]
+) -> list[str]:
+    """Reject a `clean` verdict paired with failed or unavailable validation.
+
+    A schema-valid `clean` result previously did not prove that the packet's
+    own required focused and full validation actually passed: every entry
+    could be `failed` and pair validation raised no error. `clean` must not
+    hide a failed or unavailable required command.
+    """
+    if result.get("verdict") != "clean":
+        return []
+    validations = packet.get("validation")
+    if not isinstance(validations, list):
+        return []
+    errors: list[str] = []
+    for index, validation in enumerate(validations):
+        if not isinstance(validation, dict):
+            continue
+        status = validation.get("status")
+        if status in {"failed", "unavailable"}:
+            errors.append(
+                f"validation[{index}]: clean cannot pair with {status} "
+                "required validation"
+            )
     return errors
 
 

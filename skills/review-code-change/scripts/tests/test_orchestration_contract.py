@@ -111,8 +111,12 @@ class OrchestrationContractTests(unittest.TestCase):
                 ["solution_simplicity", "correctness", "code_simplicity"],
                 "changes_required",
             ),
-            "targeted-correctness-recheck": (
-                ["code_simplicity", "correctness"],
+            "full-restart-after-code-simplicity-fix": (
+                ["solution_simplicity", "correctness", "code_simplicity"],
+                "clean",
+            ),
+            "full-restart-after-correctness-fix": (
+                ["solution_simplicity", "correctness", "code_simplicity"],
                 "clean",
             ),
             "missing-dependency": ([], "blocked"),

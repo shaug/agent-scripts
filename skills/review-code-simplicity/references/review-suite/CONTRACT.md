@@ -104,8 +104,11 @@ that merely move complexity behind another name.
 
 ## Verdict semantics
 
-- `clean`: no `blocking` or `strong_recommendation` finding remains. Deferred
-  findings may be retained without failing the gate.
+- `clean`: no `blocking` or `strong_recommendation` finding remains, every
+  packet validation entry supplied as required evidence passed, and — for an
+  aggregate result — every required lens has a fresh, current-head execution
+  (see "Lens execution evidence" below). Deferred findings may be retained
+  without failing the gate.
 - `changes_required`: at least one actionable `blocking` or
   `strong_recommendation` finding remains.
 - `blocked`: essential evidence or a product or architecture decision is
@@ -117,6 +120,48 @@ and must not include `blocking_reasons`. A `blocked` result may omit candidate
 fields that the caller could not establish and may preserve already-demonstrated
 findings, but those findings do not convert the blocked review into a merge
 verdict.
+
+### Validation must back a `clean` verdict
+
+A packet's `validation` array is required evidence, not optional context: a
+`clean` verdict claims that evidence is trustworthy, so a result must not
+declare `clean` while that same packet records a required focused or full
+validation entry as `failed` or `unavailable`. Pair validation rejects any
+`clean` result paired with such a packet.
+
+- A `failed` command with a demonstrated candidate-caused failure is a gating
+  correctness/validation finding and yields `changes_required`, never `clean`.
+- A `failed` or `unavailable` command whose attribution or result is
+  insufficient for a trustworthy verdict yields `blocked` with a concrete reason
+  and a recorded `validation_limitations` entry, never `clean`.
+- Do not invent infrastructure attribution from an exit code alone, and do not
+  omit a failed or unavailable command from validation evidence to hide it.
+
+### Lens execution evidence (aggregate results)
+
+An aggregate result records `lens_executions`: one entry per required lens
+(`solution_simplicity`, `correctness`, `code_simplicity`), each naming its
+`lens`, `head_sha`, `comparison_base_sha`, `verdict`, and whether it was
+`freshly_executed` for this exact aggregate.
+
+For aggregate `clean`:
+
+- all three required lenses must be present exactly once, with no missing and no
+  duplicate entry;
+- every entry's `head_sha` and `comparison_base_sha` must equal the aggregate
+  result's own candidate — a stale-head or stale-base entry cannot contribute to
+  a new-head aggregate;
+- every entry's `verdict` must be `clean`; and
+- every entry must be `freshly_executed`; no old-head or reused result may count
+  toward a new aggregate.
+
+Any edit, rebase, conflict resolution, or update that changes the head
+invalidates every existing lens execution for that head. Restart the complete
+three-lens sequence — solution simplicity, correctness, then code simplicity —
+after any such head-changing fix; a partial rerun (for example, only correctness
+after a correctness fix, or only code simplicity and correctness after a
+code-simplicity fix) cannot produce a valid `clean` aggregate. This child
+defines no selective-reuse exception across different heads.
 
 ## Simplification proposal dispositions
 

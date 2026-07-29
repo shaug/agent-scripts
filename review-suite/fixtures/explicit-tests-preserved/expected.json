@@ -1,7 +1,10 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "lens": "code_simplicity",
-  "candidate": {"head_sha": "8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b", "comparison_base_sha": "9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b"},
+  "candidate": {
+    "head_sha": "8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b",
+    "comparison_base_sha": "9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b9b"
+  },
   "verdict": "clean",
   "findings": [],
   "blocking_reasons": [],

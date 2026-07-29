@@ -369,19 +369,31 @@ class ResponseClassificationTests(unittest.TestCase):
             "proposed_change": "Meet the requirement.",
             "expected_effect": "The requirement is met.",
         }
+        result = {
+            "schema_version": "1.1",
+            "lens": "aggregate",
+            "candidate": candidate,
+            "verdict": verdict,
+            "findings": [finding] if verdict == "changes_required" else [],
+            "blocking_reasons": [],
+        }
+        if verdict == "clean":
+            result["lens_executions"] = [
+                {
+                    "lens": lens,
+                    "head_sha": candidate["head_sha"],
+                    "comparison_base_sha": candidate["comparison_base_sha"],
+                    "verdict": "clean",
+                    "freshly_executed": True,
+                }
+                for lens in ("solution_simplicity", "correctness", "code_simplicity")
+            ]
         return {
             "protocol_version": protocol.PROTOCOL_VERSION,
             "outcome": "review_result",
             "simulation": False,
             "executor": {"name": "test"},
-            "result": {
-                "schema_version": "1.0",
-                "lens": "aggregate",
-                "candidate": candidate,
-                "verdict": verdict,
-                "findings": [finding] if verdict == "changes_required" else [],
-                "blocking_reasons": [],
-            },
+            "result": result,
         }
 
     def classify(self, response):
@@ -447,7 +459,7 @@ class ResponseClassificationTests(unittest.TestCase):
             "simulation": False,
             "executor": {"name": "test"},
             "result": {
-                "schema_version": "1.0",
+                "schema_version": "1.1",
                 "lens": "aggregate",
                 "candidate": {
                     "head_sha": blocked_case.packet["candidate"]["head_sha"],
@@ -488,6 +500,9 @@ class ResponseClassificationTests(unittest.TestCase):
             with self.subTest(verdict=verdict):
                 response = self._valid_response(verdict)
                 response["result"]["candidate"] = candidate
+                for execution in response["result"].get("lens_executions", []):
+                    execution["head_sha"] = candidate["head_sha"]
+                    execution["comparison_base_sha"] = candidate["comparison_base_sha"]
                 status, _, detail = protocol.classify_response(
                     blocked_case.packet, json.dumps(response)
                 )

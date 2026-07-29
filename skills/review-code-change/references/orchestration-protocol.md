@@ -21,18 +21,18 @@ the implementation transcript.
 
 Use this decision table after validating each lens result.
 
-| Current result                                | Next action                                                          |
-| --------------------------------------------- | -------------------------------------------------------------------- |
-| solution `blocked`                            | aggregate `blocked`; stop                                            |
-| solution requires strategy replacement        | aggregate findings; caller redesigns; stop                           |
-| solution has a tractable in-strategy proposal | run correctness                                                      |
-| solution `clean`                              | run correctness                                                      |
-| correctness `blocked`                         | aggregate `blocked`; stop                                            |
-| correctness has a gating finding              | aggregate findings; caller fixes; stop                               |
-| correctness `clean`                           | run code simplicity                                                  |
-| code simplicity `blocked`                     | aggregate `blocked`; stop                                            |
-| code simplicity has a gating finding          | aggregate findings; caller fixes, then rechecks code and correctness |
-| all required results `clean`                  | aggregate `clean`; stop                                              |
+| Current result                                | Next action                                                       |
+| --------------------------------------------- | ----------------------------------------------------------------- |
+| solution `blocked`                            | aggregate `blocked`; stop                                         |
+| solution requires strategy replacement        | aggregate findings; caller redesigns; stop                        |
+| solution has a tractable in-strategy proposal | run correctness                                                   |
+| solution `clean`                              | run correctness                                                   |
+| correctness `blocked`                         | aggregate `blocked`; stop                                         |
+| correctness has a gating finding              | aggregate findings; caller fixes; stop                            |
+| correctness `clean`                           | run code simplicity                                               |
+| code simplicity `blocked`                     | aggregate `blocked`; stop                                         |
+| code simplicity has a gating finding          | aggregate findings; caller fixes, then restarts the full sequence |
+| all required results `clean`                  | aggregate `clean`; stop                                           |
 
 A solution result requires strategy replacement when its proposed change
 replaces major mechanisms, ownership boundaries, storage, state, or operational
@@ -111,15 +111,27 @@ scope.
 
 | Change applied by caller | New-head sequence                                           |
 | ------------------------ | ----------------------------------------------------------- |
-| solution redesign        | solution, correctness, code                                 |
-| correctness fix          | correctness, then affected downstream lenses                |
-| code-simplicity fix      | code, then targeted correctness                             |
+| solution redesign        | solution, correctness, code (full restart)                  |
+| correctness fix          | solution, correctness, code (full restart)                  |
+| code-simplicity fix      | solution, correctness, code (full restart)                  |
 | base-only drift          | apply shared drift rules, then reset only affected evidence |
 
+Any change that produces a new head — a solution redesign, a correctness fix, or
+a code-simplicity fix — restarts the complete three-lens sequence on that new
+head: solution simplicity, then correctness, then code simplicity. No old-head
+lens result may contribute to the new-head aggregate, and no new-head aggregate
+`clean` is valid without a fresh execution from all three lenses (see the shared
+contract's "Lens execution evidence" section). This closes the contradiction
+where a correctness-only or code-simplicity-only rerun could reach a new-head
+`clean` aggregate without a fresh solution-simplicity result for that exact
+head, or could miss a correctness fix that introduced new strategy-level
+machinery. This protocol defines no selective-reuse exception across different
+heads; only base-only drift, where the head itself is unchanged, uses the
+existing effective-candidate retain or reset rules.
+
 Count a full cycle when a candidate reaches a material finding and the caller
-supplies a new head for another full or required downstream pass. At cycle
-three, return unresolved findings and tell the caller that the automatic cycle
-budget is exhausted.
+supplies a new head for another full restart. At cycle three, return unresolved
+findings and tell the caller that the automatic cycle budget is exhausted.
 
 ## Preserve read-only operation
 
