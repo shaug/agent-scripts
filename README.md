@@ -246,6 +246,17 @@ quoting any figure — in particular, **the connector stratum is deferred, not
 satisfied**, so connector-escape recall has never been measured and no
 human-review figure may be reported as a connector figure.
 
+The v2 scored closeout lives in `review-suite/evals/v2/`: the preregistered gate
+manifest and decision record from `#59`, and `#57`'s own scored ablation
+comparison — three independently-measured `s1-correctness-orchestrator`
+configurations (each required pass isolated, then both together) plus the
+reused, non-regressed `s2`/`s3` figures, each checked against the settled
+per-case gate. It reports what clean proves, what it does not prove (in
+particular, whether a passing numeric gate demonstrates a mechanism's own unique
+causal contribution — it does not, on the evidence recorded there), and a
+recommendation, not a removal decision, per mechanism. See
+[its README](review-suite/evals/v2/README.md) for the full document set.
+
 ### Connector-outcome curation and promotion
 
 `review-suite/evals/curation/` turns a newly adjudicated connector finding into
