@@ -1,0 +1,78 @@
+{
+  "record_version": "1.0",
+  "status": "frozen_before_scoring",
+  "status_detail": "Committed before any scored v2 output was examined, per this record's own rule below and per the frozen v1 baseline's precedent. This is a measurement-only record: it exists to determine whether #53's traversal and verification-sufficiency passes demonstrably fixed the two confident misses the frozen v1 baseline (review-suite/evals/baseline/v1/) recorded in s1-correctness-orchestrator. It does not gate #53's own merge (already merged as commit 85ccf13) and does not authorize, build, or decide anything about #54's independent-discovery architecture.",
+  "scope": {
+    "stratum_rescored": "s1-correctness-orchestrator only",
+    "why_only_this_stratum": "s2-solution-simplicity-lens and s3-code-simplicity-lens are solution-simplicity/code-simplicity strata untouched by #53's correctness-only change (consumer/impact-traversal and verification-sufficiency passes added to review-correctness alone). Re-scoring them would spend real money to re-confirm a null result the gate-manifest.json non-regression floor already expects (\"all 8 cases must replay with identical statuses to their v1 report\"); that check is deferred to whoever runs the full v2 gate, not repeated here.",
+    "target_cases": [
+      "dependency-strictness-propagation",
+      "stale-claim-release-guard"
+    ],
+    "non_target_cases_in_same_stratum": [
+      "dependency-hint-parser-coverage",
+      "optional-tool-probe",
+      "post-bootstrap-module-load",
+      "process-isolation-assertion",
+      "session-continuation-summary"
+    ]
+  },
+  "predecessor_baseline": {
+    "v1_frozen_configuration": "review-suite/evals/baseline/v1/frozen-configuration.json",
+    "v1_s1_report": "review-suite/evals/baseline/v1/s1-correctness-orchestrator.report.json",
+    "v1_review_behaviour_commit": "16560d807c66076fcbf3f00d3a87f543c6ae2458",
+    "v1_scoring_suite_commit": "2644c12",
+    "v1_dependency_strictness_propagation_mean_recall": 0.0,
+    "v1_stale_claim_release_guard_mean_recall": 0.0,
+    "v1_verdict_stability_both_target_cases": 1.0,
+    "v1_finding_stability_both_target_cases": 1.0
+  },
+  "gate_source": {
+    "settled_by": "repository owner, in #53's issue body under \"Preregistered v2 scoring gate\" (a refinement of #59's gate-manifest.json proposal, not the proposal verbatim)",
+    "gate_manifest_reference": "review-suite/evals/v2/gate-manifest.json (proposal; #53's issue body is the settled version this record actually applies)",
+    "binding_quote": "These are binding on whichever ticket execution runs the v2 re-score of this implementation, not on this ticket's own merge gate."
+  },
+  "suite_commit": {
+    "review_behaviour_commit": "85ccf13b45bad8f162d81963a3ac910ea0b49590",
+    "review_behaviour_commit_note": "origin/main's current head at freeze time, verified via `git rev-parse origin/main` immediately before this record was written - the exact commit '#53's traversal and verification-sufficiency passes' landed at (feat: add correctness traversal and verification-sufficiency passes (#83)). This is the commit whose skills/review-code-change, skills/review-solution-simplicity, skills/review-correctness, and skills/review-code-simplicity trees the runner's target_skill_documents digests and sends to the reviewer; it is unaffected by the grading-tooling commit below, which touches only review-suite/scripts/evals/.",
+    "scoring_run_commit_note": "The runner (review-suite/scripts/evals/runner.py:suite_commit()) records `git rev-parse HEAD` into every report's own `configuration.suite_commit` field automatically at launch time. That value is not predicted here - predicting a future commit hash before committing this file would be circular - and is instead read back from the produced review-suite/evals/v2/s1-correctness-orchestrator.report.json and restated in this record's companion analysis document once the run completes. No file content changes between the grading-tooling commit below and the scoring run, so that recorded commit is expected to equal, or be a direct descendant of, the grading-tooling commit with no intervening skill or corpus change."
+  },
+  "grading_tooling_change": {
+    "commit": "6195ada98a168a78ee4f7deccf0dd9bf0c204b43",
+    "summary": "Added review-suite/scripts/evals/grader.py:match_signals (public surface_hit/signal_hit split) and grade() fields referred_relevant_root_cause_ids / combined_recall, plus the corresponding per-case fields in report.py. This is the mechanical referred-path relevance guard the gate requires - a referred candidate counts toward the combined matched+referred rate only when a referring finding's location/evidence shares a surface token with the expected root cause's surface, not merely when the grader classifies it partial or ambiguous.",
+    "grader_version": "1.0, unchanged - additive fields only, no existing classification or field changed, so no corpus's declared grader_version needs to move",
+    "verified_by": "review-suite/scripts/tests/test_eval_grader.py and test_eval_report.py; full `just test` run (245 review-suite tests, all passing) before this eval was launched"
+  },
+  "runtime": {
+    "adapter": "review-suite/scripts/evals/claude_executor.py",
+    "adapter_version": "1.0",
+    "executor_command": "python3 review-suite/scripts/evals/claude_executor.py",
+    "runtime": "claude",
+    "runtime_cli_version": "2.1.92",
+    "runtime_cli_version_verified": "matches gate-manifest.json's runtime_model_stratum pin exactly; verified via `claude --version` immediately before launch",
+    "model": "resolved from the runtime's reported modelUsage on every attempt, exactly as v1 did; an attempt that cannot name its model is recorded as a runtime failure rather than a result",
+    "stratum_rule": "unchanged from v1 and from gate-manifest.json: a change of runtime, runtime version, or model creates a new, non-comparable stratum"
+  },
+  "execution": {
+    "runs_per_case": 5,
+    "runs_per_case_rationale": "Kept identical to v1 for comparability of the two target cases across the v1/v2 boundary, per gate-manifest.json's explicit judgment call to prefer comparability over a larger sample.",
+    "timeout_seconds": 450,
+    "timeout_rationale": "Set unconditionally per #53's issue body: 'Set unconditionally to 450s (up from 300s) for the v2 re-score. Do not wait for a pilot run to approach the existing limit before raising it.' Not derived from an observed approach to 300s in this run; raised up front as instructed.",
+    "retry_policy": "none, unchanged from v1 - a failed attempt is an evaluation failure and is never retried",
+    "cost_ceiling_usd": 12.0,
+    "cost_ceiling_rationale": "Raised from v1's $9.00 per #53's issue body, sized from the v1 pilot's worst observed cold-attempt cost ($0.2021/attempt) with two added reasoning passes. This is also the delegated task's own hard ceiling for the whole measurement step, since only s1 is being re-scored.",
+    "cost_ceiling_exhaustion_policy": "unchanged from v1: exceeding the ceiling stops further runs and records an incomplete baseline; repetitions are never reduced after outputs are visible",
+    "corpus_version": "0.1-s1-populated, unchanged from v1 - no case content changed for this re-score, only the reviewed skill (post-#53) and the grading tooling above",
+    "invocation_template": "just eval-review-suite 'python3 review-suite/scripts/evals/claude_executor.py' --corpus review-suite/evals/strata/s1-correctness-orchestrator --runs 5 --timeout 450 --artifact-dir review-suite/evals/artifacts/s1-correctness-orchestrator/<short-commit>-0.1-s1-populated --attempts-out review-suite/evals/artifacts/s1-correctness-orchestrator/<short-commit>-0.1-s1-populated.attempts.jsonl --report-out review-suite/evals/v2/s1-correctness-orchestrator.report.json"
+  },
+  "quality_stability_non_regression_thresholds": {
+    "per_case_target_gate": "For each of dependency-strictness-propagation and stale-claim-release-guard, independently: mean_recall >= 0.6 (>= 3 of 5 attempts matched) OR mean_combined_recall >= 0.8 (relevance-guarded matched+referred). One case's result must not be blended with or masked by the other's.",
+    "non_regression_floor": [
+      "verdict_stability and finding_stability for both target cases must not fall below their v1 value of 1.0",
+      "dependency-hint-parser-coverage, post-bootstrap-module-load, session-continuation-summary must remain at zero false_positive_attempts",
+      "process-isolation-assertion's false_alarm_attempts must not exceed its v1-observed 2 of 5"
+    ]
+  },
+  "committed_before_scoring": true,
+  "committed_before_scoring_note": "This file, and the grading-tooling commit it cites, are being committed to this branch before any attempt in the scored run below is launched, and before any of this run's output is examined - the same discipline v1's own frozen-configuration.json and gate-manifest.json both apply."
+}
