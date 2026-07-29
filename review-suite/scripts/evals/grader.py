@@ -137,9 +137,14 @@ def surface_named_in_prose(expected: dict[str, Any], finding: dict[str, Any]) ->
     phrase to appear keeps that boundary intact (a lone "guidance" is not
     "render rollback guidance") while still catching a real reviewer that
     plainly names the exact symbol.
+
+    Implemented as `_signal_match` on a single-item formulations list rather
+    than a second, separately-written normalize/substring check: it is the
+    exact same rule (including the same falsy-formulation guard, so an
+    empty or missing `surface` field correctly never matches), and reusing it
+    keeps only one place that rule can drift.
     """
-    surface = normalize(expected.get("surface", ""))
-    return bool(surface) and surface in finding_text(finding)
+    return _signal_match([expected.get("surface", "")], finding_text(finding))
 
 
 def match_signals(
