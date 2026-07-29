@@ -13,6 +13,23 @@ Require repository-owned `review-code-change` before the publication size gate.
 Fail closed when it is missing or unreadable. Do not substitute another skill, a
 generic self-review, or an unreviewed path.
 
+Read the bundled review-result contract at
+[references/review-suite/CONTRACT.md](review-suite/CONTRACT.md) and the schema
+beside it. Before consuming any returned result, validate it with
+`references/review-suite/validate.py` or the stricter bundled
+`scripts/review_gate.py`, which also binds the result to this run's exact
+current head and comparison-base SHA. Reject a result that fails schema
+validation, carries a `schema_version` other than the bundled contract's current
+version (`1.3`; a stale version such as `1.0`, `1.1`, or `1.2` fails with its
+own migration message and is never accepted as current evidence), is not an
+`aggregate` result, has a `verdict` other than `clean`, or is missing a
+complete, current, freshly executed `lens_executions` entry for every required
+lens. Treat any such rejection, exactly like a missing dependency or a `blocked`
+verdict, as a failed initial review; never publish or advance the publication
+gate on that evidence. A schema-valid `clean` aggregate already bound to the
+current head and base with complete fresh lens executions needs no additional
+invented review cycle.
+
 Require every intended ticket change to be committed and the implementation
 worktree to be clean before review. If unrelated user artifacts prevent a clean
 state, classify and preserve them and prove they are irrelevant to the

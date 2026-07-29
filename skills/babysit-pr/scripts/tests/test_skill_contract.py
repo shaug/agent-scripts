@@ -90,6 +90,20 @@ class BabysitPrContractTests(unittest.TestCase):
             "blocked", self.expectations["missing-capability"]["terminal_state"]
         )
 
+    def test_review_result_contract_violations_block_the_final_gate(self):
+        for case_id in (
+            "stale-review-schema-version-blocks-final-gate",
+            "malformed-review-result-blocks-final-gate",
+            "green-ci-alone-insufficient-without-valid-review",
+        ):
+            self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
+        self.assertIn("references/review-suite/CONTRACT.md", self.contract)
+        self.assertIn("scripts/review_gate.py", self.contract)
+        self.assertIn("schema_version", self.decisions + self.skill)
+        self.assertIn(
+            "never satisfied by green CI or connector approval alone", self.contract
+        )
+
     def test_runtime_adapters_exist_for_both_products(self):
         self.assertIn('display_name: "Babysit PR"', read("agents/openai.yaml"))
         self.assertIn("Claude Code adapter", read("agents/claude-code.md"))

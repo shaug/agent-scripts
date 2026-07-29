@@ -8,10 +8,11 @@ md_targets := "."
 list-skills:
   @find {{skills_dir}} -mindepth 1 -maxdepth 1 -type d -print
 
-# Refresh the review-suite contract copies bundled into each review skill so
-# the skills stay self-contained when installed outside this repository.
+# Refresh the review-suite contract copies bundled into each review skill and
+# each caller that consumes a review-code-change result, so every skill stays
+# self-contained when installed outside this repository.
 sync-contracts:
-  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity; do \
+  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity implement-ticket babysit-pr; do \
     dest="{{skills_dir}}/$skill/references/review-suite"; \
     mkdir -p "$dest"; \
     cp review-suite/CONTRACT.md "$dest/CONTRACT.md"; \
@@ -19,6 +20,14 @@ sync-contracts:
     cp review-suite/contracts/review-result.schema.json "$dest/review-result.schema.json"; \
     cp review-suite/scripts/validate.py "$dest/validate.py"; \
     echo "Synced $dest"; \
+  done
+  @for skill in implement-ticket babysit-pr; do \
+    scripts_dest="{{skills_dir}}/$skill/scripts"; \
+    tests_dest="$scripts_dest/tests"; \
+    mkdir -p "$tests_dest"; \
+    cp review-suite/scripts/review_gate.py "$scripts_dest/review_gate.py"; \
+    cp review-suite/scripts/tests/test_review_gate.py "$tests_dest/test_review_gate.py"; \
+    echo "Synced $scripts_dest/review_gate.py and $tests_dest/test_review_gate.py"; \
   done
 
 test: test-plugins

@@ -103,5 +103,20 @@
     "case_id": "documented-absent-gates",
     "terminal_state": "ready_to_merge",
     "required_actions": ["record documented absence", "apply every remaining gate", "do not invent or silently skip a requirement"]
+  },
+  {
+    "case_id": "stale-review-schema-version-blocks-final-gate",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the stale schema_version result", "rebuild a fresh review-code-change result before treating the candidate as ready"]
+  },
+  {
+    "case_id": "malformed-review-result-blocks-final-gate",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the schema-invalid review result", "rebuild a fresh review-code-change result before treating the candidate as ready"]
+  },
+  {
+    "case_id": "green-ci-alone-insufficient-without-valid-review",
+    "terminal_state": "blocked",
+    "required_actions": ["establish valid review-code-change evidence for the current candidate", "do not treat green CI or connector state as a substitute for review evidence"]
   }
 ]

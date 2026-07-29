@@ -1,9 +1,12 @@
 """Verify skill-bundled review-suite contract copies match the canonical source.
 
-Each review skill bundles the canonical contract and schemas under
-`references/review-suite/` so the skill remains self-contained when installed
-outside this repository. `just sync-contracts` refreshes the copies; this test
-fails when any copy drifts from the canonical file.
+Every review lens skill and every caller that consumes a review-code-change
+result bundles the canonical contract and schemas under
+`references/review-suite/` so each skill remains self-contained when installed
+outside this repository. Callers that also validate a review result additionally
+bundle the canonical `scripts/review_gate.py` and its test under `scripts/`.
+`just sync-contracts` refreshes every copy; this test fails when any copy
+drifts from its canonical file.
 """
 
 from __future__ import annotations
@@ -20,6 +23,8 @@ BUNDLING_SKILLS = (
     "review-correctness",
     "review-code-simplicity",
     "review-solution-simplicity",
+    "implement-ticket",
+    "babysit-pr",
 )
 CANONICAL_FILES = {
     "CONTRACT.md": REVIEW_SUITE / "CONTRACT.md",
@@ -30,6 +35,20 @@ CANONICAL_FILES = {
     / "contracts"
     / "review-result.schema.json",
     "validate.py": REVIEW_SUITE / "scripts" / "validate.py",
+}
+
+# `review_gate.py` is a caller-side consumption check, not part of the review
+# packet/result contract itself, so only skills that consume a
+# `review-code-change` result bundle it (under `scripts/`, not
+# `references/review-suite/`) — unlike CANONICAL_FILES above, which every
+# review lens skill also bundles.
+GATE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr")
+GATE_CANONICAL_FILES = {
+    "scripts/review_gate.py": REVIEW_SUITE / "scripts" / "review_gate.py",
+    "scripts/tests/test_review_gate.py": REVIEW_SUITE
+    / "scripts"
+    / "tests"
+    / "test_review_gate.py",
 }
 
 
@@ -53,6 +72,23 @@ class BundledContractTests(unittest.TestCase):
             for name, canonical in CANONICAL_FILES.items():
                 bundled = bundle / name
                 with self.subTest(skill=skill, file=name):
+                    self.assertTrue(
+                        bundled.exists(),
+                        f"{bundled} is missing; run `just sync-contracts`",
+                    )
+                    self.assertEqual(
+                        canonical.read_bytes(),
+                        bundled.read_bytes(),
+                        f"{bundled} drifted from {canonical}; "
+                        "run `just sync-contracts`",
+                    )
+
+    def test_every_consuming_skill_bundles_an_identical_review_gate(self):
+        for skill in GATE_BUNDLING_SKILLS:
+            skill_root = REPOSITORY_ROOT / "skills" / skill
+            for relative, canonical in GATE_CANONICAL_FILES.items():
+                bundled = skill_root / relative
+                with self.subTest(skill=skill, file=relative):
                     self.assertTrue(
                         bundled.exists(),
                         f"{bundled} is missing; run `just sync-contracts`",

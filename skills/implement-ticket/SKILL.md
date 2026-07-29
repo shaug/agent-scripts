@@ -25,7 +25,10 @@ create a third shared workflow abstraction.
 - Read [the Linear adapter](references/linear.md) whenever Linear owns ticket,
   parent, dependency, or status state.
 - Always read [review and merge gates](references/review-and-merge-gates.md)
-  before publishing the candidate.
+  before publishing the candidate. It requires validating every
+  `review-code-change` result against the bundled
+  [review-result contract](references/review-suite/CONTRACT.md) and the stricter
+  bundled `scripts/review_gate.py` before consuming it.
 - Always read [the babysit-pr handoff](references/babysit-pr-handoff.md) before
   creating implementation state and again before transferring PR ownership.
 - Read [the carve-changesets handoff](references/carve-changesets-handoff.md)

@@ -225,6 +225,34 @@ class ImplementTicketContractTests(unittest.TestCase):
             "merged", self.expectations["backend-only-acceptance"]["terminal_state"]
         )
 
+    def test_review_result_contract_violations_block_publication(self):
+        for case_id in (
+            "stale-review-schema-version-blocks-publication",
+            "malformed-review-result-blocks-publication",
+            "changes-required-review-result-blocks-publication",
+            "incomplete-lens-executions-blocks-publication",
+        ):
+            self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
+        self.assertEqual(
+            "ready_pr",
+            self.expectations[
+                "stable-clean-current-head-progresses-without-extra-cycle"
+            ]["terminal_state"],
+        )
+        no_extra_cycle_actions = " ".join(
+            self.expectations[
+                "stable-clean-current-head-progresses-without-extra-cycle"
+            ]["required_actions"]
+        )
+        self.assertIn(
+            "do not invoke an additional invented review cycle", no_extra_cycle_actions
+        )
+        self.assertIn("references/review-suite/validate.py", self.gates)
+        self.assertIn("scripts/review_gate.py", self.gates)
+        self.assertIn("schema_version", self.gates)
+        self.assertIn("1.3", self.gates)
+        self.assertIn("lens_executions", self.gates)
+
     def test_acceptance_evidence_is_criterion_specific_and_fail_closed(self):
         for field in (
             "criterion text or stable identity",

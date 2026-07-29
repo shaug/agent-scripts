@@ -71,7 +71,9 @@ Immediately before delegation, reread the live PR and verify all of:
 - tracked, staged, unstaged, untracked, and ignored worktree state;
 - focused and full validation commands, outcomes, and limitations;
 - initial `review-code-change` verdict, reviewed head/base, and integrity
-  evidence;
+  evidence, validated against the bundled
+  [review-result contract](review-suite/CONTRACT.md) at its current schema
+  version and bound to the exact handed-off head and base;
 - required CI, human, connector, comment, formal-review, reaction, and thread
   gates, including documented absence;
 - connector identity, initiation procedure, accepted clean signal, candidate
@@ -116,8 +118,11 @@ rebuild invalidated pre-merge and remote gates. It reports post-merge acceptance
 as caller-owned work rather than attempting it.
 
 Never pass expected findings, implementation transcripts, or prior reviewer
-conclusions into a fresh review. A missing, malformed, stale, blocked, or
-materially unresolved review cannot satisfy readiness.
+conclusions into a fresh review. A missing, malformed, stale (including a result
+carrying a superseded `schema_version`), blocked, `changes_required`, or
+materially unresolved review cannot satisfy readiness. Validate every fresh
+result against the bundled schema and require it to bind the exact new head and
+base before treating it as clean evidence.
 
 ## Terminal result mapping
 

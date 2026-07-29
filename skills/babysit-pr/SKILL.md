@@ -21,6 +21,11 @@ tracker, close a parent, deploy, or delete branches and worktrees.
   retrying a check, changing code, replying, or resolving a thread.
 - Read [the upstream source record](references/upstream.md) before changing the
   watcher or evaluating a new upstream version.
+- Read the bundled [review-result contract](references/review-suite/CONTRACT.md)
+  and the schema beside it before validating any `review-code-change` result;
+  use `scripts/review_gate.py` (or `references/review-suite/validate.py`
+  directly) to reject a stale, malformed, unsupported-version, non-`clean`, or
+  wrongly-bound result before treating it as evidence.
 
 Use `scripts/gh_pr_watch.py` for deterministic snapshots, JSONL monitoring, and
 bounded failed-run retries. All watcher paths below are relative to this skill's
@@ -233,9 +238,13 @@ After any head-changing fix:
 3. Push the verified PR branch.
 4. Capture the new head/base and rebuild the raw evidence packet.
 5. Invoke repository-owned `review-code-change` in a fresh read-only context.
-6. Apply only material, ticket-scoped blocking and strong-recommendation
+6. Validate the returned result with `scripts/review_gate.py` (or the bundled
+   `references/review-suite/validate.py` directly) before treating it as
+   evidence: reject a schema-invalid, stale-`schema_version`, non-`aggregate`,
+   non-`clean`, or wrongly-bound result and rebuild it instead of consuming it.
+7. Apply only material, ticket-scoped blocking and strong-recommendation
    findings within the bounded review cycle.
-7. Restart all invalidated remote gates on the new candidate.
+8. Restart all invalidated remote gates on the new candidate.
 
 Exclude implementation transcripts, intended fixes, prior conclusions, suspected
 findings, and expected evaluation outputs from review evidence.
@@ -246,9 +255,11 @@ did not supply it. This does not transfer ownership of the ticket's initial
 implementation; it prevents a standalone watcher from declaring an unreviewed
 candidate ready.
 
-Return `blocked` when the review dependency is missing, the result is malformed
-or stale, reviewer integrity fails, or material findings remain after the cycle
-budget.
+Return `blocked` when the review dependency is missing, the result fails the
+bundled schema or candidate-binding gate, the result is stale, malformed, an
+unsupported `schema_version`, `blocked`, or `changes_required`, reviewer
+integrity fails, or material findings remain after the cycle budget. Green CI or
+clean connector state never substitutes for this validated result.
 
 ## Apply the final gate
 
@@ -257,7 +268,10 @@ Before `ready_to_merge` or merge, require:
 - current head/base/effective-candidate identity;
 - intended changes committed with unrelated artifacts proven irrelevant;
 - focused and full validation passing for the current candidate;
-- clean repository-owned review for the current candidate;
+- clean repository-owned review for the current candidate, validated against the
+  bundled review-result contract's current schema version and bound to the exact
+  current head and base — never satisfied by green CI or connector approval
+  alone;
 - required CI passing;
 - current human and connector review under repository policy;
 - zero undispositioned actionable conversation comments, formal reviews,
