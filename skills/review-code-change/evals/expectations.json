@@ -195,7 +195,7 @@
           ]
         }
       ],
-      "next_action": "Apply the deduplicated policy reuse change, build a new packet, rerun code simplicity, and then run targeted correctness."
+      "next_action": "Apply the deduplicated policy reuse change, build a new packet, and restart the full three-lens sequence (solution simplicity, correctness, then code simplicity) on the new head."
     }
   },
   {
