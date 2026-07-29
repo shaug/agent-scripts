@@ -6,8 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, and added connector-outcome curation and promotion tooling
 
+- fix(review-suite): resolve a duplicate's disposition through its duplicate_of
+  chain
 - feat(review-suite): add connector-outcome curation and promotion tooling,
   including the mechanical disclosure guardrail
+  (`d7357ee17a616ad374e6bb033a4c9adef6e5cc0a`)
 - docs: fix stale CHANGELOG SHAs left by the main rebase
   (`51cc734fc56a97dfa7a754fd046206dd62b375ba`)
 - docs: backfill the CHANGELOG entry for the review_gate.py canonicalization fix

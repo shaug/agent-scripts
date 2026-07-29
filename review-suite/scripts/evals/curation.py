@@ -288,15 +288,53 @@ def load_records(root: Path | None = None) -> RecordSet:
     return RecordSet(root=root, records=records)
 
 
+def _resolve_duplicate_disposition(
+    record_id: str,
+    records: dict[str, dict[str, Any]],
+    *,
+    _seen: frozenset[str] = frozenset(),
+) -> tuple[str | None, str | None]:
+    """Follow `duplicate_of` to the disposition a duplicate's role must match.
+
+    A `duplicate` record carries no `expected_root_cause` or
+    `accepted_non_finding` of its own - the schema forbids both - so whether it
+    may fill a positive or negative promotion slot depends entirely on the
+    disposition of the record it actually restates, followed through however
+    many `duplicate` hops it takes to reach one. Returns `(None, None)` when
+    the chain is missing a record or cycles back on itself; callers must treat
+    that as a validation error rather than silently permitting the duplicate.
+    """
+    record = records.get(record_id)
+    if record is None or record_id in _seen:
+        return None, None
+    disposition = record.get("disposition")
+    if disposition != "duplicate":
+        return record_id, disposition
+    duplicate_of = record.get("duplicate_of")
+    if not duplicate_of:
+        return None, None
+    return _resolve_duplicate_disposition(
+        duplicate_of, records, _seen=_seen | {record_id}
+    )
+
+
 def _promotable_errors(
-    record_id: str, record: dict[str, Any], *, as_positive: bool
+    record_id: str,
+    record: dict[str, Any],
+    records: dict[str, dict[str, Any]],
+    *,
+    as_positive: bool,
 ) -> list[str]:
     """Whether one record may support a positive or negative promotion slot.
 
     Unresolved claims can never enter grading expectations or modify active
     review guidance. A duplicate without a recorded distinct contribution can
     never be promoted either - promoting it would double-count the root cause
-    it shares with the record it duplicates.
+    it shares with the record it duplicates. A duplicate *with* a distinct
+    contribution may only fill the positive/negative role its resolved
+    root-cause record actually supports - a distinct duplicate of a rejected
+    claim is still evidence the claim was rejected, not a second accepted
+    outcome, and vice versa.
     """
     disposition = record.get("disposition")
     if disposition == "unresolved":
@@ -310,6 +348,32 @@ def _promotable_errors(
                 f"{record_id}: a duplicate without a distinct trigger, surface, or "
                 "negative control cannot be promoted without double-counting its root "
                 "cause"
+            ]
+        resolved_id, resolved_disposition = _resolve_duplicate_disposition(
+            record_id, records
+        )
+        if resolved_disposition is None:
+            return [
+                f"{record_id}: duplicate_of chain could not be resolved to a "
+                "non-duplicate disposition (a missing record or a cycle)"
+            ]
+        if resolved_disposition == "unresolved":
+            return [
+                f"{record_id}: duplicates an unresolved claim ({resolved_id!r}), which "
+                "cannot enter grading expectations or modify active review guidance "
+                "either"
+            ]
+        if as_positive and resolved_disposition not in ACCEPTED_DISPOSITIONS:
+            return [
+                f"{record_id}: duplicates {resolved_id!r} whose disposition "
+                f"{resolved_disposition!r} is not an accepted material outcome, so it "
+                "cannot support a positive regression case"
+            ]
+        if not as_positive and resolved_disposition not in REJECTED_TUNING_DISPOSITIONS:
+            return [
+                f"{record_id}: duplicates {resolved_id!r} whose disposition "
+                f"{resolved_disposition!r} is not rejected/deferred tuning evidence, "
+                "so it cannot support a negative control"
             ]
         return []
     if as_positive and disposition not in ACCEPTED_DISPOSITIONS:
@@ -380,14 +444,16 @@ def validate_promotion_decision(
             errors.append(f"positive_case_ids: unknown record {record_id!r}")
             continue
         errors.extend(
-            _promotable_errors(record_id, records[record_id], as_positive=True)
+            _promotable_errors(record_id, records[record_id], records, as_positive=True)
         )
     for record_id in negative_ids:
         if record_id not in records:
             errors.append(f"negative_control_case_ids: unknown record {record_id!r}")
             continue
         errors.extend(
-            _promotable_errors(record_id, records[record_id], as_positive=False)
+            _promotable_errors(
+                record_id, records[record_id], records, as_positive=False
+            )
         )
     overlap = sorted(set(positive_ids) & set(negative_ids))
     if overlap:

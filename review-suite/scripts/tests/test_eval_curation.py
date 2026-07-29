@@ -214,6 +214,86 @@ class PromotionDecisionTests(unittest.TestCase):
             [], curation.validate_promotion_decision(document, self.records)
         )
 
+    def test_a_distinct_duplicate_of_an_accepted_record_cannot_be_a_negative_control(
+        self,
+    ):
+        """A duplicate's promotion role must match what it actually duplicates.
+
+        `retry-jitter-duplicate-with-new-surface` duplicates
+        `retry-jitter-defect`, whose disposition is `accepted_acceptance_miss`.
+        Restating an accepted defect on a second surface is still evidence the
+        defect was accepted, never evidence it was rejected, so it must not be
+        usable as a negative control even though it declares a distinct
+        contribution.
+        """
+        document = self._promotion("no-promotion-example")
+        document["negative_control_case_ids"] = [
+            "retry-jitter-duplicate-with-new-surface"
+        ]
+        errors = curation.validate_promotion_decision(document, self.records)
+        self.assertTrue(
+            any("cannot support a negative control" in error for error in errors)
+        )
+
+    def test_a_distinct_duplicate_of_a_rejected_record_cannot_be_a_positive_case(self):
+        """The symmetric case: a duplicate of a rejected false positive.
+
+        `cache-ttl-duplicate-with-new-surface` duplicates
+        `cache-ttl-false-positive` (`rejected_false_positive`) on a distinct
+        surface. It must not be usable as a positive case even with a distinct
+        contribution declared, or a rejected non-finding could feed a global
+        rubric or repository-instruction change as if it were a real defect.
+        """
+        document = self._promotion("no-promotion-example")
+        document["positive_case_ids"] = ["cache-ttl-duplicate-with-new-surface"]
+        errors = curation.validate_promotion_decision(document, self.records)
+        self.assertTrue(
+            any(
+                "cannot support a positive regression case" in error for error in errors
+            )
+        )
+
+    def test_a_distinct_duplicate_of_a_rejected_record_may_be_a_negative_control(self):
+        document = self._promotion("no-promotion-example")
+        document["negative_control_case_ids"] = ["cache-ttl-duplicate-with-new-surface"]
+        self.assertEqual(
+            [], curation.validate_promotion_decision(document, self.records)
+        )
+
+    def test_a_duplicate_of_an_unresolved_claim_cannot_be_promoted_either(self):
+        document = self._promotion("no-promotion-example")
+        document["negative_control_case_ids"] = ["unresolved-duplicate-claim"]
+        errors = curation.validate_promotion_decision(document, self.records)
+        self.assertTrue(
+            any("duplicates an unresolved claim" in error for error in errors)
+        )
+
+    def test_a_duplicate_chain_resolves_through_more_than_one_hop(self):
+        """`_resolve_duplicate_disposition` must follow a duplicate-of-a-duplicate."""
+        chained = copy.deepcopy(self.records["retry-jitter-duplicate-with-new-surface"])
+        chained["record_id"] = "retry-jitter-duplicate-chain"
+        chained["duplicate_of"] = "retry-jitter-duplicate-with-new-surface"
+        chained["distinct_contribution"] = "A third surface, one more hop away."
+        records = {**self.records, "retry-jitter-duplicate-chain": chained}
+        document = self._promotion("no-promotion-example")
+        document["positive_case_ids"] = ["retry-jitter-duplicate-chain"]
+        document["negative_control_case_ids"] = []
+        self.assertEqual([], curation.validate_promotion_decision(document, records))
+
+    def test_a_duplicate_cycle_cannot_be_resolved_and_is_rejected(self):
+        first = copy.deepcopy(self.records["retry-jitter-duplicate-with-new-surface"])
+        first["record_id"] = "cycle-a"
+        first["duplicate_of"] = "cycle-b"
+        second = copy.deepcopy(first)
+        second["record_id"] = "cycle-b"
+        second["duplicate_of"] = "cycle-a"
+        records = {**self.records, "cycle-a": first, "cycle-b": second}
+        document = self._promotion("no-promotion-example")
+        document["positive_case_ids"] = ["cycle-a"]
+        document["negative_control_case_ids"] = []
+        errors = curation.validate_promotion_decision(document, records)
+        self.assertTrue(any("could not be resolved" in error for error in errors))
+
     def test_a_rejected_record_cannot_support_a_positive_case(self):
         document = self._promotion("no-promotion-example")
         document["positive_case_ids"] = ["cache-ttl-false-positive"]
