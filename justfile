@@ -59,6 +59,13 @@ audit-review-corpus:
 eval-review-suite executor *args:
   python3 review-suite/scripts/evals/runner.py --executor "{{executor}}" {{args}}
 
+# Re-grade already-captured raw attempts with the current grader, spending no
+# new money: no executor process is launched. Use after a grader change to
+# correct a stratum's report from its retained `--artifact-dir` and
+# `--attempts-out` without repeating the model calls that produced them.
+regrade-review-suite *args:
+  python3 review-suite/scripts/evals/regrade.py {{args}}
+
 test-plugins:
   python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 

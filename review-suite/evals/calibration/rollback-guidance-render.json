@@ -1,7 +1,7 @@
 {
   "calibration_version": "1.0",
   "case_id": "rollback-guidance-render",
-  "grader_version": "1.0",
+  "grader_version": "1.1",
   "source": "probe.observed-root-cause and probe.accepted-non-finding are the two findings of run 1 verbatim, byte for byte, from the retained artifact review-suite/evals/artifacts/pilot-orchestrator/1.1-pilot-orchestrator/rollback-guidance-render.run-1.stdout.json, produced at corpus version 1.1-pilot-orchestrator, model claude-opus-4-6[1m], suite commit 16560d807c66076fcbf3f00d3a87f543c6ae2458. That run is the post-calibration validation run, so this prose is not prose the shipped formulations were fitted to. The formulations were drawn from an earlier run at corpus version 1.0-pilot-orchestrator whose raw output is no longer retained; CALIBRATION.md records that loss and the fix. The remaining probes are constructed variants that probe one grading boundary each. No scored output was observed.",
   "probes": [
     {

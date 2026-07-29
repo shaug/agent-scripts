@@ -52,9 +52,16 @@ def grade(
     expected_ids=("rc.one",),
     matched_ids=("rc.one",),
     referred_ids=(),
+    referred_relevant_ids=None,
     false_positives=(),
     adjudication=(),
 ):
+    # Defaults to `referred_ids` so most callers, which are not exercising the
+    # relevance guard itself, get relevance-guard-eligible referrals without
+    # having to say so twice.
+    if referred_relevant_ids is None:
+        referred_relevant_ids = referred_ids
+    combined_ids = set(matched_ids) | set(referred_relevant_ids)
     return {
         "grader_version": "1.0",
         "expected_verdict": expected,
@@ -68,7 +75,11 @@ def grade(
             i for i in expected_ids if i not in matched_ids and i not in referred_ids
         ],
         "referred_root_cause_ids": list(referred_ids),
+        "referred_relevant_root_cause_ids": list(referred_relevant_ids),
         "recall": (len(matched_ids) / len(expected_ids)) if expected_ids else None,
+        "combined_recall": (
+            (len(combined_ids) / len(expected_ids)) if expected_ids else None
+        ),
         "findings": [],
         "false_positive_finding_ids": list(false_positives),
         "accepted_finding_ids": [],
@@ -124,6 +135,61 @@ class MetricTests(unittest.TestCase):
         self.assertEqual(1, aggregate["quality"]["referred_denominator"])
         per_case = aggregate["per_case"][0]
         self.assertEqual(["rc.two"], per_case["ever_referred_root_cause_ids"])
+
+    def test_referred_path_relevance_guard_is_reported_per_case(self):
+        """The preregistered v2 scoring gate's combined matched+referred path.
+
+        A referral that never named the actual surface must not inflate the
+        combined rate, even though it still shows up in the plain referred
+        union above.
+        """
+        aggregate = report.aggregate(
+            [
+                attempt(
+                    "subject-one",
+                    1,
+                    grade=grade(
+                        expected_ids=("rc.one",),
+                        matched_ids=(),
+                        referred_ids=("rc.one",),
+                        referred_relevant_ids=(),
+                    ),
+                ),
+                attempt(
+                    "subject-one",
+                    2,
+                    grade=grade(
+                        expected_ids=("rc.one",),
+                        matched_ids=(),
+                        referred_ids=("rc.one",),
+                        referred_relevant_ids=("rc.one",),
+                    ),
+                ),
+            ],
+            configuration=CONFIGURATION,
+        )
+        per_case = aggregate["per_case"][0]
+        self.assertEqual(["rc.one"], per_case["ever_referred_root_cause_ids"])
+        # `ever_referred_relevant_root_cause_ids` is a union across attempts,
+        # like `ever_referred_root_cause_ids` above, so it still names rc.one
+        # (attempt 2 was relevant) - the guard's effect shows up in the rate
+        # below, not by hiding rc.one from this union.
+        self.assertEqual(["rc.one"], per_case["ever_referred_relevant_root_cause_ids"])
+        # attempt 1: 0/1 relevant; attempt 2: 1/1 relevant -> mean 0.5
+        self.assertEqual(0.5, per_case["mean_combined_recall"])
+
+    def test_combined_recall_gracefully_handles_grades_predating_the_guard(self):
+        """A grade dict without the new fields must not crash the report."""
+        legacy_grade = grade(matched_ids=("rc.one",))
+        del legacy_grade["referred_relevant_root_cause_ids"]
+        del legacy_grade["combined_recall"]
+        aggregate = report.aggregate(
+            [attempt("subject-one", 1, grade=legacy_grade)],
+            configuration=CONFIGURATION,
+        )
+        per_case = aggregate["per_case"][0]
+        self.assertEqual([], per_case["ever_referred_relevant_root_cause_ids"])
+        self.assertIsNone(per_case["mean_combined_recall"])
 
     def test_recall_averages_only_graded_attempts(self):
         aggregate = report.aggregate(
