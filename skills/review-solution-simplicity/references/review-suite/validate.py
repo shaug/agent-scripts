@@ -35,7 +35,16 @@ SCHEMAS = {
 
 REQUIRED_AGGREGATE_LENSES = ("solution_simplicity", "correctness", "code_simplicity")
 
-STALE_RESULT_SCHEMA_VERSIONS = {"1.0"}
+CONSUMER_IMPACT_DISPOSITIONS_IMPLYING_OTHER_CONSUMERS = (
+    "all_consumers_consistent",
+    "inconsistency_found",
+)
+
+# Maps each stale result schema version to the current version it must be
+# migrated to. Extend this mapping, never overwrite it, on the next additive
+# schema bump so every prior stale version keeps failing with its own useful
+# migration error.
+STALE_RESULT_SCHEMA_VERSIONS = {"1.0": "1.1", "1.1": "1.2"}
 
 BLOCKABLE_PACKET_ERROR_PATTERNS = (
     re.compile(
@@ -165,14 +174,15 @@ def validate_packet(packet: dict[str, Any]) -> list[str]:
 
 
 def validate_result(result: dict[str, Any]) -> list[str]:
-    if (
-        isinstance(result, dict)
-        and result.get("schema_version") in STALE_RESULT_SCHEMA_VERSIONS
-    ):
-        return [
-            "$.schema_version: stale v1.0 result rejected; v1.0 results are not "
-            "accepted as v1.1 evidence, rebuild review evidence at schema 1.1"
-        ]
+    if isinstance(result, dict):
+        stale_version = result.get("schema_version")
+        current_version = STALE_RESULT_SCHEMA_VERSIONS.get(stale_version)
+        if current_version is not None:
+            return [
+                f"$.schema_version: stale v{stale_version} result rejected; "
+                f"v{stale_version} results are not accepted as v{current_version} "
+                f"evidence, rebuild review evidence at schema {current_version}"
+            ]
     schema = json.loads(SCHEMAS["result"].read_text())
     errors = validate_schema(result, schema)
     if errors:
@@ -230,8 +240,50 @@ def validate_result(result: dict[str, Any]) -> list[str]:
             + ", ".join(duplicate_dispositions)
         )
 
+    errors.extend(_check_consumer_impact_evidence(result))
+
     if result.get("lens") == "aggregate" and verdict == "clean":
         errors.extend(_check_aggregate_clean_lens_executions(result))
+    return errors
+
+
+def _check_consumer_impact_evidence(result: dict[str, Any]) -> list[str]:
+    """Check consumer/impact evidence structure and disposition consistency.
+
+    #52: `consumer_impact_evidence` records a reviewer's traversal to other
+    call sites/consumers of a changed shared symbol, so that traversal is
+    machine-checkable instead of an unenforced expectation. The validator does
+    not determine which changed symbols require an entry — that judgment
+    belongs to the correctness lens's own traversal pass (a later child). It
+    only enforces that whatever is supplied is structurally trustworthy: a
+    disposition that claims other consumers exist must be backed by evidence
+    covering more than the changed symbol's own location, and every entry
+    (including `no_other_consumers`) must cite at least one concrete search.
+    """
+    errors: list[str] = []
+    entries = result.get("consumer_impact_evidence")
+    if not isinstance(entries, list):
+        return errors
+    if entries and result.get("lens") not in {"correctness", "aggregate"}:
+        errors.append(
+            "$.consumer_impact_evidence: only correctness or aggregate results "
+            "may include consumer/impact evidence"
+        )
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            continue
+        disposition = entry.get("disposition")
+        evidence = entry.get("consumer_search_evidence")
+        evidence_count = len(evidence) if isinstance(evidence, list) else 0
+        if (
+            disposition in CONSUMER_IMPACT_DISPOSITIONS_IMPLYING_OTHER_CONSUMERS
+            and evidence_count < 2
+        ):
+            errors.append(
+                f"$.consumer_impact_evidence[{index}]: disposition {disposition!r} "
+                "claims other consumers were found and requires search evidence "
+                "covering more than the changed symbol's own location"
+            )
     return errors
 
 

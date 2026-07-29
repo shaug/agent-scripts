@@ -414,8 +414,9 @@ class UnchangedHeadBaseDriftRegressionTest(unittest.TestCase):
 
 
 class StaleSchemaVersionTests(unittest.TestCase):
-    """#51 item 11: a stale v1.0 result is rejected with a useful error rather
-    than silently reinterpreted as v1.1 evidence."""
+    """#51 item 11 and #52 item 5: a stale result is rejected with a useful
+    error rather than silently reinterpreted as newer evidence. Extended by
+    #52 to also reject a stale v1.1 aggregate now that schema 1.2 exists."""
 
     def test_stale_v1_0_aggregate_result_is_rejected_with_a_useful_error(self):
         result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
@@ -424,6 +425,90 @@ class StaleSchemaVersionTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertTrue(any("stale v1.0" in error for error in errors))
         self.assertTrue(any("1.1" in error for error in errors))
+
+    def test_stale_v1_1_aggregate_result_is_rejected_with_a_useful_error(self):
+        result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+        result["schema_version"] = "1.1"
+        errors = VALIDATOR.validate_result(result)
+        self.assertTrue(errors)
+        self.assertTrue(any("stale v1.1" in error for error in errors))
+        self.assertTrue(any("1.2" in error for error in errors))
+
+
+class ConsumerImpactEvidenceTests(unittest.TestCase):
+    """#52: `consumer_impact_evidence` records a reviewer's traversal to other
+    call sites/consumers of a changed shared symbol, making that traversal
+    machine-checkable instead of an unenforced expectation a reviewer can
+    silently skip. The validator enforces structure and non-emptiness; it does
+    not determine which changed symbols require an entry (that is lens
+    judgment, owned by a later child)."""
+
+    def setUp(self):
+        self.packet = load(
+            ROOT / "fixtures" / "consumer-impact-traversal" / "packet.json"
+        )
+        self.result = load(
+            ROOT / "fixtures" / "consumer-impact-traversal" / "expected.json"
+        )
+
+    def test_sibling_call_site_correctly_identified_and_inspected_is_valid_clean(
+        self,
+    ):
+        # Required fixture 1: a changed shared symbol with a sibling call
+        # site, correctly identified and inspected in
+        # `consumer_impact_evidence`.
+        self.assertEqual([], VALIDATOR.validate_pair(self.packet, self.result))
+
+    def test_disposition_naming_only_the_hardened_call_site_is_rejected(self):
+        # Required fixture 2: the same fixture, but with the evidence entry
+        # naming only the hardened call site while still claiming the
+        # consumers are consistent. `all_consumers_consistent` describes at
+        # least one other consumer by definition, so it requires evidence
+        # covering more than the changed symbol's own location.
+        entry = self.result["consumer_impact_evidence"][0]
+        entry["consumer_search_evidence"] = entry["consumer_search_evidence"][:1]
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("claims other consumers were found" in error for error in errors)
+        )
+
+    def test_single_consumer_with_concrete_search_evidence_is_valid_clean(self):
+        # Required fixture 3: a changed symbol genuinely used from exactly one
+        # call site, with concrete search evidence showing no other
+        # consumers, disposition `no_other_consumers`.
+        self.result["consumer_impact_evidence"] = [
+            self.result["consumer_impact_evidence"][1]
+        ]
+        self.assertEqual([], VALIDATOR.validate_result(self.result))
+
+    def test_no_other_consumers_without_search_evidence_is_rejected(self):
+        # Required fixture 4: a changed symbol with disposition
+        # `no_other_consumers` but no search evidence.
+        self.result["consumer_impact_evidence"][1]["consumer_search_evidence"] = []
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(any("expected at least 1 item" in error for error in errors))
+
+    def test_omitted_evidence_array_does_not_itself_fail_schema_validation(self):
+        # The validator cannot determine, from the result alone, which
+        # changed symbols require an entry; that judgment belongs to the lens
+        # performing the traversal (a later child). An aggregate clean result
+        # that omits `consumer_impact_evidence` entirely remains
+        # schema-valid; completeness of the traversal is a lens-judgment and
+        # forward-testing concern, not a mechanical validator check.
+        del self.result["consumer_impact_evidence"]
+        self.assertEqual([], VALIDATOR.validate_result(self.result))
+
+    def test_only_correctness_or_aggregate_results_may_include_the_evidence(self):
+        self.result["lens"] = "code_simplicity"
+        for finding in self.result.get("findings", []):
+            finding["lens"] = "code_simplicity"
+        errors = VALIDATOR.validate_result(self.result)
+        self.assertTrue(errors)
+        self.assertTrue(
+            any("only correctness or aggregate results" in error for error in errors)
+        )
 
 
 if __name__ == "__main__":

@@ -223,7 +223,7 @@ class EvaluationTests(unittest.TestCase):
             '    "outcome": "review_result", "simulation": False,\n'
             '    "executor": {"name": "always-gating"},\n'
             '    "result": {\n'
-            '        "schema_version": "1.1", "lens": "aggregate",\n'
+            '        "schema_version": "1.2", "lens": "aggregate",\n'
             '        "candidate": request["run"]["candidate"],\n'
             '        "verdict": "changes_required", "findings": [finding],\n'
             '        "blocking_reasons": [],\n'
@@ -556,7 +556,7 @@ class RealRuntimeAdapterTests(unittest.TestCase):
             '    for lens in ("solution_simplicity", "correctness", "code_simplicity")\n'
             "]\n"
             "result = {\n"
-            '    "schema_version": "1.1", "lens": "aggregate",\n'
+            '    "schema_version": "1.2", "lens": "aggregate",\n'
             '    "candidate": candidate, "verdict": "clean",\n'
             '    "findings": [], "blocking_reasons": [],\n'
             '    "lens_executions": lens_executions,\n'
@@ -619,7 +619,7 @@ class RealRuntimeAdapterTests(unittest.TestCase):
             '    for lens in ("solution_simplicity", "correctness", "code_simplicity")\n'
             "]\n"
             "result = {\n"
-            '    "schema_version": "1.1", "lens": "aggregate",\n'
+            '    "schema_version": "1.2", "lens": "aggregate",\n'
             '    "candidate": candidate, "verdict": "clean",\n'
             '    "findings": [], "blocking_reasons": [],\n'
             '    "lens_executions": lens_executions,\n'

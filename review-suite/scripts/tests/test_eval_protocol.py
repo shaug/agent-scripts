@@ -370,7 +370,7 @@ class ResponseClassificationTests(unittest.TestCase):
             "expected_effect": "The requirement is met.",
         }
         result = {
-            "schema_version": "1.1",
+            "schema_version": "1.2",
             "lens": "aggregate",
             "candidate": candidate,
             "verdict": verdict,
@@ -459,7 +459,7 @@ class ResponseClassificationTests(unittest.TestCase):
             "simulation": False,
             "executor": {"name": "test"},
             "result": {
-                "schema_version": "1.1",
+                "schema_version": "1.2",
                 "lens": "aggregate",
                 "candidate": {
                     "head_sha": blocked_case.packet["candidate"]["head_sha"],

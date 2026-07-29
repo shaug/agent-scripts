@@ -163,6 +163,32 @@ after a correctness fix, or only code simplicity and correctness after a
 code-simplicity fix) cannot produce a valid `clean` aggregate. This child
 defines no selective-reuse exception across different heads.
 
+### Consumer/impact evidence
+
+A `correctness` or `aggregate` result may record `consumer_impact_evidence`: one
+entry per changed shared symbol or contract whose other call sites/consumers
+were traversed, each naming the `changed_symbol`, its defining `location`, the
+`consumer_search_evidence` inspected (one or more `location` + `detail` pairs
+describing what was found), and a `disposition` of `all_consumers_consistent`,
+`inconsistency_found`, or `no_other_consumers`.
+
+This makes a reviewer's consumer/impact traversal machine-checkable instead of
+an unenforced expectation a reviewer can silently skip. The validator enforces
+structure and non-emptiness; it does not determine which changed symbols require
+an entry — that judgment belongs to the lens performing the traversal (a later
+child consumes this schema to populate it). Given a supplied entry:
+
+- only `correctness` or `aggregate` results may include this evidence;
+- every entry requires at least one concrete `consumer_search_evidence` item,
+  mirroring the existing "empty impact is valid only with concrete search
+  evidence" principle used elsewhere in this contract family — a disposition is
+  never accepted on the strength of an unevidenced claim; and
+- `all_consumers_consistent` and `inconsistency_found` describe at least one
+  other consumer by definition, so each requires search evidence covering more
+  than the changed symbol's own location (two or more entries);
+  `no_other_consumers` requires only the one concrete search that found nothing
+  else.
+
 ## Simplification proposal dispositions
 
 When an orchestrator asks correctness to assess a validated simplification
