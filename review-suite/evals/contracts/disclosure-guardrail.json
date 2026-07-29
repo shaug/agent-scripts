@@ -1,0 +1,8 @@
+{
+  "guardrail_version": "1.0",
+  "description": "Configuration for the mechanical disclosure guardrail `curation.disclosure_guardrail_errors` enforces on every curation record whose `public.provenance.source_class` is `private_authorized`. `allowed_source_descriptions` is the exact set of generic phrases a public-facing `source_description` may use. `denylisted_identifiers` is empty by default: this repository's implementing tooling must never learn, guess, or record the identity of any private, owner-authorized source, so no real identifier is shipped here. Add a real known-sensitive identifier (a repository name, internal codename, or hostname) only when the repository owner directly identifies it as one to guard against; this file is intentionally editable without a code change.",
+  "allowed_source_descriptions": [
+    "a private, owner-authorized connector-review source"
+  ],
+  "denylisted_identifiers": []
+}

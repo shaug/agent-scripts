@@ -1,0 +1,27 @@
+{
+  "curation_record_version": "1.0",
+  "record_id": "retry-jitter-duplicate-with-new-surface",
+  "disposition": "duplicate",
+  "duplicate_of": "retry-jitter-defect",
+  "distinct_contribution": "Same missing-jitter root cause, but triggered on the *scheduled maintenance* retry path rather than the webhook retry path retry-jitter-defect covers, giving a second, independent affected surface for the same underlying rule.",
+  "public": {
+    "connector_finding": {
+      "claim": "A connector flagged, on an unrelated candidate, that the scheduled-maintenance retry helper also has no backoff jitter.",
+      "connector_identity": "synthetic-connector-beta"
+    },
+    "contract_dimension": "correctness",
+    "affected_surface": "scheduled-maintenance retry scheduler",
+    "adjudication_evidence": "Same root cause as retry-jitter-defect (missing jitter term in a backoff computation), but on a distinct scheduler surface reached by a distinct trigger (a maintenance window rather than a webhook failure), so it is retained as a second surface rather than folded away as a plain duplicate.",
+    "provenance": {
+      "source_class": "synthetic",
+      "source_description": "hand-written synthetic fixture for this ticket's infrastructure proof"
+    }
+  },
+  "private": {
+    "provenance": {
+      "retention_authority": "repository owner, synthetic-fixture scope only",
+      "owner": "review-suite maintainers",
+      "review_date": "2026-07-29"
+    }
+  }
+}
