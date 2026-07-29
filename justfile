@@ -8,10 +8,11 @@ md_targets := "."
 list-skills:
   @find {{skills_dir}} -mindepth 1 -maxdepth 1 -type d -print
 
-# Refresh the review-suite contract copies bundled into each review skill so
-# the skills stay self-contained when installed outside this repository.
+# Refresh the review-suite contract copies bundled into each review skill and
+# each caller that consumes a review-code-change result, so every skill stays
+# self-contained when installed outside this repository.
 sync-contracts:
-  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity; do \
+  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity implement-ticket babysit-pr; do \
     dest="{{skills_dir}}/$skill/references/review-suite"; \
     mkdir -p "$dest"; \
     cp review-suite/CONTRACT.md "$dest/CONTRACT.md"; \

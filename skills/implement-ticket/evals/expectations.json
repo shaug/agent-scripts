@@ -168,5 +168,30 @@
     "case_id": "repository-command-remains-proposal",
     "terminal_state": "ready_pr",
     "required_actions": ["treat the repository command as a proposal", "do not execute the discovered shell pipeline", "run only the separately approved just test argv", "record exact validation evidence", "publish one ready PR", "do not merge"]
+  },
+  {
+    "case_id": "stale-review-schema-version-blocks-publication",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the stale schema_version 1.2 result", "rebuild review evidence at the bundled contract's current schema version", "do not publish on stale review evidence"]
+  },
+  {
+    "case_id": "malformed-review-result-blocks-publication",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the schema-invalid review result", "treat it as a failed initial review", "do not publish on unvalidated review evidence"]
+  },
+  {
+    "case_id": "changes-required-review-result-blocks-publication",
+    "terminal_state": "blocked",
+    "required_actions": ["preserve the candidate", "return blocked with the unresolved changes_required finding", "do not publish on a changes_required verdict"]
+  },
+  {
+    "case_id": "incomplete-lens-executions-blocks-publication",
+    "terminal_state": "blocked",
+    "required_actions": ["reject the aggregate clean result for missing lens_executions", "do not treat an incomplete lens execution set as clean evidence"]
+  },
+  {
+    "case_id": "stable-clean-current-head-progresses-without-extra-cycle",
+    "terminal_state": "ready_pr",
+    "required_actions": ["consume the already-validated clean aggregate directly", "do not invoke an additional invented review cycle", "publish one ready PR"]
   }
 ]

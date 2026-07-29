@@ -1,7 +1,8 @@
 """Verify skill-bundled review-suite contract copies match the canonical source.
 
-Each review skill bundles the canonical contract and schemas under
-`references/review-suite/` so the skill remains self-contained when installed
+Every review lens skill and every caller that consumes a review-code-change
+result bundles the canonical contract and schemas under
+`references/review-suite/` so each skill remains self-contained when installed
 outside this repository. `just sync-contracts` refreshes the copies; this test
 fails when any copy drifts from the canonical file.
 """
@@ -20,6 +21,8 @@ BUNDLING_SKILLS = (
     "review-correctness",
     "review-code-simplicity",
     "review-solution-simplicity",
+    "implement-ticket",
+    "babysit-pr",
 )
 CANONICAL_FILES = {
     "CONTRACT.md": REVIEW_SUITE / "CONTRACT.md",

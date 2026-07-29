@@ -111,5 +111,26 @@
     "id": "documented-absent-gates",
     "request": "Take PR 121 to readiness.",
     "candidate_state": "Repository policy explicitly documents that CI, connector, and human approval are not configured; local validation/review and remaining GitHub gates pass."
+  },
+  {
+    "id": "stale-review-schema-version-blocks-final-gate",
+    "request": "Watch PR 205 until it is ready to merge.",
+    "policy": "ready_to_merge",
+    "authority": "read_and_ticket_scoped_fix_only",
+    "candidate_state": "CI and connector review are clean, but the supplied review-code-change result carries schema_version 1.1 instead of the bundled contract's current version 1.3."
+  },
+  {
+    "id": "malformed-review-result-blocks-final-gate",
+    "request": "Watch PR 205 until it is ready to merge.",
+    "policy": "ready_to_merge",
+    "authority": "read_and_ticket_scoped_fix_only",
+    "candidate_state": "CI and connector review are clean, but the supplied review-code-change result fails the bundled review-result schema (a required field is missing)."
+  },
+  {
+    "id": "green-ci-alone-insufficient-without-valid-review",
+    "request": "Watch PR 205 until it is ready to merge.",
+    "policy": "ready_to_merge",
+    "authority": "read_and_ticket_scoped_fix_only",
+    "candidate_state": "CI is green and connector review is clean, but no valid schema-conformant review-code-change result exists yet for the current head."
   }
 ]

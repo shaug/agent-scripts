@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-suite/contracts/review-packet.schema.json",
+  "title": "Review packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repository",
+    "candidate",
+    "change_contract",
+    "sources",
+    "validation"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "base_branch"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "base_branch": {"type": "string", "minLength": 1}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head_sha", "comparison_base_sha", "diff"],
+      "properties": {
+        "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "comparison_base_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "diff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "complete", "content"],
+          "properties": {
+            "format": {"enum": ["unified_diff"]},
+            "complete": {"const": true},
+            "content": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "change_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "acceptance_criteria",
+        "non_goals",
+        "preserved_behaviors"
+      ],
+      "properties": {
+        "goal": {"type": "string", "minLength": 1},
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "non_goals": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "preserved_behaviors": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_instructions",
+        "named_documents",
+        "nearby_patterns"
+      ],
+      "properties": {
+        "repository_instructions": {
+          "type": "array",
+          "items": {"type": "object", "required": ["label", "location"], "properties": {"label": {"type": "string", "minLength": 1}, "location": {"type": "string", "minLength": 1}, "summary": {"type": "string"}}, "additionalProperties": false}
+        },
+        "named_documents": {
+          "type": "array",
+          "items": {"type": "object", "required": ["label", "location"], "properties": {"label": {"type": "string", "minLength": 1}, "location": {"type": "string", "minLength": 1}, "summary": {"type": "string"}}, "additionalProperties": false}
+        },
+        "nearby_patterns": {
+          "type": "array",
+          "items": {"type": "object", "required": ["label", "location"], "properties": {"label": {"type": "string", "minLength": 1}, "location": {"type": "string", "minLength": 1}, "summary": {"type": "string"}}, "additionalProperties": false}
+        }
+      }
+    },
+    "validation": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "scope", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "command": {"type": "string", "minLength": 1},
+          "scope": {"enum": ["focused", "full"]},
+          "status": {"enum": ["passed", "failed", "unavailable"]},
+          "result": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "public_api": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "data": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "authorization": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "compatibility": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "operational": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tracked", "staged", "unstaged", "untracked", "ignored"],
+      "properties": {
+        "tracked": {"type": "array", "items": {"type": "string"}},
+        "staged": {"type": "array", "items": {"type": "string"}},
+        "unstaged": {"type": "array", "items": {"type": "string"}},
+        "untracked": {"type": "array", "items": {"type": "string"}},
+        "ignored": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "base_drift": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "captured_base_sha",
+        "current_base_sha",
+        "effective_diff_changed",
+        "resulting_tree_changed",
+        "conflict",
+        "relevant_overlap",
+        "repository_requires_reset",
+        "decision",
+        "reason"
+      ],
+      "properties": {
+        "captured_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "current_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "effective_diff_changed": {"type": "boolean"},
+        "resulting_tree_changed": {"type": "boolean"},
+        "conflict": {"type": "boolean"},
+        "relevant_overlap": {"type": "boolean"},
+        "repository_requires_reset": {"type": "boolean"},
+        "decision": {"enum": ["retain", "reset_affected", "reset_all"]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

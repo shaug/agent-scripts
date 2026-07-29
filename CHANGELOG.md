@@ -4,10 +4,12 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-29 — Rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect
+## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, and rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect
 
+- feat: migrate implement-ticket and babysit-pr to the schema 1.3 review-result
+  contract
 - docs(review-suite): recheck s2/s3 strata under grader 1.1 for the same
-  surface-in-prose defect
+  surface-in-prose defect (`7cf4a3b3fe3dd38f3d1a9da2e6ab82058a77f064`)
 
 ## 2026-07-28 — Added correctness traversal and verification-sufficiency passes, consumer/impact-traversal evidence, and required passing validation and current-head lens evidence for a clean review verdict
 
