@@ -50,13 +50,13 @@ saying so explicitly.
 
 ## Suite commit and corpus/grader versions
 
-| Configuration                                               | `suite_commit`                             | `corpus_version`                  | `grader_version` | `skill_root`                                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------ | --------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------- |
-| `s1`, both passes together (reused, not re-run - see below) | `2c671fd75f4bc11b3137f8d615764ac6c4e21851` | `0.1-s1-populated`                | `1.1` (regraded) | real `skills/` tree (unablated)                                                                     |
-| `s1`, traversal-pass-only (new)                             | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `0.1-s1-populated`                | `1.1`            | `review-suite/evals/v2/ablation-skill-roots/traversal-only/` overlaid on the real `skills/` tree    |
-| `s1`, verification-sufficiency-pass-only (new)              | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `0.1-s1-populated`                | `1.1`            | `review-suite/evals/v2/ablation-skill-roots/verification-only/` overlaid on the real `skills/` tree |
-| `s2-solution-simplicity-lens` (reused, not re-run)          | `a247d47d51eee9513b3431fc59ba34afe9316bfb` | `1.3-pilot-solution-simplicity`\* | `1.1`            | real `skills/` tree                                                                                 |
-| `s3-code-simplicity-lens` (reused, not re-run)              | `a247d47d51eee9513b3431fc59ba34afe9316bfb` | `1.3-pilot-code-simplicity`\*     | `1.1`            | real `skills/` tree                                                                                 |
+| Configuration                                               | `suite_commit`                             | `corpus_version`                  | `grader_version` | `skill_root`                                                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------- | ------------------------------------------ | --------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `s1`, both passes together (reused, not re-run - see below) | `2c671fd75f4bc11b3137f8d615764ac6c4e21851` | `0.1-s1-populated`                | `1.1` (regraded) | real `skills/` tree (unablated)                                                                                                                                                                                                                                                             |
+| `s1`, traversal-pass-only (new)                             | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `0.1-s1-populated`                | `1.1`            | ephemeral local mirror of the real `skills/` tree with `review-correctness/SKILL.md` replaced by the committed `review-suite/evals/v2/ablation-skill-roots/traversal-only/review-correctness/SKILL.md` (see "Ablation mechanism" below for the exact path recorded and how to reproduce it) |
+| `s1`, verification-sufficiency-pass-only (new)              | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `0.1-s1-populated`                | `1.1`            | ephemeral local mirror of the real `skills/` tree with `review-correctness/SKILL.md` replaced by the committed `review-suite/evals/v2/ablation-skill-roots/verification-only/review-correctness/SKILL.md` (see "Ablation mechanism" below)                                                  |
+| `s2-solution-simplicity-lens` (reused, not re-run)          | `a247d47d51eee9513b3431fc59ba34afe9316bfb` | `1.3-pilot-solution-simplicity`\* | `1.1`            | real `skills/` tree                                                                                                                                                                                                                                                                         |
+| `s3-code-simplicity-lens` (reused, not re-run)              | `a247d47d51eee9513b3431fc59ba34afe9316bfb` | `1.3-pilot-code-simplicity`\*     | `1.1`            | real `skills/` tree                                                                                                                                                                                                                                                                         |
 
 \*See each report's own `configuration.corpus_version` for the exact string;
 restated here from the committed report files, not retyped from memory.
@@ -106,15 +106,37 @@ modules"). To score each pass in isolation without adding a runtime toggle to
 the shipped skill, this ticket adds an optional `--skill-root` override to
 `review-suite/scripts/evals/runner.py` (default: the real `skills/` tree, so
 every existing caller and report is unaffected) and two eval-only
-`review-correctness/SKILL.md` overlays under
-`review-suite/evals/v2/ablation-skill-roots/{traversal-only,verification-only}/`,
+`review-correctness/SKILL.md` overlay files, committed at
+`review-suite/evals/v2/ablation-skill-roots/{traversal-only,verification-only}/review-correctness/SKILL.md`,
 each disabling exactly one required pass with an explicit no-op instruction.
-Every other file in each ablation root is byte-identical to the real `skills/`
-tree (verified directly via `diff -rq` before each scored run). The resolved
-`skill_root` is recorded verbatim in every report's `configuration.skill_root`
-field, so an ablation run can never be mistaken for a standard-configuration
-one. See `review-suite/scripts/evals/runner.py`'s `target_skill_documents`
-docstring and `review-suite/scripts/tests/test_eval_runner.py`'s
+
+**The committed overlay directories are not themselves valid `--skill-root`
+values** - `--skill-root` requires a directory containing all four skills
+`review-code-change` declares as its dependency closure (`review-code-change`,
+`review-solution-simplicity`, `review-correctness`, `review-code-simplicity`),
+and the committed overlay directories intentionally hold only the one changed
+file per configuration, to avoid duplicating unchanged skill content in git. The
+two scored runs actually pointed `--skill-root` at a fresh local directory built
+by mirroring the real `skills/` tree, then overwriting only
+`review-correctness/SKILL.md` with the committed overlay file's content,
+immediately before launch. Each report's own `configuration.skill_root` field
+records the exact (ephemeral, machine-local) path used; that path does not
+survive as a stable, reproducible location, but the content it held is verified
+byte-identical to the committed overlay file modulo `mdformat`'s line-wrap width
+(the overlay files were reformatted by `just fmt-md` after the scored runs
+launched; a direct `diff` shows only rewrapped line breaks, no textual change) -
+re-diffed directly against the committed files as part of this ticket's own
+review before publication.
+
+To reproduce either scored configuration: copy the real `skills/` tree to a
+fresh directory, overwrite `<copy>/review-correctness/SKILL.md` with the content
+of the matching committed overlay file above, then pass that copy's path as
+`--skill-root` to `runner.py` (or `just eval-review-suite`). The resolved
+`skill_root` is always recorded verbatim in every report's
+`configuration.skill_root` field, so an ablation run can never be mistaken for a
+standard-configuration one. See `review-suite/scripts/evals/runner.py`'s
+`target_skill_documents` docstring and
+`review-suite/scripts/tests/test_eval_runner.py`'s
 `test_an_overridden_skill_root_is_recorded_and_changes_the_closure` for the
 mechanism's own tests.
 

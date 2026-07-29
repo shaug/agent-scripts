@@ -25,11 +25,11 @@ supports that explanation.
 
 ## The three configurations
 
-| Configuration                                                                          | `suite_commit`                             | `skill_root`                              | Attempts | Cost (USD) | Mean latency |
-| -------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------- | -------- | ---------- | ------------ |
-| Both passes together (reused, scored by a predecessor task at this same skill content) | `2c671fd75f4bc11b3137f8d615764ac6c4e21851` | real `skills/` tree                       | 35       | 3.559636   | 49.04s       |
-| Traversal-pass-only (new, this ticket)                                                 | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `ablation-skill-roots/traversal-only/`    | 35       | 3.560108   | 43.62s       |
-| Verification-sufficiency-pass-only (new, this ticket)                                  | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | `ablation-skill-roots/verification-only/` | 35       | 3.866613   | 50.93s       |
+| Configuration                                                                          | `suite_commit`                             | `skill_root` (see `FROZEN-V2-CONFIGURATION.md` for the exact recorded path and reproduction steps)        | Attempts | Cost (USD) | Mean latency |
+| -------------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- | -------- | ---------- | ------------ |
+| Both passes together (reused, scored by a predecessor task at this same skill content) | `2c671fd75f4bc11b3137f8d615764ac6c4e21851` | real `skills/` tree                                                                                       | 35       | 3.559636   | 49.04s       |
+| Traversal-pass-only (new, this ticket)                                                 | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | ephemeral mirror of `skills/` overlaid with the committed `traversal-only/review-correctness/SKILL.md`    | 35       | 3.560108   | 43.62s       |
+| Verification-sufficiency-pass-only (new, this ticket)                                  | `e2c56f68fe56094a6c92fd4a220539f47d6f9f98` | ephemeral mirror of `skills/` overlaid with the committed `verification-only/review-correctness/SKILL.md` | 35       | 3.866613   | 50.93s       |
 
 All three: `grader_version 1.1`, `corpus_version 0.1-s1-populated`,
 `runs_per_case 5`, `cases 7` (35 attempts), `runtime claude 2.1.92`,
