@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "repository": {"identity": "example/coordinator", "base_branch": "main"},
+  "candidate": {
+    "head_sha": "7373737373737373737373737373737373737373",
+    "comparison_base_sha": "3737373737373737373737373737373737373737",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/lib/claims.py b/lib/claims.py\n--- a/lib/claims.py\n+++ b/lib/claims.py\n@@ -1,6 +1,8 @@\n def release_if_stale(claim, snapshot):\n     owner = snapshot.get_owner(claim.resource_id)\n     if owner is not None and owner != claim.holder:\n         return False\n+    if owner is None and not claim.is_expired():\n+        return False\n     claim.release()\n     return True\ndiff --git a/tests/test_claims.py b/tests/test_claims.py\n--- a/tests/test_claims.py\n+++ b/tests/test_claims.py\n@@ -1,4 +1,10 @@\n def test_release_denied_for_mismatched_owner():\n     claim = Claim(holder=\"worker-a\", resource_id=\"r1\")\n     snapshot = FakeSnapshot(owners={\"r1\": \"worker-b\"})\n     assert release_if_stale(claim, snapshot) is False\n+\n+\n+def test_release_denied_when_owner_absent_and_not_expired():\n+    claim = Claim(holder=\"worker-a\", resource_id=\"r1\", expired=False)\n+    snapshot = FakeSnapshot(owners={})\n+    assert release_if_stale(claim, snapshot) is False\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Prevent release_if_stale from releasing a claim whose snapshot owner is transiently absent unless the claim has actually expired.",
+    "acceptance_criteria": ["release_if_stale denies release when the snapshot owner is absent and the claim has not expired.", "release_if_stale still denies release when a different owner holds the claim."],
+    "non_goals": ["Change how or when a claim expires."],
+    "preserved_behaviors": ["release_if_stale still denies release when the snapshot owner does not match the claim holder."]
+  },
+  "sources": {
+    "repository_instructions": [],
+    "named_documents": [{"label": "Claim release guard", "location": "docs/CLAIMS.md", "summary": "A stale claim may only be released once its snapshot ownership is confirmed absent or the claim itself has expired."}],
+    "nearby_patterns": []
+  },
+  "validation": [
+    {"name": "claims tests", "command": "pytest tests/test_claims.py", "scope": "focused", "status": "passed", "result": "2 passed"},
+    {"name": "full tests", "command": "pytest", "scope": "full", "status": "passed", "result": "41 passed"}
+  ]
+}

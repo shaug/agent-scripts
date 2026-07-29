@@ -4,9 +4,11 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-28 — Added consumer/impact-traversal evidence and required passing validation and current-head lens evidence for a clean review verdict
+## 2026-07-28 — Added correctness traversal and verification-sufficiency passes, consumer/impact-traversal evidence, and required passing validation and current-head lens evidence for a clean review verdict
 
+- feat: add correctness traversal and verification-sufficiency passes
 - feat: add consumer/impact-traversal evidence to the shared review contract
+  (`8e4fdbdaad8f70751d45f8c2ca87e88288f8ba5b`)
 - feat: require passing validation and current-head lens evidence for a clean
   review verdict (`b1e51979628652e4ef60adad44089bf54f4551e7`)
 

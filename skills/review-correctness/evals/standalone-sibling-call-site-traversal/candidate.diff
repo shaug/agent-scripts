@@ -1,0 +1,16 @@
+diff --git a/lib/policy.py b/lib/policy.py
+--- a/lib/policy.py
++++ b/lib/policy.py
+@@ -1,4 +1,4 @@
+-def check_dependency(status, mode="permissive"):
++def check_dependency(status, mode="strict"):
+     if mode == "strict" and status != "ready":
+         raise DependencyError(status)
+     return True
+diff --git a/lib/orchestrator.py b/lib/orchestrator.py
+--- a/lib/orchestrator.py
++++ b/lib/orchestrator.py
+@@ -8,2 +8,2 @@
+ def finalize_stage(status):
+-    return check_dependency(status)
++    return check_dependency(status, mode="strict")

@@ -1,0 +1,12 @@
+diff --git a/lib/claims.py b/lib/claims.py
+--- a/lib/claims.py
++++ b/lib/claims.py
+@@ -1,6 +1,8 @@
+ def release_if_stale(claim, snapshot):
+     owner = snapshot.get_owner(claim.resource_id)
+     if owner is not None and owner != claim.holder:
+         return False
++    if owner is None and not claim.is_expired():
++        return False
+     claim.release()
+     return True
