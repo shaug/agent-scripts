@@ -6,10 +6,16 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): check comparison_base in the checkpoint/terminal-result
+  cross-check, closing a gap where `validate_terminal_against_checkpoint`
+  silently omitted the base-identity leg CONTRACT.md already documented it as
+  covering, found by the second review-code-change pass on #96
+- docs: record the converged-evidence fix in the changelog
+  (`1c9fcdc5f4ae5765414f4b25839c07122c3bb151`)
 - fix(review-fix-loop): reject converged results with non-clean embedded
   evidence, closing a gap where `validate_terminal_result` never inspected
   `review_records` or `validation_summary`, found by the initial
-  review-code-change pass on #96
+  review-code-change pass on #96 (`fc701b0bb29047af7b2ad24f25fb1db739718f89`)
 - docs: record the review-fix-loop contracts changelog entry
   (`461db19fdd89e65afdf1c13fb870c5c427c00b67`)
 - feat(review-fix-loop): define invocation, checkpoint, and terminal-result
