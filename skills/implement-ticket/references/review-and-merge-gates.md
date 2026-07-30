@@ -20,8 +20,8 @@ beside it. Before consuming any returned result, validate it with
 `scripts/review_gate.py`, which also binds the result to this run's exact
 current head and comparison-base SHA. Reject a result that fails schema
 validation, carries a `schema_version` other than the bundled contract's current
-version (`1.3`; a stale version such as `1.0`, `1.1`, or `1.2` fails with its
-own migration message and is never accepted as current evidence), is not an
+version (`1.4`; a stale version such as `1.0`, `1.1`, `1.2`, or `1.3` fails with
+its own migration message and is never accepted as current evidence), is not an
 `aggregate` result, has a `verdict` other than `clean`, or is missing a
 complete, current, freshly executed `lens_executions` entry for every required
 lens. Treat any such rejection, exactly like a missing dependency or a `blocked`

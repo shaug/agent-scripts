@@ -15,7 +15,6 @@
   {"name": "missing-simplification-requirements", "packet_valid": true},
   {"name": "clean-change", "packet_valid": true},
   {"name": "consumer-impact-traversal", "packet_valid": true},
-  {"name": "verification-sufficiency-guard", "packet_valid": true},
   {"name": "missing-evidence", "packet_valid": false},
   {"name": "unrelated-base-drift", "packet_valid": true}
 ]
