@@ -295,6 +295,16 @@ def validate_checkpoint_against_invocation(
     nothing inside the checkpoint alone can prove it actually started from
     the invocation's real original comparison base. This mirrors
     `validate_terminal_against_checkpoint`, one level up the same chain.
+
+    The complete invariant identity set checked here (kept identical to what
+    `validate_terminal_against_checkpoint` checks one level up the same
+    chain, so transitive invocation-to-terminal-result identity holds without
+    a third direct function) is: `invocation_id`, `repository`, `branch`,
+    the original fix-cycle budget, `publication.policy`, the initial head,
+    and the initial comparison base. An earlier version of this function
+    omitted `branch` even though the sibling function already checked it;
+    see `references/CONTRACT.md` for why these two field sets must be kept
+    identical.
     """
     errors: list[str] = []
     invocation_candidate = invocation.get("candidate", {})
@@ -302,6 +312,8 @@ def validate_checkpoint_against_invocation(
         errors.append("$.invocation_id: does not match invocation invocation_id")
     if invocation_candidate.get("head_sha") != checkpoint.get("initial_head"):
         errors.append("$.initial_head: does not match invocation candidate.head_sha")
+    if invocation_candidate.get("branch") != checkpoint.get("branch"):
+        errors.append("$.branch: does not match invocation candidate.branch")
 
     invocation_base_sha = invocation_candidate.get("comparison_base", {}).get("sha")
     checkpoint_base_history = checkpoint.get("base_revision_history", [])
@@ -436,6 +448,30 @@ def validate_terminal_result(document: dict[str, Any]) -> list[str]:
         errors.append("$.head_history[0]: must equal head.initial")
     if head_history and head_history[-1] != head.get("final"):
         errors.append("$.head_history[-1]: must equal head.final")
+
+    created_commits = document.get("created_commits", [])
+    if head_history and created_commits != head_history[1:]:
+        errors.append(
+            "$.created_commits: must equal head_history[1:] — one commit per "
+            "head advance, in order"
+        )
+
+    for index, disposition in enumerate(document.get("finding_dispositions", [])):
+        has_fix_commit = "fix_commit_sha" in disposition
+        if disposition.get("disposition") == "selected" and not has_fix_commit:
+            errors.append(
+                f"$.finding_dispositions[{index}]: selected requires fix_commit_sha"
+            )
+        if disposition.get("disposition") == "declined" and has_fix_commit:
+            errors.append(
+                f"$.finding_dispositions[{index}]: declined must not carry "
+                "fix_commit_sha"
+            )
+        if has_fix_commit and disposition["fix_commit_sha"] not in created_commits:
+            errors.append(
+                f"$.finding_dispositions[{index}].fix_commit_sha: does not "
+                "appear in created_commits"
+            )
 
     base_history = document.get("base_revision_history", [])
     if base_history and base_history[0].get("sha") != base.get("initial", {}).get(

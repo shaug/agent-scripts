@@ -641,6 +641,43 @@ class TerminalResultContractTests(unittest.TestCase):
         errors = VALIDATE.validate_terminal_result(result)
         self.assertIn("$.head_history[0]: must equal head.initial", errors)
 
+    def test_created_commits_must_match_head_history_advances(self):
+        result = copy.deepcopy(self.converged_local)
+        result["created_commits"] = [result["head"]["final"], result["head"]["final"]]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.created_commits: must equal head_history[1:] — one commit per "
+            "head advance, in order",
+            errors,
+        )
+
+    def test_selected_finding_disposition_requires_fix_commit_sha(self):
+        result = copy.deepcopy(self.converged_local)
+        del result["finding_dispositions"][0]["fix_commit_sha"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.finding_dispositions[0]: selected requires fix_commit_sha", errors
+        )
+
+    def test_declined_finding_disposition_forbids_fix_commit_sha(self):
+        result = copy.deepcopy(self.converged_local)
+        result["finding_dispositions"][0]["disposition"] = "declined"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.finding_dispositions[0]: declined must not carry fix_commit_sha",
+            errors,
+        )
+
+    def test_fix_commit_sha_must_appear_in_created_commits(self):
+        result = copy.deepcopy(self.converged_local)
+        result["finding_dispositions"][0]["fix_commit_sha"] = result["head"]["initial"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.finding_dispositions[0].fix_commit_sha: does not appear in "
+            "created_commits",
+            errors,
+        )
+
     def test_base_revision_history_must_match_comparison_base(self):
         result = copy.deepcopy(self.converged_local)
         result["base_revision_history"][0]["sha"] = result["head"]["final"]
@@ -709,6 +746,13 @@ class CheckpointInvocationConsistencyTests(unittest.TestCase):
         self.assertIn(
             "$.initial_head: does not match invocation candidate.head_sha", errors
         )
+
+    def test_mismatched_branch_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["branch"] = "some-other-branch"
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn("$.branch: does not match invocation candidate.branch", errors)
 
     def test_mismatched_original_comparison_base_is_rejected(self):
         invocation = load("local-commit-invocation.json")

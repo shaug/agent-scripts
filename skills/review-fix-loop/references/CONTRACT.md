@@ -74,6 +74,49 @@ unknown property rather than being silently accepted or silently ignored.
 - `validation` requires at least one `focused` and one `full` command; both
   scopes must be present.
 
+## Cross-document identity invariants
+
+One invocation's `invocation_id`, `repository` (`identity` and
+`git_common_directory`), candidate `branch`, original fix-cycle budget,
+`publication.policy`, initial head, and initial comparison base never change for
+the life of that invocation. This is the complete, closed set: every other field
+either evolves over the invocation (`current_head`, the live `comparison_base`,
+`cycle_attempts`, `review_records`, `validation_outcomes`, `current_phase`) or
+is checkpoint/terminal-result-only bookkeeping with no invocation-side
+counterpart to compare against.
+
+`validate_checkpoint_against_invocation(invocation, checkpoint)` and
+`validate_terminal_against_checkpoint(checkpoint, terminal_result)` each check
+this complete invariant set against their adjacent document, using each
+document's own field names for it:
+
+| Invariant                 | invocation                        | checkpoint                     | terminal-result                  |
+| ------------------------- | --------------------------------- | ------------------------------ | -------------------------------- |
+| invocation ID             | `invocation_id`                   | `invocation_id`                | `invocation_id`                  |
+| repository                | `repository`                      | `repository`                   | `repository`                     |
+| branch                    | `candidate.branch`                | `branch`                       | `branch`                         |
+| original fix-cycle budget | `fix_cycle_budget.max_fix_cycles` | `original_cycle_budget`        | `budget.original_max_fix_cycles` |
+| publication policy        | `publication.policy`              | `publication.policy`           | `publication.policy`             |
+| initial head              | `candidate.head_sha`              | `initial_head`                 | `head.initial`                   |
+| initial comparison base   | `candidate.comparison_base.sha`   | `base_revision_history[0].sha` | `comparison_base.initial.sha`    |
+
+Because both adjacent pairs enforce the same complete set, invocation and
+terminal-result identity agree transitively through the checkpoint without a
+third direct `validate_terminal_against_invocation` function. An earlier version
+of `validate_checkpoint_against_invocation` omitted `branch` even though
+`validate_terminal_against_checkpoint` already checked it — that asymmetry is
+the reason this table exists: any future field added to one side of this
+invariant set must be added to both cross-document functions, not just the one a
+particular fix cycle happened to be looking at.
+
+`validate_terminal_against_checkpoint` additionally reconstructs and compares
+`consumed_cycles` and `remaining_cycles` (not just the original budget) via
+`reconstruct_cycle_accounting`, and compares the *current* head and comparison
+base (`head.final`, `comparison_base.final`) against the checkpoint's live
+`current_head` and `comparison_base` — those are evolving values, not part of
+the closed invariant set above, and are checked only between checkpoint and
+terminal-result because only that pair shares a live notion of "current."
+
 ## Checkpoint
 
 The checkpoint is the durable, resumable state for one invocation. It never
@@ -96,10 +139,8 @@ exceeds `original_cycle_budget`.
   consistency; nothing inside a checkpoint document alone can prove
   `base_revision_history[0]` is the invocation's *real* original comparison
   base, since a checkpoint has no other field to compare it against. Use
-  `validate_checkpoint_against_invocation(invocation, checkpoint)` for that: it
-  also cross-checks `initial_head`, `original_cycle_budget`, `invocation_id`,
-  `repository`, and `publication.policy` against the invocation, mirroring
-  `validate_terminal_against_checkpoint` one level up the same chain.
+  `validate_checkpoint_against_invocation(invocation, checkpoint)` for the
+  complete cross-document invariant set described above.
 - `review_records` bind every review pass to the exact head and base it
   reviewed. `write_isolation: violated` records an attempted or unattributed
   reviewer mutation; it does not by itself imply which terminal `blocked` reason
@@ -159,12 +200,34 @@ ticket or PR acceptance merely by converging.
 `budget.consumed_cycles + budget.remaining_cycles` must equal
 `budget.original_max_fix_cycles`.
 
+### Commit provenance
+
+`created_commits` must equal `head_history[1:]` in order — one commit per head
+advance, the terminal-result mirror of the equivalent
+`cycle_attempts`-to-`head_history` rule already enforced for checkpoints. Every
+`finding_dispositions` entry's `disposition` governs `fix_commit_sha`:
+`selected` requires it, `declined` must not carry one, and any present
+`fix_commit_sha` must appear in `created_commits` — a disposition cannot point
+at a commit the result does not otherwise claim to have created.
+
+This deliberately does not constrain `unpushed_commits` to be a subset of
+`created_commits` or `head_history`. Design's own local-ahead/behind reporting
+is relative to the invocation's *recorded source*, and a resumed or
+already-diverged invocation can legitimately have local commits ahead of that
+source that predate `head.initial` and were never created by this invocation at
+all — `head_history` only records head snapshots from `initial_head` onward, not
+the individual pre-invocation commits that got a candidate to that initial head.
+Treating `unpushed_commits` as bounded by this invocation's own commit history
+would incorrectly reject that legitimate case; recovery and resume semantics are
+this ticket's stated non-goals, so this boundary is recorded here rather than
+guessed at.
+
 `scripts/validate.py` also exposes
 `validate_terminal_against_checkpoint(checkpoint, terminal_result)` to confirm a
-terminal result's budget, head/base identities, repository, branch, and
-publication policy are the ones actually recorded by its checkpoint, so a result
-cannot report cycle accounting, history, or a candidate identity that its own
-checkpoint does not support.
+terminal result's complete cross-document invariant set (see above), current
+head, and current comparison base are the ones actually recorded by its
+checkpoint, so a result cannot report cycle accounting, history, or a candidate
+identity that its own checkpoint does not support.
 
 ## Determinism
 
