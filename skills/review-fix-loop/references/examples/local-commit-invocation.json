@@ -1,0 +1,71 @@
+{
+  "candidate": {
+    "all_changes_committed": true,
+    "branch": "fix/96-example",
+    "comparison_base": {
+      "ref": "main",
+      "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+    },
+    "diff": {
+      "complete": true,
+      "content": "diff --git a/example.py b/example.py\n@@ -1 +1,2 @@\n def add(a, b):\n+    return a + b\n",
+      "format": "unified_diff"
+    },
+    "head_sha": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+    "source_unavailable_reason": "standalone invocation has no recorded pushable source",
+    "worktree": {
+      "ignored": [],
+      "staged": [],
+      "tracked": [
+        "example.py"
+      ],
+      "unstaged": [],
+      "untracked": []
+    }
+  },
+  "change_contract": {
+    "acceptance_criteria": [
+      "add(a, b) returns the sum of its arguments"
+    ],
+    "allowed_remediation_scope": "example.py's add() function body only",
+    "goal": "Implement the missing add() body.",
+    "non_goals": [
+      "Refactoring unrelated arithmetic helpers"
+    ],
+    "preserved_behaviors": [
+      "Existing call sites of add() keep their current signature"
+    ],
+    "sources": {
+      "named_documents": [],
+      "nearby_patterns": [],
+      "repository_instructions": []
+    }
+  },
+  "fix_cycle_budget": {
+    "max_fix_cycles": 3
+  },
+  "invocation_id": "review-fix-loop-96-local-commit-example",
+  "publication": {
+    "policy": "local_commit"
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_execution": {
+    "mode": "fresh_subagent"
+  },
+  "schema_version": "1.0",
+  "validation": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "scope": "focused"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "scope": "full"
+    }
+  ]
+}

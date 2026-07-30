@@ -1,0 +1,142 @@
+{
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912"
+    }
+  ],
+  "branch": "fix/96-budget-example",
+  "comparison_base": {
+    "ref": "main",
+    "sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912"
+  },
+  "current_head": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+  "current_phase": "return",
+  "cycle_attempts": [
+    {
+      "finding_id": "correctness-001",
+      "outcome": "committed",
+      "resulting_head": "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+      "sequence": 1,
+      "started_from_head": "98676d2fa265321c8399de22ee6607c84a4f2e46"
+    },
+    {
+      "finding_id": "correctness-001",
+      "outcome": "failed",
+      "sequence": 2,
+      "started_from_head": "8fbc9b399aa14299d694e4beca34dc371baa7e58"
+    },
+    {
+      "finding_id": "correctness-001",
+      "outcome": "committed",
+      "resulting_head": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+      "sequence": 3,
+      "started_from_head": "8fbc9b399aa14299d694e4beca34dc371baa7e58"
+    }
+  ],
+  "expected_next_action": "operator input required; the same finding survived three fix cycles",
+  "head_history": [
+    "98676d2fa265321c8399de22ee6607c84a4f2e46",
+    "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+    "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af"
+  ],
+  "initial_head": "98676d2fa265321c8399de22ee6607c84a4f2e46",
+  "invocation_id": "review-fix-loop-96-budget-exhausted-example",
+  "original_cycle_budget": 3,
+  "preserved_failed_attempts": [
+    {
+      "attempt_ref": "attempt/correctness-001-cycle-2",
+      "reason": "the second remediation attempt did not clear the finding and was discarded"
+    }
+  ],
+  "publication": {
+    "policy": "local_commit"
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "off-by-one boundary defect"
+        }
+      ],
+      "head_sha": "98676d2fa265321c8399de22ee6607c84a4f2e46",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-1",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "same off-by-one boundary defect survived the first attempted fix"
+        }
+      ],
+      "head_sha": "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-2",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "same off-by-one boundary defect survived the second attempted fix"
+        }
+      ],
+      "head_sha": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-3",
+      "sequence": 3,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "status": "unavailable",
+    "unavailable_reason": "standalone invocation has no recorded pushable source"
+  },
+  "validation_outcomes": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ],
+  "worktree": {
+    "ignored": [],
+    "staged": [],
+    "tracked": [
+      "example.py"
+    ],
+    "unstaged": [],
+    "untracked": []
+  }
+}

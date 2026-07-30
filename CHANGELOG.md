@@ -4,8 +4,88 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): reject `converged` when any `review_records` entry — not
+  only the final-head-bound one — recorded a mutation attempt, closing the gap
+  the tenth (final) review-code-change pass on #96 found
+- fix(review-fix-loop): add a per-pass `reviewer_identity` field to
+  `review_records` in both checkpoint and terminal-result, and reject a dirty
+  `candidate.worktree` (`staged`/`unstaged`/`untracked`) in
+  `validate_invocation`, closing the two gaps the ninth review-code-change pass
+  on #96 found (`4daa2a67a38be3baa7741380eb689581ce31a1db`)
+- docs: record the ninth review-fix-loop fix cycle in the changelog
+  (`80690173571678bb14d14703451a8ab6d29b2cba`)
+- fix(review-fix-loop): complete the terminal-result schema against the design's
+  Terminal result contract field list (`worktree`, `resume_status`,
+  `unresolved_or_deferred_findings`) and require `ahead_by`/`behind_by`
+  alongside the head fields whenever a source is `bound`, closing the gaps the
+  eighth review-code-change pass on #96 found
+  (`adf2ef5062038836d750b01e19f1549373ce1aad`)
+- docs: record the eighth review-fix-loop fix cycle in the changelog
+  (`65a256a32b3087d064efb5e4a24725cfb1762467`)
+- fix(review-fix-loop): complete the checkpoint schema against the design's
+  durable-checkpoint field list (`preserved_failed_attempts`, `pull_request`)
+  and extend the optional pull-request identity cross-check to both
+  cross-document functions, closing the gap the seventh review-code-change pass
+  on #96 found (`e7a955a321bafab1cd6f20b77758aa26670567bc`)
+- docs: record the seventh review-fix-loop fix cycle in the changelog
+  (`f6d1adccea4ee1e6571c911b10053aa4c27e00ba`)
+- docs: record the sixth review-fix-loop fix cycle in the changelog
+  (`31789481f000567a4b69cb0a1d5ba77b8d8c4dba`)
+- fix(review-fix-loop): systematically close cross-document identity checks and
+  commit provenance, enumerating the complete invariant field set
+  (`invocation_id`, `repository`, `branch`, original fix-cycle budget,
+  `publication.policy`, initial head, initial comparison base) that must agree
+  across invocation, checkpoint, and terminal-result, closing the one remaining
+  gap (`branch` in `validate_checkpoint_against_invocation`) plus the
+  commit-provenance gap (`created_commits`/`fix_commit_sha` linkage) the sixth
+  review-code-change pass on #96 found
+  (`040ae824fae708efe46ca772f378c30378c9c695`)
+- fix(review-fix-loop): add the missing repository/branch/publication.policy
+  checkpoint cross-check, the design-enumerated `allowed_remediation_scope`,
+  `worktree`, and `validation_outcomes` schema fields, and correct a
+  misattributed changelog SHA, closing all three items the fifth
+  review-code-change pass on #96 found
+  (`a6178b8da086fab80bd52596babb0208304163a1`)
+- docs: record the fifth review-fix-loop fix cycle in the changelog
+  (`e71ea93ad98beec7b39cf6bb6c2a123743e820cf`)
+- fix(review-fix-loop): add validate_checkpoint_against_invocation cross-check,
+  symmetric to the existing `validate_terminal_against_checkpoint`, closing the
+  gap the fourth review-code-change pass on #96 found: nothing inside a
+  checkpoint document alone could prove `base_revision_history[0]` was the
+  invocation's real original comparison base
+  (`c625bb87b7aefb2371b992b20e4ce07b12b1c270`)
+- docs: record the coordinator-authorized fourth fix cycle in the changelog
+  (`2f3addbdceefb0a952fa1fb035475d0a9d31ebfb`)
+- fix(review-fix-loop): require non-empty scoped validation and full base
+  history match, closing two remaining gaps the third review-code-change pass on
+  #96 found: an empty or scope-incomplete `validation_summary` could still claim
+  `converged`, and the checkpoint/terminal-result cross-check compared only the
+  final comparison base, never the initial one
+  (`3d240c6be6a33bf131aa7ccee2544c59a36614c1`)
+- docs: record the third review-fix-loop fix cycle in the changelog
+  (`86c7df20d44d0c398c34bee5b8272dca4b239cf7`)
+- docs: record the comparison_base cross-check fix in the changelog
+  (`7d206acd32151405865c4ade4e9e7399ea739f57`)
+- fix(review-fix-loop): check comparison_base in the checkpoint/terminal-result
+  cross-check, closing a gap where `validate_terminal_against_checkpoint`
+  silently omitted the base-identity leg CONTRACT.md already documented it as
+  covering, found by the second review-code-change pass on #96
+  (`e18f1469cf6d5f5cff1d99045dd041cdc5e77b71`)
+- docs: record the converged-evidence fix in the changelog
+  (`1c9fcdc5f4ae5765414f4b25839c07122c3bb151`)
+- fix(review-fix-loop): reject converged results with non-clean embedded
+  evidence, closing a gap where `validate_terminal_result` never inspected
+  `review_records` or `validation_summary`, found by the initial
+  review-code-change pass on #96 (`fc701b0bb29047af7b2ad24f25fb1db739718f89`)
+- docs: record the review-fix-loop contracts changelog entry
+  (`461db19fdd89e65afdf1c13fb870c5c427c00b67`)
+- feat(review-fix-loop): define invocation, checkpoint, and terminal-result
+  contracts, adding the skill-local schemas, a dependency-free validator, and 62
+  unit tests covering valid, invalid, boundary, cross-document, and
+  round-trip/determinism cases for both `local_commit` and `update_pr` (#96)
+  (`0689cda71833751249ebc5e65b766d231cf2c093`)
 - feat(review-suite)!: remove the verification-sufficiency pass and its
   mandatory `verification_sufficiency_evidence` field from `review-correctness`
   and the shared review-result contract, advancing `schema_version` `1.3 → 1.4`;
@@ -13,6 +93,7 @@ summary: Chronological history of repository and skill changes.
   unchanged, per #57's ablation matrix and #89's harder-case validation finding
   no demonstrated value for the removed pass plus a confirmed, twice-reproduced
   false-positive regression when it ran without the traversal pass (#93)
+  (`b91e12b063ea6d7ed49f152ee359f1f0eb326363`)
 - docs: simplify the review-fix-loop design
   (`2e7a8cd93af9f2c8cec36d6c393694f7849adedb`)
 

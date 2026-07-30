@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-fix-loop/terminal-result.schema.json",
+  "title": "Review-fix-loop terminal result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "terminal_state",
+    "budget",
+    "resume_status",
+    "repository",
+    "branch",
+    "worktree",
+    "head",
+    "comparison_base",
+    "head_history",
+    "base_revision_history",
+    "review_records",
+    "validation_summary",
+    "finding_dispositions",
+    "created_commits",
+    "preserved_failed_attempts",
+    "source",
+    "unpushed_commits",
+    "publication",
+    "acceptance_reconciliation_required",
+    "unresolved_or_deferred_findings",
+    "operator_action"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "invocation_id": {"type": "string", "minLength": 1},
+    "terminal_state": {"enum": ["converged", "changes_remaining", "blocked"]},
+    "reason": {
+      "enum": [
+        "cycle_budget_exhausted",
+        "repeated_finding",
+        "oscillation",
+        "expanding_findings",
+        "repeated_failed_attempt",
+        "current_candidate_validation_failure",
+        "candidate_busy",
+        "candidate_integrity_failure",
+        "checkpoint_mismatch",
+        "missing_capability",
+        "missing_authority",
+        "insufficient_change_contract",
+        "reviewer_integrity_failure",
+        "validation_unavailable",
+        "base_drift",
+        "remote_advanced",
+        "publication_failed",
+        "scope_decision_required",
+        "operator_input_required"
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["original_max_fix_cycles", "consumed_cycles", "remaining_cycles"],
+      "properties": {
+        "original_max_fix_cycles": {"type": "integer", "minimum": 1, "maximum": 10},
+        "consumed_cycles": {"type": "integer", "minimum": 0},
+        "remaining_cycles": {"type": "integer", "minimum": 0}
+      }
+    },
+    "resume_status": {"enum": ["not_resumed", "resumed", "resume_unavailable"]},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "git_common_directory"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "git_common_directory": {"type": "string", "minLength": 1}
+      }
+    },
+    "branch": {"type": "string", "minLength": 1},
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tracked", "staged", "unstaged", "untracked", "ignored"],
+      "properties": {
+        "tracked": {"type": "array", "items": {"type": "string"}},
+        "staged": {"type": "array", "items": {"type": "string"}},
+        "unstaged": {"type": "array", "items": {"type": "string"}},
+        "untracked": {"type": "array", "items": {"type": "string"}},
+        "ignored": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "pull_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "number"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "number": {"type": "integer", "minimum": 1}
+      }
+    },
+    "head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initial", "final"],
+      "properties": {
+        "initial": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "final": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "comparison_base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["initial", "final"],
+      "properties": {
+        "initial": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ref", "sha"],
+          "properties": {
+            "ref": {"type": "string", "minLength": 1},
+            "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          }
+        },
+        "final": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ref", "sha"],
+          "properties": {
+            "ref": {"type": "string", "minLength": 1},
+            "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          }
+        }
+      }
+    },
+    "head_history": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+    },
+    "base_revision_history": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "sha"],
+        "properties": {
+          "ref": {"type": "string", "minLength": 1},
+          "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "review_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sequence",
+          "head_sha",
+          "comparison_base_sha",
+          "review_independence",
+          "reviewer_identity",
+          "write_isolation",
+          "aggregate_verdict",
+          "finding_dispositions",
+          "mutation_attempts"
+        ],
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 1},
+          "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "comparison_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "review_independence": {"enum": ["fresh_subagent", "in_agent_override"]},
+          "reviewer_identity": {"type": "string", "minLength": 1},
+          "write_isolation": {"enum": ["enforced", "violated"]},
+          "aggregate_verdict": {"enum": ["clean", "changes_required", "blocked"]},
+          "finding_dispositions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["finding_id", "disposition", "rationale"],
+              "properties": {
+                "finding_id": {"type": "string", "minLength": 1},
+                "disposition": {"enum": ["accepted", "rejected", "deferred"]},
+                "rationale": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "mutation_attempts": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "validation_summary": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "scope", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "command": {"type": "string", "minLength": 1},
+          "scope": {"enum": ["focused", "full"]},
+          "status": {"enum": ["passed", "failed", "unavailable"]},
+          "result": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "finding_dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["finding_id", "disposition", "rationale"],
+        "properties": {
+          "finding_id": {"type": "string", "minLength": 1},
+          "disposition": {"enum": ["selected", "declined"]},
+          "rationale": {"type": "string", "minLength": 1},
+          "fix_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "created_commits": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+    },
+    "preserved_failed_attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["attempt_ref", "reason"],
+        "properties": {
+          "attempt_ref": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["bound", "unavailable"]},
+        "initial_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "final_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "ahead_by": {"type": "integer", "minimum": 0},
+        "behind_by": {"type": "integer", "minimum": 0},
+        "unavailable_reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "unpushed_commits": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "status", "non_converged_exposure"],
+      "properties": {
+        "policy": {"enum": ["local_commit", "update_pr"]},
+        "status": {"enum": ["not_applicable", "withheld", "published", "failed"]},
+        "remote_head_before": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "remote_head_after": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "non_converged_exposure": {"type": "boolean"}
+      }
+    },
+    "acceptance_reconciliation_required": {"type": "boolean"},
+    "unresolved_or_deferred_findings": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "operator_action": {"type": "string", "minLength": 1}
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "candidate": {
+    "all_changes_committed": true,
+    "branch": "fix/100-example",
+    "comparison_base": {
+      "ref": "main",
+      "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+    },
+    "diff": {
+      "complete": true,
+      "content": "diff --git a/example.py b/example.py\n@@ -3,3 +3,2 @@\n-    values = [x for x in range(n)]\n-    return values\n+    return list(range(n))\n",
+      "format": "unified_diff"
+    },
+    "head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+    "pull_request": {
+      "number": 123,
+      "repository": "shaug/agent-scripts"
+    },
+    "source_binding": {
+      "observed_object_id": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+      "ref": "refs/heads/fix/100-example",
+      "remote_url": "https://github.com/shaug/agent-scripts.git",
+      "repository": "shaug/agent-scripts"
+    },
+    "worktree": {
+      "ignored": [],
+      "staged": [],
+      "tracked": [
+        "example.py"
+      ],
+      "unstaged": [],
+      "untracked": []
+    }
+  },
+  "change_contract": {
+    "acceptance_criteria": [
+      "range_list(n) returns the same values without the intermediate comprehension"
+    ],
+    "allowed_remediation_scope": "example.py's range_list() function body only",
+    "goal": "Simplify range_list() to a direct list(range(n)) call.",
+    "non_goals": [
+      "Changing range_list()'s public signature"
+    ],
+    "preserved_behaviors": [
+      "range_list(n) still returns a list, not a generator"
+    ],
+    "sources": {
+      "named_documents": [],
+      "nearby_patterns": [],
+      "repository_instructions": []
+    }
+  },
+  "fix_cycle_budget": {
+    "max_fix_cycles": 3
+  },
+  "invocation_id": "review-fix-loop-100-update-pr-example",
+  "publication": {
+    "policy": "update_pr",
+    "pull_request": {
+      "base_ref": "refs/heads/main",
+      "base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
+      "expected_old_head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+      "head_ref": "refs/heads/fix/100-example",
+      "head_repository": "shaug/agent-scripts"
+    },
+    "remote_iteration_grants": []
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_execution": {
+    "mode": "fresh_subagent"
+  },
+  "schema_version": "1.0",
+  "validation": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "scope": "focused"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "scope": "full"
+    }
+  ]
+}

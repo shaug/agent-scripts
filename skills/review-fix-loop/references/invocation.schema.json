@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shaug/agent-scripts/review-fix-loop/invocation.schema.json",
+  "title": "Review-fix-loop invocation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "invocation_id",
+    "repository",
+    "candidate",
+    "change_contract",
+    "review_execution",
+    "fix_cycle_budget",
+    "validation",
+    "publication"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "invocation_id": {"type": "string", "minLength": 1},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "git_common_directory"],
+      "properties": {
+        "identity": {"type": "string", "minLength": 1},
+        "git_common_directory": {"type": "string", "minLength": 1}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "head_sha",
+        "comparison_base",
+        "diff",
+        "worktree",
+        "all_changes_committed"
+      ],
+      "properties": {
+        "branch": {"type": "string", "minLength": 1},
+        "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "comparison_base": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ref", "sha"],
+          "properties": {
+            "ref": {"type": "string", "minLength": 1},
+            "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          }
+        },
+        "diff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "complete", "content"],
+          "properties": {
+            "format": {"enum": ["unified_diff"]},
+            "complete": {"const": true},
+            "content": {"type": "string", "minLength": 1}
+          }
+        },
+        "worktree": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tracked", "staged", "unstaged", "untracked", "ignored"],
+          "properties": {
+            "tracked": {"type": "array", "items": {"type": "string"}},
+            "staged": {"type": "array", "items": {"type": "string"}},
+            "unstaged": {"type": "array", "items": {"type": "string"}},
+            "untracked": {"type": "array", "items": {"type": "string"}},
+            "ignored": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "all_changes_committed": {"const": true},
+        "pull_request": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "number"],
+          "properties": {
+            "repository": {"type": "string", "minLength": 1},
+            "number": {"type": "integer", "minimum": 1}
+          }
+        },
+        "source_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "remote_url", "ref", "observed_object_id"],
+          "properties": {
+            "repository": {"type": "string", "minLength": 1},
+            "remote_url": {"type": "string", "minLength": 1},
+            "ref": {"type": "string", "minLength": 1},
+            "observed_object_id": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          }
+        },
+        "source_unavailable_reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "change_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "goal",
+        "acceptance_criteria",
+        "non_goals",
+        "preserved_behaviors",
+        "sources",
+        "allowed_remediation_scope"
+      ],
+      "properties": {
+        "goal": {"type": "string", "minLength": 1},
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "non_goals": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "preserved_behaviors": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        "allowed_remediation_scope": {"type": "string", "minLength": 1},
+        "sources": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository_instructions", "named_documents", "nearby_patterns"],
+          "properties": {
+            "repository_instructions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "location"],
+                "properties": {
+                  "label": {"type": "string", "minLength": 1},
+                  "location": {"type": "string", "minLength": 1},
+                  "summary": {"type": "string"}
+                }
+              }
+            },
+            "named_documents": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "location"],
+                "properties": {
+                  "label": {"type": "string", "minLength": 1},
+                  "location": {"type": "string", "minLength": 1},
+                  "summary": {"type": "string"}
+                }
+              }
+            },
+            "nearby_patterns": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "location"],
+                "properties": {
+                  "label": {"type": "string", "minLength": 1},
+                  "location": {"type": "string", "minLength": 1},
+                  "summary": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "review_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {"enum": ["fresh_subagent", "in_agent_override"]},
+        "override_authorization": {"type": "string", "minLength": 1}
+      }
+    },
+    "fix_cycle_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_fix_cycles"],
+      "properties": {
+        "max_fix_cycles": {"type": "integer", "minimum": 1, "maximum": 10}
+      }
+    },
+    "validation": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "scope"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "command": {"type": "string", "minLength": 1},
+          "scope": {"enum": ["focused", "full"]}
+        }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy"],
+      "properties": {
+        "policy": {"enum": ["local_commit", "update_pr"]},
+        "pull_request": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "head_repository",
+            "head_ref",
+            "expected_old_head_sha",
+            "base_ref",
+            "base_sha"
+          ],
+          "properties": {
+            "head_repository": {"type": "string", "minLength": 1},
+            "head_ref": {"type": "string", "minLength": 1},
+            "expected_old_head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "base_ref": {"type": "string", "minLength": 1},
+            "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          }
+        },
+        "remote_iteration_grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mechanism_id", "kind", "repository", "ref", "origin_only_evidence"],
+            "properties": {
+              "mechanism_id": {"type": "string", "minLength": 1},
+              "kind": {"type": "string", "minLength": 1},
+              "repository": {"type": "string", "minLength": 1},
+              "ref": {"type": "string", "minLength": 1},
+              "origin_only_evidence": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}
