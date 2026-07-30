@@ -466,6 +466,14 @@ def validate_terminal_against_checkpoint(
         errors.append("$.head.initial: does not match checkpoint initial_head")
     if checkpoint.get("current_head") != terminal_result.get("head", {}).get("final"):
         errors.append("$.head.final: does not match checkpoint current_head")
+    checkpoint_base_sha = checkpoint.get("comparison_base", {}).get("sha")
+    result_final_base_sha = (
+        terminal_result.get("comparison_base", {}).get("final", {}).get("sha")
+    )
+    if checkpoint_base_sha != result_final_base_sha:
+        errors.append(
+            "$.comparison_base.final: does not match checkpoint comparison_base"
+        )
     return errors
 
 

@@ -637,6 +637,16 @@ class CrossDocumentConsistencyTests(unittest.TestCase):
         errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
         self.assertIn("$.head.final: does not match checkpoint current_head", errors)
 
+    def test_mismatched_final_comparison_base_is_rejected(self):
+        checkpoint = load("local-commit-checkpoint.json")
+        terminal = copy.deepcopy(load("local-commit-terminal-converged.json"))
+        terminal["comparison_base"]["final"]["sha"] = terminal["head"]["final"]
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn(
+            "$.comparison_base.final: does not match checkpoint comparison_base",
+            errors,
+        )
+
 
 class DeterministicSerializationTests(unittest.TestCase):
     """Contract serialization is deterministic and every example is a complete,
