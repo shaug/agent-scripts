@@ -158,6 +158,124 @@ class ReviewGateTests(unittest.TestCase):
         self.assertTrue(errors)
         self.assertTrue(any("aggregate" in e for e in errors))
 
+
+class EvaluateBoundTests(unittest.TestCase):
+    """`evaluate_bound` accepts any verdict, unlike `evaluate_aggregate`."""
+
+    def test_current_clean_aggregate_is_accepted(self):
+        self.assertEqual([], GATE.evaluate_bound(CLEAN_AGGREGATE, HEAD, BASE))
+
+    def test_changes_required_with_partial_lens_executions_is_accepted(self):
+        changes_required = {
+            "schema_version": "1.4",
+            "lens": "aggregate",
+            "candidate": {"head_sha": HEAD, "comparison_base_sha": BASE},
+            "verdict": "changes_required",
+            "findings": [
+                {
+                    "id": "correctness.missing-null-check",
+                    "lens": "correctness",
+                    "severity": "blocking",
+                    "confidence": "high",
+                    "rule": "demonstrated correctness failure",
+                    "evidence": [{"location": "a.py:10", "detail": "unchecked None"}],
+                    "concern": "crash",
+                    "impact": "500 on empty input",
+                    "proposed_change": "add a guard",
+                    "expected_effect": "no crash",
+                }
+            ],
+            "blocking_reasons": [],
+            # The sequence stops at the first gating finding, so only one
+            # lens ran; evaluate_bound must not require full completeness
+            # for a non-clean verdict.
+            "lens_executions": [
+                {
+                    "lens": "solution_simplicity",
+                    "head_sha": HEAD,
+                    "comparison_base_sha": BASE,
+                    "verdict": "clean",
+                    "freshly_executed": True,
+                }
+            ],
+        }
+        self.assertEqual([], GATE.evaluate_bound(changes_required, HEAD, BASE))
+
+    def test_blocked_result_omitting_candidate_identity_is_accepted(self):
+        blocked = {
+            "schema_version": "1.4",
+            "lens": "aggregate",
+            "candidate": {},
+            "verdict": "blocked",
+            "findings": [],
+            "blocking_reasons": ["review-solution-simplicity is unreadable"],
+        }
+        # Unlike evaluate_aggregate (which always demands clean and would
+        # reject this), evaluate_bound accepts a blocked result that omits
+        # candidate identity entirely, per review-suite/CONTRACT.md's "a
+        # blocked result may omit candidate fields that the caller could not
+        # establish."
+        self.assertEqual([], GATE.evaluate_bound(blocked, HEAD, BASE))
+
+    def test_stale_schema_version_is_rejected(self):
+        stale = copy.deepcopy(CLEAN_AGGREGATE)
+        stale["schema_version"] = "1.2"
+        errors = GATE.evaluate_bound(stale, HEAD, BASE)
+        self.assertTrue(errors)
+
+    def test_clean_missing_one_lens_is_still_rejected(self):
+        incomplete = copy.deepcopy(CLEAN_AGGREGATE)
+        incomplete["lens_executions"] = [
+            execution
+            for execution in incomplete["lens_executions"]
+            if execution["lens"] != "code_simplicity"
+        ]
+        errors = GATE.evaluate_bound(incomplete, HEAD, BASE)
+        self.assertTrue(errors)
+
+    def test_result_bound_to_a_different_head_is_rejected(self):
+        different_head = copy.deepcopy(CLEAN_AGGREGATE)
+        other_head = "3434343434343434343434343434343434343434"
+        different_head["candidate"]["head_sha"] = other_head
+        for execution in different_head["lens_executions"]:
+            execution["head_sha"] = other_head
+        errors = GATE.evaluate_bound(different_head, HEAD, BASE)
+        self.assertTrue(errors)
+        self.assertTrue(any("current candidate" in e for e in errors))
+
+    def test_non_aggregate_lens_result_is_rejected(self):
+        single_lens = {
+            "schema_version": "1.4",
+            "lens": "correctness",
+            "candidate": {"head_sha": HEAD, "comparison_base_sha": BASE},
+            "verdict": "clean",
+            "findings": [],
+            "blocking_reasons": [],
+        }
+        errors = GATE.evaluate_bound(single_lens, HEAD, BASE)
+        self.assertTrue(errors)
+        self.assertTrue(any("aggregate" in e for e in errors))
+
+    def test_blocked_result_with_mismatched_identity_is_still_rejected(self):
+        # A blocked result that DOES assert a candidate identity is held to
+        # the same binding standard as any other verdict.
+        blocked = {
+            "schema_version": "1.4",
+            "lens": "aggregate",
+            "candidate": {
+                "head_sha": "3434343434343434343434343434343434343434",
+                "comparison_base_sha": BASE,
+            },
+            "verdict": "blocked",
+            "findings": [],
+            "blocking_reasons": ["repository identity could not be established"],
+        }
+        errors = GATE.evaluate_bound(blocked, HEAD, BASE)
+        self.assertTrue(errors)
+        self.assertTrue(any("current candidate" in e for e in errors))
+
+
+class ReviewGateCliTests(unittest.TestCase):
     def test_cli_exits_nonzero_and_prints_errors_for_a_rejected_result(self):
         import json
         import subprocess

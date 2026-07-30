@@ -12,9 +12,13 @@ findings into one deterministic order for later fix-cycle selection.
 
 It intentionally has no third-party dependencies, matching the convention
 already used by `skills/review-fix-loop/scripts/validate.py` and by the
-bundled `references/review-suite/validate.py` this module imports: a skill
-folder is the unit of distribution, so its scripts must work standalone
-wherever the skill is installed.
+bundled `references/review-suite/validate.py` and `scripts/review_gate.py`
+this module imports: a skill folder is the unit of distribution, so its
+scripts must work standalone wherever the skill is installed. Candidate/
+lens-execution binding is not reimplemented here: it reuses the canonical
+`review_gate.evaluate_bound` (the same binding logic `implement-ticket` and
+`babysit-pr` consume via `evaluate_aggregate`, generalized to accept any
+verdict), kept in sync via the repository's `just sync-contracts`.
 
 This module does not run a subagent, spawn a process, or shell out to Git.
 Actually creating a fresh reviewer context, restricting its tool surface, and
@@ -37,13 +41,21 @@ from typing import Any, Iterable, Mapping, Sequence
 
 HERE = Path(__file__).resolve().parent
 REVIEW_SUITE_VALIDATE_PATH = HERE.parent / "references" / "review-suite" / "validate.py"
+REVIEW_GATE_PATH = HERE / "review_gate.py"
 
-_SPEC = importlib.util.spec_from_file_location(
+
+def _load_bundled_module(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+REVIEW_SUITE = _load_bundled_module(
     "review_fix_loop_bundled_review_suite_validate", REVIEW_SUITE_VALIDATE_PATH
 )
-assert _SPEC and _SPEC.loader
-REVIEW_SUITE = importlib.util.module_from_spec(_SPEC)
-_SPEC.loader.exec_module(REVIEW_SUITE)
+GATE = _load_bundled_module("review_fix_loop_bundled_review_gate", REVIEW_GATE_PATH)
 
 # Sourced from the bundled contract's own constant rather than hand-copied, so
 # this module cannot silently drift from the schema/semantics that actually
@@ -122,65 +134,16 @@ def evaluate_review_result(
     `_check_aggregate_clean_lens_executions`, only for a `clean` verdict —
     this is exactly the acceptance criterion "Reviewer output is rejected if
     required lenses or evidence are incomplete."
+
+    This is a thin wrapper around the canonical `review_gate.evaluate_bound`
+    (bundled at `scripts/review_gate.py`), the same schema-validation-plus-
+    binding logic `implement-ticket` and `babysit-pr` already consume via
+    `evaluate_aggregate`, generalized to accept any verdict rather than only
+    `clean`. Keeping this logic in one canonical place (rather than a second,
+    independently-maintained copy here) is what lets it stay drift-tested by
+    the repository's own bundled-contract check.
     """
-    errors = [
-        f"schema: {error}" for error in REVIEW_SUITE.validate_result(dict(result))
-    ]
-    if errors:
-        # A schema-level rejection already explains why the result is
-        # untrustworthy; do not layer confusing candidate-binding errors on
-        # top of a document that is not even shape-valid.
-        return errors
-    return _candidate_binding_errors(result, expected_head, expected_base)
-
-
-def _candidate_binding_errors(
-    result: Mapping[str, Any], expected_head: str, expected_base: str
-) -> list[str]:
-    """Return binding errors a schema-only check cannot express.
-
-    Shared by `evaluate_review_result` and `evaluate_review_pair`, both of
-    which have already confirmed `result` is schema-valid before calling
-    this.
-    """
-    errors: list[str] = []
-    if result.get("lens") != "aggregate":
-        errors.append(f"lens: expected an aggregate result, got {result.get('lens')!r}")
-
-    candidate = result.get("candidate") or {}
-    # A `blocked` result may legitimately omit candidate identity entirely
-    # (the shared contract allows this when the caller could not establish
-    # it); only compare when the result actually asserts some identity, so an
-    # empty `blocked` candidate is not mistaken for a stale-candidate
-    # mismatch.
-    if (
-        candidate.get("head_sha") is not None
-        or candidate.get("comparison_base_sha") is not None
-    ):
-        if (
-            candidate.get("head_sha") != expected_head
-            or candidate.get("comparison_base_sha") != expected_base
-        ):
-            errors.append(
-                "candidate: result is not bound to the current candidate "
-                f"(expected head {expected_head} / base {expected_base}, got "
-                f"head {candidate.get('head_sha')!r} / "
-                f"base {candidate.get('comparison_base_sha')!r})"
-            )
-
-    for execution in result.get("lens_executions") or []:
-        if not isinstance(execution, dict):
-            continue
-        if (
-            execution.get("head_sha") != expected_head
-            or execution.get("comparison_base_sha") != expected_base
-        ):
-            errors.append(
-                f"lens_executions: {execution.get('lens')!r} execution is not "
-                "bound to the current candidate"
-            )
-
-    return errors
+    return GATE.evaluate_bound(dict(result), expected_head, expected_base)
 
 
 def evaluate_review_pair(
@@ -196,24 +159,70 @@ def evaluate_review_pair(
     supplied to the reviewer, so it cannot by itself catch a `clean` verdict
     paired with a packet whose own required focused or full validation entry
     was `failed` or `unavailable` — exactly the "or evidence are incomplete"
-    half of the acceptance criterion, distinct from lens completeness. This
-    reuses the bundled contract's own `validate_pair`, which enforces that
-    pairing rule (`_check_clean_requires_passing_validation`) alongside
-    packet/result candidate-identity consistency, then adds the same
-    caller-expected-candidate binding `evaluate_review_result` checks.
+    half of the acceptance criterion, distinct from lens completeness.
+
+    Deliberately does not reuse the bundled contract's `validate_pair` in
+    full: `validate_pair`'s packet/result candidate-identity consistency
+    check treats a `blocked` result that omits candidate identity already
+    present in the packet as an error ("result omits identity present in
+    packet"), even though the same bundled contract's own `CONTRACT.md`
+    states a `blocked` result "may omit candidate fields that the caller
+    could not establish." `evaluate_review_result` above already checks
+    identity against this cycle's actual expected head/base — a strictly
+    more relevant check than internal packet/result agreement — so this
+    function reuses only `validate_packet`, `validate_result`, and
+    `_check_clean_requires_passing_validation` (the one check that genuinely
+    needs both documents: a `clean` verdict cannot hide a failed or
+    unavailable required packet validation entry) and leaves the *result's*
+    identity binding to `evaluate_review_result`. Unlike a result, a
+    packet's `candidate.head_sha`/`comparison_base_sha` are always required
+    by the packet schema (review-fix-loop constructs the packet itself, so
+    it always knows its own candidate identity) — this function additionally
+    checks that packet identity directly against `expected_head`/
+    `expected_base`, so a packet built for the wrong candidate is rejected
+    even if, hypothetically, its paired result happened to claim the right
+    one.
 
     Prefer this over `evaluate_review_result` whenever the packet that was
     actually handed to the reviewer is available; use `evaluate_review_result`
     only when it is not (for example, when re-validating a previously
     recorded result without retaining its packet).
     """
-    pair_errors = [
-        f"pair: {error}"
-        for error in REVIEW_SUITE.validate_pair(dict(packet), dict(result))
+    packet = dict(packet)
+    result = dict(result)
+    result_errors = [
+        f"result: {error}" for error in REVIEW_SUITE.validate_result(result)
     ]
-    if pair_errors:
-        return pair_errors
-    return _candidate_binding_errors(result, expected_head, expected_base)
+    packet_errors = []
+    for error in REVIEW_SUITE.validate_packet(packet):
+        if result.get(
+            "verdict"
+        ) != "blocked" or not REVIEW_SUITE.is_blockable_packet_error(error):
+            packet_errors.append(f"packet: {error}")
+    errors = result_errors + packet_errors
+    if errors:
+        return errors
+
+    packet_candidate = packet.get("candidate") or {}
+    if (
+        packet_candidate.get("head_sha") != expected_head
+        or packet_candidate.get("comparison_base_sha") != expected_base
+    ):
+        return [
+            "packet.candidate: packet is not bound to the current candidate "
+            f"(expected head {expected_head} / base {expected_base}, got "
+            f"head {packet_candidate.get('head_sha')!r} / "
+            f"base {packet_candidate.get('comparison_base_sha')!r})"
+        ]
+    errors = [
+        f"pair: {error}"
+        for error in REVIEW_SUITE._check_clean_requires_passing_validation(
+            packet, result
+        )
+    ]
+    if errors:
+        return errors
+    return evaluate_review_result(result, expected_head, expected_base)
 
 
 def resolve_review_execution_mode(
@@ -292,9 +301,21 @@ def detect_worktree_mutation(
 
     `before`/`after` carry the same `tracked`/`staged`/`unstaged`/`untracked`/
     `ignored` path lists as every other worktree-state shape in this contract
-    family, plus an optional `head_sha`. This implements the design's
-    "before/after capture of HEAD, refs, index, tracked, staged, unstaged,
-    untracked, and ignored state" tier of reviewer write prevention.
+    family, plus an optional `head_sha` and an optional `refs` mapping (ref
+    name to object ID, for example from `git for-each-ref`). This implements
+    the design's "before/after capture of HEAD, refs, index, tracked, staged,
+    unstaged, untracked, and ignored state" tier of reviewer write
+    prevention — including refs, not only `head_sha`: a reviewer that runs
+    `git stash`, force-moves a branch, or creates a new ref without touching
+    `HEAD` or any tracked path is still a write-isolation violation this
+    function must not miss.
+
+    `refs` entries under `refs/remotes/` are excluded from comparison: an
+    unattributed remote-tracking-ref advance is not proof of reviewer
+    misconduct on its own — that is the ordinary `remote_advanced`
+    publication-race contract (issue #97/#100's scope), not a
+    reviewer-integrity failure. Every other ref (branches, tags, `refs/stash`,
+    and any other local ref) is compared.
 
     An empty return means no attributable change was observed by *this*
     check; it does not by itself certify write isolation — design also
@@ -324,6 +345,34 @@ def detect_worktree_mutation(
             if removed:
                 detail.append(f"removed {removed}")
             mutations.append(f"{category}: " + "; ".join(detail))
+
+    def _local_refs(snapshot: Mapping[str, Any]) -> dict[str, str]:
+        refs = snapshot.get("refs") or {}
+        return {
+            name: value
+            for name, value in refs.items()
+            if not name.startswith("refs/remotes/")
+        }
+
+    before_refs = _local_refs(before)
+    after_refs = _local_refs(after)
+    if before_refs != after_refs:
+        added = sorted(set(after_refs) - set(before_refs))
+        removed = sorted(set(before_refs) - set(after_refs))
+        changed = sorted(
+            name
+            for name in set(before_refs) & set(after_refs)
+            if before_refs[name] != after_refs[name]
+        )
+        detail = []
+        if added:
+            detail.append(f"added {added}")
+        if removed:
+            detail.append(f"removed {removed}")
+        if changed:
+            detail.append(f"changed {changed}")
+        mutations.append("refs: " + "; ".join(detail))
+
     return mutations
 
 

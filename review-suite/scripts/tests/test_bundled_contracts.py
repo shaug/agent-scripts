@@ -43,7 +43,7 @@ CANONICAL_FILES = {
 # `review-code-change` result bundle it (under `scripts/`, not
 # `references/review-suite/`) — unlike CANONICAL_FILES above, which every
 # review lens skill also bundles.
-GATE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr")
+GATE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr", "review-fix-loop")
 GATE_CANONICAL_FILES = {
     "scripts/review_gate.py": REVIEW_SUITE / "scripts" / "review_gate.py",
     "scripts/tests/test_review_gate.py": REVIEW_SUITE

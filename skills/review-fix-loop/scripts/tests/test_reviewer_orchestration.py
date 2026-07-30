@@ -392,6 +392,61 @@ class DetectWorktreeMutationTests(unittest.TestCase):
         mutations = ORCH.detect_worktree_mutation(before, after)
         self.assertTrue(any(m.startswith("ignored:") for m in mutations))
 
+    def test_new_local_ref_is_detected(self):
+        # A reviewer that runs `git stash` or creates a branch without
+        # touching HEAD or any tracked path is still a write-isolation
+        # violation.
+        before = copy.deepcopy(self.CLEAN_STATE)
+        before["refs"] = {"refs/heads/main": HEAD}
+        after = copy.deepcopy(before)
+        after["refs"] = {"refs/heads/main": HEAD, "refs/stash": OTHER_HEAD}
+        mutations = ORCH.detect_worktree_mutation(before, after)
+        self.assertTrue(any(m.startswith("refs:") and "added" in m for m in mutations))
+
+    def test_force_moved_local_ref_is_detected(self):
+        before = copy.deepcopy(self.CLEAN_STATE)
+        before["refs"] = {"refs/heads/evil": HEAD}
+        after = copy.deepcopy(self.CLEAN_STATE)
+        after["refs"] = {"refs/heads/evil": OTHER_HEAD}
+        mutations = ORCH.detect_worktree_mutation(before, after)
+        self.assertTrue(
+            any(m.startswith("refs:") and "changed" in m for m in mutations)
+        )
+
+    def test_removed_local_ref_is_detected(self):
+        before = copy.deepcopy(self.CLEAN_STATE)
+        before["refs"] = {"refs/heads/evil": HEAD}
+        after = copy.deepcopy(self.CLEAN_STATE)
+        after["refs"] = {}
+        mutations = ORCH.detect_worktree_mutation(before, after)
+        self.assertTrue(
+            any(m.startswith("refs:") and "removed" in m for m in mutations)
+        )
+
+    def test_remote_tracking_ref_change_alone_is_not_flagged(self):
+        # Excluded from comparison: an unattributed remote-tracking-ref
+        # advance is the ordinary remote_advanced publication-race contract,
+        # not reviewer misconduct.
+        before = copy.deepcopy(self.CLEAN_STATE)
+        before["refs"] = {"refs/remotes/origin/main": HEAD}
+        after = copy.deepcopy(self.CLEAN_STATE)
+        after["refs"] = {"refs/remotes/origin/main": OTHER_HEAD}
+        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
+
+    def test_identical_refs_report_no_mutation(self):
+        before = copy.deepcopy(self.CLEAN_STATE)
+        before["refs"] = {"refs/heads/main": HEAD}
+        after = copy.deepcopy(before)
+        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
+
+    def test_missing_refs_key_is_treated_as_no_refs(self):
+        # `refs` is optional; a snapshot without it must not be treated as
+        # differing from one with an explicit empty mapping.
+        before = copy.deepcopy(self.CLEAN_STATE)
+        after = copy.deepcopy(self.CLEAN_STATE)
+        after["refs"] = {}
+        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
+
 
 class BuildReviewRecordTests(unittest.TestCase):
     def test_builds_expected_shape_for_clean_result(self):

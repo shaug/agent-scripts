@@ -107,13 +107,20 @@ summary:
    explicit override, in-agent) restricted to
    `Read, Grep, Glob, Bash, Agent, Task, Skill` — never a file-editing or
    remote-write tool.
-4. Capture worktree state immediately before and after the pass and run
-   `detect_worktree_mutation` on the two snapshots.
-5. Validate the raw result with `evaluate_review_result` and build one
-   `review_records` entry with `build_review_record`, feeding in every detected
-   mutation. A non-empty `mutation_attempts` always yields
-   `write_isolation: "violated"` and fails that cycle closed, even when the
-   aggregate verdict itself looked clean.
+4. Capture worktree state, including local refs (excluding `refs/remotes/*`),
+   immediately before and after the pass and run `detect_worktree_mutation` on
+   the two snapshots.
+5. Validate the raw result and build one `review_records` entry with
+   `build_review_record`, passing the exact packet handed to the reviewer
+   (`packet=...`) whenever it is still available — always, in the ordinary case
+   — and feeding in every detected mutation. Passing `packet` runs
+   `evaluate_review_pair`, which also catches a `clean` verdict paired with a
+   packet whose own required validation entry was `failed` or `unavailable`;
+   omitting it falls back to `evaluate_review_result` alone, which cannot.
+   `build_review_record` raises `ReviewIntegrityError` instead of returning a
+   partially trusted record either way. A non-empty `mutation_attempts` always
+   yields `write_isolation: "violated"` and fails that cycle closed, even when
+   the aggregate verdict itself looked clean.
 6. When the verdict is not `clean`, use `normalize_findings` and
    `select_next_finding` to identify the next finding in one deterministic order
    — selecting a finding is not disposing or fixing it; that remains a later
@@ -121,9 +128,11 @@ summary:
 
 `scripts/reviewer_orchestration.py` is dependency-free, matching
 `scripts/validate.py`'s convention, and bundles the same
-`references/review-suite/` contract copy `review-code-change` itself ships (kept
-in sync via the repository's `just sync-contracts`). See
-`scripts/tests/test_reviewer_orchestration.py` for complete coverage of lens
+`references/review-suite/` contract copy and `scripts/review_gate.py` gate
+`implement-ticket` and `babysit-pr` already ship (kept in sync via the
+repository's `just sync-contracts`) — it does not reimplement candidate/
+lens-execution binding, only reuses the canonical `review_gate.evaluate_bound`.
+See `scripts/tests/test_reviewer_orchestration.py` for complete coverage of lens
 resolution, rejection of an incomplete or stale-bound result, default
 fresh-reviewer selection with no automatic fallback, the explicit in-agent
 override, reviewer-identity freshness, mutation detection that fails a cycle

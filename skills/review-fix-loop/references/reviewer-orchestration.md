@@ -108,10 +108,16 @@ tier the runtime supports, strongest first:
 3. **Read-only inspection commands only** inside the reviewer context —
    validation and diagnostic commands the invocation already recorded, never an
    ad hoc write.
-4. **Before/after state capture**: snapshot HEAD, refs, index, and
-   tracked/staged/unstaged/untracked/ignored worktree state immediately before
-   spawning the reviewer and immediately after it returns. Pass both snapshots
-   to `detect_worktree_mutation(before, after)`.
+4. **Before/after state capture**: snapshot `head_sha`, local `refs` (for
+   example via `git for-each-ref`), and tracked/staged/unstaged/untracked/
+   ignored worktree state immediately before spawning the reviewer and
+   immediately after it returns. Pass both snapshots to
+   `detect_worktree_mutation(before, after)`, which compares every category
+   including `refs` — a reviewer that runs `git stash` or force-moves a branch
+   without touching `HEAD` or any tracked path is still caught. `refs/remotes/*`
+   entries are excluded from the comparison: an unattributed remote-tracking-ref
+   advance is the ordinary `remote_advanced` publication-race contract (issue
+   #97/#100's scope), not reviewer misconduct.
 5. **Tool-trace inspection**, when the runtime exposes one, for an attempted
    mutation that a capability boundary already blocked.
 

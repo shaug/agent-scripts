@@ -6,6 +6,16 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): detect refs mutation (not only `head_sha`) between
+  before/after reviewer snapshots, reconcile `evaluate_review_pair` with a
+  contract-legal identity-omitting `blocked` result while still binding the
+  packet itself to the current candidate, and extract the canonical
+  `review_gate.evaluate_bound` (bundled into `implement-ticket`, `babysit-pr`,
+  and now `review-fix-loop`) instead of a second candidate-binding
+  implementation, closing the three gaps the first review-code-change pass on
+  #98 found
+- docs: record the initial review-fix-loop reviewer-orchestration changelog
+  entry (`ac73abdf17e349384309efc414365fd004f9a636`)
 - feat(review-fix-loop): implement reviewer isolation and complete-review
   orchestration — fixed lens resolution, default fresh-subagent review execution
   with an explicit in-agent override, before/after mutation detection that fails
