@@ -6,11 +6,16 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): reject `converged` when any `review_records` entry — not
+  only the final-head-bound one — recorded a mutation attempt, closing the gap
+  the tenth (final) review-code-change pass on #96 found
 - fix(review-fix-loop): add a per-pass `reviewer_identity` field to
   `review_records` in both checkpoint and terminal-result, and reject a dirty
   `candidate.worktree` (`staged`/`unstaged`/`untracked`) in
-  `validate_invocation`, closing the two gaps the ninth (final)
-  review-code-change pass on #96 found
+  `validate_invocation`, closing the two gaps the ninth review-code-change pass
+  on #96 found (`4daa2a67a38be3baa7741380eb689581ce31a1db`)
+- docs: record the ninth review-fix-loop fix cycle in the changelog
+  (`80690173571678bb14d14703451a8ab6d29b2cba`)
 - fix(review-fix-loop): complete the terminal-result schema against the design's
   Terminal result contract field list (`worktree`, `resume_status`,
   `unresolved_or_deferred_findings`) and require `ahead_by`/`behind_by`
