@@ -412,6 +412,61 @@ class TerminalResultContractTests(unittest.TestCase):
             any("blocked requires one of" in error for error in errors), errors
         )
 
+    def test_converged_rejects_a_failed_required_validation_entry(self):
+        result = copy.deepcopy(self.converged_local)
+        result["validation_summary"][1]["status"] = "failed"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "converged cannot pair with 'failed' required validation" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_converged_rejects_an_unavailable_required_validation_entry(self):
+        result = copy.deepcopy(self.converged_pr)
+        result["validation_summary"][0]["status"] = "unavailable"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "converged cannot pair with 'unavailable' required validation" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_converged_rejects_a_non_clean_final_head_review_record(self):
+        result = copy.deepcopy(self.converged_local)
+        result["review_records"][-1]["aggregate_verdict"] = "changes_required"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any("aggregate_verdict to be 'clean'" in error for error in errors),
+            errors,
+        )
+
+    def test_converged_rejects_violated_write_isolation_on_final_head_record(self):
+        result = copy.deepcopy(self.converged_pr)
+        result["review_records"][-1]["write_isolation"] = "violated"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any("write_isolation to be 'enforced'" in error for error in errors),
+            errors,
+        )
+
+    def test_converged_rejects_missing_final_head_review_record(self):
+        result = copy.deepcopy(self.converged_local)
+        result["review_records"] = []
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "converged requires a review record bound to the exact final "
+                "head and comparison base" in error
+                for error in errors
+            ),
+            errors,
+        )
+
     def test_local_commit_publication_status_must_be_not_applicable(self):
         result = copy.deepcopy(self.converged_local)
         result["publication"]["status"] = "published"

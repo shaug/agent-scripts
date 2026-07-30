@@ -389,6 +389,61 @@ def validate_terminal_result(document: dict[str, Any]) -> list[str]:
     ):
         errors.append("$.source: bound status requires initial_head and final_head")
 
+    if state == "converged":
+        errors.extend(_check_converged_requires_clean_evidence(document))
+
+    return errors
+
+
+def _check_converged_requires_clean_evidence(document: dict[str, Any]) -> list[str]:
+    """Reject `converged` unless its own embedded evidence actually supports it.
+
+    CONTRACT.md states that a `converged` result requires "the aggregate
+    review is clean for the final head and base, required validation passed,
+    and the selected publication policy completed" — mirroring review-suite's
+    rule that a `clean` verdict cannot pair with failed or unavailable
+    validation. Without this check, a document could claim `converged` while
+    its own `validation_summary` records a failure or its own `review_records`
+    show a non-clean or write-isolation-violated final review, and schema
+    validation alone would not catch it.
+    """
+    errors: list[str] = []
+    for index, validation in enumerate(document.get("validation_summary", [])):
+        if validation.get("status") != "passed":
+            errors.append(
+                f"$.validation_summary[{index}]: converged cannot pair with "
+                f"{validation.get('status')!r} required validation"
+            )
+
+    head = document.get("head", {})
+    base = document.get("comparison_base", {})
+    final_head = head.get("final")
+    final_base = base.get("final", {}).get("sha")
+    final_records = [
+        record
+        for record in document.get("review_records", [])
+        if record.get("head_sha") == final_head
+        and record.get("comparison_base_sha") == final_base
+    ]
+    if not final_records:
+        errors.append(
+            "$.review_records: converged requires a review record bound to "
+            "the exact final head and comparison base"
+        )
+        return errors
+    for record in final_records:
+        if record.get("aggregate_verdict") != "clean":
+            errors.append(
+                "$.review_records: converged requires the final-head review "
+                f"record's aggregate_verdict to be 'clean', not "
+                f"{record.get('aggregate_verdict')!r}"
+            )
+        if record.get("write_isolation") != "enforced":
+            errors.append(
+                "$.review_records: converged requires the final-head review "
+                f"record's write_isolation to be 'enforced', not "
+                f"{record.get('write_isolation')!r}"
+            )
     return errors
 
 

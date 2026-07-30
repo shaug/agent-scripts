@@ -99,13 +99,18 @@ cannot claim a terminal state without the evidence that state requires:
 
 - `converged`: the aggregate review is `clean` for the final head and base,
   required validation passed, and the selected publication policy completed.
-  `reason` must be absent. Under `update_pr`, `publication.status` must be
-  `published` and `unpushed_commits` must be empty. Under `local_commit`,
-  `publication.status` must be `not_applicable` (local_commit never writes to
-  origin), and any created commits remain in `unpushed_commits` — that is the
-  expected, non-error shape of a converged `local_commit` result, and
-  `operator_action` must describe how the operator publishes them through their
-  own workflow.
+  `reason` must be absent. `scripts/validate.py` enforces this directly,
+  mirroring the review-suite validator's "clean cannot pair with failed
+  validation" rule: it rejects `converged` when any `validation_summary` entry
+  is not `passed`, when `review_records` has no entry bound to the exact final
+  head and comparison base, when that final-head record's `aggregate_verdict` is
+  not `clean`, or when its `write_isolation` is not `enforced`. Under
+  `update_pr`, `publication.status` must be `published` and `unpushed_commits`
+  must be empty. Under `local_commit`, `publication.status` must be
+  `not_applicable` (local_commit never writes to origin), and any created
+  commits remain in `unpushed_commits` — that is the expected, non-error shape
+  of a converged `local_commit` result, and `operator_action` must describe how
+  the operator publishes them through their own workflow.
 - `changes_remaining`: `reason` must be one of `cycle_budget_exhausted`,
   `repeated_finding`, `oscillation`, `expanding_findings`,
   `repeated_failed_attempt`, or `current_candidate_validation_failure`.
