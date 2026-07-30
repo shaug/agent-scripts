@@ -371,6 +371,16 @@ class CheckpointRejectionTests(unittest.TestCase):
         errors = VALIDATE.validate_checkpoint(checkpoint)
         self.assertIn("$.source: bound status requires last_verified_head", errors)
 
+    def test_source_bound_requires_ahead_by_and_behind_by(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        checkpoint["source"] = {
+            "status": "bound",
+            "last_verified_head": checkpoint["current_head"],
+        }
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertIn("$.source: bound status requires ahead_by", errors)
+        self.assertIn("$.source: bound status requires behind_by", errors)
+
     def test_base_revision_history_must_match_current_base(self):
         checkpoint = copy.deepcopy(self.checkpoint)
         checkpoint["base_revision_history"][-1]["sha"] = checkpoint["current_head"]
@@ -721,6 +731,55 @@ class TerminalResultContractTests(unittest.TestCase):
         self.assertIn(
             "$.source: bound status requires initial_head and final_head", errors
         )
+
+    def test_source_bound_requires_ahead_by_and_behind_by(self):
+        result = copy.deepcopy(self.converged_pr)
+        result["source"] = {
+            "status": "bound",
+            "initial_head": result["head"]["initial"],
+            "final_head": result["head"]["final"],
+        }
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn("$.source: bound status requires ahead_by", errors)
+        self.assertIn("$.source: bound status requires behind_by", errors)
+
+    def test_missing_worktree_rejected(self):
+        result = copy.deepcopy(self.converged_local)
+        del result["worktree"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any("missing required property 'worktree'" in error for error in errors),
+            errors,
+        )
+
+    def test_missing_resume_status_rejected(self):
+        result = copy.deepcopy(self.converged_local)
+        del result["resume_status"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "missing required property 'resume_status'" in error for error in errors
+            ),
+            errors,
+        )
+
+    def test_missing_unresolved_or_deferred_findings_rejected(self):
+        result = copy.deepcopy(self.converged_local)
+        del result["unresolved_or_deferred_findings"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "missing required property 'unresolved_or_deferred_findings'" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_invalid_resume_status_rejected(self):
+        result = copy.deepcopy(self.converged_local)
+        result["resume_status"] = "sort_of"
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(any("expected one of" in error for error in errors), errors)
 
 
 class CheckpointInvocationConsistencyTests(unittest.TestCase):

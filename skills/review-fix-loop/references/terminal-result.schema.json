@@ -9,8 +9,10 @@
     "invocation_id",
     "terminal_state",
     "budget",
+    "resume_status",
     "repository",
     "branch",
+    "worktree",
     "head",
     "comparison_base",
     "head_history",
@@ -24,6 +26,7 @@
     "unpushed_commits",
     "publication",
     "acceptance_reconciliation_required",
+    "unresolved_or_deferred_findings",
     "operator_action"
   ],
   "properties": {
@@ -63,6 +66,7 @@
         "remaining_cycles": {"type": "integer", "minimum": 0}
       }
     },
+    "resume_status": {"enum": ["not_resumed", "resumed", "resume_unavailable"]},
     "repository": {
       "type": "object",
       "additionalProperties": false,
@@ -73,6 +77,18 @@
       }
     },
     "branch": {"type": "string", "minLength": 1},
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tracked", "staged", "unstaged", "untracked", "ignored"],
+      "properties": {
+        "tracked": {"type": "array", "items": {"type": "string"}},
+        "staged": {"type": "array", "items": {"type": "string"}},
+        "unstaged": {"type": "array", "items": {"type": "string"}},
+        "untracked": {"type": "array", "items": {"type": "string"}},
+        "ignored": {"type": "array", "items": {"type": "string"}}
+      }
+    },
     "pull_request": {
       "type": "object",
       "additionalProperties": false,
@@ -252,6 +268,10 @@
       }
     },
     "acceptance_reconciliation_required": {"type": "boolean"},
+    "unresolved_or_deferred_findings": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
     "operator_action": {"type": "string", "minLength": 1}
   }
 }

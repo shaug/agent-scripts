@@ -53,6 +53,7 @@
     "git_common_directory": "/work/agent-scripts/.git",
     "identity": "shaug/agent-scripts"
   },
+  "resume_status": "not_resumed",
   "review_records": [
     {
       "aggregate_verdict": "changes_required",
@@ -90,6 +91,7 @@
   "unpushed_commits": [
     "b13de54b94608d3918bacdc14b4836332d8e0630"
   ],
+  "unresolved_or_deferred_findings": [],
   "validation_summary": [
     {
       "command": "python3 -m unittest tests.test_example",
@@ -105,5 +107,14 @@
       "scope": "full",
       "status": "passed"
     }
-  ]
+  ],
+  "worktree": {
+    "ignored": [],
+    "staged": [],
+    "tracked": [
+      "example.py"
+    ],
+    "unstaged": [],
+    "untracked": []
+  }
 }

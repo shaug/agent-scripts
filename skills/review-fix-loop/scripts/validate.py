@@ -290,8 +290,10 @@ def validate_checkpoint(document: dict[str, Any]) -> list[str]:
     source = document.get("source", {})
     if source.get("status") == "unavailable" and not source.get("unavailable_reason"):
         errors.append("$.source: unavailable status requires unavailable_reason")
-    if source.get("status") == "bound" and "last_verified_head" not in source:
-        errors.append("$.source: bound status requires last_verified_head")
+    if source.get("status") == "bound":
+        for field in ("last_verified_head", "ahead_by", "behind_by"):
+            if field not in source:
+                errors.append(f"$.source: bound status requires {field}")
 
     return errors
 
@@ -521,10 +523,12 @@ def validate_terminal_result(document: dict[str, Any]) -> list[str]:
     source = document.get("source", {})
     if source.get("status") == "unavailable" and not source.get("unavailable_reason"):
         errors.append("$.source: unavailable status requires unavailable_reason")
-    if source.get("status") == "bound" and (
-        "initial_head" not in source or "final_head" not in source
-    ):
-        errors.append("$.source: bound status requires initial_head and final_head")
+    if source.get("status") == "bound":
+        if "initial_head" not in source or "final_head" not in source:
+            errors.append("$.source: bound status requires initial_head and final_head")
+        for field in ("ahead_by", "behind_by"):
+            if field not in source:
+                errors.append(f"$.source: bound status requires {field}")
 
     if state == "converged":
         errors.extend(_check_converged_requires_clean_evidence(document))

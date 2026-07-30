@@ -61,6 +61,7 @@
     "git_common_directory": "/work/agent-scripts/.git",
     "identity": "shaug/agent-scripts"
   },
+  "resume_status": "not_resumed",
   "review_records": [
     {
       "aggregate_verdict": "changes_required",
@@ -121,6 +122,9 @@
     "8fbc9b399aa14299d694e4beca34dc371baa7e58",
     "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af"
   ],
+  "unresolved_or_deferred_findings": [
+    "correctness-001: off-by-one boundary defect survived three fix cycles and remains unresolved"
+  ],
   "validation_summary": [
     {
       "command": "python3 -m unittest tests.test_example",
@@ -136,5 +140,14 @@
       "scope": "full",
       "status": "passed"
     }
-  ]
+  ],
+  "worktree": {
+    "ignored": [],
+    "staged": [],
+    "tracked": [
+      "example.py"
+    ],
+    "unstaged": [],
+    "untracked": []
+  }
 }

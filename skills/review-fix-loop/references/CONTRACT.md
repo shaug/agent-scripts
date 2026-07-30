@@ -173,8 +173,23 @@ exceeds `original_cycle_budget`.
   they must agree. Neither side is required to carry it — an invocation,
   checkpoint, or terminal result may omit the identity wherever it is not yet
   known.
+- `source.status: bound` requires `last_verified_head`, `ahead_by`, and
+  `behind_by` — the design's "local ahead/behind state" is not satisfiable by a
+  bound source that reports a head but omits the counts, so the validator
+  requires all three together rather than only the head.
 
 ## Terminal result
+
+`worktree` (the same `tracked`/`staged`/`unstaged`/`untracked`/`ignored` shape
+used elsewhere in this contract family), `resume_status`
+(`not_resumed`/`resumed`/`resume_unavailable`), and
+`unresolved_or_deferred_findings` (a possibly-empty array of free-text
+descriptions) are required terminal-result content, matching the exact field
+list `design/review-fix-loop.md`'s Terminal result contract section enumerates
+alongside repository/branch/pull-request identity and
+invocation-ID/budget/resume-status. `source.status: bound` requires `ahead_by`
+and `behind_by` in addition to `initial_head`/`final_head`, for the same reason
+as the checkpoint's equivalent rule above.
 
 Every terminal state has an explicit publication, retained-commit, and
 operator-action contract. The validator enforces the combination so a result
