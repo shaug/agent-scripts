@@ -1,0 +1,109 @@
+{
+  "acceptance_reconciliation_required": true,
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+    }
+  ],
+  "branch": "fix/96-example",
+  "budget": {
+    "consumed_cycles": 1,
+    "original_max_fix_cycles": 3,
+    "remaining_cycles": 2
+  },
+  "comparison_base": {
+    "final": {
+      "ref": "main",
+      "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+    },
+    "initial": {
+      "ref": "main",
+      "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+    }
+  },
+  "created_commits": [
+    "b13de54b94608d3918bacdc14b4836332d8e0630"
+  ],
+  "finding_dispositions": [
+    {
+      "disposition": "selected",
+      "finding_id": "correctness-001",
+      "fix_commit_sha": "b13de54b94608d3918bacdc14b4836332d8e0630",
+      "rationale": "add() returns None instead of the sum; ticket-scoped and tractable"
+    }
+  ],
+  "head": {
+    "final": "b13de54b94608d3918bacdc14b4836332d8e0630",
+    "initial": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1"
+  },
+  "head_history": [
+    "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+    "b13de54b94608d3918bacdc14b4836332d8e0630"
+  ],
+  "invocation_id": "review-fix-loop-96-local-commit-example",
+  "operator_action": "Publish retained local commit b13de54b94608d3918bacdc14b4836332d8e0630 through your existing PR or merge workflow; review-fix-loop performs no remote write under local_commit.",
+  "preserved_failed_attempts": [],
+  "publication": {
+    "non_converged_exposure": false,
+    "policy": "local_commit",
+    "status": "not_applicable"
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "6d4e80a7e96351b471797a093ebc111917c516bd",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "add() returns None instead of the sum; ticket-scoped and tractable"
+        }
+      ],
+      "head_sha": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "clean",
+      "comparison_base_sha": "6d4e80a7e96351b471797a093ebc111917c516bd",
+      "finding_dispositions": [],
+      "head_sha": "b13de54b94608d3918bacdc14b4836332d8e0630",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "status": "unavailable",
+    "unavailable_reason": "standalone invocation has no recorded pushable source"
+  },
+  "terminal_state": "converged",
+  "unpushed_commits": [
+    "b13de54b94608d3918bacdc14b4836332d8e0630"
+  ],
+  "validation_summary": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "acceptance_reconciliation_required": true,
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912"
+    }
+  ],
+  "branch": "fix/96-budget-example",
+  "budget": {
+    "consumed_cycles": 3,
+    "original_max_fix_cycles": 3,
+    "remaining_cycles": 0
+  },
+  "comparison_base": {
+    "final": {
+      "ref": "main",
+      "sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912"
+    },
+    "initial": {
+      "ref": "main",
+      "sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912"
+    }
+  },
+  "created_commits": [
+    "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+    "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af"
+  ],
+  "finding_dispositions": [
+    {
+      "disposition": "selected",
+      "finding_id": "correctness-001",
+      "fix_commit_sha": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+      "rationale": "off-by-one boundary defect survived two prior attempted fixes"
+    }
+  ],
+  "head": {
+    "final": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+    "initial": "98676d2fa265321c8399de22ee6607c84a4f2e46"
+  },
+  "head_history": [
+    "98676d2fa265321c8399de22ee6607c84a4f2e46",
+    "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+    "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af"
+  ],
+  "invocation_id": "review-fix-loop-96-budget-exhausted-example",
+  "operator_action": "The off-by-one boundary defect (correctness-001) survived three fix cycles; an operator must resolve it directly or authorize a new invocation with a fresh budget.",
+  "preserved_failed_attempts": [
+    {
+      "attempt_ref": "attempt/correctness-001-cycle-2",
+      "reason": "the second remediation attempt did not clear the finding and was discarded"
+    }
+  ],
+  "publication": {
+    "non_converged_exposure": false,
+    "policy": "local_commit",
+    "status": "not_applicable"
+  },
+  "reason": "cycle_budget_exhausted",
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "off-by-one boundary defect"
+        }
+      ],
+      "head_sha": "98676d2fa265321c8399de22ee6607c84a4f2e46",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "same off-by-one boundary defect survived the first attempted fix"
+        }
+      ],
+      "head_sha": "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "413b8b2d6e46f8d784b080e8ca62fc3af6979912",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "same off-by-one boundary defect survived the second attempted fix"
+        }
+      ],
+      "head_sha": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 3,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "status": "unavailable",
+    "unavailable_reason": "standalone invocation has no recorded pushable source"
+  },
+  "terminal_state": "changes_remaining",
+  "unpushed_commits": [
+    "8fbc9b399aa14299d694e4beca34dc371baa7e58",
+    "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af"
+  ],
+  "validation_summary": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ]
+}

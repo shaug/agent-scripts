@@ -1,0 +1,72 @@
+{
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+    }
+  ],
+  "branch": "fix/96-example",
+  "comparison_base": {
+    "ref": "main",
+    "sha": "6d4e80a7e96351b471797a093ebc111917c516bd"
+  },
+  "current_head": "b13de54b94608d3918bacdc14b4836332d8e0630",
+  "current_phase": "return",
+  "cycle_attempts": [
+    {
+      "finding_id": "correctness-001",
+      "outcome": "committed",
+      "resulting_head": "b13de54b94608d3918bacdc14b4836332d8e0630",
+      "sequence": 1,
+      "started_from_head": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1"
+    }
+  ],
+  "expected_next_action": "none; converged result ready to return",
+  "head_history": [
+    "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+    "b13de54b94608d3918bacdc14b4836332d8e0630"
+  ],
+  "initial_head": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+  "invocation_id": "review-fix-loop-96-local-commit-example",
+  "original_cycle_budget": 3,
+  "publication": {
+    "policy": "local_commit"
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "6d4e80a7e96351b471797a093ebc111917c516bd",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "correctness-001",
+          "rationale": "add() returns None instead of the sum; ticket-scoped and tractable"
+        }
+      ],
+      "head_sha": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "clean",
+      "comparison_base_sha": "6d4e80a7e96351b471797a093ebc111917c516bd",
+      "finding_dispositions": [],
+      "head_sha": "b13de54b94608d3918bacdc14b4836332d8e0630",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "status": "unavailable",
+    "unavailable_reason": "standalone invocation has no recorded pushable source"
+  }
+}

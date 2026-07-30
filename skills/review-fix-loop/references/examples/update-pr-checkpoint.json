@@ -1,0 +1,79 @@
+{
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+    }
+  ],
+  "branch": "fix/100-example",
+  "comparison_base": {
+    "ref": "main",
+    "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+  },
+  "current_head": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+  "current_phase": "return",
+  "cycle_attempts": [
+    {
+      "finding_id": "code-simplicity-001",
+      "outcome": "committed",
+      "resulting_head": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+      "sequence": 1,
+      "started_from_head": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895"
+    }
+  ],
+  "expected_next_action": "none; converged and published",
+  "head_history": [
+    "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+    "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7"
+  ],
+  "initial_head": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+  "invocation_id": "review-fix-loop-100-update-pr-example",
+  "original_cycle_budget": 3,
+  "publication": {
+    "policy": "update_pr",
+    "pull_request": {
+      "base_ref": "refs/heads/main",
+      "head_ref": "refs/heads/fix/100-example",
+      "head_repository": "shaug/agent-scripts"
+    }
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "code-simplicity-001",
+          "rationale": "list comprehension only rebuilds range(); list(range(n)) is equivalent and simpler"
+        }
+      ],
+      "head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "clean",
+      "comparison_base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
+      "finding_dispositions": [],
+      "head_sha": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "ahead_by": 0,
+    "behind_by": 0,
+    "last_verified_head": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+    "status": "bound"
+  }
+}

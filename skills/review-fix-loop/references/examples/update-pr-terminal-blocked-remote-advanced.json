@@ -1,0 +1,119 @@
+{
+  "acceptance_reconciliation_required": true,
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "1f555dddc6e6eec43e9bd72d0eed6102423a5f41"
+    }
+  ],
+  "branch": "fix/100-race-example",
+  "budget": {
+    "consumed_cycles": 1,
+    "original_max_fix_cycles": 3,
+    "remaining_cycles": 2
+  },
+  "comparison_base": {
+    "final": {
+      "ref": "main",
+      "sha": "1f555dddc6e6eec43e9bd72d0eed6102423a5f41"
+    },
+    "initial": {
+      "ref": "main",
+      "sha": "1f555dddc6e6eec43e9bd72d0eed6102423a5f41"
+    }
+  },
+  "created_commits": [
+    "f995245310784433fa433d41c49128327c53213d"
+  ],
+  "finding_dispositions": [
+    {
+      "disposition": "selected",
+      "finding_id": "code-simplicity-001",
+      "fix_commit_sha": "f995245310784433fa433d41c49128327c53213d",
+      "rationale": "duplicated validation helper collapsed into the shared one"
+    }
+  ],
+  "head": {
+    "final": "f995245310784433fa433d41c49128327c53213d",
+    "initial": "d1002fc2fef33f70e0105266daf29486d5c98a28"
+  },
+  "head_history": [
+    "d1002fc2fef33f70e0105266daf29486d5c98a28",
+    "f995245310784433fa433d41c49128327c53213d"
+  ],
+  "invocation_id": "review-fix-loop-100-remote-race-example",
+  "operator_action": "Another clone published to refs/heads/fix/100-race-example before this invocation converged. Reconcile the two candidates manually; review-fix-loop will not merge, rebase, or force-update over the winning push.",
+  "preserved_failed_attempts": [],
+  "publication": {
+    "non_converged_exposure": false,
+    "policy": "update_pr",
+    "remote_head_after": "4e6d91372b61d731d7b678c9071ab13ae1b56d91",
+    "remote_head_before": "d1002fc2fef33f70e0105266daf29486d5c98a28",
+    "status": "failed"
+  },
+  "pull_request": {
+    "number": 456,
+    "repository": "shaug/agent-scripts"
+  },
+  "reason": "remote_advanced",
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "1f555dddc6e6eec43e9bd72d0eed6102423a5f41",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "code-simplicity-001",
+          "rationale": "duplicated validation helper"
+        }
+      ],
+      "head_sha": "d1002fc2fef33f70e0105266daf29486d5c98a28",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "clean",
+      "comparison_base_sha": "1f555dddc6e6eec43e9bd72d0eed6102423a5f41",
+      "finding_dispositions": [],
+      "head_sha": "f995245310784433fa433d41c49128327c53213d",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "ahead_by": 1,
+    "behind_by": 1,
+    "final_head": "f995245310784433fa433d41c49128327c53213d",
+    "initial_head": "d1002fc2fef33f70e0105266daf29486d5c98a28",
+    "status": "bound"
+  },
+  "terminal_state": "blocked",
+  "unpushed_commits": [
+    "f995245310784433fa433d41c49128327c53213d"
+  ],
+  "validation_summary": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ]
+}

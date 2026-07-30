@@ -1,0 +1,116 @@
+{
+  "acceptance_reconciliation_required": true,
+  "base_revision_history": [
+    {
+      "ref": "main",
+      "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+    }
+  ],
+  "branch": "fix/100-example",
+  "budget": {
+    "consumed_cycles": 1,
+    "original_max_fix_cycles": 3,
+    "remaining_cycles": 2
+  },
+  "comparison_base": {
+    "final": {
+      "ref": "main",
+      "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+    },
+    "initial": {
+      "ref": "main",
+      "sha": "f8943028b30c974048d55ced0d55368b1781d91b"
+    }
+  },
+  "created_commits": [
+    "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7"
+  ],
+  "finding_dispositions": [
+    {
+      "disposition": "selected",
+      "finding_id": "code-simplicity-001",
+      "fix_commit_sha": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+      "rationale": "list comprehension only rebuilds range(); list(range(n)) is equivalent and simpler"
+    }
+  ],
+  "head": {
+    "final": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+    "initial": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895"
+  },
+  "head_history": [
+    "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+    "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7"
+  ],
+  "invocation_id": "review-fix-loop-100-update-pr-example",
+  "operator_action": "None required; the converged fix is already published as the exact expected-old fast-forward update to pull request #123.",
+  "preserved_failed_attempts": [],
+  "publication": {
+    "non_converged_exposure": false,
+    "policy": "update_pr",
+    "remote_head_after": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+    "remote_head_before": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+    "status": "published"
+  },
+  "pull_request": {
+    "number": 123,
+    "repository": "shaug/agent-scripts"
+  },
+  "repository": {
+    "git_common_directory": "/work/agent-scripts/.git",
+    "identity": "shaug/agent-scripts"
+  },
+  "review_records": [
+    {
+      "aggregate_verdict": "changes_required",
+      "comparison_base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
+      "finding_dispositions": [
+        {
+          "disposition": "accepted",
+          "finding_id": "code-simplicity-001",
+          "rationale": "list comprehension only rebuilds range(); list(range(n)) is equivalent and simpler"
+        }
+      ],
+      "head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 1,
+      "write_isolation": "enforced"
+    },
+    {
+      "aggregate_verdict": "clean",
+      "comparison_base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
+      "finding_dispositions": [],
+      "head_sha": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+      "mutation_attempts": [],
+      "review_independence": "fresh_subagent",
+      "sequence": 2,
+      "write_isolation": "enforced"
+    }
+  ],
+  "schema_version": "1.0",
+  "source": {
+    "ahead_by": 0,
+    "behind_by": 0,
+    "final_head": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
+    "initial_head": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
+    "status": "bound"
+  },
+  "terminal_state": "converged",
+  "unpushed_commits": [],
+  "validation_summary": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ]
+}
