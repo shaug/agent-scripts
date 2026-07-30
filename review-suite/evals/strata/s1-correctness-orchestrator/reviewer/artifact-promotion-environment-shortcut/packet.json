@@ -5,7 +5,7 @@
     "base_branch": "main"
   },
   "candidate": {
-    "head_sha": "4c960743db89826d0a87dc5b3558bbae8566593c",
+    "head_sha": "57a56b3cd4d327512251eb72c62d72bdb8d606f9",
     "comparison_base_sha": "59d8eb504311bc773d02d2d1975b707672441318",
     "diff": {
       "format": "unified_diff",
@@ -81,7 +81,8 @@
     "data": [
       "`promotion/gate.py` and `rollout/targeting.py` are the only two modules that call `artifact_promotable`. This diff does not touch `rollout/targeting.py`, whose relevant part is:\n\n    def _pick_rollout_defaults(artifact):\n        \"\"\"Choose default staging parameters for an artifact entering the environment.\"\"\"\n        if not artifact_promotable(artifact):\n            return STAGED_DEFAULTS\n        return PROMOTED_DEFAULTS\n\n    def resolve_rollout_environment(artifact):\n        \"\"\"Return the environment config used when a worker enters an artifact into staging.\"\"\"\n        defaults = _pick_rollout_defaults(artifact)\n        return build_environment(defaults, artifact)",
       "`resolve_rollout_environment` is called by the environment-selection worker whenever an artifact enters staging.",
-      "An artifact with `verification_required=True` can still carry a `promotion_marker` from the release tool whenever the tool ran before the ledger recorded confirmation; this happens whenever a release is announced before its ledger entry settles."
+      "An artifact with `verification_required=True` can still carry a `promotion_marker` from the release tool whenever the tool ran before the ledger recorded confirmation; this happens whenever a release is announced before its ledger entry settles.",
+      "`ledger.lookup(external_ref)` always returns a proof object, never `None`: `proof.verified` is `False` whenever there is no external ref or the ledger holds no confirming record for one. A promotion decision never treats a `None` lookup result as \"verification not required\" - the only way `external_proof` is `None` in `artifact_promotable` is when the caller does not pass it at all (verification not required for that artifact)."
     ],
     "operational": [
       "The environment-selection worker runs once per staging entry and does not re-evaluate later; whatever defaults it assigns at entry persist for the artifact's whole staging window."

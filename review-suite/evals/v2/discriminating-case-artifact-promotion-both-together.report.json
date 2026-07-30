@@ -1,0 +1,176 @@
+{
+  "adjudication_required": [
+    {
+      "candidate_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "case_id": "artifact-promotion-environment-shortcut",
+      "finding_id": "rollout-targeting-bypasses-verification",
+      "reason": "partial",
+      "run_number": 1
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "case_id": "artifact-promotion-environment-shortcut",
+      "finding_id": "rollout-targeting-skips-verification",
+      "reason": "partial",
+      "run_number": 2
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "case_id": "artifact-promotion-environment-shortcut",
+      "finding_id": "corr.rollout-bypasses-verification-gate",
+      "reason": "partial",
+      "run_number": 3
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "case_id": "artifact-promotion-environment-shortcut",
+      "finding_id": "rollout-targeting-skips-verification",
+      "reason": "partial",
+      "run_number": 4
+    },
+    {
+      "candidate_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "case_id": "artifact-promotion-environment-shortcut",
+      "finding_id": "rollout-targeting-bypass",
+      "reason": "partial",
+      "run_number": 5
+    }
+  ],
+  "attempts": 5,
+  "baseline_eligible": true,
+  "configuration": {
+    "artifacts_retained": false,
+    "cases": 1,
+    "corpus_version": "0.2-s1-populated",
+    "executor": "python3 review-suite/scripts/evals/claude_executor.py",
+    "executor_models": [
+      "claude-opus-4-6[1m]"
+    ],
+    "grader_version": "1.1",
+    "max_output_bytes": 4000000,
+    "runs_per_case": 5,
+    "skill_root": "skills",
+    "stratum": {
+      "grading_is_signal": true,
+      "ground_truth": "human-review",
+      "id": "s1-correctness-orchestrator",
+      "purpose": "Correctness and verification cases for the orchestrator target, whose payload therefore carries its three required lens skills. Every case carries the recorded source disposition as its first adjudication and an executable oracle - a runnable module independent of the reviewer's model - as its second. SCORED: both owner-gated inputs are satisfied (the $15 total cost ceiling and complete independent adjudication across all three strata), and every expectation stays `calibrated: false` permanently, per the owner-settled three-way grading method - a scored case is never calibrated on its own prose, and a grader miss surfaces as `referred_root_cause_ids` rather than a silent reviewer-miss. `0.2` adds two cases (#89): a harder, disguised sibling to `dependency-strictness-propagation` and to `stale-claim-release-guard`, sourced after #57's ablation matrix found neither original target case demonstrates unique causal contribution to the pass meant to fix it.",
+      "scored": true
+    },
+    "suite_commit": "bfec2910a81422df365ddc3ba4c70672a9ebe269",
+    "target_skill": "review-code-change",
+    "target_skill_dependencies": [
+      "review-solution-simplicity",
+      "review-correctness",
+      "review-code-simplicity"
+    ],
+    "target_skill_digest": "f8578e3fcd87a7be",
+    "target_skill_documents": [
+      "review-code-change/SKILL.md",
+      "review-code-change/references/orchestration-protocol.md",
+      "review-code-simplicity/SKILL.md",
+      "review-code-simplicity/references/code-simplicity-rubric.md",
+      "review-correctness/SKILL.md",
+      "review-correctness/references/correctness-rubric.md",
+      "review-solution-simplicity/SKILL.md",
+      "review-solution-simplicity/references/solution-simplicity-rubric.md"
+    ],
+    "timeout_seconds": 300.0
+  },
+  "failures": {
+    "blocked_rate": 0.0,
+    "malformed_output_rate": 0.0,
+    "output_too_large_rate": 0.0,
+    "protocol_mismatch_rate": 0.0,
+    "runtime_failure_rate": 0.0,
+    "spawn_failure_rate": 0.0,
+    "timeout_rate": 0.0
+  },
+  "graded_attempts": 5,
+  "grader_version": "1.1",
+  "latency": {
+    "count": 5,
+    "max_seconds": 122.69005558360368,
+    "mean_seconds": 59.48467412488535,
+    "min_seconds": 38.91936695901677,
+    "p50_seconds": 47.07643108302727
+  },
+  "per_case": [
+    {
+      "attempts": 5,
+      "case_id": "artifact-promotion-environment-shortcut",
+      "ever_referred_relevant_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "ever_referred_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "expected_root_cause_ids": [
+        "rc.rollout-path-keeps-marker-only-promotion-check"
+      ],
+      "false_alarm_attempts": 0,
+      "false_clean_attempts": 0,
+      "false_positive_attempts": 0,
+      "finding_stability": 1.0,
+      "graded_attempts": 5,
+      "intersection_root_cause_ids": [],
+      "mean_combined_recall": 1.0,
+      "mean_recall": 0.0,
+      "stability_denominator": 5,
+      "statuses": {
+        "review_result": 5
+      },
+      "union_root_cause_ids": [],
+      "verdict_stability": 1.0
+    }
+  ],
+  "protocol_version": "1.0",
+  "quality": {
+    "false_alarm_denominator": 0,
+    "false_alarm_rate": null,
+    "false_clean_denominator": 5,
+    "false_clean_rate": 0.0,
+    "false_positive_denominator": 5,
+    "false_positive_rate": 0.0,
+    "material_finding_recall": 0.0,
+    "recall_attempts": 5,
+    "referred_denominator": 5,
+    "referred_rate": 1.0,
+    "unique_finding_contribution": []
+  },
+  "report_version": "1.0",
+  "simulation": false,
+  "stability": {
+    "mean_finding_stability": 1.0,
+    "mean_verdict_stability": 1.0,
+    "per_case_finding_stability": {
+      "artifact-promotion-environment-shortcut": 1.0
+    },
+    "per_case_stability_denominator": {
+      "artifact-promotion-environment-shortcut": 5
+    },
+    "per_case_verdict_stability": {
+      "artifact-promotion-environment-shortcut": 1.0
+    },
+    "stability_denominator": 5
+  },
+  "usage": {
+    "available": true,
+    "reporting_attempts_cost_usd": 5,
+    "reporting_attempts_input_tokens": 5,
+    "reporting_attempts_output_tokens": 5,
+    "total_cost_usd": 0.59849175,
+    "total_input_tokens": 185045.0,
+    "total_output_tokens": 14208.0
+  }
+}

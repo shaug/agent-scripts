@@ -30,11 +30,14 @@ class _Proof:
 
 
 class _Ledger:
-    """Confirms only the artifact whose external ref names a settled release."""
+    """Confirms only the artifact whose external ref names a settled release.
+
+    Always returns a proof object, never `None` - `verified` is `False` for a
+    missing ref or one the ledger has no confirming record for, matching the
+    packet's own stated `ledger.lookup` contract.
+    """
 
     def lookup(self, external_ref):
-        if external_ref is None:
-            return None
         return _Proof(verified=external_ref == "rel-confirmed")
 
 
