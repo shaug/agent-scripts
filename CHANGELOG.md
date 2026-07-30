@@ -4,8 +4,12 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-fix-loop): define invocation, checkpoint, and terminal-result
+  contracts, adding the skill-local schemas, a dependency-free validator, and 62
+  unit tests covering valid, invalid, boundary, cross-document, and
+  round-trip/determinism cases for both `local_commit` and `update_pr` (#96)
 - feat(review-suite)!: remove the verification-sufficiency pass and its
   mandatory `verification_sufficiency_evidence` field from `review-correctness`
   and the shared review-result contract, advancing `schema_version` `1.3 → 1.4`;
@@ -13,6 +17,7 @@ summary: Chronological history of repository and skill changes.
   unchanged, per #57's ablation matrix and #89's harder-case validation finding
   no demonstrated value for the removed pass plus a confirmed, twice-reproduced
   false-positive regression when it ran without the traversal pass (#93)
+  (`b91e12b063ea6d7ed49f152ee359f1f0eb326363`)
 - docs: simplify the review-fix-loop design
   (`2e7a8cd93af9f2c8cec36d6c393694f7849adedb`)
 
