@@ -4,12 +4,17 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-30 — Simplified the review-fix-loop design around local coordination and Git-native publication safety
+
+- docs: simplify the review-fix-loop design
+
 ## 2026-07-29 — Sourced two harder discriminating cases for the traversal and verification-sufficiency passes, designed the review-fix-loop skill, migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
 
 - docs(review-suite): validate the two new discriminating cases with-pass and
   without-pass, fixing a construction defect found in the traversal case along
   the way, and report the traversal pass discriminates while the
   verification-sufficiency pass still does not (#89)
+  (`5e9b3de63335e23d80781a85de49c43c231d9d07`)
 - feat(review-suite): source two harder discriminating
   `s1-correctness-orchestrator` cases for the traversal and
   verification-sufficiency passes and preregister their validation ceiling (#89)
