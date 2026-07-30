@@ -73,22 +73,17 @@ class _Session:
         return _Outcome(status="ok")
 
 
-def _flush_candidate(entry: Entry, session: _Session, fresh_version_reader) -> bool:
-    """Candidate: retries with the same, already-captured version."""
+def _flush(
+    entry: Entry, session: _Session, fresh_version_reader, *, refresh_on_retry: bool
+) -> bool:
+    """Retry a transient error once; `refresh_on_retry` selects candidate vs.
+    corrected, mirroring `stale_claim_release_guard.py`'s `guard_unconditionally`
+    flag rather than duplicating the policy body across two functions."""
     version = entry.expected_version
     outcome = session.run_script(entry.payload, version)
     if outcome.status == "transient_error":
-        outcome = session.run_script(entry.payload, version)
-    entry.flushed = outcome.status == "ok"
-    return entry.flushed
-
-
-def _flush_corrected(entry: Entry, session: _Session, fresh_version_reader) -> bool:
-    """Corrected: re-reads the current version before resending."""
-    version = entry.expected_version
-    outcome = session.run_script(entry.payload, version)
-    if outcome.status == "transient_error":
-        version = fresh_version_reader()
+        if refresh_on_retry:
+            version = fresh_version_reader()
         outcome = session.run_script(entry.payload, version)
     entry.flushed = outcome.status == "ok"
     return entry.flushed
@@ -127,7 +122,15 @@ ORACLE = CaseOracle(
         "A retried flush re-derives its script from a fresh read of the "
         "entry's current version before resending."
     ),
-    candidate=lambda: _run(_flush_candidate),
-    corrected=lambda: _run(_flush_corrected),
+    candidate=lambda: _run(
+        lambda entry, session, reader: _flush(
+            entry, session, reader, refresh_on_retry=False
+        )
+    ),
+    corrected=lambda: _run(
+        lambda entry, session, reader: _flush(
+            entry, session, reader, refresh_on_retry=True
+        )
+    ),
     check=_check,
 )
