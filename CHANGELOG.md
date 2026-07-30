@@ -4,10 +4,12 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-29 — Migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
+## 2026-07-29 — Designed the review-fix-loop skill, migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
 
+- docs: design the review-fix-loop skill
 - docs(review-suite): add a confirming rerun of the session-continuation-summary
   verification-only regression (#57 follow-up)
+  (`cd8efa444018d036a5749a1955e1f34ebe06b51f`)
 - docs(review-suite): run the preregistered v2 s1 ablation matrix and
   integration closeout (#57) (`b4e061f7847b3fc911a05fe4c8e50218f4f957b7`)
 - docs: add the CHANGELOG entry for the skill-root ablation override
