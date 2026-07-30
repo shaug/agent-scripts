@@ -620,6 +620,90 @@ class TerminalResultContractTests(unittest.TestCase):
         )
 
 
+class CheckpointInvocationConsistencyTests(unittest.TestCase):
+    """A checkpoint must match the invocation it derives from.
+
+    `validate_checkpoint` alone cannot prove `base_revision_history[0]` is the
+    invocation's real original comparison base: a checkpoint document has no
+    other field to compare it against, so a corrupted first entry would
+    otherwise validate as long as the rest of the checkpoint is internally
+    consistent. This is the invocation-side counterpart of
+    `validate_terminal_against_checkpoint`.
+    """
+
+    def test_local_commit_checkpoint_matches_its_invocation(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = load("local-commit-checkpoint.json")
+        self.assertEqual(
+            VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint), []
+        )
+
+    def test_update_pr_checkpoint_matches_its_invocation(self):
+        invocation = load("update-pr-invocation.json")
+        checkpoint = load("update-pr-checkpoint.json")
+        self.assertEqual(
+            VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint), []
+        )
+
+    def test_mismatched_invocation_id_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["invocation_id"] = "some-other-invocation"
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.invocation_id: does not match invocation invocation_id", errors
+        )
+
+    def test_mismatched_initial_head_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["initial_head"] = checkpoint["current_head"]
+        checkpoint["head_history"][0] = checkpoint["current_head"]
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.initial_head: does not match invocation candidate.head_sha", errors
+        )
+
+    def test_mismatched_original_comparison_base_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["base_revision_history"][0]["sha"] = checkpoint["current_head"]
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.base_revision_history[0]: does not match invocation "
+            "candidate.comparison_base",
+            errors,
+        )
+
+    def test_mismatched_original_cycle_budget_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["original_cycle_budget"] = 7
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.original_cycle_budget: does not match invocation "
+            "fix_cycle_budget.max_fix_cycles",
+            errors,
+        )
+
+    def test_mismatched_repository_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["repository"]["identity"] = "someone-else/other-repo"
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn("$.repository: does not match invocation repository", errors)
+
+    def test_mismatched_publication_policy_is_rejected(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["publication"]["policy"] = "update_pr"
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.publication.policy: does not match invocation publication.policy",
+            errors,
+        )
+
+
 class CrossDocumentConsistencyTests(unittest.TestCase):
     """A terminal result must match the checkpoint it derives from."""
 

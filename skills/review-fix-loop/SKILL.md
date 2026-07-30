@@ -62,7 +62,10 @@ diagnostic per violation to stderr and exits `1`. A malformed document exits
 The module also exposes importable functions for a caller that already holds
 parsed documents in memory: `validate_invocation`, `validate_checkpoint`,
 `validate_terminal_result`, `reconstruct_cycle_accounting` (derive consumed and
-remaining fix cycles from a checkpoint's recorded attempts), and
+remaining fix cycles from a checkpoint's recorded attempts),
+`validate_checkpoint_against_invocation` (confirm a checkpoint's initial head,
+original base, cycle budget, invocation ID, repository, and publication policy
+match the invocation it derives from), and
 `validate_terminal_against_checkpoint` (confirm a terminal result's budget and
 head/base identities match the checkpoint it derives from). See
 [`references/CONTRACT.md`](references/CONTRACT.md) for the cross-field semantics

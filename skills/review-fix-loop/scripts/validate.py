@@ -276,6 +276,61 @@ def validate_checkpoint(document: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_checkpoint_against_invocation(
+    invocation: dict[str, Any], checkpoint: dict[str, Any]
+) -> list[str]:
+    """Cross-check that a checkpoint matches the invocation it derives from.
+
+    `validate_checkpoint` only checks a checkpoint's own internal
+    consistency: `base_revision_history[0]` trivially equals itself, so
+    nothing inside the checkpoint alone can prove it actually started from
+    the invocation's real original comparison base. This mirrors
+    `validate_terminal_against_checkpoint`, one level up the same chain.
+    """
+    errors: list[str] = []
+    invocation_candidate = invocation.get("candidate", {})
+    if invocation.get("invocation_id") != checkpoint.get("invocation_id"):
+        errors.append("$.invocation_id: does not match invocation invocation_id")
+    if invocation_candidate.get("head_sha") != checkpoint.get("initial_head"):
+        errors.append("$.initial_head: does not match invocation candidate.head_sha")
+
+    invocation_base_sha = invocation_candidate.get("comparison_base", {}).get("sha")
+    checkpoint_base_history = checkpoint.get("base_revision_history", [])
+    checkpoint_initial_base_sha = (
+        checkpoint_base_history[0].get("sha") if checkpoint_base_history else None
+    )
+    if invocation_base_sha != checkpoint_initial_base_sha:
+        errors.append(
+            "$.base_revision_history[0]: does not match invocation "
+            "candidate.comparison_base"
+        )
+
+    invocation_budget = invocation.get("fix_cycle_budget", {}).get("max_fix_cycles")
+    if invocation_budget != checkpoint.get("original_cycle_budget"):
+        errors.append(
+            "$.original_cycle_budget: does not match invocation "
+            "fix_cycle_budget.max_fix_cycles"
+        )
+
+    invocation_repository = invocation.get("repository", {})
+    checkpoint_repository = checkpoint.get("repository", {})
+    if invocation_repository.get("identity") != checkpoint_repository.get(
+        "identity"
+    ) or invocation_repository.get("git_common_directory") != checkpoint_repository.get(
+        "git_common_directory"
+    ):
+        errors.append("$.repository: does not match invocation repository")
+
+    invocation_policy = invocation.get("publication", {}).get("policy")
+    checkpoint_policy = checkpoint.get("publication", {}).get("policy")
+    if invocation_policy != checkpoint_policy:
+        errors.append(
+            "$.publication.policy: does not match invocation publication.policy"
+        )
+
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # Terminal result
 # ---------------------------------------------------------------------------

@@ -84,8 +84,15 @@ exceeds `original_cycle_budget`.
   number of `committed` attempts must equal `len(head_history) - 1`, and each
   committed attempt's `resulting_head` must equal the corresponding subsequent
   `head_history` entry in order.
-- `base_revision_history[0].sha` must equal the invocation's original
-  comparison-base SHA and the last entry is the live current base.
+- `base_revision_history[-1].sha` must equal the live current
+  `comparison_base.sha`. `validate_checkpoint` checks only this internal
+  consistency; nothing inside a checkpoint document alone can prove
+  `base_revision_history[0]` is the invocation's *real* original comparison
+  base, since a checkpoint has no other field to compare it against. Use
+  `validate_checkpoint_against_invocation(invocation, checkpoint)` for that: it
+  also cross-checks `initial_head`, `original_cycle_budget`, `invocation_id`,
+  `repository`, and `publication.policy` against the invocation, mirroring
+  `validate_terminal_against_checkpoint` one level up the same chain.
 - `review_records` bind every review pass to the exact head and base it
   reviewed. `write_isolation: violated` records an attempted or unattributed
   reviewer mutation; it does not by itself imply which terminal `blocked` reason
