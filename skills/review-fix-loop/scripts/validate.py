@@ -408,11 +408,19 @@ def _check_converged_requires_clean_evidence(document: dict[str, Any]) -> list[s
     validation alone would not catch it.
     """
     errors: list[str] = []
-    for index, validation in enumerate(document.get("validation_summary", [])):
+    validation_summary = document.get("validation_summary", [])
+    for index, validation in enumerate(validation_summary):
         if validation.get("status") != "passed":
             errors.append(
                 f"$.validation_summary[{index}]: converged cannot pair with "
                 f"{validation.get('status')!r} required validation"
+            )
+    validated_scopes = {entry.get("scope") for entry in validation_summary}
+    for required_scope in ("focused", "full"):
+        if required_scope not in validated_scopes:
+            errors.append(
+                f"$.validation_summary: converged requires a passed {required_scope} "
+                "validation entry"
             )
 
     head = document.get("head", {})
@@ -473,6 +481,18 @@ def validate_terminal_against_checkpoint(
     if checkpoint_base_sha != result_final_base_sha:
         errors.append(
             "$.comparison_base.final: does not match checkpoint comparison_base"
+        )
+    checkpoint_base_history = checkpoint.get("base_revision_history", [])
+    checkpoint_initial_base_sha = (
+        checkpoint_base_history[0].get("sha") if checkpoint_base_history else None
+    )
+    result_initial_base_sha = (
+        terminal_result.get("comparison_base", {}).get("initial", {}).get("sha")
+    )
+    if checkpoint_initial_base_sha != result_initial_base_sha:
+        errors.append(
+            "$.comparison_base.initial: does not match checkpoint "
+            "base_revision_history[0]"
         )
     return errors
 

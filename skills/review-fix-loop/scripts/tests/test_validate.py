@@ -467,6 +467,36 @@ class TerminalResultContractTests(unittest.TestCase):
             errors,
         )
 
+    def test_converged_rejects_empty_validation_summary(self):
+        result = copy.deepcopy(self.converged_local)
+        result["validation_summary"] = []
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "converged requires a passed focused validation entry" in error
+                for error in errors
+            )
+            and any(
+                "converged requires a passed full validation entry" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_converged_rejects_a_missing_validation_scope(self):
+        result = copy.deepcopy(self.converged_pr)
+        result["validation_summary"] = [
+            entry for entry in result["validation_summary"] if entry["scope"] != "full"
+        ]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "converged requires a passed full validation entry" in error
+                for error in errors
+            ),
+            errors,
+        )
+
     def test_local_commit_publication_status_must_be_not_applicable(self):
         result = copy.deepcopy(self.converged_local)
         result["publication"]["status"] = "published"
@@ -644,6 +674,17 @@ class CrossDocumentConsistencyTests(unittest.TestCase):
         errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
         self.assertIn(
             "$.comparison_base.final: does not match checkpoint comparison_base",
+            errors,
+        )
+
+    def test_mismatched_initial_comparison_base_is_rejected(self):
+        checkpoint = load("local-commit-checkpoint.json")
+        terminal = copy.deepcopy(load("local-commit-terminal-converged.json"))
+        terminal["comparison_base"]["initial"]["sha"] = terminal["head"]["final"]
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn(
+            "$.comparison_base.initial: does not match checkpoint "
+            "base_revision_history[0]",
             errors,
         )
 

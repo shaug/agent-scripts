@@ -101,10 +101,11 @@ cannot claim a terminal state without the evidence that state requires:
   required validation passed, and the selected publication policy completed.
   `reason` must be absent. `scripts/validate.py` enforces this directly,
   mirroring the review-suite validator's "clean cannot pair with failed
-  validation" rule: it rejects `converged` when any `validation_summary` entry
-  is not `passed`, when `review_records` has no entry bound to the exact final
-  head and comparison base, when that final-head record's `aggregate_verdict` is
-  not `clean`, or when its `write_isolation` is not `enforced`. Under
+  validation" rule: it rejects `converged` when `validation_summary` is empty,
+  is missing its required `focused` or `full` scope, or contains any entry that
+  is not `passed`; when `review_records` has no entry bound to the exact final
+  head and comparison base; when that final-head record's `aggregate_verdict` is
+  not `clean`; or when its `write_isolation` is not `enforced`. Under
   `update_pr`, `publication.status` must be `published` and `unpushed_commits`
   must be empty. Under `local_commit`, `publication.status` must be
   `not_applicable` (local_commit never writes to origin), and any created
