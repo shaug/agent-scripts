@@ -1,0 +1,34 @@
+{
+  "expectation_version": "1.0",
+  "case_id": "artifact-promotion-environment-shortcut",
+  "packet_valid": true,
+  "calibrated": false,
+  "expected_verdict": "changes_required",
+  "material_root_causes": [
+    {
+      "id": "rc.rollout-path-keeps-marker-only-promotion-check",
+      "requirement": "Every path that decides whether an artifact counts as promoted applies the same mandatory-verification rule once verification is required for that artifact.",
+      "trigger": "An artifact requires mandatory verification, carries a promotion marker from the release tool, but has no ledger-confirmed proof, and enters the staging environment-selection step.",
+      "surface": "_pick_rollout_defaults",
+      "consequence": "`resolve_rollout_environment` reaches `artifact_promotable` through `_pick_rollout_defaults` without ever passing `external_proof`, so the environment-selection worker still treats the artifact as promoted for staging-defaults purposes even though `decide_promotion` would hold its release. The diff only hardens the gate's own direct call; the two-hop rollout path keeps deciding the same question permissively, and the change contract's non-goal about rollout defaults reads as license to leave it alone rather than as a sign it was missed.",
+      "severity": "blocking",
+      "equivalent_formulations": [
+        "_pick_rollout_defaults still calls artifact_promotable without external_proof",
+        "the rollout path was not updated to require ledger proof",
+        "resolve_rollout_environment can still treat an unverified artifact as promoted",
+        "a marker-only artifact can still get promoted-tier rollout defaults",
+        "the verification requirement is applied inconsistently between the gate and the rollout path"
+      ]
+    }
+  ],
+  "accepted_non_findings": [
+    {
+      "id": "anf.optional-proof-parameter-shape",
+      "description": "A reviewer may prefer a distinct function over an optional `external_proof` parameter. Reasonable as design commentary; the packet's preserved-behaviour list keeps the permissive result reachable when verification is not required, so an optional parameter satisfies the contract.",
+      "equivalent_formulations": [
+        "prefer a separate function to an optional proof parameter",
+        "external_proof as an optional keyword argument is a design smell"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "repository": {
+    "identity": "example/ledger",
+    "base_branch": "main"
+  },
+  "candidate": {
+    "head_sha": "5c1e4a2f7b09d836ac41f6205e7d918cb4a3e670",
+    "comparison_base_sha": "a870f3d6c4e19b52d087a56123fce8901ba7d4e2",
+    "diff": {
+      "format": "unified_diff",
+      "complete": true,
+      "content": "diff --git a/audit/flush.py b/audit/flush.py\nindex 62eeba1..8d98aa0 100644\n--- a/audit/flush.py\n+++ b/audit/flush.py\n@@ -8,8 +8,13 @@ def _render_script(entry, version):\n \n \n def flush_entry(entry, session):\n-    \"\"\"Persist one audit entry.\"\"\"\n-    script = _render_script(entry, entry.expected_version)\n+    \"\"\"Persist one audit entry, retrying once on a transient session error.\"\"\"\n+    version = entry.expected_version\n+    script = _render_script(entry, version)\n     outcome = session.run_script(script)\n+    if outcome.status == \"transient_error\":\n+        # Retry with the same rendered script; the entry itself has not\n+        # changed, so resending it is safe.\n+        outcome = session.run_script(script)\n     entry.flushed = outcome.status == \"ok\"\n     return entry.flushed\ndiff --git a/tests/test_audit_flush.py b/tests/test_audit_flush.py\nindex 7cc6c94..882c430 100644\n--- a/tests/test_audit_flush.py\n+++ b/tests/test_audit_flush.py\n@@ -7,3 +7,25 @@ def test_flush_entry_persists_a_new_entry():\n     session = _AlwaysOkSession()\n     assert flush_entry(entry, session)\n     assert entry.flushed\n+\n+\n+class _FakeSession:\n+    \"\"\"Simulates one transient error, then reports the script's own shape.\"\"\"\n+\n+    def __init__(self):\n+        self.calls = 0\n+\n+    def run_script(self, script):\n+        self.calls += 1\n+        if self.calls == 1:\n+            return _Outcome(status=\"transient_error\")\n+        if \"COMMIT\" in script:\n+            return _Outcome(status=\"ok\")\n+        return _Outcome(status=\"error\")\n+\n+\n+def test_flush_entry_retries_after_a_transient_error():\n+    entry = Entry(entry_id=\"e-1\", payload=\"new\", expected_version=3)\n+    session = _FakeSession()\n+    assert flush_entry(entry, session) is True\n+    assert entry.flushed is True\n"
+    }
+  },
+  "change_contract": {
+    "goal": "Stop a transient session error from permanently losing an audit entry by retrying the flush once, while keeping the retry safe under the same optimistic-concurrency precondition the store already enforces.",
+    "acceptance_criteria": [
+      "A flush that hits one transient session error retries and, once persisted, is recorded as flushed.",
+      "A retried flush re-derives its script from a fresh read of the entry's current version before resending, since a concurrent flush may have advanced the version between attempts."
+    ],
+    "non_goals": [
+      "Change the number of retries beyond one.",
+      "Change how a permanent (non-transient) session error is handled."
+    ],
+    "preserved_behaviors": [
+      "`flush_entry` keeps its existing signature.",
+      "A flush with no transient error still persists on the first attempt."
+    ]
+  },
+  "sources": {
+    "repository_instructions": [
+      {
+        "label": "Concurrency rules",
+        "location": "AGENTS.md",
+        "summary": "A retried write must re-verify every precondition it captured before the retry, because another writer may have acted in between; resending an already-built request is only safe when nothing it depends on could have changed."
+      }
+    ],
+    "named_documents": [
+      {
+        "label": "Audit entry contract",
+        "location": "docs/audit-entries.md"
+      },
+      {
+        "label": "Session boundary",
+        "location": "audit/session.py"
+      }
+    ],
+    "nearby_patterns": [
+      {
+        "label": "Script rendering",
+        "location": "audit/flush.py"
+      },
+      {
+        "label": "Flush tests",
+        "location": "tests/test_audit_flush.py"
+      }
+    ]
+  },
+  "validation": [
+    {
+      "name": "flush tests",
+      "command": "pytest tests/test_audit_flush.py",
+      "scope": "focused",
+      "status": "passed",
+      "result": "6 passed"
+    },
+    {
+      "name": "full tests",
+      "command": "pytest",
+      "scope": "full",
+      "status": "passed",
+      "result": "132 passed"
+    }
+  ],
+  "context": {
+    "data": [
+      "`_render_script(entry, version)` builds a single script that both updates the row and commits, guarded by `WHERE version = {version}` for optimistic concurrency; its full body is unchanged by this diff:\n\n    def _render_script(entry, version):\n        return SCRIPT_TEMPLATE.format(\n            entry_id=entry.entry_id, payload=entry.payload, version=version\n        )",
+      "The session boundary (`audit/session.py`) reports a script's outcome as `ok` whenever the script runs without a SQL error - including when its `WHERE version = ...` clause matches zero rows. It does not surface a rows-affected count to the caller; a caller cannot tell a real write from a no-op write from `outcome.status` alone.",
+      "A concurrent flush of the same entry (from a retried worker elsewhere, or a background compaction pass) can advance the row's stored `version` at any time between two calls to `session.run_script`."
+    ],
+    "operational": [
+      "Audit entries are flushed individually by many worker processes concurrently; a transient session error is common enough under load that the retry path runs routinely, not only in rare failure modes."
+    ]
+  }
+}
