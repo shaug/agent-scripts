@@ -572,13 +572,23 @@ def _check_converged_requires_clean_evidence(document: dict[str, Any]) -> list[s
                 "validation entry"
             )
 
+    all_records = document.get("review_records", [])
+    for index, record in enumerate(all_records):
+        if record.get("mutation_attempts"):
+            errors.append(
+                f"$.review_records[{index}]: converged cannot pair with a "
+                "review record that recorded a mutation attempt — an "
+                "attempted reviewer mutation invalidates that pass "
+                "regardless of a later clean pass"
+            )
+
     head = document.get("head", {})
     base = document.get("comparison_base", {})
     final_head = head.get("final")
     final_base = base.get("final", {}).get("sha")
     final_records = [
         record
-        for record in document.get("review_records", [])
+        for record in all_records
         if record.get("head_sha") == final_head
         and record.get("comparison_base_sha") == final_base
     ]

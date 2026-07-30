@@ -620,6 +620,34 @@ class TerminalResultContractTests(unittest.TestCase):
             errors,
         )
 
+    def test_converged_rejects_mutation_attempt_on_final_record(self):
+        result = copy.deepcopy(self.converged_local)
+        result["review_records"][-1]["mutation_attempts"] = [
+            'attempted: git commit -am "reviewer edit"'
+        ]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.review_records[1]: converged cannot pair with a review record "
+            "that recorded a mutation attempt — an attempted reviewer "
+            "mutation invalidates that pass regardless of a later clean pass",
+            errors,
+        )
+
+    def test_converged_rejects_mutation_attempt_on_a_non_final_record(self):
+        # An attempted mutation on an earlier pass invalidates that pass even
+        # though a later pass came back clean and enforced.
+        result = copy.deepcopy(self.converged_local)
+        result["review_records"][0]["mutation_attempts"] = [
+            "attempted: rm -rf .git/hooks"
+        ]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertIn(
+            "$.review_records[0]: converged cannot pair with a review record "
+            "that recorded a mutation attempt — an attempted reviewer "
+            "mutation invalidates that pass regardless of a later clean pass",
+            errors,
+        )
+
     def test_converged_rejects_missing_final_head_review_record(self):
         result = copy.deepcopy(self.converged_local)
         result["review_records"] = []

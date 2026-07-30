@@ -214,13 +214,18 @@ cannot claim a terminal state without the evidence that state requires:
   is missing its required `focused` or `full` scope, or contains any entry that
   is not `passed`; when `review_records` has no entry bound to the exact final
   head and comparison base; when that final-head record's `aggregate_verdict` is
-  not `clean`; or when its `write_isolation` is not `enforced`. Under
-  `update_pr`, `publication.status` must be `published` and `unpushed_commits`
-  must be empty. Under `local_commit`, `publication.status` must be
-  `not_applicable` (local_commit never writes to origin), and any created
-  commits remain in `unpushed_commits` — that is the expected, non-error shape
-  of a converged `local_commit` result, and `operator_action` must describe how
-  the operator publishes them through their own workflow.
+  not `clean`; or when its `write_isolation` is not `enforced`. It also rejects
+  `converged` when *any* `review_records` entry — not only the final-head-bound
+  one — has a non-empty `mutation_attempts`: design's "Reviewer write
+  prevention" section states an attempted prohibited mutation invalidates that
+  pass even if the runtime blocked it, regardless of whether a later pass on a
+  different head came back clean and enforced. Under `update_pr`,
+  `publication.status` must be `published` and `unpushed_commits` must be empty.
+  Under `local_commit`, `publication.status` must be `not_applicable`
+  (local_commit never writes to origin), and any created commits remain in
+  `unpushed_commits` — that is the expected, non-error shape of a converged
+  `local_commit` result, and `operator_action` must describe how the operator
+  publishes them through their own workflow.
 - `changes_remaining`: `reason` must be one of `cycle_budget_exhausted`,
   `repeated_finding`, `oscillation`, `expanding_findings`,
   `repeated_failed_attempt`, or `current_candidate_validation_failure`.
