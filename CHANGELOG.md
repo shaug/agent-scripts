@@ -4,11 +4,25 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Implemented the review-fix-loop local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-fix-loop): add `scripts/local_execution.py` implementing #97's
+  local execution substrate — non-blocking common-Git-common-directory candidate
+  locking (local-ref lock before the optional `update_pr` remote-target lock,
+  released in reverse order), isolated attempt worktrees created from the exact
+  canonical head, verified fast-forward-only canonical promotion that fails
+  closed and preserves the candidate on a dirty or advanced canonical worktree,
+  atomic schema-validated checkpoint persistence and resume reconciliation,
+  preserved failed-attempt artifacts, cleanup that only ever removes the
+  `review-fix-loop/attempt/` namespace it created, and recovery of an
+  interrupted attempt against a checkpoint's own history — with deterministic
+  tests against real temporary Git repositories covering contention,
+  interruption, stale state, dirty worktrees, promotion races, and cleanup
+  safety
 - fix(review-fix-loop): reject `converged` when any `review_records` entry — not
   only the final-head-bound one — recorded a mutation attempt, closing the gap
   the tenth (final) review-code-change pass on #96 found
+  (`0187dfc77444fbf410b5ed86a42a12e4d088e7b3`)
 - fix(review-fix-loop): add a per-pass `reviewer_identity` field to
   `review_records` in both checkpoint and terminal-result, and reject a dirty
   `candidate.worktree` (`staged`/`unstaged`/`untracked`) in

@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts that later children of epic #95 use to run the standalone review-remediation workflow. Use when authoring, resuming, or terminating a review-fix-loop invocation to check its documents against the shared schemas before trusting or acting on them. This child does not yet run reviewers, apply fixes, acquire locks, manage worktrees, or publish anything; see design/review-fix-loop.md and references/CONTRACT.md for the full behavioral design and current implementation status.
+description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts, and provide the local execution substrate (common-directory locking, isolated attempt worktrees, durable checkpoint persistence, verified fast-forward-only canonical promotion, and interrupted-attempt recovery) that later children of epic #95 use to run the standalone review-remediation workflow. Use when authoring, resuming, or terminating a review-fix-loop invocation to check its documents against the shared schemas, or when acquiring a candidate lock, running an isolated remediation attempt, or recovering an interrupted one. This skill does not yet run reviewers, select or apply a fix's content, or publish anything; see design/review-fix-loop.md and references/CONTRACT.md for the full behavioral design and current implementation status.
 allowed-tools: Read, Bash
 ---
 
@@ -12,21 +12,27 @@ review suite, applies material ticket-scoped fixes, and repeats until review
 converges or a bounded stop condition is reached. The full design is
 [`design/review-fix-loop.md`](../../design/review-fix-loop.md).
 
-This child ([issue #96](https://github.com/shaug/agent-scripts/issues/96), the
-first of epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines
-and validates only the contracts later children build on:
+Issue [#96](https://github.com/shaug/agent-scripts/issues/96) (the first child
+of epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defined and
+validates the contracts every other child builds on:
 
 - the **invocation** a caller or standalone operator supplies to start or resume
   a loop;
 - the **durable checkpoint** the loop would record between phases; and
 - the **terminal result** the loop returns.
 
-It does not run a reviewer, apply a fix, acquire a lock, manage a worktree,
-recover from interruption, or publish anything — those behaviors belong to
-issues #97 (local locking, isolated attempts, and recovery), #98 (reviewer
-isolation and orchestration), #99 (`local_commit`), and #100 (`update_pr`). Do
-not invoke this skill expecting an executable review-fix loop yet; use it to
-validate a document you or a later child produced against the shared schemas.
+Issue [#97](https://github.com/shaug/agent-scripts/issues/97) adds the local
+execution substrate those contracts describe: common-Git-common-directory
+locking, isolated attempt worktrees, durable checkpoint persistence and resume
+reconciliation, verified fast-forward-only canonical promotion, and recovery of
+an interrupted attempt. See [Local execution](#local-execution) below.
+
+This skill still does not run a reviewer, select or apply a fix's content, or
+publish anything — those behaviors belong to issue #98 (reviewer isolation and
+orchestration), #99 (`local_commit`), and #100 (`update_pr`). Do not invoke it
+expecting a complete, end-to-end review-fix loop yet; use it to validate a
+document you or a later child produced against the shared schemas, or to acquire
+a lock, run an isolated attempt, and recover an interrupted one.
 
 ## Load the contracts
 
@@ -73,11 +79,45 @@ these functions enforce beyond plain JSON Schema, and
 `scripts/tests/test_validate.py` for the complete valid, invalid, boundary, and
 round-trip case coverage.
 
-## Non-goals of this child
+## Local execution
 
-- Running a reviewer or applying a fix.
-- Acquiring a local or remote-target lock, managing a worktree, or recovering an
-  interrupted attempt.
+`scripts/local_execution.py` is dependency-free and loads `scripts/validate.py`
+from this same directory via `importlib` rather than duplicating any schema or
+cross-field check, so a caller always resumes and promotes against the exact
+contract `references/CONTRACT.md` defines. It implements the parts of
+`design/review-fix-loop.md`'s "Local ownership and checkpointing" section this
+repository can exercise without a reviewer or a selected fix:
+
+- `acquire_candidate_locks` — the non-blocking, common-Git-common-directory
+  local-ref lock plus the optional `update_pr` remote-target lock, acquired in
+  that fixed order and released in reverse, so conflicting local invocations can
+  never both own the same target and lock ordering cannot self-deadlock.
+- `write_checkpoint_atomic`, `read_checkpoint`, and
+  `reconcile_checkpoint_for_resume` — durable, schema-validated checkpoint
+  persistence and the complete design-required resume precondition set (no
+  active lock holder, matching cross-document identity, a clean candidate, and
+  live head/base agreement).
+- `create_attempt`, `commit_attempt`, `promote_attempt`, `discard_attempt`, and
+  `cleanup_attempt` — an isolated attempt worktree and branch created from the
+  exact canonical head, a verified fast-forward-only promotion that leaves the
+  canonical candidate untouched on any failure, and cleanup that only ever acts
+  on the `review-fix-loop/attempt/` namespace it created.
+- `recover_interrupted_attempts` — reconciles attempt branches an interrupted
+  invocation left behind against a checkpoint's own history, returning each
+  uniquely identifiable leftover for the caller to retry or discard, and raising
+  rather than guessing when reconciliation is ambiguous.
+
+See the module's own docstrings and
+[`scripts/tests/test_local_execution.py`](scripts/tests/test_local_execution.py)
+for the complete contention, interruption, stale-state, dirty-worktree,
+promotion-race, and cleanup-safety coverage. Selecting which finding to fix,
+writing the fix's content, running a reviewer, and publishing to a remote remain
+out of scope here; a caller supplies the fix content and invokes these
+primitives around it.
+
+## Non-goals
+
+- Running a reviewer, or selecting or writing a fix's content.
 - Publishing anything, including the `update_pr` expected-old fast-forward
   update.
 - Migrating `implement-ticket`, `babysit-pr`, `carve-changesets`, or any other
