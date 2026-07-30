@@ -27,7 +27,7 @@ HEAD = "1212121212121212121212121212121212121212"
 BASE = "abababababababababababababababababababab"
 
 CLEAN_AGGREGATE = {
-    "schema_version": "1.3",
+    "schema_version": "1.4",
     "lens": "aggregate",
     "candidate": {"head_sha": HEAD, "comparison_base_sha": BASE},
     "verdict": "clean",
@@ -75,7 +75,7 @@ class ReviewGateTests(unittest.TestCase):
 
     def test_blocked_verdict_is_rejected(self):
         blocked = {
-            "schema_version": "1.3",
+            "schema_version": "1.4",
             "lens": "aggregate",
             "candidate": {},
             "verdict": "blocked",
@@ -147,7 +147,7 @@ class ReviewGateTests(unittest.TestCase):
 
     def test_non_aggregate_lens_result_is_rejected(self):
         single_lens = {
-            "schema_version": "1.3",
+            "schema_version": "1.4",
             "lens": "correctness",
             "candidate": {"head_sha": HEAD, "comparison_base_sha": BASE},
             "verdict": "clean",

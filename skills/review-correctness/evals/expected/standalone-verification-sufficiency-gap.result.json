@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.3",
+  "schema_version": "1.4",
   "lens": "correctness",
   "candidate": {
     "head_sha": "5959595959595959595959595959595959595959",
@@ -31,12 +31,5 @@
     }
   ],
   "blocking_reasons": [],
-  "verification_sufficiency_evidence": [
-    {
-      "claimed_test_or_command": "tests/test_claims.py::test_release_denied_for_mismatched_owner",
-      "exercises_material_risk": "no",
-      "reasoning": "This test sets a present but mismatched owner; it never sets the snapshot owner absent, so the new `owner is None and not claim.is_expired()` guard clause is never exercised."
-    }
-  ],
   "next_action": "Add a test that exercises the owner-absent-and-unexpired branch before merging."
 }

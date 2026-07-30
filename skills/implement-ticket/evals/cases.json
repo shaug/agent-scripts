@@ -217,7 +217,7 @@
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "The initial review-code-change invocation returns an aggregate result carrying schema_version 1.2 instead of the bundled review-result contract's current version 1.3."
+    "candidate_state": "The initial review-code-change invocation returns an aggregate result carrying schema_version 1.2 instead of the bundled review-result contract's current version 1.4."
   },
   {
     "id": "malformed-review-result-blocks-publication",

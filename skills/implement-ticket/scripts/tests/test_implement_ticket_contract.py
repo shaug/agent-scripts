@@ -250,7 +250,7 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("references/review-suite/validate.py", self.gates)
         self.assertIn("scripts/review_gate.py", self.gates)
         self.assertIn("schema_version", self.gates)
-        self.assertIn("1.3", self.gates)
+        self.assertIn("1.4", self.gates)
         self.assertIn("lens_executions", self.gates)
 
     def test_acceptance_evidence_is_criterion_specific_and_fail_closed(self):

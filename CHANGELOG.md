@@ -4,9 +4,17 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-suite)!: remove the verification-sufficiency pass and its
+  mandatory `verification_sufficiency_evidence` field from `review-correctness`
+  and the shared review-result contract, advancing `schema_version` `1.3 → 1.4`;
+  the traversal (consumer/impact) pass and `consumer_impact_evidence` are
+  unchanged, per #57's ablation matrix and #89's harder-case validation finding
+  no demonstrated value for the removed pass plus a confirmed, twice-reproduced
+  false-positive regression when it ran without the traversal pass (#93)
 - docs: simplify the review-fix-loop design
+  (`2e7a8cd93af9f2c8cec36d6c393694f7849adedb`)
 
 ## 2026-07-29 — Sourced two harder discriminating cases for the traversal and verification-sufficiency passes, designed the review-fix-loop skill, migrated implement-ticket and babysit-pr to consume the final review-result contract, rechecked the s2/s3 strata under grader 1.1 for the same surface-in-prose defect, added connector-outcome curation and promotion tooling, added a skill-root override for mechanism ablation runs, ran the preregistered v2 ablation and integration closeout, and confirmed the session-continuation-summary verification-only regression with an independent rerun
 

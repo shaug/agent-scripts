@@ -257,6 +257,18 @@ causal contribution — it does not, on the evidence recorded there), and a
 recommendation, not a removal decision, per mechanism. See
 [its README](review-suite/evals/v2/README.md) for the full document set.
 
+Following that evidence, the repository owner removed the verification-
+sufficiency pass (`#93`): neither `#57`'s ablation matrix nor `#89`'s harder-
+case validation (`discriminating-case-validation.md`) found demonstrated value
+for it, and it carried a confirmed, twice-reproduced false-positive regression
+on `session-continuation-summary` when run without the traversal pass. The
+traversal (consumer/impact) pass and `consumer_impact_evidence` were unaffected
+— that pass showed a real, reproducible gap in the same validation. The shared
+review-result contract advanced `1.3 → 1.4` to drop
+`verification_sufficiency_evidence`; see
+[`review-suite/evals/v2/VERIFICATION-SUFFICIENCY-REMOVAL.md`](review-suite/evals/v2/VERIFICATION-SUFFICIENCY-REMOVAL.md)
+for the full decision record.
+
 ### Connector-outcome curation and promotion
 
 `review-suite/evals/curation/` turns a newly adjudicated connector finding into

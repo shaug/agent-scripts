@@ -41,16 +41,20 @@ class SkillContractTests(unittest.TestCase):
         self.assertIn("Do not turn a rejected hypothetical edit", skill)
         self.assertNotIn("code-review-pro", skill)
 
-    def test_skill_requires_the_traversal_and_verification_sufficiency_passes(self):
-        # #53: the two required passes must be part of this single lens, not
-        # a routed specialist module.
+    def test_skill_requires_the_traversal_pass(self):
+        # #53 required the traversal pass be part of this single lens, not a
+        # routed specialist module. #93 removed the verification-sufficiency
+        # pass and its `verification_sufficiency_evidence` field entirely --
+        # neither #57's ablation matrix nor #89's harder-case validation found
+        # demonstrated value, and it carried a confirmed, twice-reproduced
+        # false-positive regression when run without the traversal pass.
         skill = (SKILL_ROOT / "SKILL.md").read_text()
         normalized = " ".join(skill.split())
         self.assertIn("Consumer/impact-traversal pass", normalized)
-        self.assertIn("Verification-sufficiency pass", normalized)
         self.assertIn("consumer_impact_evidence", normalized)
-        self.assertIn("verification_sufficiency_evidence", normalized)
-        self.assertIn("not routed specialist modules", normalized)
+        self.assertNotIn("Verification-sufficiency pass", normalized)
+        self.assertNotIn("verification_sufficiency_evidence", normalized)
+        self.assertIn("not a routed specialist module", normalized)
         self.assertIn(
             "do not build or delegate to a separate security, "
             "concurrency-as-a-context, compatibility/migration, operations, "
@@ -75,7 +79,6 @@ class SkillContractTests(unittest.TestCase):
             "auth-regression": "changes_required",
             "missing-test": "changes_required",
             "repository-convention-clean": "clean",
-            "verification-sufficiency-guard": "clean",
         }
         for fixture_name, verdict in expectations.items():
             with self.subTest(fixture=fixture_name):
@@ -153,17 +156,22 @@ class SkillContractTests(unittest.TestCase):
             result["consumer_impact_evidence"][0]["disposition"],
         )
 
-    def test_standalone_verification_sufficiency_gap_is_not_a_silent_clean(self):
-        # #53 required fixture 2 (real-runtime shape): the only claimed test
-        # exercises the already-safe branch, not the actual owner-absent
-        # triggering condition the change addresses.
+    def test_standalone_insufficient_test_coverage_is_not_a_silent_clean(self):
+        # Originally #53's required fixture 2, exercising the now-removed
+        # verification-sufficiency pass (#93). The underlying defect pattern
+        # -- the only claimed test exercises the already-safe branch, not the
+        # actual owner-absent triggering condition the change addresses --
+        # remains a genuine correctness catch expected from ordinary review,
+        # without a separate mandated pass or its required evidence field.
         result = self._load_standalone_eval("standalone-verification-sufficiency-gap")
         self.assertEqual("correctness", result["lens"])
         self.assertEqual("changes_required", result["verdict"])
-        self.assertTrue(result["verification_sufficiency_evidence"])
-        self.assertEqual(
-            "no",
-            result["verification_sufficiency_evidence"][0]["exercises_material_risk"],
+        self.assertNotIn("verification_sufficiency_evidence", result)
+        self.assertTrue(
+            any(
+                "claim-release-guard-unverified" in finding["id"]
+                for finding in result["findings"]
+            )
         )
 
 
