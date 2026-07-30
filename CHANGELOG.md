@@ -6,11 +6,18 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): complete the terminal-result schema against the design's
+  Terminal result contract field list (`worktree`, `resume_status`,
+  `unresolved_or_deferred_findings`) and require `ahead_by`/`behind_by`
+  alongside the head fields whenever a source is `bound`, closing the gaps the
+  eighth review-code-change pass on #96 found
 - fix(review-fix-loop): complete the checkpoint schema against the design's
   durable-checkpoint field list (`preserved_failed_attempts`, `pull_request`)
   and extend the optional pull-request identity cross-check to both
   cross-document functions, closing the gap the seventh review-code-change pass
-  on #96 found
+  on #96 found (`e7a955a321bafab1cd6f20b77758aa26670567bc`)
+- docs: record the seventh review-fix-loop fix cycle in the changelog
+  (`f6d1adccea4ee1e6571c911b10053aa4c27e00ba`)
 - docs: record the sixth review-fix-loop fix cycle in the changelog
   (`31789481f000567a4b69cb0a1d5ba77b8d8c4dba`)
 - fix(review-fix-loop): systematically close cross-document identity checks and
