@@ -27,6 +27,7 @@
     "acceptance_criteria": [
       "add(a, b) returns the sum of its arguments"
     ],
+    "allowed_remediation_scope": "example.py's add() function body only",
     "goal": "Implement the missing add() body.",
     "non_goals": [
       "Refactoring unrelated arithmetic helpers"

@@ -104,7 +104,8 @@
         "acceptance_criteria",
         "non_goals",
         "preserved_behaviors",
-        "sources"
+        "sources",
+        "allowed_remediation_scope"
       ],
       "properties": {
         "goal": {"type": "string", "minLength": 1},
@@ -118,6 +119,7 @@
           "type": "array",
           "items": {"type": "string", "minLength": 1}
         },
+        "allowed_remediation_scope": {"type": "string", "minLength": 1},
         "sources": {
           "type": "object",
           "additionalProperties": false,

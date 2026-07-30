@@ -16,10 +16,12 @@ acquire locks, manage worktrees, recover from interruption, or publish anything
 ## Contract ownership
 
 - `invocation.schema.json` owns the caller-supplied request shape: candidate
-  identity, change contract, review-execution mode, fix-cycle budget, validation
-  commands, and publication policy (including remote-iteration grants).
+  identity, a change contract including its allowed remediation scope,
+  review-execution mode, fix-cycle budget, validation commands, and publication
+  policy (including remote-iteration grants).
 - `checkpoint.schema.json` owns the durable, resumable invocation state: cycle
-  attempts, head and base history, and per-review-pass records.
+  attempts, head and base history, worktree state, validation outcomes, and
+  per-review-pass records.
 - `terminal-result.schema.json` owns the one candidate-bound result the loop
   returns to a caller.
 - This document owns the cross-field semantics.
@@ -54,6 +56,11 @@ unknown property rather than being silently accepted or silently ignored.
   `staged`, `unstaged`, `untracked`, `ignored`). A candidate records exactly one
   of `source_binding` (a pushable, comparison-only source) or
   `source_unavailable_reason` — never both, never neither.
+- `change_contract.allowed_remediation_scope` is required alongside the goal,
+  acceptance criteria, non-goals, and preserved behaviors: the design's change
+  contract explicitly enumerates "allowed remediation scope" as the boundary a
+  fix cycle's edits must stay inside, distinct from the ticket's own change
+  contract.
 - `publication.policy` is `local_commit` or `update_pr`.
   - `update_pr` requires `publication.pull_request` (exact head repository,
     fully qualified head ref, expected old head SHA, base ref, and base SHA) and
@@ -97,6 +104,12 @@ exceeds `original_cycle_budget`.
   reviewed. `write_isolation: violated` records an attempted or unattributed
   reviewer mutation; it does not by itself imply which terminal `blocked` reason
   applies — that judgment belongs to the phase that observed it.
+- `worktree` (`tracked`, `staged`, `unstaged`, `untracked`, `ignored`) and
+  `validation_outcomes` are required checkpoint content, matching the design's
+  durable-checkpoint field list. `validation_outcomes` follows the same
+  `status`/`result`/`reason` shape as every other validation collection in this
+  contract family: a `passed` or `failed` entry requires `result`, and an
+  `unavailable` entry requires `reason`.
 
 ## Terminal result
 
@@ -148,9 +161,10 @@ ticket or PR acceptance merely by converging.
 
 `scripts/validate.py` also exposes
 `validate_terminal_against_checkpoint(checkpoint, terminal_result)` to confirm a
-terminal result's budget and head/base identities are the ones actually recorded
-by its checkpoint, so a result cannot report cycle accounting or history that
-its own checkpoint does not support.
+terminal result's budget, head/base identities, repository, branch, and
+publication policy are the ones actually recorded by its checkpoint, so a result
+cannot report cycle accounting, history, or a candidate identity that its own
+checkpoint does not support.
 
 ## Determinism
 

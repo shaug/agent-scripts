@@ -9,6 +9,7 @@
     "invocation_id",
     "repository",
     "branch",
+    "worktree",
     "initial_head",
     "current_head",
     "comparison_base",
@@ -18,6 +19,7 @@
     "head_history",
     "base_revision_history",
     "review_records",
+    "validation_outcomes",
     "source",
     "current_phase",
     "expected_next_action"
@@ -35,6 +37,18 @@
       }
     },
     "branch": {"type": "string", "minLength": 1},
+    "worktree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tracked", "staged", "unstaged", "untracked", "ignored"],
+      "properties": {
+        "tracked": {"type": "array", "items": {"type": "string"}},
+        "staged": {"type": "array", "items": {"type": "string"}},
+        "unstaged": {"type": "array", "items": {"type": "string"}},
+        "untracked": {"type": "array", "items": {"type": "string"}},
+        "ignored": {"type": "array", "items": {"type": "string"}}
+      }
+    },
     "initial_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "current_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "comparison_base": {
@@ -137,6 +151,22 @@
             "type": "array",
             "items": {"type": "string", "minLength": 1}
           }
+        }
+      }
+    },
+    "validation_outcomes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "scope", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "command": {"type": "string", "minLength": 1},
+          "scope": {"enum": ["focused", "full"]},
+          "status": {"enum": ["passed", "failed", "unavailable"]},
+          "result": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
         }
       }
     },

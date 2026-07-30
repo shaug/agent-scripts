@@ -36,6 +36,7 @@
     "acceptance_criteria": [
       "range_list(n) returns the same values without the intermediate comprehension"
     ],
+    "allowed_remediation_scope": "example.py's range_list() function body only",
     "goal": "Simplify range_list() to a direct list(range(n)) call.",
     "non_goals": [
       "Changing range_list()'s public signature"

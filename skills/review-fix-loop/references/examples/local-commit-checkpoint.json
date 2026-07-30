@@ -68,5 +68,30 @@
   "source": {
     "status": "unavailable",
     "unavailable_reason": "standalone invocation has no recorded pushable source"
+  },
+  "validation_outcomes": [
+    {
+      "command": "python3 -m unittest tests.test_example",
+      "name": "focused unit test",
+      "result": "OK",
+      "scope": "focused",
+      "status": "passed"
+    },
+    {
+      "command": "just test",
+      "name": "full repository gate",
+      "result": "OK",
+      "scope": "full",
+      "status": "passed"
+    }
+  ],
+  "worktree": {
+    "ignored": [],
+    "staged": [],
+    "tracked": [
+      "example.py"
+    ],
+    "unstaged": [],
+    "untracked": []
   }
 }

@@ -250,6 +250,18 @@ class InvocationRejectionTests(unittest.TestCase):
         errors = VALIDATE.validate_invocation(invocation)
         self.assertTrue(any("does not match" in error for error in errors), errors)
 
+    def test_missing_allowed_remediation_scope_rejected(self):
+        invocation = copy.deepcopy(self.local_commit)
+        del invocation["change_contract"]["allowed_remediation_scope"]
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertTrue(
+            any(
+                "missing required property 'allowed_remediation_scope'" in error
+                for error in errors
+            ),
+            errors,
+        )
+
 
 class CheckpointBudgetReconstructionTests(unittest.TestCase):
     """Cycle consumption and remaining budget reconstruct from checkpoint history."""
@@ -367,6 +379,40 @@ class CheckpointRejectionTests(unittest.TestCase):
             "$.base_revision_history[-1]: must equal the current comparison_base",
             errors,
         )
+
+    def test_missing_worktree_rejected(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        del checkpoint["worktree"]
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertTrue(
+            any("missing required property 'worktree'" in error for error in errors),
+            errors,
+        )
+
+    def test_missing_validation_outcomes_rejected(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        del checkpoint["validation_outcomes"]
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertTrue(
+            any(
+                "missing required property 'validation_outcomes'" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_passed_validation_outcome_requires_result(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        del checkpoint["validation_outcomes"][0]["result"]
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertIn("$.validation_outcomes[0]: passed requires result", errors)
+
+    def test_unavailable_validation_outcome_requires_reason(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        checkpoint["validation_outcomes"][0]["status"] = "unavailable"
+        del checkpoint["validation_outcomes"][0]["result"]
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertIn("$.validation_outcomes[0]: unavailable requires reason", errors)
 
 
 class TerminalResultContractTests(unittest.TestCase):
@@ -769,6 +815,31 @@ class CrossDocumentConsistencyTests(unittest.TestCase):
         self.assertIn(
             "$.comparison_base.initial: does not match checkpoint "
             "base_revision_history[0]",
+            errors,
+        )
+
+    def test_mismatched_repository_is_rejected(self):
+        checkpoint = load("local-commit-checkpoint.json")
+        terminal = copy.deepcopy(load("local-commit-terminal-converged.json"))
+        terminal["repository"]["identity"] = "someone-else/other-repo"
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn("$.repository: does not match checkpoint repository", errors)
+
+    def test_mismatched_branch_is_rejected(self):
+        checkpoint = load("local-commit-checkpoint.json")
+        terminal = copy.deepcopy(load("local-commit-terminal-converged.json"))
+        terminal["branch"] = "some-other-branch"
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn("$.branch: does not match checkpoint branch", errors)
+
+    def test_mismatched_publication_policy_is_rejected(self):
+        checkpoint = load("update-pr-checkpoint.json")
+        terminal = copy.deepcopy(load("update-pr-terminal-converged.json"))
+        terminal["publication"]["policy"] = "local_commit"
+        terminal["publication"]["status"] = "not_applicable"
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn(
+            "$.publication.policy: does not match checkpoint publication.policy",
             errors,
         )
 

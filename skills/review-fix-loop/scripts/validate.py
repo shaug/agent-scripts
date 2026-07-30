@@ -267,6 +267,15 @@ def validate_checkpoint(document: dict[str, Any]) -> list[str]:
             "$.base_revision_history[-1]: must equal the current comparison_base"
         )
 
+    for index, outcome in enumerate(document.get("validation_outcomes", [])):
+        status = outcome.get("status")
+        if status in {"passed", "failed"} and not outcome.get("result"):
+            errors.append(f"$.validation_outcomes[{index}]: {status} requires result")
+        if status == "unavailable" and not outcome.get("reason"):
+            errors.append(
+                f"$.validation_outcomes[{index}]: unavailable requires reason"
+            )
+
     source = document.get("source", {})
     if source.get("status") == "unavailable" and not source.get("unavailable_reason"):
         errors.append("$.source: unavailable status requires unavailable_reason")
@@ -549,6 +558,24 @@ def validate_terminal_against_checkpoint(
             "$.comparison_base.initial: does not match checkpoint "
             "base_revision_history[0]"
         )
+
+    checkpoint_repository = checkpoint.get("repository", {})
+    result_repository = terminal_result.get("repository", {})
+    if checkpoint_repository.get("identity") != result_repository.get(
+        "identity"
+    ) or checkpoint_repository.get("git_common_directory") != result_repository.get(
+        "git_common_directory"
+    ):
+        errors.append("$.repository: does not match checkpoint repository")
+    if checkpoint.get("branch") != terminal_result.get("branch"):
+        errors.append("$.branch: does not match checkpoint branch")
+    checkpoint_policy = checkpoint.get("publication", {}).get("policy")
+    result_policy = terminal_result.get("publication", {}).get("policy")
+    if checkpoint_policy != result_policy:
+        errors.append(
+            "$.publication.policy: does not match checkpoint publication.policy"
+        )
+
     return errors
 
 
