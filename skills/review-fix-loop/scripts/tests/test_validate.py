@@ -414,6 +414,26 @@ class CheckpointRejectionTests(unittest.TestCase):
         errors = VALIDATE.validate_checkpoint(checkpoint)
         self.assertIn("$.validation_outcomes[0]: unavailable requires reason", errors)
 
+    def test_preserved_failed_attempts_must_match_unresolved_attempt_count(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        checkpoint["cycle_attempts"].append(
+            {
+                "sequence": 2,
+                "started_from_head": checkpoint["current_head"],
+                "outcome": "failed",
+            }
+        )
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertIn(
+            "$.preserved_failed_attempts: count (0) does not match the number "
+            "of failed or interrupted cycle_attempts (1)",
+            errors,
+        )
+
+    def test_changes_remaining_checkpoint_preserved_attempts_are_valid(self):
+        checkpoint = load("local-commit-checkpoint-changes-remaining.json")
+        self.assertEqual(VALIDATE.validate_checkpoint(checkpoint), [])
+
 
 class TerminalResultContractTests(unittest.TestCase):
     """Every terminal state has an explicit publication/retained-commit/
@@ -793,6 +813,33 @@ class CheckpointInvocationConsistencyTests(unittest.TestCase):
             errors,
         )
 
+    def test_pull_request_matches_between_invocation_and_checkpoint(self):
+        invocation = load("update-pr-invocation.json")
+        checkpoint = load("update-pr-checkpoint.json")
+        self.assertEqual(
+            VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint), []
+        )
+
+    def test_mismatched_pull_request_is_rejected(self):
+        invocation = load("update-pr-invocation.json")
+        checkpoint = copy.deepcopy(load("update-pr-checkpoint.json"))
+        checkpoint["pull_request"]["number"] = 999
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertIn(
+            "$.pull_request: does not match invocation candidate.pull_request",
+            errors,
+        )
+
+    def test_pull_request_absent_on_either_side_is_not_a_mismatch(self):
+        invocation = load("local-commit-invocation.json")
+        checkpoint = copy.deepcopy(load("local-commit-checkpoint.json"))
+        checkpoint["pull_request"] = {"number": 7, "repository": "some/other-repo"}
+        errors = VALIDATE.validate_checkpoint_against_invocation(invocation, checkpoint)
+        self.assertNotIn(
+            "$.pull_request: does not match invocation candidate.pull_request",
+            errors,
+        )
+
 
 class CrossDocumentConsistencyTests(unittest.TestCase):
     """A terminal result must match the checkpoint it derives from."""
@@ -886,6 +933,20 @@ class CrossDocumentConsistencyTests(unittest.TestCase):
             "$.publication.policy: does not match checkpoint publication.policy",
             errors,
         )
+
+    def test_pull_request_matches_between_checkpoint_and_terminal(self):
+        checkpoint = load("update-pr-checkpoint.json")
+        terminal = load("update-pr-terminal-converged.json")
+        self.assertEqual(
+            VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal), []
+        )
+
+    def test_mismatched_pull_request_between_checkpoint_and_terminal_is_rejected(self):
+        checkpoint = load("update-pr-checkpoint.json")
+        terminal = copy.deepcopy(load("update-pr-terminal-converged.json"))
+        terminal["pull_request"]["number"] = 999
+        errors = VALIDATE.validate_terminal_against_checkpoint(checkpoint, terminal)
+        self.assertIn("$.pull_request: does not match checkpoint pull_request", errors)
 
 
 class DeterministicSerializationTests(unittest.TestCase):

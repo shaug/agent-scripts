@@ -29,6 +29,7 @@
   "initial_head": "3ea8f9134120a12e741c3b3f87f67a743ad52ad1",
   "invocation_id": "review-fix-loop-96-local-commit-example",
   "original_cycle_budget": 3,
+  "preserved_failed_attempts": [],
   "publication": {
     "policy": "local_commit"
   },

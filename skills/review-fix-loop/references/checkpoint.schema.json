@@ -20,6 +20,7 @@
     "base_revision_history",
     "review_records",
     "validation_outcomes",
+    "preserved_failed_attempts",
     "source",
     "current_phase",
     "expected_next_action"
@@ -58,6 +59,15 @@
       "properties": {
         "ref": {"type": "string", "minLength": 1},
         "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "pull_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "number"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 1},
+        "number": {"type": "integer", "minimum": 1}
       }
     },
     "publication": {
@@ -166,6 +176,18 @@
           "scope": {"enum": ["focused", "full"]},
           "status": {"enum": ["passed", "failed", "unavailable"]},
           "result": {"type": "string", "minLength": 1},
+          "reason": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "preserved_failed_attempts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["attempt_ref", "reason"],
+        "properties": {
+          "attempt_ref": {"type": "string", "minLength": 1},
           "reason": {"type": "string", "minLength": 1}
         }
       }

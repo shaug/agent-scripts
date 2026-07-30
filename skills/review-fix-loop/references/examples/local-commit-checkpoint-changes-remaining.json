@@ -43,6 +43,12 @@
   "initial_head": "98676d2fa265321c8399de22ee6607c84a4f2e46",
   "invocation_id": "review-fix-loop-96-budget-exhausted-example",
   "original_cycle_budget": 3,
+  "preserved_failed_attempts": [
+    {
+      "attempt_ref": "attempt/correctness-001-cycle-2",
+      "reason": "the second remediation attempt did not clear the finding and was discarded"
+    }
+  ],
   "publication": {
     "policy": "local_commit"
   },

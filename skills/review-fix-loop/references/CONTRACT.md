@@ -117,6 +117,11 @@ base (`head.final`, `comparison_base.final`) against the checkpoint's live
 the closed invariant set above, and are checked only between checkpoint and
 terminal-result because only that pair shares a live notion of "current."
 
+Both functions also check the optional pull-request identity
+(`{repository, number}`) wherever both adjacent documents carry it — see the
+"Checkpoint" section below for why this is checked like an invariant even though
+the field itself is optional everywhere.
+
 ## Checkpoint
 
 The checkpoint is the durable, resumable state for one invocation. It never
@@ -151,6 +156,23 @@ exceeds `original_cycle_budget`.
   `status`/`result`/`reason` shape as every other validation collection in this
   contract family: a `passed` or `failed` entry requires `result`, and an
   `unavailable` entry requires `reason`.
+- `preserved_failed_attempts` (required, possibly empty) is the checkpoint's own
+  record of "preserved failed-attempt artifacts," the other piece of required
+  durable-checkpoint content the design names alongside "committed fixes"
+  (`cycle_attempts`). Its count must equal the number of `cycle_attempts`
+  entries whose `outcome` is `failed` or `interrupted` — every unresolved
+  attempt has exactly one preserved artifact reference, mirroring the shape
+  `terminal-result.preserved_failed_attempts` already uses.
+- `pull_request` (optional `{repository, number}`) is the checkpoint's own
+  record of the design's "optional pull-request identity," distinct from
+  `publication.pull_request`'s push-mechanics fields
+  (`head_repository`/`head_ref`/`base_ref`). It is part of the closed
+  cross-document invariant set: whenever both
+  `invocation.candidate.pull_request` and `checkpoint.pull_request`, or both
+  `checkpoint.pull_request` and `terminal_result.pull_request`, are present,
+  they must agree. Neither side is required to carry it — an invocation,
+  checkpoint, or terminal result may omit the identity wherever it is not yet
+  known.
 
 ## Terminal result
 

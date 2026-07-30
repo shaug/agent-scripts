@@ -276,6 +276,17 @@ def validate_checkpoint(document: dict[str, Any]) -> list[str]:
                 f"$.validation_outcomes[{index}]: unavailable requires reason"
             )
 
+    unresolved_attempts = [
+        attempt for attempt in attempts if attempt.get("outcome") != "committed"
+    ]
+    preserved = document.get("preserved_failed_attempts", [])
+    if len(preserved) != len(unresolved_attempts):
+        errors.append(
+            "$.preserved_failed_attempts: count "
+            f"({len(preserved)}) does not match the number of failed or "
+            f"interrupted cycle_attempts ({len(unresolved_attempts)})"
+        )
+
     source = document.get("source", {})
     if source.get("status") == "unavailable" and not source.get("unavailable_reason"):
         errors.append("$.source: unavailable status requires unavailable_reason")
@@ -283,6 +294,25 @@ def validate_checkpoint(document: dict[str, Any]) -> list[str]:
         errors.append("$.source: bound status requires last_verified_head")
 
     return errors
+
+
+def _pull_request_identity_mismatch(
+    left: dict[str, Any] | None, right: dict[str, Any] | None
+) -> bool:
+    """Whether two optional `{repository, number}` pull-request identities disagree.
+
+    A pull request's identity does not change during one invocation, so
+    whichever documents carry it (`invocation.candidate.pull_request`,
+    `checkpoint.pull_request`, `terminal_result.pull_request`) must agree
+    whenever more than one of them is present. Neither side is required to
+    carry it at all: a caller may omit the optional identity anywhere it
+    is not yet known.
+    """
+    if not left or not right:
+        return False
+    return left.get("repository") != right.get("repository") or left.get(
+        "number"
+    ) != right.get("number")
 
 
 def validate_checkpoint_against_invocation(
@@ -347,6 +377,13 @@ def validate_checkpoint_against_invocation(
     if invocation_policy != checkpoint_policy:
         errors.append(
             "$.publication.policy: does not match invocation publication.policy"
+        )
+
+    if _pull_request_identity_mismatch(
+        invocation_candidate.get("pull_request"), checkpoint.get("pull_request")
+    ):
+        errors.append(
+            "$.pull_request: does not match invocation candidate.pull_request"
         )
 
     return errors
@@ -611,6 +648,10 @@ def validate_terminal_against_checkpoint(
         errors.append(
             "$.publication.policy: does not match checkpoint publication.policy"
         )
+    if _pull_request_identity_mismatch(
+        checkpoint.get("pull_request"), terminal_result.get("pull_request")
+    ):
+        errors.append("$.pull_request: does not match checkpoint pull_request")
 
     return errors
 
