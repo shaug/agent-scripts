@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Fix Loop"
+  short_description: "Validate review-fix-loop documents and run one complete review pass"
+  default_prompt: "Use $review-fix-loop to validate this invocation/checkpoint/terminal-result document, or to run and record one complete review pass for the current candidate."

@@ -25,6 +25,7 @@ BUNDLING_SKILLS = (
     "review-solution-simplicity",
     "implement-ticket",
     "babysit-pr",
+    "review-fix-loop",
 )
 CANONICAL_FILES = {
     "CONTRACT.md": REVIEW_SUITE / "CONTRACT.md",

@@ -4,8 +4,13 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Implemented the review-fix-loop local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-fix-loop): implement reviewer isolation and complete-review
+  orchestration — fixed lens resolution, default fresh-subagent review execution
+  with an explicit in-agent override, before/after mutation detection that fails
+  a cycle closed, checkpoint-shaped review-record construction, and
+  deterministic finding normalization/selection (#98)
 - feat(review-fix-loop): add `scripts/local_execution.py` implementing #97's
   local execution substrate — non-blocking common-Git-common-directory candidate
   locking (local-ref lock before the optional `update_pr` remote-target lock,
@@ -18,7 +23,7 @@ summary: Chronological history of repository and skill changes.
   interrupted attempt against a checkpoint's own history — with deterministic
   tests against real temporary Git repositories covering contention,
   interruption, stale state, dirty worktrees, promotion races, and cleanup
-  safety
+  safety (`26b4cf47168dc8432f7d6e5e4597439af6391a51`)
 - fix(review-fix-loop): reject `converged` when any `review_records` entry — not
   only the final-head-bound one — recorded a mutation attempt, closing the gap
   the tenth (final) review-code-change pass on #96 found
