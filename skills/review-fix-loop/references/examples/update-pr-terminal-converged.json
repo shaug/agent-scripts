@@ -74,6 +74,7 @@
       "head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
       "mutation_attempts": [],
       "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-1",
       "sequence": 1,
       "write_isolation": "enforced"
     },
@@ -84,6 +85,7 @@
       "head_sha": "1d72d0fb75af38c8096e6dc0f4488eb00bbc98b7",
       "mutation_attempts": [],
       "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-2",
       "sequence": 2,
       "write_isolation": "enforced"
     }

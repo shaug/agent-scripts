@@ -132,6 +132,7 @@
           "head_sha",
           "comparison_base_sha",
           "review_independence",
+          "reviewer_identity",
           "write_isolation",
           "aggregate_verdict",
           "finding_dispositions",
@@ -142,6 +143,7 @@
           "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
           "comparison_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
           "review_independence": {"enum": ["fresh_subagent", "in_agent_override"]},
+          "reviewer_identity": {"type": "string", "minLength": 1},
           "write_isolation": {"enum": ["enforced", "violated"]},
           "aggregate_verdict": {"enum": ["clean", "changes_required", "blocked"]},
           "finding_dispositions": {

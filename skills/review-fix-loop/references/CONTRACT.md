@@ -56,6 +56,11 @@ unknown property rather than being silently accepted or silently ignored.
   `staged`, `unstaged`, `untracked`, `ignored`). A candidate records exactly one
   of `source_binding` (a pushable, comparison-only source) or
   `source_unavailable_reason` — never both, never neither.
+- `candidate.worktree.staged`, `.unstaged`, and `.untracked` must each be empty:
+  the design requires "every invocation requires a dedicated globally clean
+  worktree" and blocks startup on dirty state. `ignored` is deliberately left
+  unconstrained — ignored files (build output, local environment files) do not
+  represent an uncommitted change and are not part of what "clean" means here.
 - `change_contract.allowed_remediation_scope` is required alongside the goal,
   acceptance criteria, non-goals, and preserved behaviors: the design's change
   contract explicitly enumerates "allowed remediation scope" as the boundary a
@@ -150,6 +155,12 @@ exceeds `original_cycle_budget`.
   reviewed. `write_isolation: violated` records an attempted or unattributed
   reviewer mutation; it does not by itself imply which terminal `blocked` reason
   applies — that judgment belongs to the phase that observed it.
+  `reviewer_identity` (required, non-empty) is the design's "reviewer
+  identities" content: a per-pass identifier distinct from the
+  invocation-invariant `review_independence` enum, so a fresh-subagent
+  reviewer's identity can actually differ from one head's review pass to the
+  next, matching the design's validation-strategy requirement for "different
+  reviewer identities per head."
 - `worktree` (`tracked`, `staged`, `unstaged`, `untracked`, `ignored`) and
   `validation_outcomes` are required checkpoint content, matching the design's
   durable-checkpoint field list. `validation_outcomes` follows the same

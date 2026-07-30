@@ -250,6 +250,42 @@ class InvocationRejectionTests(unittest.TestCase):
         errors = VALIDATE.validate_invocation(invocation)
         self.assertTrue(any("does not match" in error for error in errors), errors)
 
+    def test_staged_worktree_state_rejected(self):
+        invocation = copy.deepcopy(self.local_commit)
+        invocation["candidate"]["worktree"]["staged"] = ["example.py"]
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertIn(
+            "$.candidate.worktree.staged: must be empty; every invocation "
+            "requires a dedicated globally clean worktree",
+            errors,
+        )
+
+    def test_unstaged_worktree_state_rejected(self):
+        invocation = copy.deepcopy(self.local_commit)
+        invocation["candidate"]["worktree"]["unstaged"] = ["example.py"]
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertIn(
+            "$.candidate.worktree.unstaged: must be empty; every invocation "
+            "requires a dedicated globally clean worktree",
+            errors,
+        )
+
+    def test_untracked_worktree_state_rejected(self):
+        invocation = copy.deepcopy(self.local_commit)
+        invocation["candidate"]["worktree"]["untracked"] = ["stray-file.txt"]
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertIn(
+            "$.candidate.worktree.untracked: must be empty; every invocation "
+            "requires a dedicated globally clean worktree",
+            errors,
+        )
+
+    def test_ignored_worktree_state_is_not_constrained(self):
+        invocation = copy.deepcopy(self.local_commit)
+        invocation["candidate"]["worktree"]["ignored"] = [".env"]
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertEqual(errors, [])
+
     def test_missing_allowed_remediation_scope_rejected(self):
         invocation = copy.deepcopy(self.local_commit)
         del invocation["change_contract"]["allowed_remediation_scope"]
@@ -304,6 +340,33 @@ class CheckpointBudgetReconstructionTests(unittest.TestCase):
 class CheckpointRejectionTests(unittest.TestCase):
     def setUp(self):
         self.checkpoint = load("local-commit-checkpoint.json")
+
+    def test_missing_reviewer_identity_rejected(self):
+        checkpoint = copy.deepcopy(self.checkpoint)
+        del checkpoint["review_records"][0]["reviewer_identity"]
+        errors = VALIDATE.validate_checkpoint(checkpoint)
+        self.assertTrue(
+            any(
+                "missing required property 'reviewer_identity'" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_review_records_distinguish_passes_by_reviewer_identity(self):
+        # design/review-fix-loop.md's validation strategy requires "default
+        # fresh reviewer selection and different reviewer identities per
+        # head" — each fresh-subagent review pass gets its own reviewer
+        # identity, and the checkpoint records that identity per pass.
+        checkpoint = load("local-commit-checkpoint.json")
+        identities = [
+            record["reviewer_identity"] for record in checkpoint["review_records"]
+        ]
+        self.assertEqual(len(identities), 2)
+        self.assertEqual(
+            len(set(identities)), 2, "each pass must have its own identity"
+        )
+        self.assertEqual(VALIDATE.validate_checkpoint(checkpoint), [])
 
     def test_attempts_cannot_exceed_original_budget(self):
         checkpoint = copy.deepcopy(self.checkpoint)
@@ -455,6 +518,33 @@ class TerminalResultContractTests(unittest.TestCase):
         self.converged_pr = load("update-pr-terminal-converged.json")
         self.changes_remaining = load("local-commit-terminal-changes-remaining.json")
         self.blocked = load("update-pr-terminal-blocked-remote-advanced.json")
+
+    def test_missing_reviewer_identity_rejected(self):
+        result = copy.deepcopy(self.converged_local)
+        del result["review_records"][0]["reviewer_identity"]
+        errors = VALIDATE.validate_terminal_result(result)
+        self.assertTrue(
+            any(
+                "missing required property 'reviewer_identity'" in error
+                for error in errors
+            ),
+            errors,
+        )
+
+    def test_review_records_distinguish_passes_by_reviewer_identity(self):
+        # design/review-fix-loop.md's validation strategy requires "default
+        # fresh reviewer selection and different reviewer identities per
+        # head" — each fresh-subagent review pass gets its own reviewer
+        # identity, and the terminal result records that identity per pass.
+        result = load("local-commit-terminal-converged.json")
+        identities = [
+            record["reviewer_identity"] for record in result["review_records"]
+        ]
+        self.assertEqual(len(identities), 2)
+        self.assertEqual(
+            len(set(identities)), 2, "each pass must have its own identity"
+        )
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
 
     def test_converged_must_not_carry_a_reason(self):
         result = copy.deepcopy(self.converged_local)

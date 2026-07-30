@@ -154,6 +154,14 @@ def validate_invocation(document: dict[str, Any]) -> list[str]:
         )
 
     candidate = document.get("candidate", {})
+    worktree = candidate.get("worktree", {})
+    for dirty_state in ("staged", "unstaged", "untracked"):
+        if worktree.get(dirty_state):
+            errors.append(
+                f"$.candidate.worktree.{dirty_state}: must be empty; every "
+                "invocation requires a dedicated globally clean worktree"
+            )
+
     has_binding = "source_binding" in candidate
     has_unavailable = "source_unavailable_reason" in candidate
     if has_binding and has_unavailable:

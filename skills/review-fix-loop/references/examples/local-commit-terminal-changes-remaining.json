@@ -76,6 +76,7 @@
       "head_sha": "98676d2fa265321c8399de22ee6607c84a4f2e46",
       "mutation_attempts": [],
       "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-1",
       "sequence": 1,
       "write_isolation": "enforced"
     },
@@ -92,6 +93,7 @@
       "head_sha": "8fbc9b399aa14299d694e4beca34dc371baa7e58",
       "mutation_attempts": [],
       "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-2",
       "sequence": 2,
       "write_isolation": "enforced"
     },
@@ -108,6 +110,7 @@
       "head_sha": "fb4a0f78cac42d90e26e025f7bf4b1233f3c49af",
       "mutation_attempts": [],
       "review_independence": "fresh_subagent",
+      "reviewer_identity": "fresh-subagent-review-3",
       "sequence": 3,
       "write_isolation": "enforced"
     }
