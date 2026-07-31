@@ -1,0 +1,990 @@
+"""End-to-end tests for the standalone `local_commit` workflow (issue #99).
+
+Every test drives `local_commit.run_local_commit` against a real temporary Git
+repository (matching `test_local_execution.py`'s "no mocked Git state"
+convention) with small, deterministic fakes for the two genuinely host-boundary
+actions the design assigns to the executing agent: running one
+`review-code-change` pass and writing a fix's content. The fake reviewer
+inspects the real repository content at the exact head it is asked to review
+(`marker.txt`) rather than counting calls, so the same fake works across every
+scenario and the review verdict is always a real function of real repository
+state.
+
+Covers the ticket's required end-to-end fixtures: immediate convergence, one
+or more fix cycles, budget exhaustion, validation failure (both the
+"unavailable" and "no tractable correction" shapes), operator input
+(rejected/deferred disposition and scope expansion), and recovery from an
+interrupted attempt.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from typing import Any
+
+SKILL_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _load(name: str, filename: str):
+    spec = importlib.util.spec_from_file_location(
+        name, SKILL_ROOT / "scripts" / filename
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+LC = _load("review_fix_loop_local_commit", "local_commit.py")
+LE = _load("review_fix_loop_local_execution_for_tests", "local_execution.py")
+VALIDATE = _load("review_fix_loop_validate_for_tests", "validate.py")
+
+
+# ---------------------------------------------------------------------------
+# Repository fixtures
+# ---------------------------------------------------------------------------
+
+
+def init_repo(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    LE.git("init", "-q", "-b", "main", cwd=path)
+    LE.git("config", "user.email", "test@example.com", cwd=path)
+    LE.git("config", "user.name", "Test", cwd=path)
+    (path / "README.md").write_text("initial\n")
+    LE.git("add", "-A", cwd=path)
+    LE.git("commit", "-q", "-m", "initial commit", cwd=path)
+
+
+def start_candidate(
+    repo: Path,
+    *,
+    branch: str = "fix/99-example",
+    marker: str = "broken",
+    validation_flag: str = "pass",
+) -> tuple[str, str]:
+    """Create `branch` off `main` with one commit adding the two control
+    files this test suite's fakes read. Returns `(base_sha, head_sha)`."""
+    base_sha = LE.current_head(repo)
+    LE.git("checkout", "-q", "-b", branch, cwd=repo)
+    (repo / "marker.txt").write_text(marker + "\n")
+    (repo / "validation_flag.txt").write_text(validation_flag + "\n")
+    LE.git("add", "-A", cwd=repo)
+    LE.git("commit", "-q", "-m", "start candidate", cwd=repo)
+    head_sha = LE.current_head(repo)
+    return base_sha, head_sha
+
+
+ALWAYS_PASS_VALIDATION = [
+    {"name": "focused unit test", "command": "true", "scope": "focused"},
+    {"name": "full repository gate", "command": "true", "scope": "full"},
+]
+
+FLAG_GATED_VALIDATION = [
+    {
+        "name": "focused unit test",
+        "command": (
+            'python3 -c "import pathlib,sys; '
+            "sys.exit(0 if pathlib.Path('validation_flag.txt').read_text().strip()"
+            "=='pass' else 1)\""
+        ),
+        "scope": "focused",
+    },
+    {"name": "full repository gate", "command": "true", "scope": "full"},
+]
+
+# `marker.txt` also drives the fake reviewer (below); this command only fails
+# for the literal sentinel `trigger-fail`, so it never fires for the ordinary
+# 'broken'/'fixed' content the reviewer itself reacts to.
+NOT_TRIGGER_FAIL_VALIDATION = [
+    {
+        "name": "focused unit test",
+        "command": (
+            'python3 -c "import pathlib,sys; '
+            "sys.exit(1 if pathlib.Path('marker.txt').read_text().strip()"
+            "=='trigger-fail' else 0)\""
+        ),
+        "scope": "focused",
+    },
+    {"name": "full repository gate", "command": "true", "scope": "full"},
+]
+
+
+def make_invocation(
+    repo: Path,
+    *,
+    branch: str,
+    base_sha: str,
+    head_sha: str,
+    invocation_id: str = "local-commit-test",
+    max_fix_cycles: int = 3,
+    validation: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    common_dir = LE.git_common_dir(repo)
+    diff = LE.git("diff", base_sha, head_sha, cwd=repo).stdout
+    worktree = LE.worktree_status(repo)
+    return {
+        "schema_version": "1.0",
+        "invocation_id": invocation_id,
+        "repository": {
+            "identity": "shaug/agent-scripts",
+            "git_common_directory": str(common_dir),
+        },
+        "candidate": {
+            "branch": branch,
+            "head_sha": head_sha,
+            "comparison_base": {"ref": "main", "sha": base_sha},
+            "diff": {"format": "unified_diff", "complete": True, "content": diff},
+            "worktree": worktree,
+            "all_changes_committed": True,
+            "source_unavailable_reason": "standalone invocation has no recorded pushable source",
+        },
+        "change_contract": {
+            "goal": "Fix the example.",
+            "acceptance_criteria": ["marker.txt reads 'fixed'"],
+            "non_goals": ["Unrelated refactors"],
+            "preserved_behaviors": ["Existing README content"],
+            "allowed_remediation_scope": "marker.txt only",
+            "sources": {
+                "repository_instructions": [],
+                "named_documents": [],
+                "nearby_patterns": [],
+            },
+        },
+        "review_execution": {"mode": "fresh_subagent"},
+        "fix_cycle_budget": {"max_fix_cycles": max_fix_cycles},
+        "validation": validation or ALWAYS_PASS_VALIDATION,
+        "publication": {"policy": "local_commit"},
+    }
+
+
+CLEAN_TEMPLATE = {
+    "schema_version": "1.4",
+    "lens": "aggregate",
+    "verdict": "clean",
+    "findings": [],
+    "blocking_reasons": [],
+    "validation_limitations": [],
+    "next_action": "No changes are required.",
+}
+
+FINDING_ID = "correctness-001"
+
+
+def _finding() -> dict[str, Any]:
+    return {
+        "id": FINDING_ID,
+        "lens": "correctness",
+        "severity": "blocking",
+        "confidence": "high",
+        "rule": "example rule",
+        "evidence": [
+            {"location": "marker.txt:1", "detail": "marker.txt is not 'fixed'"}
+        ],
+        "concern": "marker.txt does not read 'fixed'",
+        "impact": "the candidate is incomplete",
+        "proposed_change": "write 'fixed' into marker.txt",
+        "expected_effect": "marker.txt reads 'fixed'",
+    }
+
+
+def make_marker_reviewer(repo: Path):
+    """A fake reviewer whose verdict is a real function of `marker.txt`'s
+    content at the exact head it is asked to review: `clean` when it reads
+    'fixed', `changes_required` with one `correctness-001` finding otherwise.
+    """
+
+    def reviewer(
+        *, packet, briefing, head_sha, comparison_base_sha, independence, sequence
+    ) -> LC.ReviewPass:
+        del packet, briefing, independence, sequence
+        content = LE.git("show", f"{head_sha}:marker.txt", cwd=repo).stdout.strip()
+        candidate = {"head_sha": head_sha, "comparison_base_sha": comparison_base_sha}
+        if content == "fixed":
+            result = {
+                **CLEAN_TEMPLATE,
+                "candidate": candidate,
+                "lens_executions": [
+                    {
+                        "lens": lens,
+                        "head_sha": head_sha,
+                        "comparison_base_sha": comparison_base_sha,
+                        "verdict": "clean",
+                        "freshly_executed": True,
+                    }
+                    for lens in (
+                        "solution_simplicity",
+                        "correctness",
+                        "code_simplicity",
+                    )
+                ],
+            }
+        else:
+            result = {
+                **CLEAN_TEMPLATE,
+                "candidate": candidate,
+                "verdict": "changes_required",
+                "findings": [_finding()],
+                "lens_executions": [
+                    {
+                        "lens": "solution_simplicity",
+                        "head_sha": head_sha,
+                        "comparison_base_sha": comparison_base_sha,
+                        "verdict": "clean",
+                        "freshly_executed": True,
+                    }
+                ],
+                "next_action": f"Fix {FINDING_ID}.",
+            }
+        return LC.ReviewPass(result=result)
+
+    return reviewer
+
+
+def fixing_apply_fix(*, finding, attempt_path, change_contract, attempt_number):
+    del finding, change_contract, attempt_number
+    (attempt_path / "marker.txt").write_text("fixed\n")
+    return f"fix: resolve {FINDING_ID}"
+
+
+def ineffective_apply_fix(*, finding, attempt_path, change_contract, attempt_number):
+    del finding, change_contract
+    (attempt_path / "marker.txt").write_text(f"still-broken-{attempt_number}\n")
+    return f"fix attempt {attempt_number} for {FINDING_ID}"
+
+
+def accepting_decide(*, finding, change_contract, attempt_number):
+    del change_contract, attempt_number
+    return LC.FixDecision(
+        disposition="accepted", rationale=f"{finding['id']} is tractable"
+    )
+
+
+class LocalCommitRepoTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.repo = Path(self.tmp.name) / "repo"
+        init_repo(self.repo)
+
+
+class ImmediateConvergenceTests(LocalCommitRepoTestCase):
+    def test_clean_candidate_converges_without_any_fix_cycle(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "converged")
+        self.assertNotIn("reason", result)
+        self.assertEqual(result["head"]["initial"], head_sha)
+        self.assertEqual(result["head"]["final"], head_sha)
+        self.assertEqual(result["created_commits"], [])
+        self.assertEqual(result["budget"]["consumed_cycles"], 0)
+        self.assertFalse(result["acceptance_reconciliation_required"])
+        self.assertEqual(
+            result["publication"],
+            {
+                "policy": "local_commit",
+                "status": "not_applicable",
+                "non_converged_exposure": False,
+            },
+        )
+        self.assertEqual(len(result["review_records"]), 1)
+        self.assertEqual(result["review_records"][0]["aggregate_verdict"], "clean")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+class FixCycleTests(LocalCommitRepoTestCase):
+    def test_one_fix_cycle_converges(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "converged")
+        self.assertEqual(result["head"]["initial"], head_sha)
+        self.assertNotEqual(result["head"]["final"], head_sha)
+        self.assertEqual(len(result["created_commits"]), 1)
+        self.assertEqual(result["budget"]["consumed_cycles"], 1)
+        self.assertEqual(result["budget"]["remaining_cycles"], 2)
+        self.assertTrue(result["acceptance_reconciliation_required"])
+        self.assertEqual(result["unpushed_commits"], result["created_commits"])
+        self.assertEqual(
+            result["finding_dispositions"],
+            [
+                {
+                    "finding_id": FINDING_ID,
+                    "disposition": "selected",
+                    "rationale": f"{FINDING_ID} is tractable",
+                    "fix_commit_sha": result["created_commits"][0],
+                }
+            ],
+        )
+        # Two review passes: the initial non-clean one and the post-fix clean one.
+        self.assertEqual(len(result["review_records"]), 2)
+        self.assertEqual(
+            result["review_records"][0]["aggregate_verdict"], "changes_required"
+        )
+        self.assertEqual(result["review_records"][1]["aggregate_verdict"], "clean")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+        # The canonical worktree actually advanced to the promoted commit.
+        self.assertEqual(LE.current_head(self.repo), result["head"]["final"])
+        self.assertEqual((self.repo / "marker.txt").read_text().strip(), "fixed")
+        self.assertTrue(LE.is_clean(LE.worktree_status(self.repo)))
+
+    def test_multiple_fix_cycles_before_convergence(self):
+        """The fake reviewer only reports `clean` once marker.txt reads
+        'fixed'; a fixer that takes two attempts to actually write that
+        content demonstrates more than one committed fix cycle."""
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            max_fix_cycles=5,
+        )
+
+        attempts_seen: list[int] = []
+
+        def two_step_apply_fix(
+            *, finding, attempt_path, change_contract, attempt_number
+        ):
+            del finding, change_contract
+            attempts_seen.append(attempt_number)
+            content = "fixed" if len(attempts_seen) >= 2 else "getting-there"
+            (attempt_path / "marker.txt").write_text(content + "\n")
+            return f"fix attempt {attempt_number}"
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=two_step_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "converged")
+        self.assertEqual(len(result["created_commits"]), 2)
+        self.assertEqual(result["budget"]["consumed_cycles"], 2)
+        self.assertEqual(len(result["review_records"]), 3)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+class BudgetExhaustionTests(LocalCommitRepoTestCase):
+    def test_ineffective_fixes_exhaust_the_budget(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            max_fix_cycles=2,
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=ineffective_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "changes_remaining")
+        self.assertEqual(result["reason"], "cycle_budget_exhausted")
+        self.assertEqual(result["budget"]["consumed_cycles"], 2)
+        self.assertEqual(result["budget"]["remaining_cycles"], 0)
+        self.assertEqual(len(result["created_commits"]), 2)
+        self.assertEqual(result["unpushed_commits"], result["created_commits"])
+        self.assertEqual(result["publication"]["status"], "not_applicable")
+        self.assertIn(FINDING_ID, result["unresolved_or_deferred_findings"][0])
+        self.assertTrue(result["operator_action"])
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+        # The candidate itself is preserved at its last committed head, not lost.
+        self.assertEqual(LE.current_head(self.repo), result["head"]["final"])
+
+
+FINDING_ID_2 = "correctness-002"
+
+
+def _finding2() -> dict[str, Any]:
+    return {
+        "id": FINDING_ID_2,
+        "lens": "correctness",
+        "severity": "blocking",
+        "confidence": "high",
+        "rule": "example rule",
+        "evidence": [
+            {"location": "other_file.txt:1", "detail": "other_file.txt reads 'broken'"}
+        ],
+        "concern": "other_file.txt does not read 'ok'",
+        "impact": "a second defect is present",
+        "proposed_change": "write 'ok' into other_file.txt",
+        "expected_effect": "other_file.txt reads 'ok'",
+    }
+
+
+def make_two_finding_reviewer(repo: Path):
+    """A fake reviewer gating on two independent tracked files: `marker.txt`
+    (finding `correctness-001`) and `other_file.txt` (finding
+    `correctness-002`, treated as absent/resolved when the file does not yet
+    exist at the reviewed head). Lets a test drive expanding or oscillating
+    finding sets across cycles by controlling both files independently.
+    """
+
+    def reviewer(
+        *, packet, briefing, head_sha, comparison_base_sha, independence, sequence
+    ) -> LC.ReviewPass:
+        del packet, briefing, independence, sequence
+        marker = LE.git("show", f"{head_sha}:marker.txt", cwd=repo).stdout.strip()
+        other = LE.git("show", f"{head_sha}:other_file.txt", cwd=repo, check=False)
+        other_content = other.stdout.strip() if other.returncode == 0 else "ok"
+        findings = []
+        if marker != "fixed":
+            findings.append(_finding())
+        if other_content == "broken":
+            findings.append(_finding2())
+        candidate = {"head_sha": head_sha, "comparison_base_sha": comparison_base_sha}
+        if not findings:
+            result = {
+                **CLEAN_TEMPLATE,
+                "candidate": candidate,
+                "lens_executions": [
+                    {
+                        "lens": lens,
+                        "head_sha": head_sha,
+                        "comparison_base_sha": comparison_base_sha,
+                        "verdict": "clean",
+                        "freshly_executed": True,
+                    }
+                    for lens in (
+                        "solution_simplicity",
+                        "correctness",
+                        "code_simplicity",
+                    )
+                ],
+            }
+        else:
+            result = {
+                **CLEAN_TEMPLATE,
+                "candidate": candidate,
+                "verdict": "changes_required",
+                "findings": findings,
+                "lens_executions": [
+                    {
+                        "lens": "solution_simplicity",
+                        "head_sha": head_sha,
+                        "comparison_base_sha": comparison_base_sha,
+                        "verdict": "clean",
+                        "freshly_executed": True,
+                    }
+                ],
+                "next_action": "Fix the reported findings.",
+            }
+        return LC.ReviewPass(result=result)
+
+    return reviewer
+
+
+class StopConditionTests(LocalCommitRepoTestCase):
+    def test_a_fix_that_introduces_a_new_finding_stops_as_expanding_findings(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            max_fix_cycles=3,
+        )
+
+        def apply_fix(*, finding, attempt_path, change_contract, attempt_number):
+            del finding, change_contract, attempt_number
+            # Leave marker.txt (correctness-001) unresolved and additionally
+            # introduce a second, independent defect.
+            (attempt_path / "other_file.txt").write_text("broken\n")
+            return "fix: (ineffectively) touch other_file.txt too"
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_two_finding_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "changes_remaining")
+        self.assertEqual(result["reason"], "expanding_findings")
+        self.assertEqual(result["budget"]["consumed_cycles"], 1)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_oscillating_finding_sets_stop_as_oscillation(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            max_fix_cycles=5,
+        )
+
+        def apply_fix(*, finding, attempt_path, change_contract, attempt_number):
+            del finding, change_contract
+            if attempt_number % 2 == 1:
+                (attempt_path / "marker.txt").write_text("fixed\n")
+                (attempt_path / "other_file.txt").write_text("broken\n")
+            else:
+                (attempt_path / "marker.txt").write_text("broken\n")
+                (attempt_path / "other_file.txt").write_text("ok\n")
+            return f"fix attempt {attempt_number}: swap which defect is present"
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_two_finding_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "changes_remaining")
+        self.assertEqual(result["reason"], "oscillation")
+        self.assertEqual(result["budget"]["consumed_cycles"], 2)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_two_consecutive_failed_attempts_stop_as_repeated_failed_attempt(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            max_fix_cycles=3,
+            validation=NOT_TRIGGER_FAIL_VALIDATION,
+        )
+
+        def always_fails_validation_apply_fix(
+            *, finding, attempt_path, change_contract, attempt_number
+        ):
+            del finding, change_contract, attempt_number
+            (attempt_path / "marker.txt").write_text("trigger-fail\n")
+            return "fix attempt that never actually validates"
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=always_fails_validation_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "changes_remaining")
+        self.assertEqual(result["reason"], "repeated_failed_attempt")
+        self.assertEqual(result["budget"]["consumed_cycles"], 2)
+        self.assertEqual(result["created_commits"], [])
+        self.assertEqual(len(result["preserved_failed_attempts"]), 2)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+        # Canonical candidate untouched: both attempts failed validation and
+        # were discarded rather than promoted.
+        self.assertEqual(LE.current_head(self.repo), head_sha)
+        self.assertTrue(LE.is_clean(LE.worktree_status(self.repo)))
+
+
+class ValidationFailureTests(LocalCommitRepoTestCase):
+    def test_untractable_validation_failure_reports_changes_remaining(self):
+        base_sha, head_sha = start_candidate(
+            self.repo, marker="fixed", validation_flag="fail"
+        )
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            validation=FLAG_GATED_VALIDATION,
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "changes_remaining")
+        self.assertEqual(result["reason"], "current_candidate_validation_failure")
+        self.assertEqual(result["budget"]["consumed_cycles"], 0)
+        self.assertEqual(result["review_records"], [])
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_unavailable_validation_command_blocks(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+
+        def unavailable_run_validation(*, name, command, scope, cwd):
+            if scope == "full":
+                return LC.ValidationOutcome(
+                    status="unavailable", reason="the full-gate tool is not installed"
+                )
+            return LC.default_run_validation(
+                name=name, command=command, scope=scope, cwd=cwd
+            )
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+            run_validation=unavailable_run_validation,
+        )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "validation_unavailable")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_tractable_validation_failure_is_fixed_via_synthetic_finding(self):
+        base_sha, head_sha = start_candidate(
+            self.repo, marker="fixed", validation_flag="fail"
+        )
+        invocation = make_invocation(
+            self.repo,
+            branch="fix/99-example",
+            base_sha=base_sha,
+            head_sha=head_sha,
+            validation=FLAG_GATED_VALIDATION,
+        )
+
+        def classify(*, outcome, invocation):
+            del outcome, invocation
+            return {
+                "id": "validation-flag-001",
+                "lens": "validation",
+                "severity": "blocking",
+                "confidence": "high",
+                "rule": "validation must pass",
+                "evidence": [
+                    {"location": "validation_flag.txt:1", "detail": "reads 'fail'"}
+                ],
+                "concern": "validation_flag.txt disables the focused check",
+                "impact": "the focused validation command fails",
+                "proposed_change": "write 'pass' into validation_flag.txt",
+                "expected_effect": "the focused validation command passes",
+            }
+
+        def apply_fix(*, finding, attempt_path, change_contract, attempt_number):
+            del finding, change_contract, attempt_number
+            (attempt_path / "validation_flag.txt").write_text("pass\n")
+            return "fix: repair validation_flag.txt"
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=apply_fix,
+            classify_validation_failure=classify,
+        )
+        self.assertEqual(result["terminal_state"], "converged")
+        self.assertEqual(result["budget"]["consumed_cycles"], 1)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+class OperatorInputTests(LocalCommitRepoTestCase):
+    def test_declined_finding_blocks_on_operator_input_and_stays_visible(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+
+        def declining_decide(*, finding, change_contract, attempt_number):
+            del change_contract, attempt_number
+            return LC.FixDecision(
+                disposition="rejected",
+                rationale=f"{finding['id']} is already addressed upstream",
+            )
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=declining_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "operator_input_required")
+        self.assertEqual(result["budget"]["consumed_cycles"], 0)
+        self.assertEqual(
+            result["unresolved_or_deferred_findings"],
+            [f"{FINDING_ID}: {FINDING_ID} is already addressed upstream"],
+        )
+        # The decline and its rationale are visible in the per-review record too.
+        self.assertEqual(
+            result["review_records"][0]["finding_dispositions"],
+            [
+                {
+                    "finding_id": FINDING_ID,
+                    "disposition": "rejected",
+                    "rationale": f"{FINDING_ID} is already addressed upstream",
+                }
+            ],
+        )
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_scope_expanding_fix_blocks_on_scope_decision(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+
+        def expanding_decide(*, finding, change_contract, attempt_number):
+            del change_contract, attempt_number
+            return LC.FixDecision(
+                disposition="accepted",
+                rationale=f"{finding['id']} needs a broader change",
+                expands_scope=True,
+            )
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=expanding_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "scope_decision_required")
+        self.assertEqual(result["budget"]["consumed_cycles"], 0)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+class RecoveryTests(LocalCommitRepoTestCase):
+    def test_resumes_and_discards_an_interrupted_attempt_then_converges(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        branch = "fix/99-example"
+        invocation_id = "local-commit-recovery-test"
+        invocation = make_invocation(
+            self.repo,
+            branch=branch,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            invocation_id=invocation_id,
+        )
+        common_dir = LE.git_common_dir(self.repo)
+        attempts_root = LE.default_attempts_root(common_dir)
+
+        # Simulate a crash: an isolated attempt was created and committed but
+        # never promoted, and no checkpoint ever recorded its reservation.
+        interrupted = LE.create_attempt(
+            repo=self.repo,
+            attempts_root=attempts_root,
+            base_sha=head_sha,
+            invocation_id=invocation_id,
+            sequence=1,
+        )
+        (interrupted.path / "marker.txt").write_text("half-fixed\n")
+        LE.commit_attempt(interrupted, "in-flight fix, never promoted")
+        self.assertEqual(LE.current_head(self.repo), head_sha)  # canonical untouched
+
+        checkpoint = {
+            "schema_version": "1.0",
+            "invocation_id": invocation_id,
+            "repository": invocation["repository"],
+            "branch": branch,
+            "worktree": LE.worktree_status(self.repo),
+            "initial_head": head_sha,
+            "current_head": head_sha,
+            "comparison_base": {"ref": "main", "sha": base_sha},
+            "publication": {"policy": "local_commit"},
+            "original_cycle_budget": 3,
+            "cycle_attempts": [],
+            "head_history": [head_sha],
+            "base_revision_history": [{"ref": "main", "sha": base_sha}],
+            "review_records": [],
+            "validation_outcomes": [],
+            "preserved_failed_attempts": [],
+            "source": {
+                "status": "unavailable",
+                "unavailable_reason": "standalone invocation has no recorded pushable source",
+            },
+            "current_phase": "fix",
+            "expected_next_action": "recover the interrupted attempt",
+        }
+        self.assertEqual(VALIDATE.validate_checkpoint(checkpoint), [])
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+            resume_checkpoint=checkpoint,
+        )
+        self.assertEqual(result["resume_status"], "resumed")
+        self.assertEqual(result["terminal_state"], "converged")
+        # The leftover attempt was discarded (preserved for inspection) and
+        # recorded as one interrupted cycle attempt, then a fresh committed
+        # attempt fixed the candidate for real.
+        self.assertEqual(len(result["preserved_failed_attempts"]), 1)
+        self.assertEqual(
+            result["budget"]["consumed_cycles"], 2
+        )  # interrupted + committed
+        self.assertEqual(len(result["created_commits"]), 1)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+        # The interrupted attempt's branch and worktree were cleaned up by
+        # `discard_attempt`'s caller responsibility is NOT implied — only the
+        # canonical worktree's cleanliness matters here.
+        self.assertTrue(LE.is_clean(LE.worktree_status(self.repo)))
+
+
+class InputValidationTests(LocalCommitRepoTestCase):
+    def test_rejects_invalid_invocation(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        del invocation["fix_cycle_budget"]
+        with self.assertRaises(LC.LocalCommitError):
+            LC.run_local_commit(
+                invocation,
+                repo=self.repo,
+                reviewer=make_marker_reviewer(self.repo),
+                decide=accepting_decide,
+                apply_fix=fixing_apply_fix,
+            )
+
+    def test_rejects_update_pr_policy(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        invocation["publication"] = {
+            "policy": "update_pr",
+            "pull_request": {
+                "head_repository": "shaug/agent-scripts",
+                "head_ref": "refs/heads/fix/99-example",
+                "expected_old_head_sha": head_sha,
+                "base_ref": "main",
+                "base_sha": base_sha,
+            },
+        }
+        invocation["candidate"]["source_binding"] = {
+            "repository": "shaug/agent-scripts",
+            "remote_url": "git@github.com:shaug/agent-scripts.git",
+            "ref": "refs/heads/fix/99-example",
+            "observed_object_id": head_sha,
+        }
+        del invocation["candidate"]["source_unavailable_reason"]
+        with self.assertRaises(LC.LocalCommitError):
+            LC.run_local_commit(
+                invocation,
+                repo=self.repo,
+                reviewer=make_marker_reviewer(self.repo),
+                decide=accepting_decide,
+                apply_fix=fixing_apply_fix,
+            )
+
+    def test_candidate_busy_when_lock_already_held(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        common_dir = LE.git_common_dir(self.repo)
+        with LE.acquire_candidate_locks(common_dir, "refs/heads/fix/99-example"):
+            result = LC.run_local_commit(
+                invocation,
+                repo=self.repo,
+                reviewer=make_marker_reviewer(self.repo),
+                decide=accepting_decide,
+                apply_fix=fixing_apply_fix,
+            )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "candidate_busy")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+class ReviewerMutationTests(LocalCommitRepoTestCase):
+    def test_reviewer_mutation_attempt_blocks_with_reviewer_integrity_failure(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+
+        def mutating_reviewer(
+            *, packet, briefing, head_sha, comparison_base_sha, independence, sequence
+        ):
+            del packet, briefing, independence, sequence
+            (self.repo / "sneaky.txt").write_text(
+                "a reviewer should never write this\n"
+            )
+            LE.git("add", "-A", cwd=self.repo)
+            candidate = {
+                "head_sha": head_sha,
+                "comparison_base_sha": comparison_base_sha,
+            }
+            result = {
+                **CLEAN_TEMPLATE,
+                "candidate": candidate,
+                "lens_executions": [
+                    {
+                        "lens": lens,
+                        "head_sha": head_sha,
+                        "comparison_base_sha": comparison_base_sha,
+                        "verdict": "clean",
+                        "freshly_executed": True,
+                    }
+                    for lens in (
+                        "solution_simplicity",
+                        "correctness",
+                        "code_simplicity",
+                    )
+                ],
+            }
+            return LC.ReviewPass(result=result)
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=mutating_reviewer,
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "reviewer_integrity_failure")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+        # Preserved for operator inspection, not silently cleaned up.
+        LE.git("reset", "-q", "--hard", "HEAD", cwd=self.repo)
+        LE.git("clean", "-fdq", cwd=self.repo)
+
+
+class MissingCapabilityTests(LocalCommitRepoTestCase):
+    def test_no_fresh_subagent_and_no_override_blocks_with_missing_capability(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+            host_supports_fresh_subagent=False,
+        )
+        self.assertEqual(result["terminal_state"], "blocked")
+        self.assertEqual(result["reason"], "missing_capability")
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts; run the complete-review orchestration that later children of epic #95 build a fix loop on top of; and provide the local execution substrate (common-directory locking, isolated attempt worktrees, durable checkpoint persistence, verified fast-forward-only canonical promotion, and interrupted-attempt recovery). Use when authoring, resuming, or terminating a review-fix-loop invocation to check its documents against the shared schemas, when running one complete review pass (fresh reviewer subagent by default, explicit in-agent override otherwise) and recording its result, or when acquiring a candidate lock, running an isolated remediation attempt, or recovering an interrupted one. This skill does not yet select or apply a fix's content or publish anything; see design/review-fix-loop.md, references/CONTRACT.md, and references/reviewer-orchestration.md for the full behavioral design and current implementation status.
+description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts; run the complete-review orchestration and local execution substrate (locking, isolated attempt worktrees, checkpointing, fast-forward-only promotion, interrupted-attempt recovery); and run the standalone end-to-end `local_commit` workflow composing all of the above into one candidate-bound converge-or-stop loop. Use to check a review-fix-loop document against the shared schemas, to run and record one complete review pass, to acquire a candidate lock or run/recover an isolated remediation attempt, or to run the complete standalone `local_commit` loop end to end (review, decide, fix, validate, commit, repeat, converge or stop) with no remote publication. Does not yet publish anything (`update_pr`); see design/review-fix-loop.md, references/CONTRACT.md, references/reviewer-orchestration.md, and references/local-commit.md for the full design and implementation status.
 allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 
@@ -12,7 +12,7 @@ review suite, applies material ticket-scoped fixes, and repeats until review
 converges or a bounded stop condition is reached. The full design is
 [`design/review-fix-loop.md`](../../design/review-fix-loop.md).
 
-Three of its children are implemented so far:
+Four of its children are implemented so far:
 
 - [Issue #96](https://github.com/shaug/agent-scripts/issues/96) (the first of
   epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines and
@@ -34,13 +34,22 @@ Three of its children are implemented so far:
   locking, isolated attempt worktrees, durable checkpoint persistence and resume
   reconciliation, verified fast-forward-only canonical promotion, and recovery
   of an interrupted attempt. See [Local execution](#local-execution) below.
+- [Issue #99](https://github.com/shaug/agent-scripts/issues/99) composes all
+  three of the above into the actual standalone `local_commit` workflow: the
+  full Resolve/Establish evidence/Review/Decide/Fix/Validate and
+  commit/Invalidate and repeat/Publish/Return loop, fix-cycle budget
+  enforcement, the automatic non-convergence stops, and terminal-result assembly
+  — with no remote write in any path. See
+  [Run the standalone `local_commit` workflow](#run-the-standalone-local_commit-workflow)
+  below.
 
-This skill still does not select or apply a fix's content, or publish anything —
-those behaviors belong to #99 (`local_commit`) and #100 (`update_pr`). Do not
-invoke it expecting a complete, end-to-end review-fix loop yet; use it to
-validate a document you or a later child produced against the shared schemas, to
-run and record one complete review pass, or to acquire a lock, run an isolated
-attempt, and recover an interrupted one.
+This skill still does not publish anything to a remote — `update_pr` (#100) is
+the only remaining behavior out of scope. Use
+[`scripts/local_commit.py`](scripts/local_commit.py)'s `run_local_commit(...)`
+to run a complete standalone `local_commit` invocation end to end; use the
+lower-level modules directly only when you need just one of their individual
+behaviors (validating a document, running one review pass, or acquiring a lock
+and running one isolated attempt) outside the full loop.
 
 ## Load the contracts
 
@@ -174,10 +183,38 @@ promotion-race, and cleanup-safety coverage. Selecting which finding to fix,
 writing the fix's content, and publishing to a remote remain out of scope here;
 a caller supplies the fix content and invokes these primitives around it.
 
+## Run the standalone `local_commit` workflow
+
+Read [`references/local-commit.md`](references/local-commit.md) in full before
+running an end-to-end invocation; it implements every remaining "Workflow" step
+design describes plus "Convergence and stop conditions" and the `local_commit`
+half of "Publication policy". In summary:
+[`scripts/local_commit.py`](scripts/local_commit.py)'s `run_local_commit(...)`
+composes `validate.py`, `local_execution.py`, and `reviewer_orchestration.py`
+into the complete loop: resolve the invocation and acquire the candidate lock;
+establish and classify validation evidence; run a complete review and detect any
+reviewer mutation; decide each selected finding's disposition; fix, validate,
+and commit an accepted finding in an isolated attempt, promoting only on
+success; repeat with a fresh review after every promotion; and return one
+schema-valid, candidate-bound terminal result (`converged`, `changes_remaining`,
+or `blocked`) — never performing a remote write. The three genuinely
+host-boundary actions (running one review pass, deciding a finding's
+disposition, and writing a fix's content) are supplied by the caller as small
+callables; every other action — locking, Git, checkpointing, promotion,
+review-result evaluation — happens for real, matching this skill's existing "no
+mocked Git state" testing convention.
+
+See [`scripts/tests/test_local_commit.py`](scripts/tests/test_local_commit.py)
+for complete end-to-end coverage: immediate convergence, one and multiple fix
+cycles, budget exhaustion, a validation failure that is unavailable,
+untractable, and tractable, a declined finding and a scope-expanding fix (both
+surfaced as operator input), a fix that introduces a new finding, an oscillating
+finding set, two consecutive failed attempts, recovery from an interrupted
+attempt, an already-held candidate lock, an attempted reviewer mutation, and a
+host without fresh-subagent support.
+
 ## Non-goals
 
-- Deciding which finding to accept, reject, or defer, and applying the resulting
-  fix (a later child's "Decide"/"Fix" workflow steps).
 - Publishing anything, including the `update_pr` expected-old fast-forward
   update (issue #100).
 - Migrating `implement-ticket`, `babysit-pr`, `carve-changesets`, or any other
