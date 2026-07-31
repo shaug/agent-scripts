@@ -19,6 +19,7 @@ REQUIRED_SKILLS = {
     "review-code-change",
     "review-code-simplicity",
     "review-correctness",
+    "review-fix-loop",
     "review-solution-simplicity",
 }
 REVIEW_SKILLS = {

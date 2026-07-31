@@ -4,8 +4,25 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-31 — Added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
+## 2026-07-31 — Packaged and documented the standalone review-fix-loop skill, added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
+- feat(review-fix-loop): package and document the standalone skill for discovery
+  (issue #102, epic #95, the epic's final child) — list `skills/review-fix-loop`
+  in the README's "Current reusable agent skills" section with its
+  `local_commit`/`update_pr` policies and the tracked #103/#104/#105
+  caller-migration follow-ups, correct the eight-skills count to nine, and wire
+  its `just test-review-fix-loop`/`just eval-review-fix-loop` targets into the
+  Quick Start and evaluation sections; add `review-fix-loop` to
+  `scripts/validate_plugins.py`'s `REQUIRED_SKILLS` set so a missing install or
+  a missing `agents/openai.yaml` fails plugin packaging validation in CI,
+  matching every other repository-owned skill; refresh
+  `agents/claude-code.md`/`agents/openai.yaml`, stale since issue #98, to
+  describe the `local_commit`/`update_pr` workflows issues #99-#101 actually
+  delivered instead of only document validation and one review pass; and add a
+  "Publication policy and retained commits" section to `SKILL.md` itself stating
+  that both workflows keep fixes local until convergence, that `update_pr`
+  publishes exactly once, and that every non-converged terminal result reports
+  its retained unpushed commits via `unpushed_commits`/`operator_action`
 - fix(review-fix-loop): configure `user.email`/`user.name` on both git clones
   `scripts/evals/corpus.py`'s
   `up_sequential_publication_race_second_clone_loses` scenario creates,
@@ -16,7 +33,7 @@ summary: Chronological history of repository and skill changes.
   with "Author identity unknown" in GitHub Actions even though every local run
   passed; reproduced the exact CI failure locally under a forced no-identity
   condition, confirmed the fix resolves it, and confirmed GitHub Actions' own
-  `ci` check on PR #113 is green
+  `ci` check on PR #113 is green (`a44fc2f3397349ca4d38ad7456dc97b95bba0648`)
 - fix(review-fix-loop): consolidate `scripts/evals/helpers.py`'s five fixtures
   that were byte-identical or functionally identical to
   `scripts/tests/helpers.py`'s own (`init_repo`, `CLEAN_TEMPLATE`,
