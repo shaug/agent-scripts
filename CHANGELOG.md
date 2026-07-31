@@ -6,11 +6,20 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): rebase onto the merged #97 local-execution substrate,
+  document that a mutation attributable to a review pass must stop the
+  invocation with `blocked/reviewer_integrity_failure` immediately rather than
+  only relying on the `write_isolation`/`converged`-rejection backstop, and
+  correct a changelog SHA left stale by that same rebase, closing the two gaps
+  the fourth review-code-change pass on #98 found; the extracted
+  `review_gate.evaluate_bound` reuse (cycle 1) is kept as the deliberate design
+  after correctness confirmed it changes no accept/reject outcome for
+  `implement-ticket`/`babysit-pr`
 - fix(review-fix-loop): remove a byte-identical duplicate test and trim
   history-narrating/triplicated docstring prose in `reviewer_orchestration.py`
   and `reviewer-orchestration.md` down to one owner per rationale, closing the
   two code-simplicity gaps the third review-code-change pass on #98 found
-  (`10c1ca0cd42444aa1a28a413d127b911cebafb9c`)
+  (`18991dd231ce5272b9a4b3335529418e6a717057`)
 - fix(review-fix-loop): stop comparing `ignored` worktree state for reviewer
   mutation (authorized validation commands legitimately create ignored build
   artifacts, which previously made `converged` unreachable), fail closed instead

@@ -145,6 +145,18 @@ final-head-bound one. An unattributed remote-ref advance by itself is not proof
 of reviewer misconduct; that is the ordinary `remote_advanced` publication-race
 contract (issue #97/#100's scope), not a reviewer-integrity failure.
 
+**Stop immediately on a mutation attributable to this pass.** Design assigns
+that judgment to "the phase that observed it" — this phase, the moment
+`detect_worktree_mutation` (or tool-trace evidence) returns non-empty for a pass
+this cycle just ran. Do not keep iterating on that pass's findings, and do not
+wait for a later phase to notice the tainted `review_records` entry indirectly.
+Stop the invocation and return `blocked/reviewer_integrity_failure` immediately,
+preserving the unexpected worktree/ref state for operator inspection rather than
+resetting or repairing it. The `mutation_attempts`/`write_isolation: "violated"`
+chain into `_check_converged_requires_clean_evidence` is a backstop that keeps a
+stale checkpoint from ever certifying `converged` later — it is not a substitute
+for this immediate stop.
+
 ### The reviewer briefing
 
 Call

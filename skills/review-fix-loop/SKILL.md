@@ -32,15 +32,15 @@ Three of its children are implemented so far:
 - [Issue #97](https://github.com/shaug/agent-scripts/issues/97) adds the local
   execution substrate those contracts describe: common-Git-common-directory
   locking, isolated attempt worktrees, durable checkpoint persistence and resume
-  reconciliation, verified fast-forward-only canonical promotion, and recovery of
-  an interrupted attempt. See [Local execution](#local-execution) below.
+  reconciliation, verified fast-forward-only canonical promotion, and recovery
+  of an interrupted attempt. See [Local execution](#local-execution) below.
 
-This skill still does not select or apply a fix's content, or publish
-anything — those behaviors belong to #99 (`local_commit`) and #100
-(`update_pr`). Do not invoke it expecting a complete, end-to-end review-fix
-loop yet; use it to validate a document you or a later child produced against
-the shared schemas, to run and record one complete review pass, or to acquire
-a lock, run an isolated attempt, and recover an interrupted one.
+This skill still does not select or apply a fix's content, or publish anything —
+those behaviors belong to #99 (`local_commit`) and #100 (`update_pr`). Do not
+invoke it expecting a complete, end-to-end review-fix loop yet; use it to
+validate a document you or a later child produced against the shared schemas, to
+run and record one complete review pass, or to acquire a lock, run an isolated
+attempt, and recover an interrupted one.
 
 ## Load the contracts
 
@@ -118,8 +118,10 @@ summary:
    own required validation entry was `failed` or `unavailable`, which a
    result-only check cannot see — and raises `ReviewIntegrityError` instead of
    returning a partially trusted record. A non-empty `mutation_attempts` always
-   yields `write_isolation: "violated"` and fails that cycle closed, even when
-   the aggregate verdict itself looked clean.
+   yields `write_isolation: "violated"`, even when the aggregate verdict itself
+   looked clean — stop immediately and return
+   `blocked/reviewer_integrity_failure` rather than continuing to iterate on
+   that pass's findings.
 6. When the verdict is not `clean`, use `normalize_findings` and
    `select_next_finding` to identify the next finding in one deterministic order
    — selecting a finding is not disposing or fixing it; that remains a later
