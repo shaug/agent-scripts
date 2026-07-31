@@ -6,6 +6,17 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-31 — Added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
+- fix(review-fix-loop): configure `user.email`/`user.name` on both git clones
+  `scripts/evals/corpus.py`'s
+  `up_sequential_publication_race_second_clone_loses` scenario creates,
+  mirroring `helpers.init_repo`'s existing convention for every non-cloned
+  fixture repo — `git clone` never copies a source repository's local git
+  identity config, and unlike a developer machine a CI runner has no global
+  identity configured either, so the scenario's own `git commit` call failed
+  with "Author identity unknown" in GitHub Actions even though every local run
+  passed; reproduced the exact CI failure locally under a forced no-identity
+  condition, confirmed the fix resolves it, and confirmed GitHub Actions' own
+  `ci` check on PR #113 is green
 - fix(review-fix-loop): consolidate `scripts/evals/helpers.py`'s five fixtures
   that were byte-identical or functionally identical to
   `scripts/tests/helpers.py`'s own (`init_repo`, `CLEAN_TEMPLATE`,
@@ -16,7 +27,7 @@ summary: Chronological history of repository and skill changes.
   `scripts/evals` boundary within one skill, and remove one unused reviewer
   fixture (`make_expanding_findings_reviewer`) left over from a descoped
   scenario, closing the one code-simplicity gap the first review-code-change
-  pass on #101 found
+  pass on #101 found (`81a3078c819d4bc8755a9a796d2fa4c0e7dbf1c4`)
 - feat(review-fix-loop): add the cross-cutting, result-blind evaluation corpus
   (issue #101, epic #95) covering convergence, repeated findings,
   invalid/incomplete reviews, declined findings, budget exhaustion, interruption
