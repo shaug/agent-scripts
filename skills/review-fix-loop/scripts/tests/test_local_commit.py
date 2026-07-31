@@ -600,6 +600,118 @@ class StopConditionTests(LocalCommitRepoTestCase):
         self.assertTrue(LE.is_clean(LE.worktree_status(self.repo)))
 
 
+class RegressionTests(LocalCommitRepoTestCase):
+    def test_resumed_acceptance_replaces_a_stale_declined_disposition(self):
+        """A finding declined on one pass and later accepted-and-fixed after
+        a resumed run with a different decision must not leave both a stale
+        `declined` entry and the real `selected` entry in the same result."""
+        base_sha, head_sha = start_candidate(self.repo, marker="broken")
+        branch = "fix/99-example"
+        invocation_id = "local-commit-regression-test"
+        invocation = make_invocation(
+            self.repo,
+            branch=branch,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            invocation_id=invocation_id,
+        )
+
+        def declining_decide(*, finding, change_contract, attempt_number):
+            del change_contract, attempt_number
+            return LC.FixDecision(
+                disposition="rejected",
+                rationale=f"{finding['id']} looked out of scope on first review",
+            )
+
+        first = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=declining_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(first["terminal_state"], "blocked")
+        self.assertEqual(first["reason"], "operator_input_required")
+
+        common_dir = LE.git_common_dir(self.repo)
+        checkpoint_path = LE.checkpoint_path(common_dir, invocation_id)
+        checkpoint = LE.read_checkpoint(checkpoint_path)
+
+        second = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+            resume_checkpoint=checkpoint,
+        )
+        self.assertEqual(second["terminal_state"], "converged")
+        self.assertEqual(second["resume_status"], "resumed")
+        # Exactly one disposition for this finding_id, and it is the real,
+        # current one — not both a stale `declined` and the new `selected`.
+        matching = [
+            entry
+            for entry in second["finding_dispositions"]
+            if entry["finding_id"] == FINDING_ID
+        ]
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(matching[0]["disposition"], "selected")
+        self.assertIn("fix_commit_sha", matching[0])
+        # No longer reported as unresolved/deferred now that it was fixed.
+        self.assertEqual(second["unresolved_or_deferred_findings"], [])
+        self.assertEqual(VALIDATE.validate_terminal_result(second), [])
+
+
+class SourceBindingTests(LocalCommitRepoTestCase):
+    def test_bound_source_reports_ahead_behind_counts_instead_of_unavailable(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        invocation["candidate"]["source_binding"] = {
+            "repository": "shaug/agent-scripts",
+            "remote_url": "git@github.com:shaug/agent-scripts.git",
+            "ref": "refs/heads/fix/99-example",
+            "observed_object_id": base_sha,
+        }
+        del invocation["candidate"]["source_unavailable_reason"]
+
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["terminal_state"], "converged")
+        self.assertEqual(result["source"]["status"], "bound")
+        self.assertEqual(result["source"]["initial_head"], base_sha)
+        self.assertEqual(result["source"]["final_head"], base_sha)
+        # The candidate head is exactly one commit ahead of the source
+        # (the "start candidate" commit) and zero behind.
+        self.assertEqual(result["source"]["ahead_by"], 1)
+        self.assertEqual(result["source"]["behind_by"], 0)
+        self.assertEqual(VALIDATE.validate_terminal_result(result), [])
+
+    def test_source_unavailable_reason_preserved_without_a_binding(self):
+        base_sha, head_sha = start_candidate(self.repo, marker="fixed")
+        invocation = make_invocation(
+            self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
+        )
+        result = LC.run_local_commit(
+            invocation,
+            repo=self.repo,
+            reviewer=make_marker_reviewer(self.repo),
+            decide=accepting_decide,
+            apply_fix=fixing_apply_fix,
+        )
+        self.assertEqual(result["source"]["status"], "unavailable")
+        self.assertEqual(
+            result["source"]["unavailable_reason"],
+            "standalone invocation has no recorded pushable source",
+        )
+
+
 class ValidationFailureTests(LocalCommitRepoTestCase):
     def test_untractable_validation_failure_reports_changes_remaining(self):
         base_sha, head_sha = start_candidate(

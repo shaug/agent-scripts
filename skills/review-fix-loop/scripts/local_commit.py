@@ -266,6 +266,70 @@ def _current_diff(repo: Path, base_sha: str, head_sha: str) -> dict[str, Any]:
     return {"format": "unified_diff", "complete": True, "content": content}
 
 
+def _commits_between(repo: Path, old: str, new: str) -> int:
+    return int(LE.git("rev-list", "--count", f"{old}..{new}", cwd=repo).stdout.strip())
+
+
+def _checkpoint_source_status(
+    candidate: Mapping[str, Any], *, repo: Path, current_head: str
+) -> dict[str, Any]:
+    """Build this checkpoint's `source` status.
+
+    A `local_commit` invocation may still carry an optional read-only
+    `source_binding` purely for comparison (design: "An optional read-only
+    source binding ... required when the candidate has a known pushable
+    source"; "A read-only source binding grants comparison authority only;
+    it never implies permission to push"). When one is present, report
+    `bound` with the exact ahead/behind counts relative to its
+    `observed_object_id`; otherwise report the invocation's own
+    `source_unavailable_reason` verbatim.
+    """
+    source_binding = candidate.get("source_binding")
+    if source_binding is None:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": candidate.get(
+                "source_unavailable_reason", "no recorded pushable source"
+            ),
+        }
+    source_sha = source_binding["observed_object_id"]
+    return {
+        "status": "bound",
+        "last_verified_head": source_sha,
+        "ahead_by": _commits_between(repo, source_sha, current_head),
+        "behind_by": _commits_between(repo, current_head, source_sha),
+    }
+
+
+def _terminal_source_status(
+    candidate: Mapping[str, Any], *, repo: Path, current_head: str
+) -> dict[str, Any]:
+    """Terminal-result equivalent of `_checkpoint_source_status`.
+
+    `local_commit` never re-fetches or advances a bound source (that
+    remains `update_pr`-only, per this ticket's non-goals); `initial_head`
+    and `final_head` are therefore both this invocation's one observed
+    source object, and only the local ahead/behind counts relative to the
+    final candidate head can change.
+    """
+    source_binding = candidate.get("source_binding")
+    if source_binding is None:
+        return {
+            "status": "unavailable",
+            "unavailable_reason": candidate.get(
+                "source_unavailable_reason", "no recorded pushable source"
+            ),
+        }
+    source_sha = source_binding["observed_object_id"]
+    return {
+        "status": "bound",
+        "initial_head": source_sha,
+        "final_head": source_sha,
+        "ahead_by": _commits_between(repo, source_sha, current_head),
+        "behind_by": _commits_between(repo, current_head, source_sha),
+    }
+
+
 def _checkpoint_preserved(preserved: Mapping[str, Any]) -> dict[str, str]:
     """Narrow `discard_attempt`'s `{attempt_ref, patch_path, reason}` return
     to the `{attempt_ref, reason}` shape `checkpoint.schema.json` and
@@ -311,6 +375,49 @@ class _State:
     def remaining_cycles(self) -> int:
         return self.original_budget - self.consumed_cycles()
 
+    def record_finding_disposition(
+        self,
+        *,
+        finding_id: str,
+        disposition: str,
+        rationale: str,
+        fix_commit_sha: str | None = None,
+    ) -> None:
+        """Record (or replace) this finding's one current top-level
+        disposition (`selected` or `declined`).
+
+        A `finding_id` can legitimately gain more than one disposition
+        across an invocation's lifetime — declined on one pass, then
+        accepted and fixed once resumed with a different decision, or
+        reconstructed from an older checkpoint entry and then superseded by
+        a fresh live decision in this same run. Only the most recent one is
+        meaningful evidence, so this always removes any prior entry for the
+        same `finding_id` from both `finding_dispositions` and
+        `unresolved_or_deferred_findings` before appending the new one,
+        rather than letting a `converged` result carry stale, contradictory
+        history for a finding that was in fact fixed (or vice versa).
+        """
+        self.finding_dispositions = [
+            entry
+            for entry in self.finding_dispositions
+            if entry["finding_id"] != finding_id
+        ]
+        self.unresolved_or_deferred = [
+            entry
+            for entry in self.unresolved_or_deferred
+            if not entry.startswith(f"{finding_id}:")
+        ]
+        entry: dict[str, Any] = {
+            "finding_id": finding_id,
+            "disposition": disposition,
+            "rationale": rationale,
+        }
+        if fix_commit_sha is not None:
+            entry["fix_commit_sha"] = fix_commit_sha
+        self.finding_dispositions.append(entry)
+        if disposition == "declined":
+            self.unresolved_or_deferred.append(f"{finding_id}: {rationale}")
+
 
 def _checkpoint_document(
     state: _State, *, phase: str, next_action: str
@@ -334,12 +441,9 @@ def _checkpoint_document(
         "review_records": list(state.review_records),
         "validation_outcomes": list(state.validation_outcomes),
         "preserved_failed_attempts": list(state.preserved_failed_attempts),
-        "source": {
-            "status": "unavailable",
-            "unavailable_reason": invocation["candidate"].get(
-                "source_unavailable_reason", "no recorded pushable source"
-            ),
-        },
+        "source": _checkpoint_source_status(
+            invocation["candidate"], repo=state.repo, current_head=state.current_head
+        ),
         "current_phase": phase,
         "expected_next_action": next_action,
     }
@@ -397,12 +501,9 @@ def _terminal_result(
         "finding_dispositions": list(state.finding_dispositions),
         "created_commits": list(created_commits),
         "preserved_failed_attempts": list(state.preserved_failed_attempts),
-        "source": {
-            "status": "unavailable",
-            "unavailable_reason": invocation["candidate"].get(
-                "source_unavailable_reason", "no recorded pushable source"
-            ),
-        },
+        "source": _terminal_source_status(
+            invocation["candidate"], repo=state.repo, current_head=state.current_head
+        ),
         "unpushed_commits": list(created_commits),
         "publication": {
             "policy": "local_commit",
@@ -444,12 +545,14 @@ def _finalize(
 
 
 def _minimal_blocked_result(
-    invocation: Mapping[str, Any], *, reason: str, operator_action: str
+    invocation: Mapping[str, Any], *, repo: Path, reason: str, operator_action: str
 ) -> dict[str, Any]:
     """Build a `blocked` terminal result for a stop that occurs before this
-    invocation could acquire its candidate lock — nothing has been read,
-    checkpointed, or mutated yet, so this reports only the invocation's own
-    static candidate identity rather than any live-derived state."""
+    invocation could acquire its candidate lock — nothing has been
+    checkpointed or mutated yet, so this reports only the invocation's own
+    static candidate identity rather than any live-derived progress. A
+    read-only source-binding ahead/behind comparison is still safe and
+    meaningful here (it never touches the candidate lock or worktree)."""
     candidate = invocation["candidate"]
     base = dict(candidate["comparison_base"])
     head = candidate["head_sha"]
@@ -477,12 +580,7 @@ def _minimal_blocked_result(
         "finding_dispositions": [],
         "created_commits": [],
         "preserved_failed_attempts": [],
-        "source": {
-            "status": "unavailable",
-            "unavailable_reason": candidate.get(
-                "source_unavailable_reason", "no recorded pushable source"
-            ),
-        },
+        "source": _terminal_source_status(candidate, repo=repo, current_head=head),
         "unpushed_commits": [],
         "publication": {
             "policy": "local_commit",
@@ -546,6 +644,7 @@ def run_local_commit(
     except LE.CandidateBusyError as exc:
         return _minimal_blocked_result(
             invocation,
+            repo=repo,
             reason="candidate_busy",
             operator_action=f"the candidate lock is already held: {exc}",
         )
@@ -611,48 +710,43 @@ def run_local_commit(
                 resume_checkpoint["preserved_failed_attempts"]
             )
             # Reconstruct the terminal result's top-level `finding_dispositions`
-            # from checkpoint history. An "accepted" review-record disposition
-            # only becomes a reportable "selected" entry once a matching
-            # `committed` cycle attempt actually produced a fix commit for it
-            # (schema requires `selected` to carry `fix_commit_sha`); an
-            # accepted-but-not-yet-committed finding was interrupted before it
-            # resolved, so this run will decide and attempt it again rather
-            # than reporting it prematurely.
+            # from checkpoint history, oldest review pass first. An "accepted"
+            # review-record disposition only becomes a reportable "selected"
+            # entry once a matching `committed` cycle attempt actually
+            # produced a fix commit for it (schema requires `selected` to
+            # carry `fix_commit_sha`); an accepted-but-not-yet-committed
+            # finding was interrupted before it resolved, so this run will
+            # decide and attempt it again rather than reporting it
+            # prematurely. `record_finding_disposition` always replaces any
+            # prior entry for the same finding_id, so iterating oldest first
+            # naturally leaves the most recent disposition per finding as the
+            # final reconstructed state — a finding declined on an earlier
+            # pass and later accepted-and-fixed is never left carrying both a
+            # stale `declined` entry and its real `selected` one.
             committed_fix_by_finding = {
                 attempt["finding_id"]: attempt["resulting_head"]
                 for attempt in state.cycle_attempts
                 if attempt.get("outcome") == "committed" and attempt.get("finding_id")
             }
-            seen_finding_ids: set[str] = set()
             for record in state.review_records:
                 for disposition in record["finding_dispositions"]:
                     finding_id = disposition["finding_id"]
-                    if finding_id in seen_finding_ids:
-                        continue
                     if disposition["disposition"] == "accepted":
                         fix_commit_sha = committed_fix_by_finding.get(finding_id)
                         if fix_commit_sha is None:
                             continue
-                        state.finding_dispositions.append(
-                            {
-                                "finding_id": finding_id,
-                                "disposition": "selected",
-                                "rationale": disposition["rationale"],
-                                "fix_commit_sha": fix_commit_sha,
-                            }
+                        state.record_finding_disposition(
+                            finding_id=finding_id,
+                            disposition="selected",
+                            rationale=disposition["rationale"],
+                            fix_commit_sha=fix_commit_sha,
                         )
                     else:
-                        state.finding_dispositions.append(
-                            {
-                                "finding_id": finding_id,
-                                "disposition": "declined",
-                                "rationale": disposition["rationale"],
-                            }
+                        state.record_finding_disposition(
+                            finding_id=finding_id,
+                            disposition="declined",
+                            rationale=disposition["rationale"],
                         )
-                        state.unresolved_or_deferred.append(
-                            f"{finding_id}: {disposition['rationale']}"
-                        )
-                    seen_finding_ids.add(finding_id)
 
             recovered = LE.recover_interrupted_attempts(
                 repo=repo,
@@ -975,15 +1069,10 @@ def run_local_commit(
                     )
 
                 if decision.disposition != "accepted":
-                    state.finding_dispositions.append(
-                        {
-                            "finding_id": finding["id"],
-                            "disposition": "declined",
-                            "rationale": decision.rationale,
-                        }
-                    )
-                    state.unresolved_or_deferred.append(
-                        f"{finding['id']}: {decision.rationale}"
+                    state.record_finding_disposition(
+                        finding_id=finding["id"],
+                        disposition="declined",
+                        rationale=decision.rationale,
                     )
                     _persist_checkpoint(
                         state, phase="decide", next_action="operator input required"
@@ -1140,13 +1229,11 @@ def run_local_commit(
                     "finding_id": finding["id"],
                 }
             )
-            state.finding_dispositions.append(
-                {
-                    "finding_id": finding["id"],
-                    "disposition": "selected",
-                    "rationale": decision.rationale,
-                    "fix_commit_sha": new_head,
-                }
+            state.record_finding_disposition(
+                finding_id=finding["id"],
+                disposition="selected",
+                rationale=decision.rationale,
+                fix_commit_sha=new_head,
             )
             state.current_head = new_head
             state.head_history.append(new_head)
