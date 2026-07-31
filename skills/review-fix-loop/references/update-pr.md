@@ -52,7 +52,7 @@ enforcement, or checkpoint/terminal-result assembly — it supplies a populated
 
 What issue #100 itself owns, and what did not exist before this module:
 
-- `resolve_publication_target` — resolving and cross-validating the fork/ remote
+- `resolve_publication_target` — resolving and cross-validating the fork/remote
   publication target ("Resolve fork and remote publication targets explicitly").
 - `validate_remote_iteration_grants` — validating every
   `remote_iteration_grants` entry against that resolved target ("Require and
@@ -199,19 +199,25 @@ either side of this rule updates both together.
 [`scripts/tests/test_update_pr.py`](../scripts/tests/test_update_pr.py) drives
 `run_update_pr` against a real temporary Git repository and a real disposable
 local bare repository used as the publication remote — never this repository's
-actual `origin` — covering: a successful converge-then-publish run with and
-without a fix cycle; a well-formed `remote_iteration_grants` entry that does not
-itself block publication; a fork target resolved explicitly without assuming
-origin ownership (and proof the main repository's own bare remote never saw the
-fork's ref at all); a competing remote update that cannot be overwritten (a
-second clone wins the race, and the converged local commit is preserved while
-the remote is left holding the competitor's head); local non-fast-forward
-history relative to the recorded expected-old head; a
-source-binding/pull-request repository mismatch (a misconfigured target) failing
-closed before any lock; a remote-iteration grant referencing the wrong ref
-failing closed before any lock; an unreachable remote failing closed at the
-publish step alone, without losing the already-converged local commit; the
-`update_pr`-only remote-target lock actually being exercised through
-`run_update_pr` (not only `local_execution.py`'s own unit tests); and rejection
-of an invalid invocation or a `local_commit`-policy invocation at the API
-boundary.
+actual `origin`. Fixtures shared with `test_local_commit.py` — the module
+loader, a bare local repository, the always-passing validation commands, the
+marker-file-driven fake reviewer, and the accepting decider/fixer — live in this
+sibling directory's own
+[`scripts/tests/helpers.py`](../scripts/tests/helpers.py) rather than being
+duplicated across both files, matching
+`carve-changesets/scripts/tests/helpers.py`'s established precedent. Covers: a
+successful converge-then-publish run with and without a fix cycle; a well-formed
+`remote_iteration_grants` entry that does not itself block publication; a fork
+target resolved explicitly without assuming origin ownership (and proof the main
+repository's own bare remote never saw the fork's ref at all); a competing
+remote update that cannot be overwritten (a second clone wins the race, and the
+converged local commit is preserved while the remote is left holding the
+competitor's head); local non-fast-forward history relative to the recorded
+expected-old head; a source-binding/pull-request repository mismatch (a
+misconfigured target) failing closed before any lock; a remote-iteration grant
+referencing the wrong ref failing closed before any lock; an unreachable remote
+failing closed at the publish step alone, without losing the already-converged
+local commit; the `update_pr`-only remote-target lock actually being exercised
+through `run_update_pr` (not only `local_execution.py`'s own unit tests); and
+rejection of an invalid invocation or a `local_commit`-policy invocation at the
+API boundary.

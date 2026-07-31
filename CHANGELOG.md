@@ -4,6 +4,16 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-07-31 — Recorded the first review-fix-loop `update_pr` fix cycle
+
+- fix(review-fix-loop): extract the test fixtures shared between
+  `test_local_commit.py` and `test_update_pr.py` (the module loader, a bare
+  local repository, the always-passing validation commands, the
+  marker-file-driven fake reviewer, and the accepting decider/fixer) into a
+  sibling `scripts/tests/helpers.py`, matching
+  `carve-changesets/scripts/tests/helpers.py`'s established precedent, closing
+  the one code-simplicity gap the first review-code-change pass on #100 found
+
 ## 2026-07-30 — Delivered and evaluated the standalone review-fix-loop `update_pr` workflow, delivered and evaluated the standalone review-fix-loop `local_commit` workflow, implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
 - feat(review-fix-loop): add and evaluate the standalone `update_pr` workflow
@@ -23,6 +33,7 @@ summary: Chronological history of repository and skill changes.
   generalizes `local_commit.py`'s internal loop into a policy-parameterized
   `_run_engine` both entry points share, with `run_local_commit`'s own behavior
   and its 21 existing tests unchanged
+  (`95ccb81142357cc5cc55e78150abd5b39fa0e0b1`)
 - feat(review-fix-loop): compose the contract, local-execution, and
   reviewer-orchestration leaves into the end-to-end standalone `local_commit`
   workflow (`scripts/local_commit.py`'s `run_local_commit`), enforcing the
