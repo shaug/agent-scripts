@@ -4,8 +4,57 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Implemented the review-fix-loop local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): remove three subsumed/redundant tests and cut
+  `reviewer_orchestration.py`'s docstring/comment density from roughly one line
+  of prose per line of code down to sibling-module levels, replacing restated
+  rationale with single pointers to `references/reviewer-orchestration.md`,
+  closing the two code-simplicity gaps the sixth review-code-change pass on #98
+  found
+- fix(review-fix-loop): correct an off-by-one changelog SHA attribution left by
+  the previous fix cycle's own rebase cleanup — the duplicate-test entry and the
+  `ignored`-comparison entry each carried the other's identity, closing the gap
+  the fifth review-code-change pass on #98 found
+  (`1945f82979bb3a0e6993c0326fdc9caad7391964`)
+- fix(review-fix-loop): rebase onto the merged #97 local-execution substrate,
+  document that a mutation attributable to a review pass must stop the
+  invocation with `blocked/reviewer_integrity_failure` immediately rather than
+  only relying on the `write_isolation`/`converged`-rejection backstop, and
+  correct a changelog SHA left stale by that same rebase, closing the two gaps
+  the fourth review-code-change pass on #98 found; the extracted
+  `review_gate.evaluate_bound` reuse (cycle 1) is kept as the deliberate design
+  after correctness confirmed it changes no accept/reject outcome for
+  `implement-ticket`/`babysit-pr` (`2596f72cd4886b2d5ba385ee33a51353279fe995`)
+- fix(review-fix-loop): remove a byte-identical duplicate test and trim
+  history-narrating/triplicated docstring prose in `reviewer_orchestration.py`
+  and `reviewer-orchestration.md` down to one owner per rationale, closing the
+  two code-simplicity gaps the third review-code-change pass on #98 found
+  (`7663b2cb36320287d9c2c9e820d4fb1745f4c5b2`)
+- fix(review-fix-loop): stop comparing `ignored` worktree state for reviewer
+  mutation (authorized validation commands legitimately create ignored build
+  artifacts, which previously made `converged` unreachable), fail closed instead
+  of silently passing when a before/after snapshot omits a required capture key,
+  and collapse the packet-less `evaluate_review_result` path into the single
+  packet-plus-result evaluator (`review-fix-loop`'s own
+  checkpoint/terminal-result contract never persists one without the other, so
+  no caller can legitimately use the weaker path), closing the two blocking gaps
+  and the one strong-recommendation gap the second review-code-change pass on
+  #98 found (`18991dd231ce5272b9a4b3335529418e6a717057`)
+- fix(review-fix-loop): detect refs mutation (not only `head_sha`) between
+  before/after reviewer snapshots, reconcile the packet/result evaluator with a
+  contract-legal identity-omitting `blocked` result while still binding the
+  packet itself to the current candidate, and extract the canonical
+  `review_gate.evaluate_bound` (bundled into `implement-ticket`, `babysit-pr`,
+  and now `review-fix-loop`) instead of a second candidate-binding
+  implementation, closing the three gaps the first review-code-change pass on
+  #98 found (`a519ae9f4e42551feba08146b465c5c526188e8b`)
+- feat(review-fix-loop): implement reviewer isolation and complete-review
+  orchestration — fixed lens resolution, default fresh-subagent review execution
+  with an explicit in-agent override, before/after mutation detection that fails
+  a cycle closed, checkpoint-shaped review-record construction, and
+  deterministic finding normalization/selection (#98)
+  (`086677ab59b219bccc009b9eb08dc67f3f613758`)
 - feat(review-fix-loop): add `scripts/local_execution.py` implementing #97's
   local execution substrate — non-blocking common-Git-common-directory candidate
   locking (local-ref lock before the optional `update_pr` remote-target lock,
@@ -18,7 +67,7 @@ summary: Chronological history of repository and skill changes.
   interrupted attempt against a checkpoint's own history — with deterministic
   tests against real temporary Git repositories covering contention,
   interruption, stale state, dirty worktrees, promotion races, and cleanup
-  safety
+  safety (`26b4cf47168dc8432f7d6e5e4597439af6391a51`)
 - fix(review-fix-loop): reject `converged` when any `review_records` entry — not
   only the final-head-bound one — recorded a mutation attempt, closing the gap
   the tenth (final) review-code-change pass on #96 found

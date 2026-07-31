@@ -1,7 +1,7 @@
 ---
 name: review-fix-loop
-description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts, and provide the local execution substrate (common-directory locking, isolated attempt worktrees, durable checkpoint persistence, verified fast-forward-only canonical promotion, and interrupted-attempt recovery) that later children of epic #95 use to run the standalone review-remediation workflow. Use when authoring, resuming, or terminating a review-fix-loop invocation to check its documents against the shared schemas, or when acquiring a candidate lock, running an isolated remediation attempt, or recovering an interrupted one. This skill does not yet run reviewers, select or apply a fix's content, or publish anything; see design/review-fix-loop.md and references/CONTRACT.md for the full behavioral design and current implementation status.
-allowed-tools: Read, Bash
+description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts; run the complete-review orchestration that later children of epic #95 build a fix loop on top of; and provide the local execution substrate (common-directory locking, isolated attempt worktrees, durable checkpoint persistence, verified fast-forward-only canonical promotion, and interrupted-attempt recovery). Use when authoring, resuming, or terminating a review-fix-loop invocation to check its documents against the shared schemas, when running one complete review pass (fresh reviewer subagent by default, explicit in-agent override otherwise) and recording its result, or when acquiring a candidate lock, running an isolated remediation attempt, or recovering an interrupted one. This skill does not yet select or apply a fix's content or publish anything; see design/review-fix-loop.md, references/CONTRACT.md, and references/reviewer-orchestration.md for the full behavioral design and current implementation status.
+allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 
 # Review Fix Loop
@@ -12,27 +12,35 @@ review suite, applies material ticket-scoped fixes, and repeats until review
 converges or a bounded stop condition is reached. The full design is
 [`design/review-fix-loop.md`](../../design/review-fix-loop.md).
 
-Issue [#96](https://github.com/shaug/agent-scripts/issues/96) (the first child
-of epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defined and
-validates the contracts every other child builds on:
+Three of its children are implemented so far:
 
-- the **invocation** a caller or standalone operator supplies to start or resume
-  a loop;
-- the **durable checkpoint** the loop would record between phases; and
-- the **terminal result** the loop returns.
+- [Issue #96](https://github.com/shaug/agent-scripts/issues/96) (the first of
+  epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines and
+  validates the contracts every later child builds on:
+  - the **invocation** a caller or standalone operator supplies to start or
+    resume a loop;
+  - the **durable checkpoint** the loop would record between phases; and
+  - the **terminal result** the loop returns.
+- [Issue #98](https://github.com/shaug/agent-scripts/issues/98) implements
+  **reviewer isolation and complete-review orchestration**: resolving the fixed
+  lens set a complete review must cover, running that review in a fresh
+  read-only subagent by default (or, only through an explicit invocation
+  override, in-agent), detecting an attempted reviewer mutation and failing that
+  cycle closed, and normalizing findings into one deterministic order. See
+  [`references/reviewer-orchestration.md`](references/reviewer-orchestration.md)
+  and [`scripts/reviewer_orchestration.py`](scripts/reviewer_orchestration.py).
+- [Issue #97](https://github.com/shaug/agent-scripts/issues/97) adds the local
+  execution substrate those contracts describe: common-Git-common-directory
+  locking, isolated attempt worktrees, durable checkpoint persistence and resume
+  reconciliation, verified fast-forward-only canonical promotion, and recovery
+  of an interrupted attempt. See [Local execution](#local-execution) below.
 
-Issue [#97](https://github.com/shaug/agent-scripts/issues/97) adds the local
-execution substrate those contracts describe: common-Git-common-directory
-locking, isolated attempt worktrees, durable checkpoint persistence and resume
-reconciliation, verified fast-forward-only canonical promotion, and recovery of
-an interrupted attempt. See [Local execution](#local-execution) below.
-
-This skill still does not run a reviewer, select or apply a fix's content, or
-publish anything — those behaviors belong to issue #98 (reviewer isolation and
-orchestration), #99 (`local_commit`), and #100 (`update_pr`). Do not invoke it
-expecting a complete, end-to-end review-fix loop yet; use it to validate a
-document you or a later child produced against the shared schemas, or to acquire
-a lock, run an isolated attempt, and recover an interrupted one.
+This skill still does not select or apply a fix's content, or publish anything —
+those behaviors belong to #99 (`local_commit`) and #100 (`update_pr`). Do not
+invoke it expecting a complete, end-to-end review-fix loop yet; use it to
+validate a document you or a later child produced against the shared schemas, to
+run and record one complete review pass, or to acquire a lock, run an isolated
+attempt, and recover an interrupted one.
 
 ## Load the contracts
 
@@ -79,6 +87,58 @@ these functions enforce beyond plain JSON Schema, and
 `scripts/tests/test_validate.py` for the complete valid, invalid, boundary, and
 round-trip case coverage.
 
+## Run a complete review
+
+Read
+[`references/reviewer-orchestration.md`](references/reviewer-orchestration.md)
+in full before running a review pass; it implements design's "Review execution"
+and "Reviewer write prevention" sections and workflow step 3 ("Review"). In
+summary:
+
+1. Confirm `review-code-change` and its three lens skills are available; fail
+   closed (`blocked/missing_capability`) if not.
+2. Resolve this invocation's review-execution mode with
+   `resolve_review_execution_mode` — `fresh_subagent` by default, or the
+   invocation's explicit `in_agent_override` when authorized. There is no
+   automatic fallback between them.
+3. Build the raw review-code-change packet bound to the exact current head and
+   comparison base, prepend `build_reviewer_briefing`'s literal prohibitions,
+   and invoke `review-code-change` in a fresh subagent (or, only under the
+   explicit override, in-agent) restricted to
+   `Read, Grep, Glob, Bash, Agent, Task, Skill` — never a file-editing or
+   remote-write tool.
+4. Capture worktree state, including local refs (excluding `refs/remotes/*`),
+   immediately before and after the pass and run `detect_worktree_mutation` on
+   the two snapshots (it raises if either snapshot is missing a required capture
+   key, rather than silently treating an uncaptured dimension as unchanged).
+5. Build one `review_records` entry with `build_review_record`, passing both the
+   exact packet handed to the reviewer (`packet=...`, required) and its result,
+   feeding in every detected mutation. This validates the packet and result
+   together — including catching a `clean` verdict paired with a packet whose
+   own required validation entry was `failed` or `unavailable`, which a
+   result-only check cannot see — and raises `ReviewIntegrityError` instead of
+   returning a partially trusted record. A non-empty `mutation_attempts` always
+   yields `write_isolation: "violated"`, even when the aggregate verdict itself
+   looked clean — stop immediately and return
+   `blocked/reviewer_integrity_failure` rather than continuing to iterate on
+   that pass's findings.
+6. When the verdict is not `clean`, use `normalize_findings` and
+   `select_next_finding` to identify the next finding in one deterministic order
+   — selecting a finding is not disposing or fixing it; that remains a later
+   child's "Decide"/"Fix" responsibility.
+
+`scripts/reviewer_orchestration.py` is dependency-free, matching
+`scripts/validate.py`'s convention, and bundles the same
+`references/review-suite/` contract copy and `scripts/review_gate.py` gate
+`implement-ticket` and `babysit-pr` already ship (kept in sync via the
+repository's `just sync-contracts`) — it does not reimplement candidate/
+lens-execution binding, only reuses the canonical `review_gate.evaluate_bound`.
+See `scripts/tests/test_reviewer_orchestration.py` for complete coverage of lens
+resolution, rejection of an incomplete or stale-bound result, default
+fresh-reviewer selection with no automatic fallback, the explicit in-agent
+override, reviewer-identity freshness, mutation detection that fails a cycle
+closed, and deterministic finding normalization/selection.
+
 ## Local execution
 
 `scripts/local_execution.py` is dependency-free and loads `scripts/validate.py`
@@ -86,7 +146,7 @@ from this same directory via `importlib` rather than duplicating any schema or
 cross-field check, so a caller always resumes and promotes against the exact
 contract `references/CONTRACT.md` defines. It implements the parts of
 `design/review-fix-loop.md`'s "Local ownership and checkpointing" section this
-repository can exercise without a reviewer or a selected fix:
+repository can exercise without a selected fix:
 
 - `acquire_candidate_locks` — the non-blocking, common-Git-common-directory
   local-ref lock plus the optional `update_pr` remote-target lock, acquired in
@@ -111,15 +171,15 @@ See the module's own docstrings and
 [`scripts/tests/test_local_execution.py`](scripts/tests/test_local_execution.py)
 for the complete contention, interruption, stale-state, dirty-worktree,
 promotion-race, and cleanup-safety coverage. Selecting which finding to fix,
-writing the fix's content, running a reviewer, and publishing to a remote remain
-out of scope here; a caller supplies the fix content and invokes these
-primitives around it.
+writing the fix's content, and publishing to a remote remain out of scope here;
+a caller supplies the fix content and invokes these primitives around it.
 
 ## Non-goals
 
-- Running a reviewer, or selecting or writing a fix's content.
+- Deciding which finding to accept, reject, or defer, and applying the resulting
+  fix (a later child's "Decide"/"Fix" workflow steps).
 - Publishing anything, including the `update_pr` expected-old fast-forward
-  update.
+  update (issue #100).
 - Migrating `implement-ticket`, `babysit-pr`, `carve-changesets`, or any other
   existing caller.
 - Owning acceptance criteria or a caller-specific acceptance ledger — the

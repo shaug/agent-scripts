@@ -12,6 +12,13 @@ sequences lenses, explores evidence, or decides what a clean review means —
 those stay owned by repository-owned `review-code-change`. It only refuses to
 let this caller treat a stale, malformed, non-aggregate, non-clean, or
 wrongly-bound result as publishable evidence.
+
+`evaluate_aggregate` is for a caller that only ever wants to consume `clean`
+evidence (`implement-ticket`, `babysit-pr`). `evaluate_bound` is the same
+schema/semantic validation plus candidate/lens-execution binding without the
+clean-verdict requirement, for a caller that must also react to
+`changes_required` or `blocked` (for example `review-fix-loop`, which runs a
+review pass expecting exactly that most of the time).
 """
 
 from __future__ import annotations
@@ -50,6 +57,78 @@ VALIDATE = importlib.util.module_from_spec(VALIDATE_SPEC)
 VALIDATE_SPEC.loader.exec_module(VALIDATE)
 
 
+def _binding_errors(
+    result: dict[str, Any], expected_head: str, expected_base: str
+) -> list[str]:
+    """Return aggregate-lens and candidate/lens-execution binding errors.
+
+    Assumes `result` already passed schema/semantic validation. Shared by
+    `evaluate_bound` and `evaluate_aggregate` so both stay consistent as this
+    binding logic evolves.
+
+    A `blocked` result may legitimately omit candidate identity entirely (the
+    shared review-suite contract allows this when the caller could not
+    establish it); this only compares identity when the result actually
+    asserts some, so an empty `blocked` candidate is not mistaken for a
+    stale-candidate mismatch.
+    """
+    errors: list[str] = []
+    if result.get("lens") != "aggregate":
+        errors.append(f"lens: expected an aggregate result, got {result.get('lens')!r}")
+
+    candidate = result.get("candidate") or {}
+    if (
+        candidate.get("head_sha") is not None
+        or candidate.get("comparison_base_sha") is not None
+    ):
+        if (
+            candidate.get("head_sha") != expected_head
+            or candidate.get("comparison_base_sha") != expected_base
+        ):
+            errors.append(
+                "candidate: result is not bound to the current candidate "
+                f"(expected head {expected_head} / base {expected_base}, got "
+                f"head {candidate.get('head_sha')!r} / "
+                f"base {candidate.get('comparison_base_sha')!r})"
+            )
+
+    for execution in result.get("lens_executions") or []:
+        if not isinstance(execution, dict):
+            continue
+        if (
+            execution.get("head_sha") != expected_head
+            or execution.get("comparison_base_sha") != expected_base
+        ):
+            errors.append(
+                f"lens_executions: {execution.get('lens')!r} execution is not "
+                "bound to the current candidate"
+            )
+
+    return errors
+
+
+def evaluate_bound(
+    result: dict[str, Any], expected_head: str, expected_base: str
+) -> list[str]:
+    """Return rejection reasons for any raw review-code-change result.
+
+    Unlike `evaluate_aggregate` (for a caller that only ever wants to consume
+    clean, publishable evidence), this accepts any verdict —
+    `changes_required` and `blocked` are the ordinary outcome of most review
+    cycles for a caller that must react to them, not failures of this
+    function. Schema/semantic validation (via the bundled `validate.py`,
+    including its aggregate-clean lens-execution completeness rule) plus
+    binding to `expected_head`/`expected_base` is still fully enforced.
+    """
+    errors = [f"schema: {error}" for error in VALIDATE.validate_result(result)]
+    if errors:
+        # A schema-level rejection already explains why the result is
+        # untrustworthy; do not layer confusing candidate-binding errors on
+        # top of a document that isn't even shape-valid.
+        return errors
+    return _binding_errors(result, expected_head, expected_base)
+
+
 def evaluate_aggregate(
     result: dict[str, Any], expected_head: str, expected_base: str
 ) -> list[str]:
@@ -68,8 +147,6 @@ def evaluate_aggregate(
         # errors on top of a document that isn't even shape-valid.
         return errors
 
-    if result.get("lens") != "aggregate":
-        errors.append(f"lens: expected an aggregate result, got {result.get('lens')!r}")
     if result.get("verdict") != "clean":
         errors.append(
             f"verdict: expected clean, got {result.get('verdict')!r}; "
@@ -77,30 +154,7 @@ def evaluate_aggregate(
             "publishable evidence"
         )
 
-    candidate = result.get("candidate") or {}
-    if (
-        candidate.get("head_sha") != expected_head
-        or candidate.get("comparison_base_sha") != expected_base
-    ):
-        errors.append(
-            "candidate: result is not bound to the current candidate "
-            f"(expected head {expected_head} / base {expected_base}, got "
-            f"head {candidate.get('head_sha')!r} / "
-            f"base {candidate.get('comparison_base_sha')!r})"
-        )
-
-    for execution in result.get("lens_executions") or []:
-        if not isinstance(execution, dict):
-            continue
-        if (
-            execution.get("head_sha") != expected_head
-            or execution.get("comparison_base_sha") != expected_base
-        ):
-            errors.append(
-                f"lens_executions: {execution.get('lens')!r} execution is not "
-                "bound to the current candidate"
-            )
-
+    errors.extend(_binding_errors(result, expected_head, expected_base))
     return errors
 
 
