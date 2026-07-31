@@ -9,14 +9,24 @@ points against a real temporary Git repository (and, for `update_pr`, a real
 disposable local bare repository used as the publication remote — never this
 repository's actual `origin`).
 
-It deliberately does not import `scripts/tests/helpers.py`: that module is
-owned by the capability unit suites, and this evaluation corpus is a
-separate, cross-cutting consumer of the same three scripts (`validate.py`,
-`local_execution.py`, `local_commit.py`/`update_pr.py`) with its own fixture
-surface (more reviewer/decide/apply_fix shapes than any one capability's unit
-tests need, because this corpus exercises the full cross-cutting scenario
-list from `design/review-fix-loop.md`'s "Validation strategy" section rather
-than one module's own contract).
+It imports the identical subset of `scripts/tests/helpers.py`'s own fixtures
+(`init_repo`, `CLEAN_TEMPLATE`, `ALWAYS_PASS_VALIDATION`, `finding`,
+`make_clean_reviewer`, `fixing_apply_fix`, `accepting_decide`) rather than
+redefining them, following this repository's own `carve-changesets` precedent
+of one skill's `scripts/tests/`/`scripts/evals/` fixture modules importing
+across that boundary
+(`skills/carve-changesets/scripts/tests/test_evals.py` imports directly from
+its sibling `scripts/evals/`). Every fixture below —
+imported or defined here — is duck-typed (attribute access only, never
+`isinstance`), matching `scripts/tests/helpers.py`'s own documented
+convention: constructing a `ReviewPass`/`FixDecision` from one module's
+separately loaded `local_commit.py` is exactly as valid to another module's
+separately loaded engine as one built from that engine's own load. Only the
+fixtures genuinely specific to this corpus (more reviewer/decide/apply_fix
+shapes than any one capability's unit tests need, because this corpus
+exercises the full cross-cutting scenario list from
+`design/review-fix-loop.md`'s "Validation strategy" section rather than one
+module's own contract) are defined here.
 """
 
 from __future__ import annotations
@@ -29,10 +39,8 @@ from typing import Any, Callable
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 
 
-def load_module(name: str, filename: str):
-    spec = importlib.util.spec_from_file_location(
-        name, SKILL_ROOT / "scripts" / filename
-    )
+def load_module(name: str, filename: str, *, subdir: str = "scripts"):
+    spec = importlib.util.spec_from_file_location(name, SKILL_ROOT / subdir / filename)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
@@ -48,25 +56,22 @@ LC = UP.LC
 LE = LC.LE
 VALIDATE = LC.VALIDATE
 
+# The capability unit suites' own shared fixture module — see this module's
+# docstring for why importing across the tests/evals boundary is safe here.
+TESTS = load_module(
+    "review_fix_loop_eval_tests_helpers", "helpers.py", subdir="scripts/tests"
+)
+init_repo = TESTS.init_repo
+CLEAN_TEMPLATE = TESTS.CLEAN_TEMPLATE
+ALWAYS_PASS_VALIDATION = TESTS.ALWAYS_PASS_VALIDATION
+FINDING_ID = TESTS.FINDING_ID
+finding = TESTS.finding
+make_clean_reviewer = TESTS.make_clean_reviewer
+fixing_apply_fix = TESTS.fixing_apply_fix
+accepting_decide = TESTS.accepting_decide
+
 MARKER_FIXED = "fixed"
 MARKER_BROKEN = "broken"
-FINDING_ID = "correctness-001"
-SECOND_FINDING_ID = "solution-simplicity-001"
-
-CLEAN_TEMPLATE: dict[str, Any] = {
-    "schema_version": "1.4",
-    "lens": "aggregate",
-    "verdict": "clean",
-    "findings": [],
-    "blocking_reasons": [],
-    "validation_limitations": [],
-    "next_action": "No changes are required.",
-}
-
-ALWAYS_PASS_VALIDATION = [
-    {"name": "focused unit test", "command": "true", "scope": "focused"},
-    {"name": "full repository gate", "command": "true", "scope": "full"},
-]
 
 # Fails exactly while `validation_flag.txt` reads anything other than `pass`,
 # matching `scripts/tests/test_local_commit.py`'s established flag-gated
@@ -88,16 +93,6 @@ FLAG_GATED_VALIDATION = [
 # ---------------------------------------------------------------------------
 # Repository + disposable remote fixtures
 # ---------------------------------------------------------------------------
-
-
-def init_repo(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    LE.git("init", "-q", "-b", "main", cwd=path)
-    LE.git("config", "user.email", "test@example.com", cwd=path)
-    LE.git("config", "user.name", "Eval", cwd=path)
-    (path / "README.md").write_text("initial\n")
-    LE.git("add", "-A", cwd=path)
-    LE.git("commit", "-q", "-m", "initial commit", cwd=path)
 
 
 def init_bare_remote(root: Path, *, name: str = "remote.git") -> Path:
@@ -242,23 +237,6 @@ def _lens_executions(head_sha: str, comparison_base_sha: str) -> list[dict[str, 
     ]
 
 
-def finding(finding_id: str = FINDING_ID) -> dict[str, Any]:
-    return {
-        "id": finding_id,
-        "lens": "correctness",
-        "severity": "blocking",
-        "confidence": "high",
-        "rule": "example rule",
-        "evidence": [
-            {"location": "marker.txt:1", "detail": "marker.txt is not 'fixed'"}
-        ],
-        "concern": "marker.txt does not read 'fixed'",
-        "impact": "the candidate is incomplete",
-        "proposed_change": "write 'fixed' into marker.txt",
-        "expected_effect": "marker.txt reads 'fixed'",
-    }
-
-
 def make_marker_reviewer(repo: Path) -> Callable[..., Any]:
     """`clean` iff `marker.txt` reads 'fixed' at the exact reviewed head,
     `changes_required` with one blocking finding otherwise. A real function
@@ -293,55 +271,6 @@ def make_marker_reviewer(repo: Path) -> Callable[..., Any]:
                 ],
                 "next_action": f"Fix {FINDING_ID}.",
             }
-        return LC.ReviewPass(result=result)
-
-    return reviewer
-
-
-def make_clean_reviewer() -> Callable[..., Any]:
-    def reviewer(
-        *, packet, briefing, head_sha, comparison_base_sha, independence, sequence
-    ):
-        del packet, briefing, independence, sequence
-        candidate = {"head_sha": head_sha, "comparison_base_sha": comparison_base_sha}
-        result = {
-            **CLEAN_TEMPLATE,
-            "candidate": candidate,
-            "lens_executions": _lens_executions(head_sha, comparison_base_sha),
-        }
-        return LC.ReviewPass(result=result)
-
-    return reviewer
-
-
-def make_expanding_findings_reviewer() -> Callable[..., Any]:
-    """First pass: one blocking finding. Every later pass: two blocking
-    findings (a superset). Drives the `expanding_findings` early stop."""
-
-    def reviewer(
-        *, packet, briefing, head_sha, comparison_base_sha, independence, sequence
-    ):
-        del packet, briefing, independence
-        candidate = {"head_sha": head_sha, "comparison_base_sha": comparison_base_sha}
-        findings = [finding(FINDING_ID)]
-        if sequence > 1:
-            findings.append(finding(SECOND_FINDING_ID))
-        result = {
-            **CLEAN_TEMPLATE,
-            "candidate": candidate,
-            "verdict": "changes_required",
-            "findings": findings,
-            "lens_executions": [
-                {
-                    "lens": "correctness",
-                    "head_sha": head_sha,
-                    "comparison_base_sha": comparison_base_sha,
-                    "verdict": "changes_required",
-                    "freshly_executed": True,
-                }
-            ],
-            "next_action": "Fix the reported findings.",
-        }
         return LC.ReviewPass(result=result)
 
     return reviewer
@@ -415,13 +344,6 @@ def make_mutating_reviewer(repo: Path, inner: Callable[..., Any]) -> Callable[..
 # ---------------------------------------------------------------------------
 
 
-def accepting_decide(*, finding, change_contract, attempt_number):
-    del change_contract, attempt_number
-    return LC.FixDecision(
-        disposition="accepted", rationale=f"{finding['id']} is tractable"
-    )
-
-
 def make_rejecting_decide(
     rationale: str = "not a genuine defect",
 ) -> Callable[..., Any]:
@@ -447,12 +369,6 @@ def make_scope_expanding_decide() -> Callable[..., Any]:
 # ---------------------------------------------------------------------------
 # Apply-fix fixtures
 # ---------------------------------------------------------------------------
-
-
-def fixing_apply_fix(*, finding, attempt_path, change_contract, attempt_number):
-    del finding, change_contract, attempt_number
-    (attempt_path / "marker.txt").write_text(MARKER_FIXED + "\n")
-    return f"fix: resolve {FINDING_ID}"
 
 
 def make_never_fixing_apply_fix(content: str = "still-broken") -> Callable[..., Any]:

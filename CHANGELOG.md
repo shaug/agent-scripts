@@ -6,6 +6,17 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-31 — Added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
+- fix(review-fix-loop): consolidate `scripts/evals/helpers.py`'s five fixtures
+  that were byte-identical or functionally identical to
+  `scripts/tests/helpers.py`'s own (`init_repo`, `CLEAN_TEMPLATE`,
+  `ALWAYS_PASS_VALIDATION`, `finding`, `make_clean_reviewer`,
+  `fixing_apply_fix`, `accepting_decide`) into imports from that sibling module
+  instead of a second source of truth, following this repository's own
+  `carve-changesets` precedent of importing across the `scripts/tests`/
+  `scripts/evals` boundary within one skill, and remove one unused reviewer
+  fixture (`make_expanding_findings_reviewer`) left over from a descoped
+  scenario, closing the one code-simplicity gap the first review-code-change
+  pass on #101 found
 - feat(review-fix-loop): add the cross-cutting, result-blind evaluation corpus
   (issue #101, epic #95) covering convergence, repeated findings,
   invalid/incomplete reviews, declined findings, budget exhaustion, interruption
@@ -21,6 +32,7 @@ summary: Chronological history of repository and skill changes.
   demonstrates the grader rejecting both a fabricated convergence claim and a
   fixture that cannot actually converge, and runs the whole corpus under
   `just test`; `just eval-review-fix-loop` is the standalone entry point
+  (`cd5b3ee63d89fed305c4e5a3c0f15cb14b84a3c6`)
 - fix(review-fix-loop): extract the test fixtures shared between
   `test_local_commit.py` and `test_update_pr.py` (the module loader, a bare
   local repository, the always-passing validation commands, the
