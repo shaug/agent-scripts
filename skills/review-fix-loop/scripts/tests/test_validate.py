@@ -132,6 +132,17 @@ class InvocationRejectionTests(unittest.TestCase):
         errors = VALIDATE.validate_invocation(invocation)
         self.assertTrue(any("must be <= 10" in error for error in errors), errors)
 
+    def test_non_integer_cycle_budget_rejected(self):
+        # #115: `max_fix_cycles` is `"type": "integer"` with `minimum`/
+        # `maximum` bounds. This enforcement now comes from the shared
+        # `review-suite` generic engine (imported via `validate_schema`)
+        # rather than a hand-duplicated copy, so a non-integer value must
+        # still fail closed exactly as it did before deduplication.
+        invocation = copy.deepcopy(self.local_commit)
+        invocation["fix_cycle_budget"]["max_fix_cycles"] = 3.5
+        errors = VALIDATE.validate_invocation(invocation)
+        self.assertIn("$.fix_cycle_budget.max_fix_cycles: expected integer", errors)
+
     def test_unsupported_review_only_top_level_field_rejected(self):
         invocation = copy.deepcopy(self.local_commit)
         invocation["mode"] = "review_only"

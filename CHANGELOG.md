@@ -4,8 +4,28 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-31 — Packaged and documented the standalone review-fix-loop skill, added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
+## 2026-07-31 — Unified the duplicated JSON-schema validation engine between review-suite and review-fix-loop, packaged and documented the standalone review-fix-loop skill, added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
+- fix(review-fix-loop): unify the duplicated generic JSON-schema-subset
+  validation engine (`_path`/`_is_type`/`validate_schema`) with the canonical
+  `review-suite/scripts/validate.py` copy (issue #115, discovered during epic
+  #95's closeout review) — extend the canonical engine's `_is_type`/
+  `validate_schema` to support `"type": "integer"` and `minimum`/`maximum`
+  numeric checks as a backward-compatible superset (no current
+  `review-packet`/`review-result` schema field uses `integer`, so this is
+  behavior-preserving for every existing consumer), then refresh every bundled
+  `references/review-suite/validate.py` copy via `just sync-contracts`;
+  `skills/review-fix-loop/scripts/validate.py` no longer hand-duplicates
+  `_path`/`_is_type`/`validate_schema` and instead imports them from its bundled
+  copy via the same `importlib.util.spec_from_file_location` pattern
+  `review_gate.py` already uses for `evaluate_bound`, keeping only its own
+  schema-specific `validate_invocation`/`validate_checkpoint`/
+  `validate_terminal_result` and cross-document checks; adds a regression test
+  proving `max_fix_cycles` non-integer rejection now flows through the shared
+  engine, plus generic-engine unit tests for `"integer"`/`minimum`/`maximum` in
+  `review-suite/scripts/tests/test_contracts.py`; all 273 pre-existing
+  review-fix-loop tests and 318 pre-existing review-suite tests continue to pass
+  unchanged, plus the 9 new tests this change adds
 - feat(review-fix-loop): package and document the standalone skill for discovery
   (issue #102, epic #95, the epic's final child) — list `skills/review-fix-loop`
   in the README's "Current reusable agent skills" section with its
@@ -23,6 +43,7 @@ summary: Chronological history of repository and skill changes.
   that both workflows keep fixes local until convergence, that `update_pr`
   publishes exactly once, and that every non-converged terminal result reports
   its retained unpushed commits via `unpushed_commits`/`operator_action`
+  (`a1623de4d1222d2ae08c53d5e2ee19b7d5693281`)
 - fix(review-fix-loop): configure `user.email`/`user.name` on both git clones
   `scripts/evals/corpus.py`'s
   `up_sequential_publication_race_second_clone_loses` scenario creates,

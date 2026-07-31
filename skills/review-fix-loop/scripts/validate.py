@@ -6,19 +6,43 @@ convention used by the repository's review-suite contract
 (`skills/review-code-change/references/review-suite/validate.py`): a skill
 folder is the unit of distribution, so its validator must work standalone
 wherever the skill is installed.
+
+The generic JSON-schema-subset engine (`_path`/`_is_type`/`validate_schema`)
+is not hand-duplicated here. It is imported from the bundled
+`references/review-suite/validate.py` copy of the canonical
+`review-suite/scripts/validate.py` (kept in sync via `just sync-contracts` and
+guarded by `review-suite/scripts/tests/test_bundled_contracts.py`), using the
+same `importlib` loading pattern `review_gate.py` already uses for
+`evaluate_bound`. Only this skill's own schema-specific validators
+(`validate_invocation`, `validate_checkpoint`, `validate_terminal_result`, and
+the cross-document checks) are defined in this file.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
 SCHEMA_DIR = HERE.parent / "references"
+
+_REVIEW_SUITE_VALIDATE_SPEC = importlib.util.spec_from_file_location(
+    "review_fix_loop_review_suite_validate",
+    HERE.parent / "references" / "review-suite" / "validate.py",
+)
+assert _REVIEW_SUITE_VALIDATE_SPEC and _REVIEW_SUITE_VALIDATE_SPEC.loader
+_REVIEW_SUITE_VALIDATE = importlib.util.module_from_spec(_REVIEW_SUITE_VALIDATE_SPEC)
+_REVIEW_SUITE_VALIDATE_SPEC.loader.exec_module(_REVIEW_SUITE_VALIDATE)
+
+# Re-exported for any caller that imports this module's generic engine
+# directly (mirroring the shape the hand-duplicated functions used to have).
+_path = _REVIEW_SUITE_VALIDATE._path
+_is_type = _REVIEW_SUITE_VALIDATE._is_type
+validate_schema = _REVIEW_SUITE_VALIDATE.validate_schema
 
 SCHEMAS = {
     "invocation": SCHEMA_DIR / "invocation.schema.json",
@@ -55,76 +79,6 @@ BLOCKED_REASONS = {
 # under `update_pr`: only these observed a publication attempt that did not
 # land cleanly.
 BLOCKED_REASONS_IMPLYING_PUBLICATION_FAILED = {"remote_advanced", "publication_failed"}
-
-
-# ---------------------------------------------------------------------------
-# Minimal JSON Schema subset (shared shape with the review-suite validator)
-# ---------------------------------------------------------------------------
-
-
-def _path(parent: str, key: object) -> str:
-    if isinstance(key, int):
-        return f"{parent}[{key}]"
-    return f"{parent}.{key}" if parent else str(key)
-
-
-def _is_type(value: Any, expected: str) -> bool:
-    if expected == "object":
-        return isinstance(value, dict)
-    if expected == "array":
-        return isinstance(value, list)
-    if expected == "string":
-        return isinstance(value, str)
-    if expected == "boolean":
-        return isinstance(value, bool)
-    if expected == "integer":
-        return isinstance(value, int) and not isinstance(value, bool)
-    return False
-
-
-def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[str]:
-    """Validate the JSON Schema subset used by this repository."""
-    errors: list[str] = []
-    expected_type = schema.get("type")
-    if expected_type and not _is_type(value, expected_type):
-        return [f"{at}: expected {expected_type}"]
-
-    if "const" in schema:
-        const = schema["const"]
-        # `1 == True` in Python; a boolean constant must reject numeric 1/1.0.
-        if value != const or isinstance(const, bool) != isinstance(value, bool):
-            errors.append(f"{at}: expected constant {const!r}")
-    if "enum" in schema and value not in schema["enum"]:
-        errors.append(f"{at}: expected one of {schema['enum']!r}")
-    if isinstance(value, str):
-        if len(value) < schema.get("minLength", 0):
-            errors.append(f"{at}: string is too short")
-        if pattern := schema.get("pattern"):
-            if re.fullmatch(pattern, value) is None:
-                errors.append(f"{at}: does not match {pattern!r}")
-    if isinstance(value, int) and not isinstance(value, bool):
-        if "minimum" in schema and value < schema["minimum"]:
-            errors.append(f"{at}: must be >= {schema['minimum']}")
-        if "maximum" in schema and value > schema["maximum"]:
-            errors.append(f"{at}: must be <= {schema['maximum']}")
-    if isinstance(value, list):
-        if len(value) < schema.get("minItems", 0):
-            errors.append(f"{at}: expected at least {schema['minItems']} item(s)")
-        if item_schema := schema.get("items"):
-            for index, item in enumerate(value):
-                errors.extend(validate_schema(item, item_schema, _path(at, index)))
-    if isinstance(value, dict):
-        properties = schema.get("properties", {})
-        for key in schema.get("required", []):
-            if key not in value:
-                errors.append(f"{at}: missing required property {key!r}")
-        if schema.get("additionalProperties") is False:
-            for key in value.keys() - properties.keys():
-                errors.append(f"{_path(at, key)}: unknown property")
-        for key, child in value.items():
-            if key in properties:
-                errors.extend(validate_schema(child, properties[key], _path(at, key)))
-    return errors
 
 
 def _load_schema(name: str) -> dict[str, Any]:

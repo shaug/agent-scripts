@@ -582,5 +582,60 @@ class RemovedVerificationSufficiencyEvidenceTests(unittest.TestCase):
         )
 
 
+class GenericEngineIntegerSupportTests(unittest.TestCase):
+    """#115: the generic JSON-schema-subset engine (`_is_type`/`validate_schema`)
+    supports `"integer"` type and `minimum`/`maximum` numeric checks as a
+    backward-compatible superset, so `review-fix-loop`'s validator (whose
+    schemas use `"type": "integer"` with bounds, e.g. `max_fix_cycles`) can
+    import this engine instead of hand-duplicating it. No current
+    `review-packet`/`review-result` schema field uses `integer`, so these
+    checks are additive and do not change behavior for any existing schema."""
+
+    def test_is_type_accepts_a_plain_integer(self):
+        self.assertTrue(VALIDATOR._is_type(3, "integer"))
+
+    def test_is_type_rejects_a_bool_as_integer(self):
+        # `isinstance(True, int)` is True in Python; a bool must not satisfy
+        # an integer type check.
+        self.assertFalse(VALIDATOR._is_type(True, "integer"))
+
+    def test_is_type_rejects_a_non_integer(self):
+        self.assertFalse(VALIDATOR._is_type(3.5, "integer"))
+        self.assertFalse(VALIDATOR._is_type("3", "integer"))
+
+    def test_validate_schema_enforces_integer_type(self):
+        errors = VALIDATOR.validate_schema("3", {"type": "integer"})
+        self.assertEqual(["$: expected integer"], errors)
+
+    def test_validate_schema_enforces_minimum(self):
+        errors = VALIDATOR.validate_schema(0, {"type": "integer", "minimum": 1})
+        self.assertEqual(["$: must be >= 1"], errors)
+
+    def test_validate_schema_enforces_maximum(self):
+        errors = VALIDATOR.validate_schema(11, {"type": "integer", "maximum": 10})
+        self.assertEqual(["$: must be <= 10"], errors)
+
+    def test_validate_schema_accepts_an_in_range_integer(self):
+        errors = VALIDATOR.validate_schema(
+            5, {"type": "integer", "minimum": 1, "maximum": 10}
+        )
+        self.assertEqual([], errors)
+
+    def test_existing_packet_and_result_fixtures_are_unaffected(self):
+        # No current review-packet/review-result schema field uses "integer",
+        # so adding support for it must not change any existing fixture's
+        # validation outcome.
+        manifest = load(ROOT / "fixtures" / "manifest.json")
+        for entry in manifest:
+            with self.subTest(entry=entry["name"]):
+                fixture = ROOT / "fixtures" / entry["name"]
+                packet = load(fixture / "packet.json")
+                result = load(fixture / "expected.json")
+                packet_errors = VALIDATOR.validate_packet(packet)
+                if entry["packet_valid"]:
+                    self.assertEqual([], packet_errors)
+                self.assertEqual([], VALIDATOR.validate_result(result))
+
+
 if __name__ == "__main__":
     unittest.main()
