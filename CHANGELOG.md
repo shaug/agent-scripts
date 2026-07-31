@@ -6,6 +6,10 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): correct an off-by-one changelog SHA attribution left by
+  the previous fix cycle's own rebase cleanup — the duplicate-test entry and the
+  `ignored`-comparison entry each carried the other's identity, closing the gap
+  the fifth review-code-change pass on #98 found
 - fix(review-fix-loop): rebase onto the merged #97 local-execution substrate,
   document that a mutation attributable to a review pass must stop the
   invocation with `blocked/reviewer_integrity_failure` immediately rather than
@@ -14,12 +18,12 @@ summary: Chronological history of repository and skill changes.
   the fourth review-code-change pass on #98 found; the extracted
   `review_gate.evaluate_bound` reuse (cycle 1) is kept as the deliberate design
   after correctness confirmed it changes no accept/reject outcome for
-  `implement-ticket`/`babysit-pr`
+  `implement-ticket`/`babysit-pr` (`2596f72cd4886b2d5ba385ee33a51353279fe995`)
 - fix(review-fix-loop): remove a byte-identical duplicate test and trim
   history-narrating/triplicated docstring prose in `reviewer_orchestration.py`
   and `reviewer-orchestration.md` down to one owner per rationale, closing the
   two code-simplicity gaps the third review-code-change pass on #98 found
-  (`18991dd231ce5272b9a4b3335529418e6a717057`)
+  (`7663b2cb36320287d9c2c9e820d4fb1745f4c5b2`)
 - fix(review-fix-loop): stop comparing `ignored` worktree state for reviewer
   mutation (authorized validation commands legitimately create ignored build
   artifacts, which previously made `converged` unreachable), fail closed instead
@@ -29,7 +33,7 @@ summary: Chronological history of repository and skill changes.
   checkpoint/terminal-result contract never persists one without the other, so
   no caller can legitimately use the weaker path), closing the two blocking gaps
   and the one strong-recommendation gap the second review-code-change pass on
-  #98 found
+  #98 found (`18991dd231ce5272b9a4b3335529418e6a717057`)
 - fix(review-fix-loop): detect refs mutation (not only `head_sha`) between
   before/after reviewer snapshots, reconcile the packet/result evaluator with a
   contract-legal identity-omitting `blocked` result while still binding the
