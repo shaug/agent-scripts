@@ -283,16 +283,6 @@ class ResolveReviewExecutionModeTests(unittest.TestCase):
         )
         self.assertIsNone(resolution["blocked_reason"])
 
-    def test_override_is_honored_even_when_fresh_subagent_would_be_available(self):
-        # An explicit override does not require the fresh path to be
-        # unavailable first.
-        resolution = ORCH.resolve_review_execution_mode(
-            "in_agent_override",
-            override_authorization="explicit operator override",
-            host_supports_fresh_subagent=True,
-        )
-        self.assertEqual("in_agent_override", resolution["independence"])
-
     def test_unknown_mode_raises(self):
         with self.assertRaises(ValueError):
             ORCH.resolve_review_execution_mode("read_only")
@@ -308,11 +298,6 @@ class GenerateReviewerIdentityTests(unittest.TestCase):
             "fresh-subagent-review-2",
             ORCH.generate_reviewer_identity("fresh_subagent", 2),
         )
-
-    def test_different_sequence_yields_a_different_identity(self):
-        first = ORCH.generate_reviewer_identity("fresh_subagent", 1)
-        second = ORCH.generate_reviewer_identity("fresh_subagent", 2)
-        self.assertNotEqual(first, second)
 
     def test_in_agent_override_identity_shape(self):
         self.assertEqual(
@@ -429,12 +414,6 @@ class DetectWorktreeMutationTests(unittest.TestCase):
         before["refs"] = {"refs/remotes/origin/main": HEAD}
         after = copy.deepcopy(self.CLEAN_STATE)
         after["refs"] = {"refs/remotes/origin/main": OTHER_HEAD}
-        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
-
-    def test_identical_refs_report_no_mutation(self):
-        before = copy.deepcopy(self.CLEAN_STATE)
-        before["refs"] = {"refs/heads/main": HEAD}
-        after = copy.deepcopy(before)
         self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
 
     def test_missing_refs_key_raises_instead_of_silently_passing(self):

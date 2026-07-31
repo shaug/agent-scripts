@@ -6,10 +6,17 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): remove three subsumed/redundant tests and cut
+  `reviewer_orchestration.py`'s docstring/comment density from roughly one line
+  of prose per line of code down to sibling-module levels, replacing restated
+  rationale with single pointers to `references/reviewer-orchestration.md`,
+  closing the two code-simplicity gaps the sixth review-code-change pass on #98
+  found
 - fix(review-fix-loop): correct an off-by-one changelog SHA attribution left by
   the previous fix cycle's own rebase cleanup — the duplicate-test entry and the
   `ignored`-comparison entry each carried the other's identity, closing the gap
   the fifth review-code-change pass on #98 found
+  (`1945f82979bb3a0e6993c0326fdc9caad7391964`)
 - fix(review-fix-loop): rebase onto the merged #97 local-execution substrate,
   document that a mutation attributable to a review pass must stop the
   invocation with `blocked/reviewer_integrity_failure` immediately rather than

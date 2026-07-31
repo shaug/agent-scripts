@@ -1,36 +1,26 @@
 #!/usr/bin/env python3
 """Reviewer isolation and complete-review orchestration for `review-fix-loop`.
 
-This module implements the design's "Review execution" and "Reviewer write
-prevention" sections (`design/review-fix-loop.md`) and workflow step 3
-("Review"): resolving the fixed set of lenses a complete review must cover,
-resolving which execution mode (`fresh_subagent` default or an explicit
-`in_agent_override`) a given invocation actually gets, detecting an attempted
-reviewer mutation from before/after worktree snapshots, building one
-checkpoint-shaped `review_records` entry per review pass, and normalizing raw
-findings into one deterministic order for later fix-cycle selection.
+Implements the deterministic decisions and data transformations behind
+design's "Review execution" and "Reviewer write prevention" sections
+(`design/review-fix-loop.md`) and workflow step 3 ("Review"): fixed lens
+resolution, review-execution mode resolution, before/after mutation
+detection, checkpoint-shaped `review_records` construction, and finding
+normalization. See `references/reviewer-orchestration.md` for the full
+rationale behind each function; this module states it once each, briefly,
+and does not restate it.
 
-It intentionally has no third-party dependencies, matching the convention
-already used by `skills/review-fix-loop/scripts/validate.py` and by the
+It does not run a subagent, spawn a process, or shell out to Git — those are
+host/runtime actions the executing agent performs by following
+`references/reviewer-orchestration.md`. It also does not decide which
+finding to fix or apply a fix (design's "Decide"/"Fix" steps 4-5, a later
+child's responsibility); `select_next_finding` only identifies the next
+candidate in a stable order.
+
+Dependency-free, like every other script in this skill: it loads the
 bundled `references/review-suite/validate.py` and `scripts/review_gate.py`
-this module imports: a skill folder is the unit of distribution, so its
-scripts must work standalone wherever the skill is installed. Candidate/
-lens-execution binding is not reimplemented here: it reuses the canonical
-`review_gate.evaluate_bound` (the same binding logic `implement-ticket` and
-`babysit-pr` consume via `evaluate_aggregate`, generalized to accept any
-verdict), kept in sync via the repository's `just sync-contracts`.
-
-This module does not run a subagent, spawn a process, or shell out to Git.
-Actually creating a fresh reviewer context, restricting its tool surface, and
-capturing real worktree state are host/runtime actions the executing agent
-performs by following `references/reviewer-orchestration.md`; this module only
-supplies the deterministic, testable decisions and data transformations that
-sit around that action. It also does not decide which finding to fix or apply
-any fix — the design's "Decide" and "Fix" workflow steps (4 and 5) and the
-`accepted`/`rejected`/`deferred` disposition of a finding remain a later
-child's responsibility (see design's rollout order); `select_next_finding`
-only identifies which finding a cycle *would* target next in a stable,
-reproducible order.
+(kept in sync via `just sync-contracts`) rather than duplicating their
+candidate/lens-execution binding logic.
 """
 
 from __future__ import annotations
@@ -57,32 +47,22 @@ REVIEW_SUITE = _load_bundled_module(
 )
 GATE = _load_bundled_module("review_fix_loop_bundled_review_gate", REVIEW_GATE_PATH)
 
-# Sourced from the bundled contract's own constant rather than hand-copied, so
-# this module cannot silently drift from the schema/semantics that actually
-# enforce it (`_check_aggregate_clean_lens_executions` in the bundled
-# `validate.py`).
+# Sourced from the bundled validator's own constant so this cannot drift from
+# the schema/semantics that enforce it.
 REQUIRED_LENSES: tuple[str, ...] = REVIEW_SUITE.REQUIRED_AGGREGATE_LENSES
 
 SEVERITY_ORDER = {"blocking": 0, "strong_recommendation": 1, "defer": 2}
 GATING_SEVERITIES = frozenset({"blocking", "strong_recommendation"})
 
-# Worktree-state categories actually compared for mutation. `ignored` is
-# deliberately excluded (captured, per `REQUIRED_SNAPSHOT_KEYS` below, but
-# never compared) — see references/reviewer-orchestration.md's "Reviewer
-# write prevention" tier 4 for why.
+# Compared for mutation. `ignored` is captured (REQUIRED_SNAPSHOT_KEYS) but
+# never compared — see references/reviewer-orchestration.md, "Reviewer write
+# prevention" tier 4.
 COMPARED_WORKTREE_CATEGORIES = ("tracked", "staged", "unstaged", "untracked")
-
-# Every key a before/after snapshot must carry for detect_worktree_mutation
-# to trust it. `ignored` is required-but-uncompared (captured per design,
-# never compared; see COMPARED_WORKTREE_CATEGORIES above).
 REQUIRED_SNAPSHOT_KEYS = ("head_sha", "refs", *COMPARED_WORKTREE_CATEGORIES, "ignored")
 
-# The literal prohibitions every reviewer briefing must carry. Acceptance
-# criterion: "Reviewer instructions explicitly prohibit worktree mutation and
-# implementation." Keeping this as one shared tuple means the same wording
-# reaches a fresh subagent and an explicitly authorized in-agent override
-# alike, and a test can assert on the exact prohibitions in force rather than
-# on prose that might drift between the two paths.
+# Acceptance criterion: "Reviewer instructions explicitly prohibit worktree
+# mutation and implementation." One shared tuple so a fresh subagent and an
+# in-agent override get identical wording, and a test can assert on it.
 REVIEWER_PROHIBITIONS: tuple[str, ...] = (
     "Report findings only; do not implement, edit, or otherwise change any "
     "file in this worktree or any other.",
@@ -96,16 +76,11 @@ REVIEWER_PROHIBITIONS: tuple[str, ...] = (
 
 
 class ReviewIntegrityError(ValueError):
-    """A raw review-code-change packet/result pair cannot be trusted for this cycle.
+    """A raw review-code-change packet/result pair cannot be trusted this cycle.
 
-    Raised by `build_review_record` when `evaluate_review_result` finds the
-    packet or result untrustworthy: not schema-valid, not cross-field
-    consistent (this includes the bundled contract's own aggregate-`clean`
-    lens-execution completeness rule), not bound to the exact head and
-    comparison base this cycle captured, or a `clean` verdict paired with
-    packet validation that cannot back it. The caller must treat this like
-    any other incomplete-evidence stop; there is no partially-trusted
-    fallback record.
+    Raised by `build_review_record` when `evaluate_review_result` finds
+    either document untrustworthy. Treat like any other incomplete-evidence
+    stop; there is no partially-trusted fallback record.
     """
 
     def __init__(self, errors: Sequence[str]):
@@ -116,12 +91,9 @@ class ReviewIntegrityError(ValueError):
 def resolve_review_lenses() -> tuple[str, ...]:
     """Return the fixed set of lenses a complete review must cover.
 
-    `review-fix-loop` has no selectable lens subset: design states the
-    complete repository review suite is its "sole initial review mode," and
-    the invocation schema has no field for requesting a different one. This
-    function exists so every caller and test names one canonical source for
-    that fixed set instead of hand-copying the three lens names and risking
-    drift from the contract that actually enforces them.
+    `review-fix-loop` has no selectable lens subset (design: the complete
+    suite is its "sole initial review mode"); this is the one canonical
+    source for that fixed set.
     """
     return REQUIRED_LENSES
 
@@ -134,41 +106,19 @@ def evaluate_review_result(
 ) -> list[str]:
     """Return rejection reasons for a raw review-code-change result and its packet.
 
-    Empty means the result is trustworthy evidence for exactly this cycle's
-    head and comparison base: schema-valid, cross-field consistent, bound to
-    `expected_head`/`expected_base` at the result's own candidate and every
-    lens execution it records, and backed by a packet that is itself bound to
-    the same candidate and whose own required validation entries can support
-    the result's verdict. This is the acceptance criterion "Reviewer output
-    is rejected if required lenses or evidence are incomplete" made
-    concrete: lens completeness (via the bundled contract's own
-    `_check_aggregate_clean_lens_executions`, required only for `clean`) plus
-    packet-evidence completeness (below). `changes_required` and `blocked`
-    are ordinary outcomes, not failures of this function; a `changes_required`
-    result may legitimately carry a partial `lens_executions` list, since the
-    orchestration protocol stops the sequence at the first gating finding.
+    Empty means the result is trustworthy evidence for exactly this cycle:
+    schema-valid, cross-field consistent, bound to `expected_head`/
+    `expected_base` at the candidate and every lens execution, and backed by
+    a packet bound to the same candidate whose own validation entries can
+    support the verdict. `changes_required` and `blocked` are ordinary
+    outcomes, not failures — see references/reviewer-orchestration.md,
+    "Rejecting an incomplete result", for why both the result and the packet
+    must be checked and why this does not simply call the bundled
+    `validate_pair`.
 
-    `packet` is required, not optional: a single-document check on `result`
-    alone cannot see the packet's own `validation` array, so it cannot catch a
-    `clean` verdict paired with a packet whose required focused or full
-    validation entry was `failed` or `unavailable`. `review-fix-loop`'s
-    checkpoint/terminal-result contract (from #96) never persists one
-    without the other, so there is no legitimate caller for a packet-less
-    evaluation.
-
-    This deliberately does not reuse the bundled contract's `validate_pair`
-    in full: `validate_pair` treats a `blocked` result that omits candidate
-    identity already present in the packet as an error, contradicting the
-    same contract's own `CONTRACT.md` ("may omit candidate fields that the
-    caller could not establish"). Instead this function binds the packet's
-    own identity to `expected_head`/`expected_base` directly (always present,
-    since review-fix-loop constructs the packet itself), reuses only
-    `validate_packet`, `validate_result`, and
-    `_check_clean_requires_passing_validation` from the bundled `validate.py`,
-    and delegates the result's own identity binding to the canonical
-    `review_gate.evaluate_bound` (bundled at `scripts/review_gate.py`, the
-    same logic `implement-ticket`/`babysit-pr` consume via
-    `evaluate_aggregate`, generalized to accept any verdict).
+    `packet` is required, not optional: review-fix-loop's own
+    checkpoint/terminal-result contract never persists one without the
+    other, so there is no legitimate packet-less caller.
     """
     packet = dict(packet)
     result = dict(result)
@@ -217,26 +167,19 @@ def resolve_review_execution_mode(
 ) -> dict[str, Any]:
     """Resolve the review-execution mode this host actually grants.
 
-    `mode` and `override_authorization` come from a validated invocation's
-    `review_execution` object (`validate_invocation` already rejects
-    `in_agent_override` without `override_authorization`, and
-    `fresh_subagent` carrying one); this function assumes that invariant
-    already holds and resolves the one thing schema validation cannot decide:
-    whether *this* host can actually honor `fresh_subagent`.
+    Assumes `mode`/`override_authorization` already satisfy
+    `validate_invocation`'s invariant (`in_agent_override` requires
+    authorization; `fresh_subagent` must not carry one) and resolves the one
+    thing schema validation cannot: whether this host can honor
+    `fresh_subagent`.
 
-    Returns a dict with `independence` (`"fresh_subagent"`,
-    `"in_agent_override"`, or `None` when blocked), `authorized_by` (the
-    recorded `override_authorization`, or `None`), and `blocked_reason`
-    (`None`, or `"missing_capability"`).
-
-    - `in_agent_override` is always honored when authorized, regardless of
-      host capability: an explicit override does not require the fresh path
-      to be unavailable first.
-    - `fresh_subagent` is honored only when `host_supports_fresh_subagent` is
-      true. Design states there is "no automatic fallback": an unsupported
-      host with no override returns `missing_capability` rather than quietly
-      running in-agent — this is the acceptance criterion "In-agent execution
-      occurs only when explicitly requested."
+    Returns `independence` (`"fresh_subagent"`, `"in_agent_override"`, or
+    `None`), `authorized_by`, and `blocked_reason` (`None` or
+    `"missing_capability"`). An explicit override is always honored,
+    regardless of host capability. An unsupported `fresh_subagent` host with
+    no override is `missing_capability` — no automatic fallback to in-agent
+    (acceptance criterion: in-agent execution occurs only when explicitly
+    requested).
     """
     if mode == "in_agent_override":
         return {
@@ -264,12 +207,10 @@ def generate_reviewer_identity(
 ) -> str:
     """Return this review pass's reviewer identity.
 
-    Design requires "different reviewer identities per head" so a fresh
-    subagent's freshness is actually observable, not merely asserted. Default
-    identities follow the `<independence>-review-<sequence>` shape already
-    used by `references/examples/*` (for example
-    `fresh-subagent-review-1`/`fresh-subagent-review-2`); an explicit identity
-    — a real subagent or session ID a host can supply — always wins.
+    Default `<independence>-review-<sequence>` (matching
+    `references/examples/*`, e.g. `fresh-subagent-review-1`) makes freshness
+    per head observable; an explicit identity (a real subagent/session ID)
+    always wins.
     """
     if explicit:
         return explicit
@@ -283,45 +224,25 @@ def detect_worktree_mutation(
 ) -> list[str]:
     """Return mutation descriptions found between two worktree snapshots.
 
-    `before`/`after` must each carry every key in `REQUIRED_SNAPSHOT_KEYS`:
-    `head_sha`; a `refs` mapping (ref name to object ID, for example from
-    `git for-each-ref`); and the `tracked`/`staged`/`unstaged`/`untracked`/
-    `ignored` path lists every other worktree-state shape in this contract
-    family uses. This implements the design's "before/after capture of HEAD,
-    refs, index, tracked, staged, unstaged, untracked, and ignored state"
-    tier of reviewer write prevention.
+    `before`/`after` must each carry every `REQUIRED_SNAPSHOT_KEYS` entry:
+    `head_sha`, a `refs` mapping (ref name to object ID), and the
+    tracked/staged/unstaged/untracked/ignored path lists. Raises
+    `ValueError` if either is missing a key — fails closed rather than
+    treating an uncaptured dimension as unchanged.
 
-    Raises `ValueError` — fails closed — when either snapshot is missing a
-    required key, rather than silently treating an uncaptured dimension as
-    unchanged: a caller that omits `head_sha` or `refs` entirely has not
-    actually performed the before/after capture this tier requires, and a
-    reviewer that mutated exactly the uncaptured dimension would otherwise
-    go undetected.
+    Compares `head_sha`, every `COMPARED_WORKTREE_CATEGORIES` path list, and
+    local `refs` (excluding `refs/remotes/*`, since an unattributed
+    remote-tracking-ref advance is the ordinary `remote_advanced`
+    publication-race contract, not reviewer misconduct — issue #97/#100's
+    scope). See references/reviewer-orchestration.md for the full rationale,
+    including why `ignored` is captured but not compared.
 
-    `refs` entries under `refs/remotes/` are excluded from comparison: an
-    unattributed remote-tracking-ref advance is not proof of reviewer
-    misconduct on its own — that is the ordinary `remote_advanced`
-    publication-race contract (issue #97/#100's scope), not a
-    reviewer-integrity failure. Every other ref (branches, tags, `refs/stash`,
-    and any other local ref) is compared — a reviewer that runs `git stash`,
-    force-moves a branch, or creates a new ref without touching `HEAD` or any
-    tracked path is still a write-isolation violation this function must not
-    miss.
-
-    `ignored` is captured (required, above) but deliberately excluded from
-    comparison; see `COMPARED_WORKTREE_CATEGORIES`'s module-level comment for
-    why.
-
-    An empty return means no attributable change was observed by *this*
-    check; it does not by itself certify write isolation — design also
-    requires the stronger filesystem-boundary and restricted-tool-surface
-    controls this function cannot see. A non-empty return means the cycle
-    must fail closed: `build_review_record` forces `write_isolation:
-    "violated"` whenever any mutation is passed to it, and
-    `validate.py`'s `_check_converged_requires_clean_evidence` already
-    rejects `converged` for any review record with a non-empty
-    `mutation_attempts`, so a detected mutation here propagates all the way to
-    a rejected cycle rather than being silently tolerated.
+    An empty return means no attributable change per *this* check; design
+    also requires the stronger filesystem-boundary and tool-surface controls
+    this function cannot see. A non-empty return must fail the cycle closed:
+    `build_review_record` forces `write_isolation: "violated"`, and
+    `validate.py`'s `_check_converged_requires_clean_evidence` rejects
+    `converged` for any review record with a non-empty `mutation_attempts`.
     """
     missing_before = [key for key in REQUIRED_SNAPSHOT_KEYS if key not in before]
     missing_after = [key for key in REQUIRED_SNAPSHOT_KEYS if key not in after]
@@ -393,29 +314,16 @@ def build_review_record(
 ) -> dict[str, Any]:
     """Build one checkpoint-shaped `review_records` entry from a raw result.
 
-    Fails closed: raises `ReviewIntegrityError` — never returns a partially
-    trusted record — when `evaluate_review_result` finds `packet` or `result`
-    untrustworthy: not schema-valid, not cross-field consistent, not bound
-    to `expected_head`/`expected_base`, or a `clean` verdict paired with
-    packet validation that cannot back it. `packet` is required (the exact
-    raw evidence packet this cycle actually handed to the reviewer): a
-    packet-less evaluation cannot catch a `clean` verdict whose packet
-    validation was actually `failed` or `unavailable`, and review-fix-loop's
-    own checkpoint/terminal-result contract never persists one without the
-    other, so there is no legitimate caller for a packet-less path.
+    Fails closed: raises `ReviewIntegrityError` (never returns a partially
+    trusted record) when `evaluate_review_result` rejects `packet`/`result`.
 
     Any non-empty `mutation_attempts` forces `write_isolation: "violated"`
-    regardless of the aggregate verdict: design states "an attempted
-    prohibited mutation invalidates the review even if the runtime blocks
-    it," so a clean-looking result from a reviewer that touched the worktree
-    still is not enforced write isolation.
+    regardless of the aggregate verdict — an attempted prohibited mutation
+    invalidates the review even if the runtime blocked it.
 
-    `finding_dispositions` starts empty: disposing a finding as
-    `accepted`/`rejected`/`deferred` is the loop's "Decide" workflow step (4),
-    which this ticket does not implement (see design's rollout order — this
-    child covers "reviewer isolation and complete-review orchestration," step
-    3 "Review"). A later caller that does run Decide populates this same
-    field afterward with the shape it already reserves.
+    `finding_dispositions` starts empty: disposing a finding
+    (`accepted`/`rejected`/`deferred`) is design's "Decide" step, a later
+    child's responsibility; this record reserves the field's shape for it.
     """
     errors = evaluate_review_result(packet, result, expected_head, expected_base)
     if errors:
@@ -437,17 +345,12 @@ def build_review_record(
 def normalize_findings(findings: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Return `findings` in one deterministic, input-order-independent order.
 
-    Sorted by severity (`blocking` before `strong_recommendation` before
-    `defer`), then lens name, then stable finding `id`. `review-code-change`
-    does not guarantee any particular ordering across lenses or review
-    passes; without a canonical order, the loop's finding-to-fix linkage and
-    checkpoint replay could disagree from one run to the next even given
-    byte-identical review evidence — this is the scope item "normalize
-    findings for deterministic selection and checkpointing."
+    Sorted by severity (`blocking`, `strong_recommendation`, `defer`), then
+    lens, then finding `id`. `review-code-change` guarantees no particular
+    ordering; without a canonical one, finding-to-fix linkage and checkpoint
+    replay could disagree run to run given identical evidence.
 
-    This is a pure reordering: every input mapping is shallow-copied, never
-    mutated or dropped (the bundled contract already rejects duplicate
-    finding ids upstream, in `validate_result`).
+    Pure reordering: every entry is shallow-copied, never mutated or dropped.
     """
 
     def sort_key(finding: Mapping[str, Any]) -> tuple[int, str, str]:
@@ -463,14 +366,10 @@ def normalize_findings(findings: Iterable[Mapping[str, Any]]) -> list[dict[str, 
 def select_next_finding(findings: Iterable[Mapping[str, Any]]) -> dict[str, Any] | None:
     """Return the one finding a fix cycle would target next, or `None`.
 
-    Deterministically the first gating (`blocking` or `strong_recommendation`)
-    entry of `normalize_findings`'s canonical order. `defer` findings are
-    never selected: they are real concerns intentionally kept out of the
-    active cycle, per the shared review contract's severity semantics.
-
-    Selecting a finding is not disposing or fixing it — see
-    `build_review_record`'s docstring for why `finding_dispositions` and
-    fix application remain a later child's responsibility.
+    The first gating (`blocking`/`strong_recommendation`) entry of
+    `normalize_findings`'s canonical order; `defer` findings are never
+    selected. Selecting is not disposing or fixing — see
+    `build_review_record`'s docstring.
     """
     for finding in normalize_findings(findings):
         if finding.get("severity") in GATING_SEVERITIES:
@@ -483,12 +382,10 @@ def build_reviewer_briefing(
 ) -> str:
     """Return the literal instruction text handed to one review pass.
 
-    Acceptance criterion: "Reviewer instructions explicitly prohibit worktree
-    mutation and implementation." This is the actual text a caller embeds in
-    the fresh subagent's (or, under an explicit override, the in-agent)
-    prompt immediately before invoking `review-code-change`, so the
-    prohibition travels with every review pass instead of living only in a
-    document a caller might forget to consult.
+    Acceptance criterion: "Reviewer instructions explicitly prohibit
+    worktree mutation and implementation" — the actual prompt text prepended
+    before invoking `review-code-change`, so the prohibition travels with
+    every pass rather than living only in a document.
     """
     lines = [
         "You are running the complete repository-owned review-code-change "
