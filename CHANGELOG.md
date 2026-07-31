@@ -4,8 +4,46 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-31 — Recorded the first review-fix-loop `update_pr` fix cycle
+## 2026-07-31 — Added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
+- fix(review-fix-loop): configure `user.email`/`user.name` on both git clones
+  `scripts/evals/corpus.py`'s
+  `up_sequential_publication_race_second_clone_loses` scenario creates,
+  mirroring `helpers.init_repo`'s existing convention for every non-cloned
+  fixture repo — `git clone` never copies a source repository's local git
+  identity config, and unlike a developer machine a CI runner has no global
+  identity configured either, so the scenario's own `git commit` call failed
+  with "Author identity unknown" in GitHub Actions even though every local run
+  passed; reproduced the exact CI failure locally under a forced no-identity
+  condition, confirmed the fix resolves it, and confirmed GitHub Actions' own
+  `ci` check on PR #113 is green
+- fix(review-fix-loop): consolidate `scripts/evals/helpers.py`'s five fixtures
+  that were byte-identical or functionally identical to
+  `scripts/tests/helpers.py`'s own (`init_repo`, `CLEAN_TEMPLATE`,
+  `ALWAYS_PASS_VALIDATION`, `finding`, `make_clean_reviewer`,
+  `fixing_apply_fix`, `accepting_decide`) into imports from that sibling module
+  instead of a second source of truth, following this repository's own
+  `carve-changesets` precedent of importing across the `scripts/tests`/
+  `scripts/evals` boundary within one skill, and remove one unused reviewer
+  fixture (`make_expanding_findings_reviewer`) left over from a descoped
+  scenario, closing the one code-simplicity gap the first review-code-change
+  pass on #101 found (`81a3078c819d4bc8755a9a796d2fa4c0e7dbf1c4`)
+- feat(review-fix-loop): add the cross-cutting, result-blind evaluation corpus
+  (issue #101, epic #95) covering convergence, repeated findings,
+  invalid/incomplete reviews, declined findings, budget exhaustion, interruption
+  and recovery, validation failure, reviewer mutation, and publication races
+  across both `local_commit` and `update_pr`, plus the fresh-subagent default
+  and the explicit in-agent override — twenty scenarios in
+  `scripts/evals/corpus.py`, each driving the real engine against a real
+  disposable Git repository (and, for `update_pr`, a real disposable bare
+  remote) and graded in `scripts/evals/grader.py` against independently derived
+  Git evidence (a real commit count, a real file's content at a real commit, a
+  real remote ref, a real object's reachability) rather than the returned
+  terminal-result document's own claims; `scripts/tests/test_evals.py`
+  demonstrates the grader rejecting both a fabricated convergence claim and a
+  fixture that cannot actually converge, and runs the whole corpus under
+  `just test`; `just eval-review-fix-loop` is the standalone entry point
+  (`cd5b3ee63d89fed305c4e5a3c0f15cb14b84a3c6`)
 - fix(review-fix-loop): extract the test fixtures shared between
   `test_local_commit.py` and `test_update_pr.py` (the module loader, a bare
   local repository, the always-passing validation commands, the
@@ -13,6 +51,7 @@ summary: Chronological history of repository and skill changes.
   sibling `scripts/tests/helpers.py`, matching
   `carve-changesets/scripts/tests/helpers.py`'s established precedent, closing
   the one code-simplicity gap the first review-code-change pass on #100 found
+  (`729135bb11d5bd8f0efa3a66d1c1ab1f978a3f6d`)
 
 ## 2026-07-30 — Delivered and evaluated the standalone review-fix-loop `update_pr` workflow, delivered and evaluated the standalone review-fix-loop `local_commit` workflow, implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 

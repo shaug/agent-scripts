@@ -110,6 +110,18 @@ test-implement-epic:
 test-carve-changesets:
   python3 -m unittest discover -s {{skills_dir}}/carve-changesets/scripts/tests -p 'test_*.py'
 
+test-review-fix-loop:
+  python3 -m unittest discover -s {{skills_dir}}/review-fix-loop/scripts/tests -p 'test_*.py'
+
+# Result-blind, deterministic replay of the review-fix-loop cross-cutting
+# corpus: drives the real local_commit/update_pr engine against disposable
+# Git repositories with scripted reviewer/decide/apply_fix fixtures (no
+# subprocess boundary, no model call, no network). Also exercised under
+# `just test` via scripts/tests/test_evals.py; this target is the standalone
+# entry point for ad hoc runs and per-scenario `--output-dir` reports.
+eval-review-fix-loop:
+  python3 {{skills_dir}}/review-fix-loop/scripts/evals/runner.py
+
 eval-carve-changesets:
   python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py --integration-self-test
   python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py
