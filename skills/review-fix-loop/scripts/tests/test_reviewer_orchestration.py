@@ -254,14 +254,6 @@ class EvaluateReviewResultTests(unittest.TestCase):
         errors = ORCH.evaluate_review_result(packet, CLEAN_AGGREGATE, HEAD, BASE)
         self.assertTrue(errors)
 
-    def test_changes_required_with_partial_lens_executions_is_still_accepted(self):
-        self.assertEqual(
-            [],
-            ORCH.evaluate_review_result(
-                VALID_PACKET, CHANGES_REQUIRED_AGGREGATE, HEAD, BASE
-            ),
-        )
-
 
 class ResolveReviewExecutionModeTests(unittest.TestCase):
     def test_default_capable_host_gets_fresh_subagent(self):

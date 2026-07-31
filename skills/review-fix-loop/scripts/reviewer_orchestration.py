@@ -67,15 +67,9 @@ SEVERITY_ORDER = {"blocking": 0, "strong_recommendation": 1, "defer": 2}
 GATING_SEVERITIES = frozenset({"blocking", "strong_recommendation"})
 
 # Worktree-state categories actually compared for mutation. `ignored` is
-# deliberately excluded: design still requires *capturing* it (see
-# `REQUIRED_SNAPSHOT_KEYS` below), but authorized recorded validation
-# commands (REVIEWER_PROHIBITIONS explicitly permits running them) routinely
-# create or change ignored build artifacts (`__pycache__/`, `.ruff_cache/`,
-# `.venv/`) as a side effect — this mirrors the invocation-cleanliness
-# contract's own rule that ignored files "do not represent an uncommitted
-# change and are not part of what 'clean' means here." Comparing it would
-# make every review pass that runs validation commands falsely report a
-# mutation.
+# deliberately excluded (captured, per `REQUIRED_SNAPSHOT_KEYS` below, but
+# never compared) — see references/reviewer-orchestration.md's "Reviewer
+# write prevention" tier 4 for why.
 COMPARED_WORKTREE_CATEGORIES = ("tracked", "staged", "unstaged", "untracked")
 
 # Every key a before/after snapshot must carry for detect_worktree_mutation
@@ -145,52 +139,36 @@ def evaluate_review_result(
     `expected_head`/`expected_base` at the result's own candidate and every
     lens execution it records, and backed by a packet that is itself bound to
     the same candidate and whose own required validation entries can support
-    the result's verdict.
+    the result's verdict. This is the acceptance criterion "Reviewer output
+    is rejected if required lenses or evidence are incomplete" made
+    concrete: lens completeness (via the bundled contract's own
+    `_check_aggregate_clean_lens_executions`, required only for `clean`) plus
+    packet-evidence completeness (below). `changes_required` and `blocked`
+    are ordinary outcomes, not failures of this function; a `changes_required`
+    result may legitimately carry a partial `lens_executions` list, since the
+    orchestration protocol stops the sequence at the first gating finding.
 
-    Unlike a plain "accept only clean" gate, this accepts any verdict —
-    `changes_required` and `blocked` are the ordinary outcome of most review
-    cycles, not failures of this function. A `changes_required` result is not
-    required to carry lens executions for every lens: the orchestration
-    protocol stops the sequence at the first gating finding, so a partial
-    `lens_executions` list is expected there. Completeness is required, and
-    enforced here via the bundled contract's own
-    `_check_aggregate_clean_lens_executions`, only for a `clean` verdict —
-    this is exactly the acceptance criterion "Reviewer output is rejected if
-    required lenses or evidence are incomplete."
-
-    `packet` is the "or evidence are incomplete" half of that same
-    criterion, distinct from lens completeness: a single-document check on
-    `result` alone cannot see the packet's own `validation` array, so it
-    cannot by itself catch a `clean` verdict paired with a packet whose
-    required focused or full validation entry was `failed` or `unavailable`.
-    This is deliberately the *only* evaluator this module exposes — an
-    earlier revision also offered a packet-less `result`-only path, but
-    `review-fix-loop`'s own checkpoint/terminal-result contract (from #96)
-    never persists a raw packet or raw result on its own, so no caller can
-    ever legitimately hold one without the other; collapsing to one
-    mandatory packet-plus-result path removes evidence that could otherwise
-    slip through the weaker path by omission.
+    `packet` is required, not optional: a single-document check on `result`
+    alone cannot see the packet's own `validation` array, so it cannot catch a
+    `clean` verdict paired with a packet whose required focused or full
+    validation entry was `failed` or `unavailable`. `review-fix-loop`'s
+    checkpoint/terminal-result contract (from #96) never persists one
+    without the other, so there is no legitimate caller for a packet-less
+    evaluation.
 
     This deliberately does not reuse the bundled contract's `validate_pair`
-    in full: `validate_pair`'s packet/result candidate-identity consistency
-    check treats a `blocked` result that omits candidate identity already
-    present in the packet as an error ("result omits identity present in
-    packet"), even though the same bundled contract's own `CONTRACT.md`
-    states a `blocked` result "may omit candidate fields that the caller
-    could not establish." Instead this function checks the packet's own
-    identity against `expected_head`/`expected_base` directly (a packet's
-    `candidate.head_sha`/`comparison_base_sha` are always required by the
-    packet schema, since review-fix-loop constructs the packet itself and
-    always knows its own candidate identity), reuses only `validate_packet`,
-    `validate_result`, and `_check_clean_requires_passing_validation` (the
-    one packet/result cross-check that genuinely needs both documents: a
-    `clean` verdict cannot hide a failed or unavailable required packet
-    validation entry), and delegates the *result's* own identity binding to
-    the canonical `review_gate.evaluate_bound` (bundled at
-    `scripts/review_gate.py`, the same binding logic `implement-ticket` and
-    `babysit-pr` already consume via `evaluate_aggregate`, generalized to
-    accept any verdict rather than only `clean`) — kept in one canonical
-    place instead of a second, independently-maintained copy here.
+    in full: `validate_pair` treats a `blocked` result that omits candidate
+    identity already present in the packet as an error, contradicting the
+    same contract's own `CONTRACT.md` ("may omit candidate fields that the
+    caller could not establish"). Instead this function binds the packet's
+    own identity to `expected_head`/`expected_base` directly (always present,
+    since review-fix-loop constructs the packet itself), reuses only
+    `validate_packet`, `validate_result`, and
+    `_check_clean_requires_passing_validation` from the bundled `validate.py`,
+    and delegates the result's own identity binding to the canonical
+    `review_gate.evaluate_bound` (bundled at `scripts/review_gate.py`, the
+    same logic `implement-ticket`/`babysit-pr` consume via
+    `evaluate_aggregate`, generalized to accept any verdict).
     """
     packet = dict(packet)
     result = dict(result)

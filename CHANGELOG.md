@@ -6,6 +6,11 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): remove a byte-identical duplicate test and trim
+  history-narrating/triplicated docstring prose in `reviewer_orchestration.py`
+  and `reviewer-orchestration.md` down to one owner per rationale, closing the
+  two code-simplicity gaps the third review-code-change pass on #98 found
+  (`10c1ca0cd42444aa1a28a413d127b911cebafb9c`)
 - fix(review-fix-loop): stop comparing `ignored` worktree state for reviewer
   mutation (authorized validation commands legitimately create ignored build
   artifacts, which previously made `converged` unreachable), fail closed instead

@@ -187,10 +187,9 @@ evidence are incomplete" has two distinct halves, both enforced by the single
 
 `packet` is required, not optional: review-fix-loop's own checkpoint/
 terminal-result contract (from #96) never persists a raw packet or raw result on
-its own, so no caller can legitimately hold one without the other. An earlier
-revision of this module offered a packet-less path as well; it was removed
-rather than left reachable by omission, since it could otherwise let a `clean`
-verdict with actually-failed packet validation slip through undetected.
+its own, so no caller can legitimately hold one without the other, and a
+packet-less evaluation could let a `clean` verdict with actually-failed packet
+validation slip through undetected.
 
 Treat any non-empty return as a failed review pass: do not build a
 `review_records` entry from it. `build_review_record` enforces this directly —
