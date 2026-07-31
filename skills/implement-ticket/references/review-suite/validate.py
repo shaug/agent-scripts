@@ -94,6 +94,8 @@ def _is_type(value: Any, expected: str) -> bool:
         return isinstance(value, str)
     if expected == "boolean":
         return isinstance(value, bool)
+    if expected == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
     return False
 
 
@@ -117,6 +119,11 @@ def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[s
         if pattern := schema.get("pattern"):
             if re.fullmatch(pattern, value) is None:
                 errors.append(f"{at}: does not match {pattern!r}")
+    if isinstance(value, int) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            errors.append(f"{at}: must be >= {schema['minimum']}")
+        if "maximum" in schema and value > schema["maximum"]:
+            errors.append(f"{at}: must be <= {schema['maximum']}")
     if isinstance(value, list):
         if len(value) < schema.get("minItems", 0):
             errors.append(f"{at}: expected at least {schema['minItems']} item(s)")
