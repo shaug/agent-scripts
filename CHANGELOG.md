@@ -6,21 +6,30 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- fix(review-fix-loop): stop comparing `ignored` worktree state for reviewer
+  mutation (authorized validation commands legitimately create ignored build
+  artifacts, which previously made `converged` unreachable), fail closed instead
+  of silently passing when a before/after snapshot omits a required capture key,
+  and collapse the packet-less `evaluate_review_result` path into the single
+  packet-plus-result evaluator (`review-fix-loop`'s own
+  checkpoint/terminal-result contract never persists one without the other, so
+  no caller can legitimately use the weaker path), closing the two blocking gaps
+  and the one strong-recommendation gap the second review-code-change pass on
+  #98 found
 - fix(review-fix-loop): detect refs mutation (not only `head_sha`) between
-  before/after reviewer snapshots, reconcile `evaluate_review_pair` with a
+  before/after reviewer snapshots, reconcile the packet/result evaluator with a
   contract-legal identity-omitting `blocked` result while still binding the
   packet itself to the current candidate, and extract the canonical
   `review_gate.evaluate_bound` (bundled into `implement-ticket`, `babysit-pr`,
   and now `review-fix-loop`) instead of a second candidate-binding
   implementation, closing the three gaps the first review-code-change pass on
-  #98 found
-- docs: record the initial review-fix-loop reviewer-orchestration changelog
-  entry (`ac73abdf17e349384309efc414365fd004f9a636`)
+  #98 found (`a519ae9f4e42551feba08146b465c5c526188e8b`)
 - feat(review-fix-loop): implement reviewer isolation and complete-review
   orchestration — fixed lens resolution, default fresh-subagent review execution
   with an explicit in-agent override, before/after mutation detection that fails
   a cycle closed, checkpoint-shaped review-record construction, and
   deterministic finding normalization/selection (#98)
+  (`086677ab59b219bccc009b9eb08dc67f3f613758`)
 - feat(review-fix-loop): add `scripts/local_execution.py` implementing #97's
   local execution substrate — non-blocking common-Git-common-directory candidate
   locking (local-ref lock before the optional `update_pr` remote-target lock,

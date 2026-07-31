@@ -152,30 +152,44 @@ class ResolveReviewLensesTests(unittest.TestCase):
 
 
 class EvaluateReviewResultTests(unittest.TestCase):
+    """`evaluate_review_result` is the single, mandatory packet-plus-result
+    evaluator: review-fix-loop's own checkpoint/terminal-result contract
+    never persists a raw packet or raw result without the other, so there is
+    no legitimate packet-less caller."""
+
     def test_current_clean_aggregate_is_accepted(self):
-        self.assertEqual([], ORCH.evaluate_review_result(CLEAN_AGGREGATE, HEAD, BASE))
+        self.assertEqual(
+            [], ORCH.evaluate_review_result(VALID_PACKET, CLEAN_AGGREGATE, HEAD, BASE)
+        )
 
     def test_current_changes_required_with_partial_lens_executions_is_accepted(self):
         # changes_required legitimately stops early; only clean requires full
         # lens completeness.
         self.assertEqual(
-            [], ORCH.evaluate_review_result(CHANGES_REQUIRED_AGGREGATE, HEAD, BASE)
+            [],
+            ORCH.evaluate_review_result(
+                VALID_PACKET, CHANGES_REQUIRED_AGGREGATE, HEAD, BASE
+            ),
         )
 
     def test_stale_head_is_rejected(self):
-        errors = ORCH.evaluate_review_result(CLEAN_AGGREGATE, OTHER_HEAD, BASE)
+        errors = ORCH.evaluate_review_result(
+            VALID_PACKET, CLEAN_AGGREGATE, OTHER_HEAD, BASE
+        )
         self.assertTrue(any("not bound to the current candidate" in e for e in errors))
 
     def test_stale_base_is_rejected(self):
-        errors = ORCH.evaluate_review_result(CLEAN_AGGREGATE, HEAD, OTHER_HEAD)
+        errors = ORCH.evaluate_review_result(
+            VALID_PACKET, CLEAN_AGGREGATE, HEAD, OTHER_HEAD
+        )
         self.assertTrue(any("not bound to the current candidate" in e for e in errors))
 
     def test_malformed_result_is_rejected(self):
         malformed = copy.deepcopy(CLEAN_AGGREGATE)
         del malformed["findings"]
-        errors = ORCH.evaluate_review_result(malformed, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(VALID_PACKET, malformed, HEAD, BASE)
         self.assertTrue(errors)
-        self.assertTrue(any(e.startswith("schema:") for e in errors))
+        self.assertTrue(any(e.startswith("result:") for e in errors))
 
     def test_clean_missing_one_lens_is_rejected(self):
         incomplete = copy.deepcopy(CLEAN_AGGREGATE)
@@ -184,24 +198,24 @@ class EvaluateReviewResultTests(unittest.TestCase):
             for execution in incomplete["lens_executions"]
             if execution["lens"] != "code_simplicity"
         ]
-        errors = ORCH.evaluate_review_result(incomplete, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(VALID_PACKET, incomplete, HEAD, BASE)
         self.assertTrue(errors)
         self.assertTrue(any("code_simplicity" in e for e in errors))
 
     def test_clean_with_stale_lens_execution_head_is_rejected(self):
         stale = copy.deepcopy(CLEAN_AGGREGATE)
         stale["lens_executions"][0]["head_sha"] = OTHER_HEAD
-        errors = ORCH.evaluate_review_result(stale, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(VALID_PACKET, stale, HEAD, BASE)
         self.assertTrue(errors)
 
     def test_non_aggregate_lens_result_is_rejected(self):
         solo = copy.deepcopy(CLEAN_AGGREGATE)
         solo["lens"] = "correctness"
         solo["lens_executions"] = []
-        errors = ORCH.evaluate_review_result(solo, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(VALID_PACKET, solo, HEAD, BASE)
         self.assertTrue(any("expected an aggregate result" in e for e in errors))
 
-    def test_blocked_result_bound_to_candidate_is_accepted(self):
+    def test_blocked_result_omitting_candidate_identity_is_accepted(self):
         blocked = {
             "schema_version": "1.4",
             "lens": "aggregate",
@@ -211,21 +225,19 @@ class EvaluateReviewResultTests(unittest.TestCase):
             "blocking_reasons": ["missing repository identity"],
         }
         # `blocked` legitimately omits candidate identity when it could not
-        # be established; this must not be rejected as an unbound candidate.
-        self.assertEqual([], ORCH.evaluate_review_result(blocked, HEAD, BASE))
-
-
-class EvaluateReviewPairTests(unittest.TestCase):
-    def test_valid_packet_and_clean_result_are_accepted(self):
+        # be established, per review-suite/CONTRACT.md; this must not be
+        # rejected as an unbound candidate merely because the packet itself
+        # (which review-fix-loop always constructs with known identity) does
+        # carry one.
         self.assertEqual(
-            [], ORCH.evaluate_review_pair(VALID_PACKET, CLEAN_AGGREGATE, HEAD, BASE)
+            [], ORCH.evaluate_review_result(VALID_PACKET, blocked, HEAD, BASE)
         )
 
     def test_clean_result_paired_with_failed_packet_validation_is_rejected(self):
         packet = copy.deepcopy(VALID_PACKET)
         packet["validation"][0]["status"] = "failed"
         packet["validation"][0]["result"] = "AssertionError: boom"
-        errors = ORCH.evaluate_review_pair(packet, CLEAN_AGGREGATE, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(packet, CLEAN_AGGREGATE, HEAD, BASE)
         self.assertTrue(errors)
 
     def test_clean_result_paired_with_unavailable_packet_validation_is_rejected(self):
@@ -233,27 +245,19 @@ class EvaluateReviewPairTests(unittest.TestCase):
         packet["validation"][1]["status"] = "unavailable"
         del packet["validation"][1]["result"]
         packet["validation"][1]["reason"] = "sandbox has no network access"
-        errors = ORCH.evaluate_review_pair(packet, CLEAN_AGGREGATE, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(packet, CLEAN_AGGREGATE, HEAD, BASE)
         self.assertTrue(errors)
 
     def test_packet_candidate_mismatch_with_result_is_rejected(self):
         packet = copy.deepcopy(VALID_PACKET)
         packet["candidate"]["head_sha"] = OTHER_HEAD
-        errors = ORCH.evaluate_review_pair(packet, CLEAN_AGGREGATE, HEAD, BASE)
+        errors = ORCH.evaluate_review_result(packet, CLEAN_AGGREGATE, HEAD, BASE)
         self.assertTrue(errors)
-
-    def test_still_enforces_expected_candidate_binding(self):
-        # Packet and result agree with each other but not with what this
-        # cycle actually expects.
-        errors = ORCH.evaluate_review_pair(
-            VALID_PACKET, CLEAN_AGGREGATE, OTHER_HEAD, BASE
-        )
-        self.assertTrue(any("not bound to the current candidate" in e for e in errors))
 
     def test_changes_required_with_partial_lens_executions_is_still_accepted(self):
         self.assertEqual(
             [],
-            ORCH.evaluate_review_pair(
+            ORCH.evaluate_review_result(
                 VALID_PACKET, CHANGES_REQUIRED_AGGREGATE, HEAD, BASE
             ),
         )
@@ -340,6 +344,7 @@ class GenerateReviewerIdentityTests(unittest.TestCase):
 class DetectWorktreeMutationTests(unittest.TestCase):
     CLEAN_STATE = {
         "head_sha": HEAD,
+        "refs": {"refs/heads/main": HEAD},
         "tracked": ["a.py"],
         "staged": [],
         "unstaged": [],
@@ -382,15 +387,16 @@ class DetectWorktreeMutationTests(unittest.TestCase):
             any("removed" in m and m.startswith("tracked:") for m in mutations)
         )
 
-    def test_ignored_changes_are_still_detected(self):
-        # `ignored` is not part of invocation "clean" (build output etc.),
-        # but a reviewer touching it is still an attempted write this check
-        # must surface.
+    def test_ignored_changes_are_not_flagged(self):
+        # `ignored` is captured (design requires it) but never compared:
+        # authorized recorded validation commands legitimately create
+        # ignored build artifacts (__pycache__/, .ruff_cache/, .venv/), so
+        # comparing it would make every review pass that runs validation
+        # falsely report a mutation and make `converged` unreachable.
         before = copy.deepcopy(self.CLEAN_STATE)
         after = copy.deepcopy(self.CLEAN_STATE)
         after["ignored"] = ["build/output.bin"]
-        mutations = ORCH.detect_worktree_mutation(before, after)
-        self.assertTrue(any(m.startswith("ignored:") for m in mutations))
+        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
 
     def test_new_local_ref_is_detected(self):
         # A reviewer that runs `git stash` or creates a branch without
@@ -439,19 +445,44 @@ class DetectWorktreeMutationTests(unittest.TestCase):
         after = copy.deepcopy(before)
         self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
 
-    def test_missing_refs_key_is_treated_as_no_refs(self):
-        # `refs` is optional; a snapshot without it must not be treated as
-        # differing from one with an explicit empty mapping.
+    def test_missing_refs_key_raises_instead_of_silently_passing(self):
+        # Fails closed: a snapshot that never captured refs at all must not
+        # be indistinguishable from one that captured an empty mapping — a
+        # reviewer that mutated exactly the uncaptured dimension would
+        # otherwise go undetected.
+        before = copy.deepcopy(self.CLEAN_STATE)
+        del before["refs"]
+        after = copy.deepcopy(self.CLEAN_STATE)
+        with self.assertRaises(ValueError):
+            ORCH.detect_worktree_mutation(before, after)
+
+    def test_missing_head_sha_key_raises_instead_of_silently_passing(self):
         before = copy.deepcopy(self.CLEAN_STATE)
         after = copy.deepcopy(self.CLEAN_STATE)
-        after["refs"] = {}
-        self.assertEqual([], ORCH.detect_worktree_mutation(before, after))
+        del after["head_sha"]
+        with self.assertRaises(ValueError):
+            ORCH.detect_worktree_mutation(before, after)
+
+    def test_missing_ignored_key_raises_even_though_ignored_is_uncompared(self):
+        # ignored is required-but-uncompared: still fails closed on its
+        # absence, since design mandates capturing it even though this
+        # function does not compare it.
+        before = copy.deepcopy(self.CLEAN_STATE)
+        after = copy.deepcopy(self.CLEAN_STATE)
+        del after["ignored"]
+        with self.assertRaises(ValueError):
+            ORCH.detect_worktree_mutation(before, after)
+
+    def test_empty_snapshots_raise_rather_than_report_no_mutation(self):
+        with self.assertRaises(ValueError):
+            ORCH.detect_worktree_mutation({}, {})
 
 
 class BuildReviewRecordTests(unittest.TestCase):
     def test_builds_expected_shape_for_clean_result(self):
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CLEAN_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,
@@ -476,6 +507,7 @@ class BuildReviewRecordTests(unittest.TestCase):
     def test_matches_checkpoint_review_records_item_schema(self):
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CLEAN_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,
@@ -489,6 +521,7 @@ class BuildReviewRecordTests(unittest.TestCase):
     def test_mutation_forces_write_isolation_violated(self):
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CLEAN_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,
@@ -510,6 +543,7 @@ class BuildReviewRecordTests(unittest.TestCase):
         """
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CLEAN_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,
@@ -589,6 +623,7 @@ class BuildReviewRecordTests(unittest.TestCase):
         with self.assertRaises(ORCH.ReviewIntegrityError) as context:
             ORCH.build_review_record(
                 sequence=1,
+                packet=VALID_PACKET,
                 result=incomplete,
                 expected_head=HEAD,
                 expected_base=BASE,
@@ -601,6 +636,7 @@ class BuildReviewRecordTests(unittest.TestCase):
         with self.assertRaises(ORCH.ReviewIntegrityError):
             ORCH.build_review_record(
                 sequence=1,
+                packet=VALID_PACKET,
                 result=CLEAN_AGGREGATE,
                 expected_head=OTHER_HEAD,
                 expected_base=BASE,
@@ -615,30 +651,18 @@ class BuildReviewRecordTests(unittest.TestCase):
         with self.assertRaises(ORCH.ReviewIntegrityError):
             ORCH.build_review_record(
                 sequence=1,
+                packet=packet,
                 result=CLEAN_AGGREGATE,
                 expected_head=HEAD,
                 expected_base=BASE,
                 independence="fresh_subagent",
                 reviewer_identity="fresh-subagent-review-1",
-                packet=packet,
             )
-
-    def test_valid_packet_is_accepted_and_produces_the_same_record(self):
-        record = ORCH.build_review_record(
-            sequence=1,
-            result=CLEAN_AGGREGATE,
-            expected_head=HEAD,
-            expected_base=BASE,
-            independence="fresh_subagent",
-            reviewer_identity="fresh-subagent-review-1",
-            packet=VALID_PACKET,
-        )
-        self.assertEqual("clean", record["aggregate_verdict"])
-        self.assertEqual("enforced", record["write_isolation"])
 
     def test_changes_required_result_is_accepted_and_recorded(self):
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CHANGES_REQUIRED_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,
@@ -654,6 +678,7 @@ class BuildReviewRecordTests(unittest.TestCase):
         # matter how many lenses ran inside it.
         record = ORCH.build_review_record(
             sequence=1,
+            packet=VALID_PACKET,
             result=CLEAN_AGGREGATE,
             expected_head=HEAD,
             expected_base=BASE,

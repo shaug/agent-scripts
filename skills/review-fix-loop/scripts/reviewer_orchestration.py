@@ -65,7 +65,23 @@ REQUIRED_LENSES: tuple[str, ...] = REVIEW_SUITE.REQUIRED_AGGREGATE_LENSES
 
 SEVERITY_ORDER = {"blocking": 0, "strong_recommendation": 1, "defer": 2}
 GATING_SEVERITIES = frozenset({"blocking", "strong_recommendation"})
-WORKTREE_CATEGORIES = ("tracked", "staged", "unstaged", "untracked", "ignored")
+
+# Worktree-state categories actually compared for mutation. `ignored` is
+# deliberately excluded: design still requires *capturing* it (see
+# `REQUIRED_SNAPSHOT_KEYS` below), but authorized recorded validation
+# commands (REVIEWER_PROHIBITIONS explicitly permits running them) routinely
+# create or change ignored build artifacts (`__pycache__/`, `.ruff_cache/`,
+# `.venv/`) as a side effect — this mirrors the invocation-cleanliness
+# contract's own rule that ignored files "do not represent an uncommitted
+# change and are not part of what 'clean' means here." Comparing it would
+# make every review pass that runs validation commands falsely report a
+# mutation.
+COMPARED_WORKTREE_CATEGORIES = ("tracked", "staged", "unstaged", "untracked")
+
+# Every key a before/after snapshot must carry for detect_worktree_mutation
+# to trust it. `ignored` is required-but-uncompared (captured per design,
+# never compared; see COMPARED_WORKTREE_CATEGORIES above).
+REQUIRED_SNAPSHOT_KEYS = ("head_sha", "refs", *COMPARED_WORKTREE_CATEGORIES, "ignored")
 
 # The literal prohibitions every reviewer briefing must carry. Acceptance
 # criterion: "Reviewer instructions explicitly prohibit worktree mutation and
@@ -86,14 +102,16 @@ REVIEWER_PROHIBITIONS: tuple[str, ...] = (
 
 
 class ReviewIntegrityError(ValueError):
-    """A raw review-code-change result cannot be trusted for this cycle.
+    """A raw review-code-change packet/result pair cannot be trusted for this cycle.
 
     Raised by `build_review_record` when `evaluate_review_result` finds the
-    result untrustworthy: not schema-valid, not cross-field consistent (this
-    includes the bundled contract's own aggregate-`clean` lens-execution
-    completeness rule), or not bound to the exact head and comparison base
-    this cycle captured. The caller must treat this like any other
-    incomplete-evidence stop; there is no partially-trusted fallback record.
+    packet or result untrustworthy: not schema-valid, not cross-field
+    consistent (this includes the bundled contract's own aggregate-`clean`
+    lens-execution completeness rule), not bound to the exact head and
+    comparison base this cycle captured, or a `clean` verdict paired with
+    packet validation that cannot back it. The caller must treat this like
+    any other incomplete-evidence stop; there is no partially-trusted
+    fallback record.
     """
 
     def __init__(self, errors: Sequence[str]):
@@ -115,14 +133,19 @@ def resolve_review_lenses() -> tuple[str, ...]:
 
 
 def evaluate_review_result(
-    result: Mapping[str, Any], expected_head: str, expected_base: str
+    packet: Mapping[str, Any],
+    result: Mapping[str, Any],
+    expected_head: str,
+    expected_base: str,
 ) -> list[str]:
-    """Return rejection reasons for a raw review-code-change result.
+    """Return rejection reasons for a raw review-code-change result and its packet.
 
     Empty means the result is trustworthy evidence for exactly this cycle's
-    head and comparison base: schema-valid, cross-field consistent, and bound
-    to `expected_head`/`expected_base` at both the result's own candidate and
-    every lens execution it records.
+    head and comparison base: schema-valid, cross-field consistent, bound to
+    `expected_head`/`expected_base` at the result's own candidate and every
+    lens execution it records, and backed by a packet that is itself bound to
+    the same candidate and whose own required validation entries can support
+    the result's verdict.
 
     Unlike a plain "accept only clean" gate, this accepts any verdict —
     `changes_required` and `blocked` are the ordinary outcome of most review
@@ -135,58 +158,39 @@ def evaluate_review_result(
     this is exactly the acceptance criterion "Reviewer output is rejected if
     required lenses or evidence are incomplete."
 
-    This is a thin wrapper around the canonical `review_gate.evaluate_bound`
-    (bundled at `scripts/review_gate.py`), the same schema-validation-plus-
-    binding logic `implement-ticket` and `babysit-pr` already consume via
-    `evaluate_aggregate`, generalized to accept any verdict rather than only
-    `clean`. Keeping this logic in one canonical place (rather than a second,
-    independently-maintained copy here) is what lets it stay drift-tested by
-    the repository's own bundled-contract check.
-    """
-    return GATE.evaluate_bound(dict(result), expected_head, expected_base)
+    `packet` is the "or evidence are incomplete" half of that same
+    criterion, distinct from lens completeness: a single-document check on
+    `result` alone cannot see the packet's own `validation` array, so it
+    cannot by itself catch a `clean` verdict paired with a packet whose
+    required focused or full validation entry was `failed` or `unavailable`.
+    This is deliberately the *only* evaluator this module exposes — an
+    earlier revision also offered a packet-less `result`-only path, but
+    `review-fix-loop`'s own checkpoint/terminal-result contract (from #96)
+    never persists a raw packet or raw result on its own, so no caller can
+    ever legitimately hold one without the other; collapsing to one
+    mandatory packet-plus-result path removes evidence that could otherwise
+    slip through the weaker path by omission.
 
-
-def evaluate_review_pair(
-    packet: Mapping[str, Any],
-    result: Mapping[str, Any],
-    expected_head: str,
-    expected_base: str,
-) -> list[str]:
-    """Return rejection reasons across the packet supplied and its result.
-
-    `evaluate_review_result` alone can reject an incomplete or misbound
-    *result*, but it never sees the *packet* review-fix-loop actually
-    supplied to the reviewer, so it cannot by itself catch a `clean` verdict
-    paired with a packet whose own required focused or full validation entry
-    was `failed` or `unavailable` — exactly the "or evidence are incomplete"
-    half of the acceptance criterion, distinct from lens completeness.
-
-    Deliberately does not reuse the bundled contract's `validate_pair` in
-    full: `validate_pair`'s packet/result candidate-identity consistency
+    This deliberately does not reuse the bundled contract's `validate_pair`
+    in full: `validate_pair`'s packet/result candidate-identity consistency
     check treats a `blocked` result that omits candidate identity already
     present in the packet as an error ("result omits identity present in
     packet"), even though the same bundled contract's own `CONTRACT.md`
     states a `blocked` result "may omit candidate fields that the caller
-    could not establish." `evaluate_review_result` above already checks
-    identity against this cycle's actual expected head/base — a strictly
-    more relevant check than internal packet/result agreement — so this
-    function reuses only `validate_packet`, `validate_result`, and
-    `_check_clean_requires_passing_validation` (the one check that genuinely
-    needs both documents: a `clean` verdict cannot hide a failed or
-    unavailable required packet validation entry) and leaves the *result's*
-    identity binding to `evaluate_review_result`. Unlike a result, a
-    packet's `candidate.head_sha`/`comparison_base_sha` are always required
-    by the packet schema (review-fix-loop constructs the packet itself, so
-    it always knows its own candidate identity) — this function additionally
-    checks that packet identity directly against `expected_head`/
-    `expected_base`, so a packet built for the wrong candidate is rejected
-    even if, hypothetically, its paired result happened to claim the right
-    one.
-
-    Prefer this over `evaluate_review_result` whenever the packet that was
-    actually handed to the reviewer is available; use `evaluate_review_result`
-    only when it is not (for example, when re-validating a previously
-    recorded result without retaining its packet).
+    could not establish." Instead this function checks the packet's own
+    identity against `expected_head`/`expected_base` directly (a packet's
+    `candidate.head_sha`/`comparison_base_sha` are always required by the
+    packet schema, since review-fix-loop constructs the packet itself and
+    always knows its own candidate identity), reuses only `validate_packet`,
+    `validate_result`, and `_check_clean_requires_passing_validation` (the
+    one packet/result cross-check that genuinely needs both documents: a
+    `clean` verdict cannot hide a failed or unavailable required packet
+    validation entry), and delegates the *result's* own identity binding to
+    the canonical `review_gate.evaluate_bound` (bundled at
+    `scripts/review_gate.py`, the same binding logic `implement-ticket` and
+    `babysit-pr` already consume via `evaluate_aggregate`, generalized to
+    accept any verdict rather than only `clean`) — kept in one canonical
+    place instead of a second, independently-maintained copy here.
     """
     packet = dict(packet)
     result = dict(result)
@@ -214,6 +218,7 @@ def evaluate_review_pair(
             f"head {packet_candidate.get('head_sha')!r} / "
             f"base {packet_candidate.get('comparison_base_sha')!r})"
         ]
+
     errors = [
         f"pair: {error}"
         for error in REVIEW_SUITE._check_clean_requires_passing_validation(
@@ -222,7 +227,8 @@ def evaluate_review_pair(
     ]
     if errors:
         return errors
-    return evaluate_review_result(result, expected_head, expected_base)
+
+    return GATE.evaluate_bound(result, expected_head, expected_base)
 
 
 def resolve_review_execution_mode(
@@ -299,23 +305,34 @@ def detect_worktree_mutation(
 ) -> list[str]:
     """Return mutation descriptions found between two worktree snapshots.
 
-    `before`/`after` carry the same `tracked`/`staged`/`unstaged`/`untracked`/
-    `ignored` path lists as every other worktree-state shape in this contract
-    family, plus an optional `head_sha` and an optional `refs` mapping (ref
-    name to object ID, for example from `git for-each-ref`). This implements
-    the design's "before/after capture of HEAD, refs, index, tracked, staged,
-    unstaged, untracked, and ignored state" tier of reviewer write
-    prevention — including refs, not only `head_sha`: a reviewer that runs
-    `git stash`, force-moves a branch, or creates a new ref without touching
-    `HEAD` or any tracked path is still a write-isolation violation this
-    function must not miss.
+    `before`/`after` must each carry every key in `REQUIRED_SNAPSHOT_KEYS`:
+    `head_sha`; a `refs` mapping (ref name to object ID, for example from
+    `git for-each-ref`); and the `tracked`/`staged`/`unstaged`/`untracked`/
+    `ignored` path lists every other worktree-state shape in this contract
+    family uses. This implements the design's "before/after capture of HEAD,
+    refs, index, tracked, staged, unstaged, untracked, and ignored state"
+    tier of reviewer write prevention.
+
+    Raises `ValueError` — fails closed — when either snapshot is missing a
+    required key, rather than silently treating an uncaptured dimension as
+    unchanged: a caller that omits `head_sha` or `refs` entirely has not
+    actually performed the before/after capture this tier requires, and a
+    reviewer that mutated exactly the uncaptured dimension would otherwise
+    go undetected.
 
     `refs` entries under `refs/remotes/` are excluded from comparison: an
     unattributed remote-tracking-ref advance is not proof of reviewer
     misconduct on its own — that is the ordinary `remote_advanced`
     publication-race contract (issue #97/#100's scope), not a
     reviewer-integrity failure. Every other ref (branches, tags, `refs/stash`,
-    and any other local ref) is compared.
+    and any other local ref) is compared — a reviewer that runs `git stash`,
+    force-moves a branch, or creates a new ref without touching `HEAD` or any
+    tracked path is still a write-isolation violation this function must not
+    miss.
+
+    `ignored` is captured (required, above) but deliberately excluded from
+    comparison; see `COMPARED_WORKTREE_CATEGORIES`'s module-level comment for
+    why.
 
     An empty return means no attributable change was observed by *this*
     check; it does not by itself certify write isolation — design also
@@ -328,14 +345,23 @@ def detect_worktree_mutation(
     `mutation_attempts`, so a detected mutation here propagates all the way to
     a rejected cycle rather than being silently tolerated.
     """
+    missing_before = [key for key in REQUIRED_SNAPSHOT_KEYS if key not in before]
+    missing_after = [key for key in REQUIRED_SNAPSHOT_KEYS if key not in after]
+    if missing_before or missing_after:
+        raise ValueError(
+            "detect_worktree_mutation requires a complete before/after "
+            f"snapshot; before is missing {missing_before!r}, after is "
+            f"missing {missing_after!r}"
+        )
+
     mutations: list[str] = []
-    before_head = before.get("head_sha")
-    after_head = after.get("head_sha")
+    before_head = before["head_sha"]
+    after_head = after["head_sha"]
     if before_head != after_head:
         mutations.append(f"head_sha advanced from {before_head!r} to {after_head!r}")
-    for category in WORKTREE_CATEGORIES:
-        before_paths = set(before.get(category) or [])
-        after_paths = set(after.get(category) or [])
+    for category in COMPARED_WORKTREE_CATEGORIES:
+        before_paths = set(before[category] or [])
+        after_paths = set(after[category] or [])
         if before_paths != after_paths:
             added = sorted(after_paths - before_paths)
             removed = sorted(before_paths - after_paths)
@@ -347,7 +373,7 @@ def detect_worktree_mutation(
             mutations.append(f"{category}: " + "; ".join(detail))
 
     def _local_refs(snapshot: Mapping[str, Any]) -> dict[str, str]:
-        refs = snapshot.get("refs") or {}
+        refs = snapshot["refs"] or {}
         return {
             name: value
             for name, value in refs.items()
@@ -379,26 +405,26 @@ def detect_worktree_mutation(
 def build_review_record(
     *,
     sequence: int,
+    packet: Mapping[str, Any],
     result: Mapping[str, Any],
     expected_head: str,
     expected_base: str,
     independence: str,
     reviewer_identity: str,
     mutation_attempts: Sequence[str] = (),
-    packet: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build one checkpoint-shaped `review_records` entry from a raw result.
 
     Fails closed: raises `ReviewIntegrityError` — never returns a partially
-    trusted record — when `result` is not schema-valid, cross-field
-    consistent, or bound to `expected_head`/`expected_base`. When `packet` is
-    supplied (the raw evidence packet this cycle actually handed to the
-    reviewer), also fails closed when that packet's own required focused or
-    full validation entry cannot back a `clean` verdict
-    (`evaluate_review_pair`); when it is omitted, only `evaluate_review_result`
-    runs, so a `clean` result whose packet validation was actually
-    unavailable would not be caught here — always pass `packet` when it is
-    available.
+    trusted record — when `evaluate_review_result` finds `packet` or `result`
+    untrustworthy: not schema-valid, not cross-field consistent, not bound
+    to `expected_head`/`expected_base`, or a `clean` verdict paired with
+    packet validation that cannot back it. `packet` is required (the exact
+    raw evidence packet this cycle actually handed to the reviewer): a
+    packet-less evaluation cannot catch a `clean` verdict whose packet
+    validation was actually `failed` or `unavailable`, and review-fix-loop's
+    own checkpoint/terminal-result contract never persists one without the
+    other, so there is no legitimate caller for a packet-less path.
 
     Any non-empty `mutation_attempts` forces `write_isolation: "violated"`
     regardless of the aggregate verdict: design states "an attempted
@@ -413,10 +439,7 @@ def build_review_record(
     3 "Review"). A later caller that does run Decide populates this same
     field afterward with the shape it already reserves.
     """
-    if packet is not None:
-        errors = evaluate_review_pair(packet, result, expected_head, expected_base)
-    else:
-        errors = evaluate_review_result(result, expected_head, expected_base)
+    errors = evaluate_review_result(packet, result, expected_head, expected_base)
     if errors:
         raise ReviewIntegrityError(errors)
 

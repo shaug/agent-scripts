@@ -111,13 +111,22 @@ tier the runtime supports, strongest first:
 4. **Before/after state capture**: snapshot `head_sha`, local `refs` (for
    example via `git for-each-ref`), and tracked/staged/unstaged/untracked/
    ignored worktree state immediately before spawning the reviewer and
-   immediately after it returns. Pass both snapshots to
-   `detect_worktree_mutation(before, after)`, which compares every category
-   including `refs` — a reviewer that runs `git stash` or force-moves a branch
-   without touching `HEAD` or any tracked path is still caught. `refs/remotes/*`
-   entries are excluded from the comparison: an unattributed remote-tracking-ref
-   advance is the ordinary `remote_advanced` publication-race contract (issue
-   #97/#100's scope), not reviewer misconduct.
+   immediately after it returns — every key `REQUIRED_SNAPSHOT_KEYS` names. Pass
+   both snapshots to `detect_worktree_mutation(before, after)`, which raises
+   `ValueError` if either snapshot is missing a required key (fails closed
+   rather than silently treating an uncaptured dimension as unchanged) and
+   otherwise compares `head_sha`, `refs`, and tracked/staged/unstaged/untracked
+   paths — a reviewer that runs `git stash` or force-moves a branch without
+   touching `HEAD` or any tracked path is still caught. `refs/remotes/*` entries
+   are excluded from the comparison: an unattributed remote-tracking-ref advance
+   is the ordinary `remote_advanced` publication-race contract (issue #97/#100's
+   scope), not reviewer misconduct. `ignored` is captured (required above) but
+   deliberately not compared: authorized recorded validation commands
+   legitimately create or change ignored build artifacts (`__pycache__/`,
+   `.ruff_cache/`, `.venv/`), so comparing it would make every review pass that
+   runs validation falsely report a mutation — this mirrors the
+   invocation-cleanliness contract's own rule that ignored files "do not
+   represent an uncommitted change and are not part of what 'clean' means here."
 5. **Tool-trace inspection**, when the runtime exposes one, for an attempted
    mutation that a capability boundary already blocked.
 
@@ -154,13 +163,13 @@ review pass instead of living only in this document.
 ## Rejecting an incomplete result
 
 The acceptance criterion "Reviewer output is rejected if required lenses or
-evidence are incomplete" has two distinct halves, and one function each:
+evidence are incomplete" has two distinct halves, both enforced by the single
+`evaluate_review_result(packet, result, expected_head, expected_base)`:
 
-- **Lenses**: `evaluate_review_result(result, expected_head, expected_base)`
-  validates the raw result alone. An empty return means it is schema-valid,
-  cross-field consistent, and bound to the exact head and comparison base this
-  cycle captured — including every `lens_executions` entry, not only the
-  result's own `candidate`.
+- **Lenses**: an empty return means `result` is schema-valid, cross-field
+  consistent, and bound to the exact head and comparison base this cycle
+  captured — including every `lens_executions` entry, not only the result's own
+  `candidate`.
   - A `clean` verdict must demonstrate a fresh, current-head, `clean` execution
     for all three required lenses; a result missing one, reusing a stale head,
     or reusing an old base is rejected, not silently treated as complete.
@@ -169,43 +178,41 @@ evidence are incomplete" has two distinct halves, and one function each:
     a partial `lens_executions` list there is expected and valid.
   - A `blocked` verdict may omit candidate identity entirely when the caller
     could not establish it; this is not treated as a stale-candidate mismatch.
-- **Evidence**:
-  `evaluate_review_pair(packet, result, expected_head, expected_base)`
-  additionally validates the raw evidence packet review-fix-loop actually handed
-  to the reviewer against its result. A single-document check on the result
-  alone cannot see this: the shared review-suite contract's "validation must
-  back a clean verdict" rule (`_check_clean_requires_passing_validation`) needs
-  the packet's own `validation` array, which only `evaluate_review_pair`
-  inspects. Prefer this over `evaluate_review_result` whenever the packet is
-  still available — which it always is immediately after building it for the
-  reviewer.
+- **Evidence**: the function also validates `packet` — the raw evidence packet
+  review-fix-loop actually handed to the reviewer — against `result` and against
+  `expected_head`/`expected_base` directly. A single-document check on the
+  result alone cannot see this: the shared review-suite contract's "validation
+  must back a clean verdict" rule (`_check_clean_requires_passing_validation`)
+  needs the packet's own `validation` array.
 
-Treat any non-empty return from either function as a failed review pass: do not
-build a `review_records` entry from it. `build_review_record` enforces this
-directly — it raises `ReviewIntegrityError` instead of returning a partially
-trusted record.
+`packet` is required, not optional: review-fix-loop's own checkpoint/
+terminal-result contract (from #96) never persists a raw packet or raw result on
+its own, so no caller can legitimately hold one without the other. An earlier
+revision of this module offered a packet-less path as well; it was removed
+rather than left reachable by omission, since it could otherwise let a `clean`
+verdict with actually-failed packet validation slip through undetected.
+
+Treat any non-empty return as a failed review pass: do not build a
+`review_records` entry from it. `build_review_record` enforces this directly —
+it raises `ReviewIntegrityError` instead of returning a partially trusted
+record.
 
 ## Building the review record
 
-Once a raw result (and, when available, its packet) passes evaluation, call:
+Once a raw result and its packet pass evaluation, call:
 
 ```python
 build_review_record(
     sequence=<next cycle_attempts/review sequence number>,
+    packet=<the exact packet handed to the reviewer>,
     result=<raw review-code-change aggregate result>,
     expected_head=<exact current head SHA>,
     expected_base=<exact current comparison-base SHA>,
     independence=<"fresh_subagent" or "in_agent_override">,
     reviewer_identity=<generate_reviewer_identity(independence, sequence)>,
     mutation_attempts=<detect_worktree_mutation(before, after) + any tool-trace evidence>,
-    packet=<the exact packet handed to the reviewer, when retained>,
 )
 ```
-
-Passing `packet` runs `evaluate_review_pair`; omitting it falls back to
-`evaluate_review_result` alone, which cannot catch a `clean` verdict paired with
-a packet whose own required validation entry was actually `failed` or
-`unavailable`. Always pass it when the packet is still available.
 
 The returned dict matches `checkpoint.schema.json`'s `review_records` item
 exactly — append it to the checkpoint's `review_records` array (and, at return

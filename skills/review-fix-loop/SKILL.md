@@ -109,16 +109,15 @@ summary:
    remote-write tool.
 4. Capture worktree state, including local refs (excluding `refs/remotes/*`),
    immediately before and after the pass and run `detect_worktree_mutation` on
-   the two snapshots.
-5. Validate the raw result and build one `review_records` entry with
-   `build_review_record`, passing the exact packet handed to the reviewer
-   (`packet=...`) whenever it is still available — always, in the ordinary case
-   — and feeding in every detected mutation. Passing `packet` runs
-   `evaluate_review_pair`, which also catches a `clean` verdict paired with a
-   packet whose own required validation entry was `failed` or `unavailable`;
-   omitting it falls back to `evaluate_review_result` alone, which cannot.
-   `build_review_record` raises `ReviewIntegrityError` instead of returning a
-   partially trusted record either way. A non-empty `mutation_attempts` always
+   the two snapshots (it raises if either snapshot is missing a required capture
+   key, rather than silently treating an uncaptured dimension as unchanged).
+5. Build one `review_records` entry with `build_review_record`, passing both the
+   exact packet handed to the reviewer (`packet=...`, required) and its result,
+   feeding in every detected mutation. This validates the packet and result
+   together — including catching a `clean` verdict paired with a packet whose
+   own required validation entry was `failed` or `unavailable`, which a
+   result-only check cannot see — and raises `ReviewIntegrityError` instead of
+   returning a partially trusted record. A non-empty `mutation_attempts` always
    yields `write_isolation: "violated"` and fails that cycle closed, even when
    the aggregate verdict itself looked clean.
 6. When the verdict is not `clean`, use `normalize_findings` and
