@@ -926,12 +926,23 @@ def up_sequential_publication_race_second_clone_loses(tmp_dir: Path) -> dict[str
     )
     head_ref = "refs/heads/up/race"
 
-    repo_a = tmp_dir / "clone-a"
-    repo_b = tmp_dir / "clone-b"
-    LE.git("clone", "-q", str(canonical), str(repo_a))
-    LE.git("checkout", "-q", "up/race", cwd=repo_a)
-    LE.git("clone", "-q", str(canonical), str(repo_b))
-    LE.git("checkout", "-q", "up/race", cwd=repo_b)
+    def _clone_with_identity(name: str) -> Path:
+        # `git clone` never copies the source repository's local
+        # `user.name`/`user.email` config, and a CI runner (unlike a
+        # developer machine) typically has no global git identity
+        # configured either — the engine's own `commit_attempt` relies on
+        # ambient git identity exactly as production code does, so each
+        # clone needs its own explicit local config, matching what
+        # `H.init_repo` already does for every non-cloned fixture repo.
+        clone_path = tmp_dir / name
+        LE.git("clone", "-q", str(canonical), str(clone_path))
+        LE.git("checkout", "-q", "up/race", cwd=clone_path)
+        LE.git("config", "user.email", "test@example.com", cwd=clone_path)
+        LE.git("config", "user.name", "Eval", cwd=clone_path)
+        return clone_path
+
+    repo_a = _clone_with_identity("clone-a")
+    repo_b = _clone_with_identity("clone-b")
 
     invocation_a = H.make_invocation(
         repo_a,
