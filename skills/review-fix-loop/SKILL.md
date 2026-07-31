@@ -12,7 +12,7 @@ review suite, applies material ticket-scoped fixes, and repeats until review
 converges or a bounded stop condition is reached. The full design is
 [`design/review-fix-loop.md`](../../design/review-fix-loop.md).
 
-Five of its children are implemented so far:
+Six of its children are implemented so far:
 
 - [Issue #96](https://github.com/shaug/agent-scripts/issues/96) (the first of
   epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines and
@@ -52,6 +52,11 @@ Five of its children are implemented so far:
   publication race is lost or the remote is unavailable. See
   [Run the standalone `update_pr` workflow](#run-the-standalone-update_pr-workflow)
   below.
+- [Issue #101](https://github.com/shaug/agent-scripts/issues/101) adds the
+  cross-cutting, result-blind evaluation corpus that establishes this skill's
+  behavioral contract across both execution modes from externally observable Git
+  evidence, not the returned terminal-result document's own claims. See
+  [Evaluation](#evaluation) below.
 
 Use [`scripts/local_commit.py`](scripts/local_commit.py)'s
 `run_local_commit(...)` to run a complete standalone `local_commit` invocation
@@ -274,6 +279,24 @@ misconfigured publication target, a mismatched remote-iteration grant, an
 unreachable remote, the remote-target lock actually being exercised through
 `run_update_pr`, and rejection of an invalid invocation or a `local_commit`
 invocation at the API boundary.
+
+## Evaluation
+
+[`evals/README.md`](evals/README.md) documents the cross-cutting, result-blind
+evaluation corpus in [`scripts/evals/`](scripts/evals): twenty scenarios,
+covering convergence, repeated findings, invalid/incomplete reviews, declined
+findings, budget exhaustion, interruption and recovery, validation failure,
+reviewer mutation, and publication races across both `local_commit` and
+`update_pr`, plus the fresh-subagent default and the explicit in-agent override.
+Every scenario drives the real engine against a real disposable Git repository
+(and, for `update_pr`, a real disposable bare remote) and is graded against
+independently derived Git evidence — a real commit count, a real file's content
+at a real commit, a real remote ref, a real object's reachability — never the
+returned terminal-result document's own claims, so a result that only *asserts*
+success cannot pass. No subprocess boundary and no model call is involved, so
+the whole corpus runs deterministically under `just test` (via
+[`scripts/tests/test_evals.py`](scripts/tests/test_evals.py)) and standalone via
+`just eval-review-fix-loop`.
 
 ## Non-goals
 
