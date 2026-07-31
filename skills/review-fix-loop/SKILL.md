@@ -1,6 +1,6 @@
 ---
 name: review-fix-loop
-description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts; run the complete-review orchestration and local execution substrate (locking, isolated attempt worktrees, checkpointing, fast-forward-only promotion, interrupted-attempt recovery); and run the standalone end-to-end `local_commit` workflow composing all of the above into one candidate-bound converge-or-stop loop. Use to check a review-fix-loop document against the shared schemas, to run and record one complete review pass, to acquire a candidate lock or run/recover an isolated remediation attempt, or to run the complete standalone `local_commit` loop end to end (review, decide, fix, validate, commit, repeat, converge or stop) with no remote publication. Does not yet publish anything (`update_pr`); see design/review-fix-loop.md, references/CONTRACT.md, references/reviewer-orchestration.md, and references/local-commit.md for the full design and implementation status.
+description: Validate the review-fix-loop invocation, checkpoint, and terminal-result contracts; run the complete-review orchestration and local execution substrate (locking, isolated attempt worktrees, checkpointing, fast-forward-only promotion, interrupted-attempt recovery); and run the standalone end-to-end `local_commit` and `update_pr` workflows, the latter publishing exactly once via an expected-old fast-forward Git update after convergence. Use to check a review-fix-loop document against the shared schemas, to run one complete review pass, to acquire a candidate lock or run/recover an isolated remediation attempt, or to run the complete standalone loop (review, decide, fix, validate, commit, repeat, converge or stop) under either publication policy. See design/review-fix-loop.md, references/CONTRACT.md, references/reviewer-orchestration.md, references/local-commit.md, and references/update-pr.md for the full design.
 allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 
@@ -12,7 +12,7 @@ review suite, applies material ticket-scoped fixes, and repeats until review
 converges or a bounded stop condition is reached. The full design is
 [`design/review-fix-loop.md`](../../design/review-fix-loop.md).
 
-Four of its children are implemented so far:
+Five of its children are implemented so far:
 
 - [Issue #96](https://github.com/shaug/agent-scripts/issues/96) (the first of
   epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines and
@@ -42,14 +42,24 @@ Four of its children are implemented so far:
   — with no remote write in any path. See
   [Run the standalone `local_commit` workflow](#run-the-standalone-local_commit-workflow)
   below.
+- [Issue #100](https://github.com/shaug/agent-scripts/issues/100) adds and
+  evaluates `update_pr`: the same review/fix/converge machinery as
+  `local_commit` — every intermediate fix commit stays local — plus one
+  expected-old, fast-forward-only Git publish immediately after convergence.
+  Resolves and cross-validates the fork/remote publication target (never
+  assuming "origin" ownership), validates `remote_iteration_grants`, and
+  preserves the converged local commit with an actionable recovery path when the
+  publication race is lost or the remote is unavailable. See
+  [Run the standalone `update_pr` workflow](#run-the-standalone-update_pr-workflow)
+  below.
 
-This skill still does not publish anything to a remote — `update_pr` (#100) is
-the only remaining behavior out of scope. Use
-[`scripts/local_commit.py`](scripts/local_commit.py)'s `run_local_commit(...)`
-to run a complete standalone `local_commit` invocation end to end; use the
-lower-level modules directly only when you need just one of their individual
-behaviors (validating a document, running one review pass, or acquiring a lock
-and running one isolated attempt) outside the full loop.
+Use [`scripts/local_commit.py`](scripts/local_commit.py)'s
+`run_local_commit(...)` to run a complete standalone `local_commit` invocation
+end to end, and [`scripts/update_pr.py`](scripts/update_pr.py)'s
+`run_update_pr(...)` for `update_pr`; use the lower-level modules directly only
+when you need just one of their individual behaviors (validating a document,
+running one review pass, or acquiring a lock and running one isolated attempt)
+outside the full loop.
 
 ## Load the contracts
 
@@ -213,12 +223,68 @@ finding set, two consecutive failed attempts, recovery from an interrupted
 attempt, an already-held candidate lock, an attempted reviewer mutation, and a
 host without fresh-subagent support.
 
+## Run the standalone `update_pr` workflow
+
+Read [`references/update-pr.md`](references/update-pr.md) in full before running
+an end-to-end `update_pr` invocation; it implements design's "Publication
+policy" > `update_pr`, "Origin-visible exception", workflow step 8 "Publish
+after convergence", and the `update_pr` parts of "Local ownership and
+checkpointing" > "Cooperative ownership". In summary:
+[`scripts/update_pr.py`](scripts/update_pr.py)'s `run_update_pr(...)` composes
+the exact same review/fix/converge engine `local_commit.py` already implements —
+it never reimplements Resolve/Establish evidence/Review/Decide/Fix/Validate and
+commit/Invalidate and repeat, and every intermediate fix commit stays local
+exactly as under `local_commit`. Only the publication tail differs:
+
+1. Resolve and cross-validate the publication target from
+   `candidate.source_binding` (the actual pushable remote — never assumed to be
+   this repository's own `origin`, so a fork's own remote is handled identically
+   to a same-repository branch) and `publication.pull_request` (the PR's own
+   head-repository/head-ref/expected-old identity); a mismatch between the two
+   fails closed with `blocked/missing_authority` before any lock, review, or
+   mutation. Validate every `remote_iteration_grants` entry against that same
+   resolved target the same way.
+2. Acquire the same local candidate lock as `local_commit` plus the
+   `update_pr`-only remote-target lock (already implemented by
+   [Local execution](#local-execution)'s `acquire_candidate_locks`).
+3. Run the identical loop, with one added check at the two points
+   `local_commit`'s engine already calls a policy hook from (before establishing
+   evidence for a fresh review, and before starting a fix attempt): reread the
+   live remote head and stop with `blocked/remote_advanced` if it no longer
+   matches the invocation's recorded `expected_old_head_sha`.
+4. The instant the aggregate review is clean, and only then: fetch and reread
+   the exact remote head; require it to equal `expected_old_head_sha`; prove the
+   local candidate is a non-rewriting descendant of it; perform one
+   `--force-with-lease=<head_ref>:<expected_old_head_sha>` push; and read the
+   ref back to confirm it now equals the converged local head. Any failure at
+   any of those steps returns `blocked` (`remote_advanced`,
+   `candidate_integrity_failure`, or `publication_failed`) and preserves the
+   converged local commit exactly as `local_commit` always would — this never
+   merges, rebases, force-updates, or otherwise supersedes a competing
+   candidate.
+
+See [`scripts/tests/test_update_pr.py`](scripts/tests/test_update_pr.py) for
+complete disposable-remote coverage (every test drives a real temporary Git
+repository and a real disposable local bare repository as the publication remote
+— never this repository's actual `origin`): a successful converge-then-publish
+run with and without a fix cycle, a fork target resolved without assuming origin
+ownership, a competing remote update that cannot be overwritten, local
+non-fast-forward history relative to the recorded expected-old head, a
+misconfigured publication target, a mismatched remote-iteration grant, an
+unreachable remote, the remote-target lock actually being exercised through
+`run_update_pr`, and rejection of an invalid invocation or a `local_commit`
+invocation at the API boundary.
+
 ## Non-goals
 
-- Publishing anything, including the `update_pr` expected-old fast-forward
-  update (issue #100).
+- Creating, merging, closing, or otherwise managing a pull request.
+- Force-pushing or rewriting remote history — `update_pr` performs only one
+  expected-old, fast-forward-only Git update.
 - Migrating `implement-ticket`, `babysit-pr`, `carve-changesets`, or any other
   existing caller.
 - Owning acceptance criteria or a caller-specific acceptance ledger — the
   contract records `acceptance_reconciliation_required` but the caller always
   retains its own ledger.
+- Distributed coordination beyond this skill's local locks and Git
+  compare-and-swap (no distributed lease, fencing token, or coordinator
+  service).
