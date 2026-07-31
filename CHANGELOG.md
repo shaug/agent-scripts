@@ -4,14 +4,24 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Delivered and evaluated the standalone review-fix-loop `local_commit` workflow, implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-fix-loop): compose the contract, local-execution, and
+  reviewer-orchestration leaves into the end-to-end standalone `local_commit`
+  workflow (`scripts/local_commit.py`'s `run_local_commit`), enforcing the
+  fix-cycle budget, committing selected fixes in isolated attempts, promoting
+  only a converged candidate, and reporting explicit retained-commit and
+  operator-action evidence for every non-converged stop, with end-to-end
+  fixtures for immediate convergence, one and multiple fix cycles, budget
+  exhaustion, validation failure (unavailable/untractable/tractable), operator
+  input (declined finding and scope expansion), expanding/oscillating finding
+  sets, repeated failed attempts, and interrupted-attempt recovery
 - fix(review-fix-loop): remove three subsumed/redundant tests and cut
   `reviewer_orchestration.py`'s docstring/comment density from roughly one line
   of prose per line of code down to sibling-module levels, replacing restated
   rationale with single pointers to `references/reviewer-orchestration.md`,
   closing the two code-simplicity gaps the sixth review-code-change pass on #98
-  found
+  found (`fd690248670c6acecfb2d335e70e347d4d4390de`)
 - fix(review-fix-loop): correct an off-by-one changelog SHA attribution left by
   the previous fix cycle's own rebase cleanup — the duplicate-test entry and the
   `ignored`-comparison entry each carried the other's identity, closing the gap
