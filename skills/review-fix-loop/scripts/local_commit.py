@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""End-to-end standalone `local_commit` workflow for `review-fix-loop` (issue #99).
+"""End-to-end standalone `local_commit` workflow for `review-fix-loop` (issue #99),
+and the shared engine issue #100's `update_pr.py` composes its publication tail
+onto.
 
 Composes the three already-merged children of epic #95 into the actual loop
 `design/review-fix-loop.md`'s "Workflow" section describes (steps 1 "Resolve"
-through 9 "Return"), restricted to the `local_commit` publication policy:
+through 9 "Return"):
 
 - `validate.py` (#96) — the invocation/checkpoint/terminal-result contract and
   its cross-field semantics.
@@ -18,6 +20,17 @@ the three modules above and owns only what issue #99 itself is responsible
 for: the loop's control flow (Resolve, Establish evidence, Review, Decide,
 Fix, Validate and commit, Invalidate and repeat, Publish, Return), fix-cycle
 budget enforcement, and terminal-result assembly.
+
+`run_local_commit` is a thin wrapper around the private `_run_engine`, bound to
+the trivial `local_commit` `_Policy` (every hook `None` — the engine's
+behavior is exactly what it always was before this policy abstraction
+existed). `update_pr.py` (issue #100) is the only other caller of
+`_run_engine`; it supplies a populated `_Policy` built from its own resolved
+publication target instead of reimplementing this loop. `_run_engine`,
+`_Policy`, `_PublishOutcome`, `_State`, `_finalize`, `_minimal_blocked_result`,
+and `_validate_and_require_policy` are shared, private, cross-module surface
+between the two files in this same skill directory — never a public API for
+anything outside it.
 
 ## Host boundary
 
@@ -163,6 +176,85 @@ def _default_classify_validation_failure(
 ) -> dict[str, Any] | None:
     del outcome, invocation
     return None
+
+
+# ---------------------------------------------------------------------------
+# Publication policy (shared engine hook; issue #100's `update_pr` is the only
+# non-trivial policy so far)
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class _PublishOutcome:
+    """The result of one attempted publication, returned by a `_Policy.publish`
+    hook. `status` is either `"published"` (the exact expected-old fast-forward
+    update landed and read back correctly) or `"failed"` (nothing was
+    published; `blocked_reason` names why, and the caller's already-converged
+    local commit is preserved exactly as-is)."""
+
+    status: str  # "published" | "failed"
+    operator_action: str
+    non_converged_exposure: bool = False
+    remote_head_before: str | None = None
+    remote_head_after: str | None = None
+    blocked_reason: str | None = None  # required when status == "failed"
+
+
+@dataclasses.dataclass(frozen=True)
+class _Policy:
+    """What distinguishes one publication policy's effect on the shared engine.
+
+    `local_commit` (this module's own default) never sets `remote_target`,
+    `check_remote`, or `publish` — every hook stays `None`, so the engine's
+    behavior for `local_commit` is unchanged from before this policy
+    abstraction existed. `update_pr.py` supplies a populated `_Policy` built
+    from its own resolved publication target; the engine never constructs one
+    itself for `update_pr`.
+    """
+
+    name: str  # "local_commit" | "update_pr"
+    remote_target: tuple[str, str] | None = None
+    checkpoint_pull_request: Mapping[str, str] | None = None
+    # Returns `None` when the remote has not observably advanced, or
+    # `{"reason": <blocked reason>, "remote_head": <sha> | None}` when it
+    # has — `remote_head` is the live value observed, when the check could
+    # determine one, for the resulting terminal result's
+    # `publication.remote_head_before`/`remote_head_after`.
+    check_remote: Callable[["_State"], dict[str, Any] | None] | None = None
+    publish: Callable[["_State"], _PublishOutcome] | None = None
+
+
+_LOCAL_COMMIT_POLICY = _Policy(name="local_commit")
+
+
+def _default_publication(
+    policy_name: str, *, terminal_state: str, reason: str | None
+) -> dict[str, Any]:
+    """The policy-appropriate `publication` dict for every ordinary return path
+    that never attempts a remote write itself (every `blocked`/
+    `changes_remaining` reason except the dedicated publish step's own
+    outcome, which always supplies its own explicit `publication_override`).
+
+    `local_commit` is always `not_applicable`, exactly as before this
+    function existed. `update_pr` mirrors `validate.py`'s own
+    `BLOCKED_REASONS_IMPLYING_PUBLICATION_FAILED` rule instead of duplicating
+    it: `withheld` for every ordinary stop, `failed` only for the two reasons
+    that mean a publication attempt did not land (`remote_advanced`,
+    `publication_failed`).
+    """
+    if policy_name == "local_commit":
+        return {
+            "policy": "local_commit",
+            "status": "not_applicable",
+            "non_converged_exposure": False,
+        }
+    status = (
+        "failed"
+        if terminal_state == "blocked"
+        and reason in VALIDATE.BLOCKED_REASONS_IMPLYING_PUBLICATION_FAILED
+        else "withheld"
+    )
+    return {"policy": policy_name, "status": status, "non_converged_exposure": False}
 
 
 # ---------------------------------------------------------------------------
@@ -355,6 +447,7 @@ class _State:
     base_ref: str
     current_base_sha: str
     original_budget: int
+    policy: _Policy
     cycle_attempts: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     head_history: list[str] = dataclasses.field(default_factory=list)
     base_revision_history: list[dict[str, str]] = dataclasses.field(
@@ -423,7 +516,9 @@ def _checkpoint_document(
     state: _State, *, phase: str, next_action: str
 ) -> dict[str, Any]:
     invocation = state.invocation
-    publication: dict[str, Any] = {"policy": "local_commit"}
+    publication: dict[str, Any] = {"policy": state.policy.name}
+    if state.policy.checkpoint_pull_request is not None:
+        publication["pull_request"] = dict(state.policy.checkpoint_pull_request)
     document = {
         "schema_version": "1.0",
         "invocation_id": invocation["invocation_id"],
@@ -467,6 +562,8 @@ def _terminal_result(
     terminal_state: str,
     reason: str | None,
     operator_action: str,
+    publication_override: Mapping[str, Any] | None = None,
+    source_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     invocation = state.invocation
     consumed = state.consumed_cycles()
@@ -475,6 +572,23 @@ def _terminal_result(
     identity_changed = (
         state.current_head != state.initial_head
         or state.current_base_sha != state.base_revision_history[0]["sha"]
+    )
+    publication = (
+        dict(publication_override)
+        if publication_override is not None
+        else _default_publication(
+            state.policy.name, terminal_state=terminal_state, reason=reason
+        )
+    )
+    source = (
+        dict(source_override)
+        if source_override is not None
+        else _terminal_source_status(
+            invocation["candidate"], repo=state.repo, current_head=state.current_head
+        )
+    )
+    unpushed_commits = (
+        [] if publication.get("status") == "published" else list(created_commits)
     )
     document: dict[str, Any] = {
         "schema_version": "1.0",
@@ -501,15 +615,9 @@ def _terminal_result(
         "finding_dispositions": list(state.finding_dispositions),
         "created_commits": list(created_commits),
         "preserved_failed_attempts": list(state.preserved_failed_attempts),
-        "source": _terminal_source_status(
-            invocation["candidate"], repo=state.repo, current_head=state.current_head
-        ),
-        "unpushed_commits": list(created_commits),
-        "publication": {
-            "policy": "local_commit",
-            "status": "not_applicable",
-            "non_converged_exposure": False,
-        },
+        "source": source,
+        "unpushed_commits": unpushed_commits,
+        "publication": publication,
         "acceptance_reconciliation_required": bool(identity_changed),
         "unresolved_or_deferred_findings": list(state.unresolved_or_deferred),
         "operator_action": operator_action,
@@ -528,6 +636,8 @@ def _finalize(
     reason: str | None,
     operator_action: str,
     phase: str,
+    publication_override: Mapping[str, Any] | None = None,
+    source_override: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     _persist_checkpoint(state, phase=phase, next_action=operator_action)
     result = _terminal_result(
@@ -535,6 +645,8 @@ def _finalize(
         terminal_state=terminal_state,
         reason=reason,
         operator_action=operator_action,
+        publication_override=publication_override,
+        source_override=source_override,
     )
     errors = VALIDATE.validate_terminal_result(result)
     if errors:
@@ -544,8 +656,33 @@ def _finalize(
     return result
 
 
+def _remote_check_publication_override(
+    state: _State, remote_check: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Build the `publication` dict for a mid-loop `check_remote` stop, reusing
+    `_default_publication`'s exact status rule and attaching the observed
+    remote head (when the check could determine one) as both
+    `remote_head_before` and `remote_head_after` — nothing was pushed, so the
+    remote's live value is unchanged by this invocation either way."""
+    publication = dict(
+        _default_publication(
+            state.policy.name, terminal_state="blocked", reason=remote_check["reason"]
+        )
+    )
+    remote_head = remote_check.get("remote_head")
+    if remote_head is not None:
+        publication["remote_head_before"] = remote_head
+        publication["remote_head_after"] = remote_head
+    return publication
+
+
 def _minimal_blocked_result(
-    invocation: Mapping[str, Any], *, repo: Path, reason: str, operator_action: str
+    invocation: Mapping[str, Any],
+    *,
+    repo: Path,
+    reason: str,
+    operator_action: str,
+    policy_name: str = "local_commit",
 ) -> dict[str, Any]:
     """Build a `blocked` terminal result for a stop that occurs before this
     invocation could acquire its candidate lock — nothing has been
@@ -582,11 +719,9 @@ def _minimal_blocked_result(
         "preserved_failed_attempts": [],
         "source": _terminal_source_status(candidate, repo=repo, current_head=head),
         "unpushed_commits": [],
-        "publication": {
-            "policy": "local_commit",
-            "status": "not_applicable",
-            "non_converged_exposure": False,
-        },
+        "publication": _default_publication(
+            policy_name, terminal_state="blocked", reason=reason
+        ),
         "acceptance_reconciliation_required": False,
         "unresolved_or_deferred_findings": [],
         "operator_action": operator_action,
@@ -599,6 +734,28 @@ def _minimal_blocked_result(
             "internal error: assembled an invalid terminal result: " + "; ".join(errors)
         )
     return document
+
+
+def _validate_and_require_policy(
+    invocation: Mapping[str, Any], expected_policy: str
+) -> None:
+    """Shared entry-point guard for both `run_local_commit` and
+    `update_pr.run_update_pr`: validate the invocation against the complete
+    contract and require its exact `publication.policy`. Raises
+    `LocalCommitError` for a caller/programming error — an invalid invocation
+    or one whose policy does not match the entry point invoked — never for an
+    ordinary runtime stop condition, matching this module's existing
+    convention."""
+    errors = VALIDATE.validate_invocation(dict(invocation))
+    if errors:
+        raise LocalCommitError(
+            "invocation failed contract validation: " + "; ".join(errors)
+        )
+    policy = invocation["publication"]["policy"]
+    if policy != expected_policy:
+        raise LocalCommitError(
+            f"expected publication.policy {expected_policy!r}, got {policy!r}"
+        )
 
 
 def run_local_commit(
@@ -620,25 +777,63 @@ def run_local_commit(
     `changes_remaining`, or `blocked`). Every successful fix is committed
     locally and promoted through the canonical worktree at `repo`; no remote
     write ever occurs, per this invocation's `local_commit` policy.
-    """
-    errors = VALIDATE.validate_invocation(dict(invocation))
-    if errors:
-        raise LocalCommitError(
-            "invocation failed contract validation: " + "; ".join(errors)
-        )
-    policy = invocation["publication"]["policy"]
-    if policy != "local_commit":
-        raise LocalCommitError(
-            f"run_local_commit only handles publication.policy 'local_commit', got {policy!r}"
-        )
 
+    A thin wrapper around `_run_engine` bound to the trivial `local_commit`
+    policy (every hook `None`); see `update_pr.run_update_pr` for the other
+    entry point that shares this same engine with a populated `_Policy`.
+    """
+    _validate_and_require_policy(invocation, "local_commit")
+    return _run_engine(
+        invocation,
+        repo=repo,
+        reviewer=reviewer,
+        decide=decide,
+        apply_fix=apply_fix,
+        run_validation=run_validation,
+        classify_validation_failure=classify_validation_failure,
+        host_supports_fresh_subagent=host_supports_fresh_subagent,
+        attempts_root=attempts_root,
+        resume_checkpoint=resume_checkpoint,
+        policy=_LOCAL_COMMIT_POLICY,
+    )
+
+
+def _run_engine(
+    invocation: Mapping[str, Any],
+    *,
+    repo: Path,
+    reviewer: ReviewerPort,
+    decide: DeciderPort,
+    apply_fix: FixerPort,
+    run_validation: ValidationRunnerPort,
+    classify_validation_failure: ValidationClassifierPort,
+    host_supports_fresh_subagent: bool,
+    attempts_root: Path | None,
+    resume_checkpoint: Mapping[str, Any] | None,
+    policy: _Policy,
+) -> dict[str, Any]:
+    """The shared review/fix/converge engine both publication policies use.
+
+    Composes `validate.py`, `local_execution.py`, and
+    `reviewer_orchestration.py` exactly as `run_local_commit` always has; the
+    only new behavior `policy` can add is an additional remote-target lock,
+    an optional remote-staleness check at two boundaries (before establishing
+    evidence for a fresh review, and before starting a fix attempt), and a
+    publish step that runs only once, immediately after a clean review, in
+    place of `local_commit`'s unconditional "publish nothing" return. Callers
+    never construct `_Policy` themselves except `run_local_commit`
+    (`_LOCAL_COMMIT_POLICY`, every hook `None`) and `update_pr.run_update_pr`
+    (a populated `_Policy` built from its own resolved publication target).
+    """
     candidate = invocation["candidate"]
     branch = candidate["branch"]
     common_dir = LE.git_common_dir(repo)
     local_ref = f"refs/heads/{branch}"
     attempts_root = attempts_root or LE.default_attempts_root(common_dir)
 
-    lock_cm = LE.acquire_candidate_locks(common_dir, local_ref)
+    lock_cm = LE.acquire_candidate_locks(
+        common_dir, local_ref, remote_target=policy.remote_target
+    )
     try:
         lock_cm.__enter__()
     except LE.CandidateBusyError as exc:
@@ -647,6 +842,7 @@ def run_local_commit(
             repo=repo,
             reason="candidate_busy",
             operator_action=f"the candidate lock is already held: {exc}",
+            policy_name=policy.name,
         )
 
     try:
@@ -654,7 +850,7 @@ def run_local_commit(
         live_status = LE.worktree_status(repo)
         if not LE.is_clean(live_status):
             raise LocalCommitError(
-                "worktree must be clean before a local_commit invocation"
+                f"worktree must be clean before a {policy.name} invocation"
             )
 
         state = _State(
@@ -667,6 +863,7 @@ def run_local_commit(
             base_ref=candidate["comparison_base"]["ref"],
             current_base_sha=candidate["comparison_base"]["sha"],
             original_budget=invocation["fix_cycle_budget"]["max_fix_cycles"],
+            policy=policy,
         )
 
         if resume_checkpoint is not None:
@@ -818,6 +1015,23 @@ def run_local_commit(
 
         while True:
             if pending_finding is None:
+                if state.policy.check_remote is not None:
+                    remote_check = state.policy.check_remote(state)
+                    if remote_check is not None:
+                        return _finalize(
+                            state,
+                            terminal_state="blocked",
+                            reason=remote_check["reason"],
+                            operator_action=(
+                                "the remote head for this candidate advanced before "
+                                "this invocation could converge; reconcile the two "
+                                "candidates manually before retrying"
+                            ),
+                            phase="establish_evidence",
+                            publication_override=_remote_check_publication_override(
+                                state, remote_check
+                            ),
+                        )
                 validation_outcomes = _run_validation_suite(
                     invocation, cwd=state.repo, run_validation=run_validation
                 )
@@ -963,22 +1177,106 @@ def run_local_commit(
 
                     if record["aggregate_verdict"] == "clean":
                         state.review_records.append(record)
-                        _persist_checkpoint(
-                            state, phase="return", next_action="none; converged"
-                        )
                         converged_created_commits = state.head_history[1:]
+                        if state.policy.publish is None:
+                            _persist_checkpoint(
+                                state, phase="return", next_action="none; converged"
+                            )
+                            return _finalize(
+                                state,
+                                terminal_state="converged",
+                                reason=None,
+                                operator_action=(
+                                    "publish the retained local commit(s) through your "
+                                    "existing PR or merge workflow; review-fix-loop "
+                                    "performs no remote write under local_commit"
+                                    if converged_created_commits
+                                    else "no changes were required; nothing to publish"
+                                ),
+                                phase="return",
+                            )
+
+                        # `update_pr`: the review/fix/converge machinery above is
+                        # identical to `local_commit`'s; only the publication tail
+                        # differs. Every ordinary iteration cycle stayed local —
+                        # this is the one and only remote write this invocation
+                        # ever attempts, and only now that review is clean.
+                        outcome = policy.publish(state)
+                        if outcome.status == "published":
+                            publication_override: dict[str, Any] = {
+                                "policy": policy.name,
+                                "status": "published",
+                                "non_converged_exposure": outcome.non_converged_exposure,
+                            }
+                        else:
+                            # Mirror `_default_publication`'s own
+                            # blocked-reason rule rather than trusting
+                            # `outcome.status` directly: only
+                            # `remote_advanced`/`publication_failed` mean a
+                            # publication attempt itself did not land
+                            # (`failed`); every other blocked reason this
+                            # publish step can return (for example a local
+                            # `candidate_integrity_failure` ancestry check
+                            # that never even attempted a push) is
+                            # `withheld`, exactly like every other blocked
+                            # reason the engine returns.
+                            publication_override = dict(
+                                _default_publication(
+                                    policy.name,
+                                    terminal_state="blocked",
+                                    reason=outcome.blocked_reason,
+                                )
+                            )
+                            publication_override["non_converged_exposure"] = (
+                                outcome.non_converged_exposure
+                            )
+                        if outcome.remote_head_before is not None:
+                            publication_override["remote_head_before"] = (
+                                outcome.remote_head_before
+                            )
+                        if outcome.remote_head_after is not None:
+                            publication_override["remote_head_after"] = (
+                                outcome.remote_head_after
+                            )
+
+                        if outcome.status == "published":
+                            source_override = None
+                            if outcome.remote_head_after is not None:
+                                original_source_sha = invocation["candidate"][
+                                    "source_binding"
+                                ]["observed_object_id"]
+                                source_override = {
+                                    "status": "bound",
+                                    "initial_head": original_source_sha,
+                                    "final_head": outcome.remote_head_after,
+                                    "ahead_by": 0,
+                                    "behind_by": 0,
+                                }
+                            _persist_checkpoint(
+                                state,
+                                phase="return",
+                                next_action="none; converged and published",
+                            )
+                            return _finalize(
+                                state,
+                                terminal_state="converged",
+                                reason=None,
+                                operator_action=outcome.operator_action,
+                                phase="return",
+                                publication_override=publication_override,
+                                source_override=source_override,
+                            )
+
+                        _persist_checkpoint(
+                            state, phase="publish", next_action=outcome.operator_action
+                        )
                         return _finalize(
                             state,
-                            terminal_state="converged",
-                            reason=None,
-                            operator_action=(
-                                "publish the retained local commit(s) through your "
-                                "existing PR or merge workflow; review-fix-loop "
-                                "performs no remote write under local_commit"
-                                if converged_created_commits
-                                else "no changes were required; nothing to publish"
-                            ),
-                            phase="return",
+                            terminal_state="blocked",
+                            reason=outcome.blocked_reason,
+                            operator_action=outcome.operator_action,
+                            phase="publish",
+                            publication_override=publication_override,
                         )
 
                     gating_ids = frozenset(
@@ -1142,6 +1440,24 @@ def run_local_commit(
                     ),
                     phase="fix",
                 )
+
+            if state.policy.check_remote is not None:
+                remote_check = state.policy.check_remote(state)
+                if remote_check is not None:
+                    return _finalize(
+                        state,
+                        terminal_state="blocked",
+                        reason=remote_check["reason"],
+                        operator_action=(
+                            "the remote head for this candidate advanced before "
+                            "this fix attempt could start; reconcile the two "
+                            "candidates manually before retrying"
+                        ),
+                        phase="fix",
+                        publication_override=_remote_check_publication_override(
+                            state, remote_check
+                        ),
+                    )
 
             started_from_head = state.current_head
             sequence = attempt_sequence

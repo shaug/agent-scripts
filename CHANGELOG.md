@@ -4,8 +4,25 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-07-30 — Delivered and evaluated the standalone review-fix-loop `local_commit` workflow, implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
+## 2026-07-30 — Delivered and evaluated the standalone review-fix-loop `update_pr` workflow, delivered and evaluated the standalone review-fix-loop `local_commit` workflow, implemented the review-fix-loop reviewer isolation and complete-review orchestration and local execution substrate (common-directory locking, isolated attempts, checkpoint persistence, and recovery), defined the review-fix-loop invocation, checkpoint, and terminal-result contracts, removed the unproven verification-sufficiency pass and its required-evidence field from review-correctness, and simplified the review-fix-loop design around local coordination and Git-native publication safety
 
+- feat(review-fix-loop): add and evaluate the standalone `update_pr` workflow
+  (`scripts/update_pr.py`'s `run_update_pr`), composing the exact same
+  review/fix/converge engine `local_commit.py` already implements — every
+  intermediate fix commit stays local — plus one expected-old, fast-forward-only
+  Git publish immediately after convergence; resolves and cross-validates the
+  fork/remote publication target without assuming "origin" ownership, validates
+  `remote_iteration_grants`, and preserves the converged local commit with an
+  actionable recovery path when the publication race is lost, the local
+  candidate's history does not descend from the expected old head, or the remote
+  is unavailable, with disposable-local-remote fixtures for a successful
+  converge-then-publish run (with and without a fix cycle), a fork target, a
+  competing remote update that cannot be overwritten, non-fast-forward history,
+  a misconfigured target, a mismatched remote-iteration grant, an unreachable
+  remote, and the remote-target lock actually being exercised end to end;
+  generalizes `local_commit.py`'s internal loop into a policy-parameterized
+  `_run_engine` both entry points share, with `run_local_commit`'s own behavior
+  and its 21 existing tests unchanged
 - feat(review-fix-loop): compose the contract, local-execution, and
   reviewer-orchestration leaves into the end-to-end standalone `local_commit`
   workflow (`scripts/local_commit.py`'s `run_local_commit`), enforcing the
@@ -16,6 +33,7 @@ summary: Chronological history of repository and skill changes.
   exhaustion, validation failure (unavailable/untractable/tractable), operator
   input (declined finding and scope expansion), expanding/oscillating finding
   sets, repeated failed attempts, and interrupted-attempt recovery
+  (`eaa1ded44eef0fa29d874d93196ffa7d3e0e1e79`)
 - fix(review-fix-loop): remove three subsumed/redundant tests and cut
   `reviewer_orchestration.py`'s docstring/comment density from roughly one line
   of prose per line of code down to sibling-module levels, replacing restated
