@@ -1,4 +1,4 @@
 interface:
   display_name: "Review Fix Loop"
-  short_description: "Validate review-fix-loop documents and run one complete review pass"
-  default_prompt: "Use $review-fix-loop to validate this invocation/checkpoint/terminal-result document, or to run and record one complete review pass for the current candidate."
+  short_description: "Run the standalone review/fix/converge loop (local_commit or update_pr) for a committed candidate"
+  default_prompt: "Use $review-fix-loop to run the standalone review/fix/converge loop for this committed candidate under local_commit or update_pr, or to validate this invocation/checkpoint/terminal-result document, or to run and record just one complete review pass."

@@ -4,7 +4,7 @@ A personal monorepo for agent skills and supporting scripts.
 
 ## Installation
 
-Install the plugin when you need any composed workflow. It packages all eight
+Install the plugin when you need any composed workflow. It packages all nine
 skills together so stable-name dependencies such as `implement-ticket`,
 `review-code-change`, and `babysit-pr` are available in the same fresh session.
 
@@ -84,6 +84,18 @@ Current reusable agent skills:
   is not justified by real requirements or repository constraints
 - `skills/review-code-simplicity` — reduce local cognitive load through
   behavior-preserving reuse, DRY, control-flow, and test simplification
+- `skills/review-fix-loop` — take cooperative ownership of an existing committed
+  candidate, run the complete repository review suite in a fresh read-only
+  subagent by default, apply ticket-scoped fixes in isolated attempt worktrees,
+  and repeat until review converges or a bounded stop condition is reached;
+  supports a `local_commit` policy (every fix stays local — the operator
+  publishes them separately) and an `update_pr` policy (one expected-old,
+  fast-forward-only Git push immediately after convergence). Standalone today:
+  no existing caller skill invokes it yet — see
+  [issues #103](https://github.com/shaug/agent-scripts/issues/103),
+  [#104](https://github.com/shaug/agent-scripts/issues/104), and
+  [#105](https://github.com/shaug/agent-scripts/issues/105) for the tracked
+  `implement-ticket`/`babysit-pr`/`carve-changesets` migration follow-ups.
 
 The composed implementation dependency chain is:
 
@@ -135,8 +147,10 @@ just test-review-suite
 just test-babysit-pr
 just test-implement-ticket
 just test-implement-epic
+just test-review-fix-loop
 just eval-implement-ticket
 just eval-implement-epic
+just eval-review-fix-loop
 ```
 
 Validate a review packet and result together:
@@ -151,6 +165,7 @@ Run deterministic local evaluation harnesses without an agent runtime:
 just eval-carve-changesets
 just eval-implement-ticket
 just eval-implement-epic
+just eval-review-fix-loop
 ```
 
 The carve-changesets command first runs its objective integration self-test,
@@ -179,6 +194,13 @@ runtime, pass its stdin/stdout JSON adapter through
 ```bash
 just eval-implement-ticket-claude
 ```
+
+`just eval-review-fix-loop` drives `review-fix-loop`'s own cross-cutting,
+result-blind corpus: twenty scenarios that run the real `local_commit`/
+`update_pr` engine against disposable Git repositories with scripted
+reviewer/decide/apply_fix fixtures (no subprocess boundary, no model call, no
+network) and grade the result against independently derived Git evidence. See
+[its README](skills/review-fix-loop/evals/README.md) for the corpus contract.
 
 ### Result-blind review replay evaluation
 

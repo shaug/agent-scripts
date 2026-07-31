@@ -4,9 +4,22 @@ Optional discovery metadata for Claude Code and Claude Agent SDK runtimes. It
 does not constrain the skill's portable contract.
 
 - Display name: Review Fix Loop.
-- Suggested prompt: "Use the review-fix-loop skill to validate this
-  invocation/checkpoint/terminal-result document, or to run and record one
-  complete review pass for the current candidate."
+- Suggested prompt: "Use the review-fix-loop skill to run the standalone
+  review/fix/converge loop for this committed candidate — `local_commit` if
+  fixes should stay local for me to publish myself, or `update_pr` if it should
+  push once, immediately after convergence — or to validate this
+  invocation/checkpoint/terminal-result document, or to run and record just one
+  complete review pass."
+- Standalone workflows: `scripts/local_commit.py`'s `run_local_commit(...)` and
+  `scripts/update_pr.py`'s `run_update_pr(...)` are the two full end-to-end
+  entry points (see
+  [`references/local-commit.md`](../references/local-commit.md) and
+  [`references/update-pr.md`](../references/update-pr.md)). Every intermediate
+  fix commit stays local under both policies; only `update_pr` publishes, and
+  only once, immediately after the aggregate review comes back clean. A
+  non-`converged` terminal result always reports its retained, unpushed commits
+  in `unpushed_commits` plus an `operator_action` naming what the operator must
+  do next — never silently drop them.
 - Fresh read-only review context: invoke repository-owned `review-code-change`
   in a subagent (Agent tool) restricted to
   `Read, Grep, Glob, Bash, Agent, Task, Skill` — no `Edit`, `Write`,

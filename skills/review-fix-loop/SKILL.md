@@ -280,6 +280,33 @@ unreachable remote, the remote-target lock actually being exercised through
 `run_update_pr`, and rejection of an invalid invocation or a `local_commit`
 invocation at the API boundary.
 
+## Publication policy and retained commits
+
+Both standalone workflows keep every intermediate fix commit strictly local
+until the aggregate review converges. Neither workflow ever publishes a fix as
+it is made; there is no partial-publication path.
+
+- `local_commit` never writes to a remote at all, converged or not. A converged
+  result reports `publication.status: not_applicable` and lists every commit it
+  made in `unpushed_commits` — this is the expected, non-error shape of success,
+  and `operator_action` names how the operator publishes those commits through
+  their own workflow.
+- `update_pr` publishes exactly once, only in the instant the aggregate review
+  first comes back clean, via one expected-old, fast-forward-only Git push (see
+  [Run the standalone `update_pr` workflow](#run-the-standalone-update_pr-workflow)
+  above). Before that instant, and on every non-`converged` exit
+  (`changes_remaining` or `blocked`, including `remote_advanced` and
+  `publication_failed`), the commits this invocation made remain local and
+  unpushed.
+- **Every non-converged terminal result — under either policy — reports its
+  retained, unpushed commits explicitly in `unpushed_commits` and names the
+  concrete next step in `operator_action`.** A caller must not assume "no error"
+  means "nothing to do": read `terminal_state`, `unpushed_commits`, and
+  `operator_action` together before treating an invocation as finished, and see
+  [`references/CONTRACT.md`](references/CONTRACT.md)'s "Terminal result" section
+  for the complete per-state publication and retained-commit rules the validator
+  enforces.
+
 ## Evaluation
 
 [`evals/README.md`](evals/README.md) documents the cross-cutting, result-blind
