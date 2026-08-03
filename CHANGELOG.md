@@ -4,6 +4,63 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-08-03 — Established the written skill-authoring methodology, including the house testing doctrine, as the repository's authoring standard
+
+- docs: write the skill-authoring methodology document with the house testing
+  doctrine (issue #122, epic #117, the epic's first child) — add
+  `docs/skill-authoring.md` combining empirical prose discipline with this
+  repository's contractual layer, and point `AGENTS.md` at it as the authoring
+  standard for every new skill and every edit that changes an existing skill's
+  normative behavior. The document states the failure-first rule that governs
+  the rest (write each guideline against an observed failure and state that
+  failure in the text, so a reader can tell whether a rule applies and an editor
+  can tell when to delete it); description rules that treat the description as a
+  routing decision rather than a summary, with the "could an agent that read
+  only the description produce a plausible-looking version of the work?" test
+  separating legitimate scope-and-outcome clauses from followable procedure,
+  plus requester-vocabulary keyword coverage and the `skills-ref validate`
+  frontmatter limits; a form-to-failure taxonomy mapping discipline violation to
+  a prohibition plus verbatim rationalization table, wrong-shaped output to a
+  positive contract with a closed value set, omission to a required template
+  slot with an explicit empty spelling, and conditional behavior to an
+  observable predicate, with a selection table naming why the other forms fail;
+  the two-tier prose testing protocol — the baseline tier (run scenarios on
+  fresh subagents without the skill, record rationalizations verbatim, write
+  against those specific failures, compare candidate prohibition wording against
+  the baseline rather than assuming it, re-test after every material edit, and
+  withhold expectations from evaluated agents) and the cheap micro-test tier for
+  wording choices (always run a no-guidance control and do not author the
+  guidance if the control does not fail, 5+ repetitions per variant, read every
+  flagged match by hand because template echoes masquerade as hits, treat
+  variance as a metric) carrying both tested wording laws: a single added nuance
+  clause can degrade a winning recipe, and exemption clauses do not scope, so
+  restructure rather than exempt; the contractual layer as first-class doctrine
+  covering typed terminal results, fail-closed preconditions, granular
+  default-off authority grades, evidence binding with its untrusted-input
+  boundary, and the eval-backed change norm referenced as planned pending #135;
+  the peer-precedence rule stated once for every seam to reference (house
+  evidence contracts and typed results supersede a loaded peer's absolutes, and
+  a peer's ask-your-human-partner escape valve maps to the typed `blocked`
+  result rather than stalling an autonomous run); the house testing doctrine,
+  expressed as evidence shapes rather than method mandates and distinguished
+  from the eval-backed norm (that norm asks whether a skill's prose still
+  governs behavior; the testing doctrine asks whether a change's code does what
+  its ticket said), requiring feature work to show the behavioral test encoding
+  each acceptance criterion failing at the base SHA and passing at the head SHA,
+  bug fixes to carry a regression test red at base and green at head, no
+  assertion on implementation details, and a recorded rationale for diverging
+  from a peer's universal per-unit red-green law (per-unit
+  implementation-granularity tests conflict with the anti-coupling rule and are
+  deliberately not required; the precedence rule resolves the conflict when both
+  are loaded); the governance note recording that peer authoring skills such as
+  superpowers' `writing-skills` are a reviewed source rather than a governing
+  document; and context-economy guidance on keeping `SKILL.md` to deciding and
+  routing, triggering references at the moment they apply, never force-loading,
+  and budgeting body growth qualitatively rather than by token count. Closes
+  with an authoring checklist. Scope held to doctrine: the peer-skill convention
+  and named-peer registry remain with issue #123, and retrofitting existing
+  skills remains with epic #119
+
 ## 2026-07-31 — Unified the duplicated JSON-schema validation engine between review-suite and review-fix-loop, packaged and documented the standalone review-fix-loop skill, added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
 - fix(review-fix-loop): unify the duplicated generic JSON-schema-subset
@@ -26,6 +83,7 @@ summary: Chronological history of repository and skill changes.
   `review-suite/scripts/tests/test_contracts.py`; all 273 pre-existing
   review-fix-loop tests and 318 pre-existing review-suite tests continue to pass
   unchanged, plus the 9 new tests this change adds
+  (`c400d77fc93e84d166658edf8f7dee0b08e0b612`)
 - feat(review-fix-loop): package and document the standalone skill for discovery
   (issue #102, epic #95, the epic's final child) — list `skills/review-fix-loop`
   in the README's "Current reusable agent skills" section with its
