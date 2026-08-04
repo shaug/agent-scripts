@@ -98,6 +98,7 @@ summary: Chronological history of repository and skill changes.
   the environment's headless `claude` auth still fails — the same limitation the
   baseline recorded and deferred to #145, so model-behavior evidence for this
   change is deferred to the first capable run
+  (`12c25845b40a19b7f3262406fa170cc4422512ca`)
 
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a

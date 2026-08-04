@@ -72,6 +72,9 @@ did not — the ordering that a bounded cycle budget can strand.
 ## What these do not govern
 
 They govern consumption, not production: reviewer-side contracts, lens rubrics,
-severity vocabulary, and the shared result shape belong to
-[the review-suite contract](CONTRACT.md). They do not set a cycle budget, a
-re-review trigger, or an escalation rule; each consuming skill keeps its own.
+severity vocabulary, and the shared result shape belong to the review-suite
+contract, `review-suite/CONTRACT.md` in this repository. That is named rather
+than linked, because this file is bundled into skills that do not all ship a
+copy of it beside them, and a relative link would resolve to nothing there. The
+disciplines do not set a cycle budget, a re-review trigger, or an escalation
+rule; each consuming skill keeps its own.
