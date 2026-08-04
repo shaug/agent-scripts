@@ -71,6 +71,12 @@ Before mutation, discover or receive and verify:
 - authority for local decomposition, validation execution, publication,
   candidate repair, review communication, merge, propagation, and cleanup.
 
+Review communication runs on
+[the consumption disciplines](references/review-suite/consumption-disciplines.md):
+verify each finding against the codebase before implementing it, clarify every
+unclear finding before implementing any, never perform agreement in a reply, and
+implement blocking before simple before complex, validating each on its own.
+
 Treat discovered validation commands as proposals until the user explicitly
 approves their argv boundaries. Execute argv directly without implicit shell
 parsing; use `["sh", "-lc", "..."]` only for intentionally approved shell

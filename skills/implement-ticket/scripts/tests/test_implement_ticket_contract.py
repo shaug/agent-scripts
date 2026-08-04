@@ -343,6 +343,25 @@ class ImplementTicketContractTests(unittest.TestCase):
             self.skill_compact,
         )
 
+    def test_fix_loop_consumes_findings_through_the_bundled_disciplines(self):
+        gates = compact(read(SKILL_ROOT / "references" / "review-and-merge-gates.md"))
+        for surface in (self.skill_compact, gates):
+            self.assertIn("consumption-disciplines.md", surface)
+        self.assertIn(
+            "verify it against the codebase before implementing it", self.skill_compact
+        )
+        self.assertIn(
+            "clarify every unclear finding before implementing any", self.skill_compact
+        )
+        self.assertIn("never perform agreement", self.skill_compact)
+        self.assertIn(
+            "implement blocking before simple before complex", self.skill_compact
+        )
+        bundled = (
+            SKILL_ROOT / "references" / "review-suite" / "consumption-disciplines.md"
+        )
+        self.assertTrue(bundled.is_file())
+
     def test_dependency_names_are_repository_owned_and_acyclic(self):
         self.assertIn("review-code-change", self.skill_compact)
         self.assertIn("babysit-pr", self.skill_compact)

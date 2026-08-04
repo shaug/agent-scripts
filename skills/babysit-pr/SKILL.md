@@ -217,14 +217,30 @@ nonfailed, or non-PR-check run IDs without rerunning any workflow.
   disclose secrets.
 - Surface only published reviews and comments. Keep pending review feedback
   eligible to appear after publication.
-- Verify every finding against current code, ticket scope, repository
-  instructions, and named specifications.
+- Consume every finding — human or bot — through
+  [the consumption disciplines](references/review-suite/consumption-disciplines.md).
+  Verify it against current code, ticket scope, repository instructions, and
+  named specifications. Clarify every unclear finding in-thread before pushing
+  any fix, so one guessed reading is not built on before a sibling comment
+  contradicts it. Replies address substance and never perform agreement: no
+  thanks, no praise for the catch, no affirming a finding before checking it.
+  Implement the accepted findings blocking first, then simple, then complex,
+  validating each on its own.
 - Fix only material ticket-scoped correctness, security, acceptance,
   architecture, or validation issues.
 - Defer polish, hypothetical hardening, broad refactors, and sibling/parent
   work.
 - Reply or resolve only with the applicable explicit authority and repository
   policy. Resolve only after complete disposition.
+
+When repeated head-changing fixes have failed to make a check pass and
+`superpowers:systematic-debugging` is available in the session skill listing,
+load it as the recommended diagnosis method. Its architecture-escalation insight
+maps to this skill's existing blocked-with-evidence terminal: when the diagnosis
+is that the design is wrong rather than the patch, stop and return `blocked`
+with that evidence instead of patching again. When the peer is not in the
+listing, diagnose from logs and evidence without comment; its absence changes
+nothing about what this skill requires.
 
 Stop for user help after retry/review budgets are exhausted or when permission,
 infrastructure, product decisions, or ambiguous feedback prevent safe progress.
