@@ -109,5 +109,63 @@ class BabysitPrContractTests(unittest.TestCase):
         self.assertIn("Claude Code adapter", read("agents/claude-code.md"))
 
 
+class ConsumptionDisciplineTests(unittest.TestCase):
+    """The feedback loop metabolizes findings through the bundled disciplines."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.skill = compact(read("SKILL.md"))
+
+    def test_feedback_loop_references_the_bundled_disciplines(self):
+        self.assertIn("consumption-disciplines.md", self.skill)
+        self.assertTrue(
+            (
+                SKILL_ROOT
+                / "references"
+                / "review-suite"
+                / "consumption-disciplines.md"
+            ).is_file()
+        )
+
+    def test_replies_never_perform_agreement(self):
+        self.assertIn("never perform agreement", self.skill)
+        self.assertIn(
+            "no thanks, no praise for the catch, no affirming a finding before "
+            "checking it",
+            self.skill,
+        )
+
+    def test_unclear_feedback_is_clarified_before_any_fix_is_pushed(self):
+        self.assertIn(
+            "Clarify every unclear finding in-thread before pushing any fix",
+            self.skill,
+        )
+
+    def test_accepted_findings_are_ordered_and_validated_individually(self):
+        self.assertIn(
+            "blocking first, then simple, then complex, validating each on its own",
+            self.skill,
+        )
+
+    def test_systematic_debugging_is_availability_conditioned_with_silent_fallback(
+        self,
+    ):
+        self.assertIn(
+            "`superpowers:systematic-debugging` is available in the session skill "
+            "listing",
+            self.skill,
+        )
+        self.assertIn(
+            "When the peer is not in the listing, diagnose from logs and evidence "
+            "without comment",
+            self.skill,
+        )
+        self.assertIn("blocked-with-evidence terminal", self.skill)
+        # The peer must not appear in any fail-closed capability requirement.
+        capabilities = self.skill.split("## Require compatible capabilities", 1)[1]
+        capabilities = capabilities.split("##", 1)[0]
+        self.assertNotIn("systematic-debugging", capabilities)
+
+
 if __name__ == "__main__":
     unittest.main()

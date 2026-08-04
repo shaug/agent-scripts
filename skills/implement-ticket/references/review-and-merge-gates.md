@@ -62,9 +62,11 @@ resetting or deleting user work.
 
 Consume the suite's validated aggregate result without restating or overriding
 lens order, severity, deduplication, or correctness-versus-simplicity rules.
-Apply only blocking and strong-recommendation findings that are material,
-tractable, and ticket-scoped. Preserve deferred findings without expanding the
-PR. Reply with evidence when a finding no longer applies.
+Metabolize the suite's findings through
+[the consumption disciplines](review-suite/consumption-disciplines.md) before
+changing a line. Apply only blocking and strong-recommendation findings that are
+material, tractable, and ticket-scoped. Preserve deferred findings without
+expanding the PR. Reply with evidence when a finding no longer applies.
 
 After a material initial-review fix, run affected and required validation,
 commit the new head, rebuild the raw evidence packet, and follow the returned

@@ -4,7 +4,54 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`
+
+- feat(review-suite): establish house-owned review and PR-feedback consumption
+  discipline (issue #127, epic #118) — add
+  `review-suite/consumption-disciplines.md` as the canonical statement of how a
+  skill metabolizes a review finding or a piece of PR feedback before it changes
+  a line, and wire it into the three skills that consume findings. Four
+  disciplines, each shipping the failure it prevents: verify each finding
+  against the codebase before implementing it (a confident, well-argued finding
+  about code that does not exist reads exactly like a real one once implemented
+  — automated reviewers fail this way at scale); clarify every unclear finding
+  before implementing any (a guessed reading gets built on, and the
+  contradiction surfaces only after the dependent work exists, because findings
+  from one review are frequently connected); never perform agreement ("good
+  catch" before verification records a verdict nobody reached, and in an
+  autonomous loop the courtesy consumes the reply that should carry evidence);
+  and implement blocking, then simple, then complex, validating each
+  individually (a batch landing together leaves a regression unattributable, and
+  the ordering keeps a bounded cycle budget from stranding a correctness fix
+  behind a cosmetic one). The port is form-2 with attribution to superpowers'
+  `receiving-code-review`, and the prose records why it is a port rather than a
+  delegation: that peer adjudicates between a human author and a human reviewer
+  and its protocol turns on a partner who can be asked, while these consumers
+  are autonomous loops where an ask-a-human step maps to a typed terminal
+  instead — the stance survives the translation, the protocol does not.
+  Distribution reuses the existing `just sync-contracts` mechanism and drift
+  tests, with its own bundling set: `implement-ticket`, `babysit-pr`, and
+  `carve-changesets` bundle the disciplines, and `review-fix-loop` deliberately
+  does not, because it owns its own decide/fix consumption semantics — a
+  recorded disposition the drift suite asserts rather than leaves implicit.
+  `babysit-pr` additionally gains the `superpowers:systematic-debugging` slot in
+  its CI-diagnosis loop, availability-conditioned with silent fallback, whose
+  architecture-escalation insight maps to the skill's existing
+  blocked-with-evidence terminal; a contract test asserts the peer never appears
+  in the fail-closed capability requirements. Reviewer-side contracts, lens
+  rubrics, severity vocabulary, and every consuming skill's own cycle budget are
+  untouched. Eval evidence under the now-in-force norm: `implement-ticket`
+  deterministic 58/58 with the same-tier diff reporting 58 unchanged and nothing
+  newly failing or newly passing, `carve-changesets` deterministic completed,
+  and the `implement-ticket` real-model tier recorded as `attempted`. That
+  attempt got further than the #135 baseline's — headless auth succeeded and
+  cases executed for roughly 25 minutes — before `run_forward` aborted on a
+  `JSONDecodeError` parsing a model response, reproducibly at the same point
+  across two runs, so the blocker is response parsing in
+  `claude_executor.extract_json_object` rather than the OAuth failure #145
+  records. `babysit-pr` has no registered eval corpus, so `just eval-record`
+  records nothing for it and that gap is stated rather than papered over with
+  its unit tests, which cannot observe `SKILL.md` prose
 
 - feat(implement-ticket): add the behavioral-test evidence contract and peer
   methodology slots (issue #126, epic #118) — give the implementation phase a
@@ -51,6 +98,7 @@ summary: Chronological history of repository and skill changes.
   the environment's headless `claude` auth still fails — the same limitation the
   baseline recorded and deferred to #145, so model-behavior evidence for this
   change is deferred to the first capable run
+  (`12c25845b40a19b7f3262406fa170cc4422512ca`)
 
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a

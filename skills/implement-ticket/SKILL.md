@@ -505,6 +505,12 @@ live ticket, repository, full diff, candidate identity, validation, and worktree
 evidence in a fresh read-only context. Exclude the implementation transcript,
 intended solution, prior conclusions, and suspected findings.
 
+Consume each finding through
+[the consumption disciplines](references/review-suite/consumption-disciplines.md):
+verify it against the codebase before implementing it, clarify every unclear
+finding before implementing any, never perform agreement, and implement blocking
+before simple before complex, validating each on its own.
+
 Apply only material ticket-scoped blocking and strong-recommendation findings.
 Preserve deferred findings without expanding scope. After a fix, rerun affected
 and required validation, rebuild the change-demonstrating-test evidence the fix

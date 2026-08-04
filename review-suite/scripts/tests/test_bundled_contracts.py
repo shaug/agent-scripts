@@ -11,6 +11,7 @@ drifts from its canonical file.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import unittest
@@ -43,6 +44,13 @@ CANONICAL_FILES = {
 # `review-code-change` result bundle it (under `scripts/`, not
 # `references/review-suite/`) — unlike CANONICAL_FILES above, which every
 # review lens skill also bundles.
+# The consumption disciplines are caller-side too, but their bundling set is
+# different again: they govern how a skill metabolizes a finding, so the three
+# skills that consume findings bundle them. `review-fix-loop` is deliberately
+# absent — it owns its own decide/fix consumption semantics.
+DISCIPLINE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr", "carve-changesets")
+DISCIPLINE_CANONICAL = REVIEW_SUITE / "consumption-disciplines.md"
+
 GATE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr", "review-fix-loop")
 GATE_CANONICAL_FILES = {
     "scripts/review_gate.py": REVIEW_SUITE / "scripts" / "review_gate.py",
@@ -82,6 +90,74 @@ class BundledContractTests(unittest.TestCase):
                         bundled.read_bytes(),
                         f"{bundled} drifted from {canonical}; "
                         "run `just sync-contracts`",
+                    )
+
+    def test_every_consuming_skill_bundles_identical_consumption_disciplines(self):
+        for skill in DISCIPLINE_BUNDLING_SKILLS:
+            bundled = (
+                REPOSITORY_ROOT
+                / "skills"
+                / skill
+                / "references"
+                / "review-suite"
+                / "consumption-disciplines.md"
+            )
+            with self.subTest(skill=skill):
+                self.assertTrue(
+                    bundled.exists(),
+                    f"{bundled} is missing; run `just sync-contracts`",
+                )
+                self.assertEqual(
+                    DISCIPLINE_CANONICAL.read_bytes(),
+                    bundled.read_bytes(),
+                    f"{bundled} drifted from {DISCIPLINE_CANONICAL}; "
+                    "run `just sync-contracts`",
+                )
+
+    def test_review_fix_loop_does_not_bundle_consumption_disciplines(self):
+        """It owns its own decide/fix consumption semantics; recorded disposition."""
+        self.assertNotIn("review-fix-loop", DISCIPLINE_BUNDLING_SKILLS)
+        bundled = (
+            REPOSITORY_ROOT
+            / "skills"
+            / "review-fix-loop"
+            / "references"
+            / "review-suite"
+            / "consumption-disciplines.md"
+        )
+        self.assertFalse(bundled.exists())
+
+    def test_canonical_disciplines_state_each_failure_mode(self):
+        text = " ".join(DISCIPLINE_CANONICAL.read_text().split())
+        for heading in (
+            "Verify each finding against the codebase before implementing",
+            "Clarify every unclear finding before implementing any",
+            "Never perform agreement",
+            "Implement blocking, then simple, then complex",
+        ):
+            self.assertIn(heading, text)
+        # Four disciplines, four stated failure modes.
+        self.assertEqual(4, text.count("*Prevents:*"))
+        self.assertIn("ported with attribution", text)
+        self.assertIn("receiving-code-review", text)
+
+    def test_disciplines_carry_no_link_a_bundle_cannot_resolve(self):
+        """carve-changesets bundles the disciplines without CONTRACT.md beside
+        them, so a relative link in the canonical text would dangle there."""
+        text = DISCIPLINE_CANONICAL.read_text()
+        self.assertNotIn("](CONTRACT.md)", text)
+        for skill in DISCIPLINE_BUNDLING_SKILLS:
+            bundle = REPOSITORY_ROOT / "skills" / skill / "references" / "review-suite"
+            for target in re.findall(
+                r"\]\(([^)#][^)]*)\)",
+                (bundle / "consumption-disciplines.md").read_text(),
+            ):
+                if target.startswith(("http://", "https://")):
+                    continue
+                with self.subTest(skill=skill, target=target):
+                    self.assertTrue(
+                        (bundle / target).exists(),
+                        f"{skill} bundles a link to {target}, which it does not ship",
                     )
 
     def test_every_consuming_skill_bundles_an_identical_review_gate(self):

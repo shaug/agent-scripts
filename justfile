@@ -21,6 +21,12 @@ sync-contracts:
     cp review-suite/scripts/validate.py "$dest/validate.py"; \
     echo "Synced $dest"; \
   done
+  @for skill in implement-ticket babysit-pr carve-changesets; do \
+    dest="{{skills_dir}}/$skill/references/review-suite"; \
+    mkdir -p "$dest"; \
+    cp review-suite/consumption-disciplines.md "$dest/consumption-disciplines.md"; \
+    echo "Synced $dest/consumption-disciplines.md"; \
+  done
   @for skill in implement-ticket babysit-pr review-fix-loop; do \
     scripts_dest="{{skills_dir}}/$skill/scripts"; \
     tests_dest="$scripts_dest/tests"; \
