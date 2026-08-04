@@ -24,8 +24,8 @@ class CarveChangesetsContractTests(unittest.TestCase):
         cls.skill = compact((SKILL_ROOT / "SKILL.md").read_text())
 
     def test_review_communication_references_the_bundled_disciplines(self):
-        self.assertIn("consumption-disciplines.md", cls_skill := self.skill)
-        self.assertIn("Review communication runs on", cls_skill)
+        self.assertIn("consumption-disciplines.md", self.skill)
+        self.assertIn("Review communication runs on", self.skill)
 
     def test_the_four_disciplines_are_named_at_the_seam(self):
         for discipline in (

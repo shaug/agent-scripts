@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
