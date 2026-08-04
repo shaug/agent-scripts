@@ -40,18 +40,24 @@ summary: Chronological history of repository and skill changes.
   executing context appends to across rounds — plus the no-pasted-history rule
   with its failure mode: each pasted round lengthens the next prompt, so
   dispatch reproduces stale context faster than it delivers current
-  requirements. That dot directory ships the skill-local `.gitignore`
-  `AGENTS.md` requires, in the shape `skills/ready-ticket` established.
-  Delegated execution stays out of the mandate because the coordinator is
-  contractually opaque and this repository cannot bind its prompt format, so
-  `implement-ticket`'s delegated-worker paragraph carries the rule as
-  recommend-only prose that never returns `blocked` for its absence, and
-  `references/delegated-execution/CONTRACT.md` is unchanged. Ported with
-  attribution from superpowers' `subagent-driven-development` fresh-context
-  construction, already recorded as that skill's secondary registry entry. Adds
-  a `missing-diff-evidence-file` orchestration eval case proving the fail-closed
-  path, and twelve behavioral tests bound to the ticket's acceptance criteria,
-  each observed failing at base `73f1aa8` and passing at head
+  requirements. Those two paths are absolute and the directory sits at the
+  coordinator's working root outside every candidate worktree, for the same
+  cross-context reason as the diff reference: the executing context owns a
+  different worktree, and because the prompt deliberately does not restate the
+  brief, an unresolvable path dispatches a worker with no requirements at all
+  while the prompt still looks complete. That dot directory ships the
+  skill-local `.gitignore` `AGENTS.md` requires, in the shape
+  `skills/ready-ticket` established. Delegated execution stays out of the
+  mandate because the coordinator is contractually opaque and this repository
+  cannot bind its prompt format, so `implement-ticket`'s delegated-worker
+  paragraph carries the rule as recommend-only prose that never returns
+  `blocked` for its absence, and `references/delegated-execution/CONTRACT.md` is
+  unchanged. Ported with attribution from superpowers'
+  `subagent-driven-development` fresh-context construction, already recorded as
+  that skill's secondary registry entry. Adds a `missing-diff-evidence-file`
+  orchestration eval case proving the fail-closed path, and twelve behavioral
+  tests bound to the ticket's acceptance criteria, each observed failing at base
+  `73f1aa8` and passing at head
 
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add

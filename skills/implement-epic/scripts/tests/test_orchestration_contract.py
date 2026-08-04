@@ -184,11 +184,19 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertIn("gains no decomposition mechanics", self.contract)
 
     def test_child_dispatch_uses_file_artifacts_and_forbids_pasted_history(self):
+        # Assert the phrases that name each artifact, not the bare words
+        # "brief"/"report": the base text already contains "report" five
+        # times, so a bare token would pass without the dispatch prose.
         self.assertIn("`.implement-epic/`", self.contract)
-        self.assertIn("brief", self.contract)
-        self.assertIn("report", self.contract)
+        self.assertIn("one **brief** file per selected child", self.contract)
+        self.assertIn("one **report** file per dispatch", self.contract)
         self.assertIn("Never paste accumulated history", self.contract)
         self.assertIn("ignored and out of commits and PRs", self.contract)
+
+    def test_child_dispatch_artifacts_resolve_across_worktrees(self):
+        self.assertIn("outside every candidate ticket worktree", self.contract)
+        self.assertIn("those two locations as absolute paths", self.contract)
+        self.assertIn("a relative path resolves against its directory", self.contract)
 
     def test_epic_does_not_own_lens_mechanics(self):
         self.assertNotIn("review-solution-simplicity", self.contract)

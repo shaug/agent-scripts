@@ -34,12 +34,11 @@ validation artifacts. Capture:
 - focused and full validation commands with exact results; and
 - worktree state required to prove read-only integrity.
 
-Write the complete diff to a file in a temporary directory **outside the
-candidate worktree**, and record that location as the packet's
-`candidate.diff.path`. Never write review evidence inside the worktree: doing so
-registers as a candidate mutation and fails the before/after integrity check
-below. Return `blocked` when the file cannot be written or read back, exactly as
-for any other missing required evidence.
+Write the complete diff to a file outside the candidate worktree and record its
+absolute location as the packet's `candidate.diff.path`, following the shared
+contract's "The candidate diff: inline or referenced by path" section, which
+owns that rule and its rationale. Return `blocked` when the file cannot be
+written or read back, exactly as for any other missing required evidence.
 
 Exclude implementation transcripts, intended answers, prior conclusions,
 suspected findings, and fixture expected outputs. Validate the packet before
@@ -55,11 +54,9 @@ packet:
 2. `review-correctness`
 3. `review-code-simplicity`
 
-Each invocation carries the packet, whose `candidate.diff.path` points the lens
-at the diff file it reads for itself. Do not paste the complete diff into a lens
-invocation. The same evidence inlined three times is three copies of the
-review's largest artifact competing with the reasoning each lens must do over
-it, and the copies drift from the file the moment either is edited.
+Each invocation carries the packet; every lens reads the diff from
+`candidate.diff.path` for itself. Do not paste the complete diff into a lens
+invocation.
 
 Validate each result before continuing. Stop on a `blocked` result. Stop after a
 solution-simplicity result that requires replacing the implementation strategy;
