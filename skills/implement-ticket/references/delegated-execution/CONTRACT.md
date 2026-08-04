@@ -60,14 +60,26 @@ recorded exemption for a docs-or-config-only change. Those tests assert surface
 behavior and never implementation internals, so a test that would churn under a
 behavior-preserving refactor does not satisfy the slot.
 
-Encode the slot inside the existing observation shape: write the identifier and
-both the base-failing and head-passing observations into one `$.validation`
-entry's `name`, and leave that entry's `candidate_sha` at the candidate head SHA
-or `null`. An entry bound to the base SHA fails this contract's
-candidate-mismatch rule, and repeating the identifier across two entries fails
-its duplicate-name rule — both of which block execution. One entry per slot with
-the base observation named rather than separately bound is the only encoding
-that satisfies both rules without a schema change.
+Encode the slot inside the existing observation shape. Two bundled-validator
+rules constrain it, and a violation of either blocks execution: no
+`$.validation` entry may carry a `candidate_sha` other than the candidate head
+SHA or `null`, and no two entries may share a byte-identical `name`. The
+base-failing observation therefore cannot be bound to the base SHA; name that
+SHA instead.
+
+Two encodings satisfy both rules without any schema change, and a delegate may
+use either:
+
+- one entry whose `name` carries the identifier and both observations, bound to
+  the candidate head SHA; or
+- two entries with distinct names, where the base-failing entry leaves
+  `candidate_sha` as `null` and the head-passing entry is bound to the head SHA.
+
+When the caller also lists the slot identifier among its required validation
+commands, that entry is additionally bound by the delivery-terminal rule: its
+`name` must equal the caller's command string exactly and its `candidate_sha`
+must be the head SHA, so a composed name is rejected there. Carry the
+base-failing observation in a second, differently named entry in that case.
 
 This obligation is prose riding in the existing validation evidence; it adds no
 invocation or result field. It is peer-independent and supersedes the absolutes

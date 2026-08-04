@@ -241,27 +241,20 @@ class ImplementTicketContractTests(unittest.TestCase):
         for surface in (self.skill_compact, delegated):
             self.assertIn("maps to the typed `blocked` result", surface)
 
-    def test_delegated_evidence_slot_states_a_validator_satisfiable_encoding(self):
-        """The prose must be satisfiable under the contract's own validator."""
+    def test_delegated_evidence_slot_documents_both_valid_encodings(self):
+        """Prose only; the encodings themselves are exercised against validate.py
+        in test_delegated_execution_contract.EvidenceSlotEncodingTests."""
         delegated = compact(
             read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
         )
         for required in (
-            "write the identifier and both the base-failing and head-passing "
-            "observations into one `$.validation` entry's `name`",
-            "leave that entry's `candidate_sha` at the candidate head SHA or `null`",
-            "An entry bound to the base SHA fails this contract's candidate-mismatch "
-            "rule",
-            "repeating the identifier across two entries fails its duplicate-name rule",
+            "no `$.validation` entry may carry a `candidate_sha` other than the "
+            "candidate head SHA or `null`",
+            "no two entries may share a byte-identical `name`",
+            "Two encodings satisfy both rules",
+            "its `name` must equal the caller's command string exactly",
         ):
             self.assertIn(required, delegated)
-
-        # The encoding must stay true to the validator that enforces it.
-        validator = read(
-            SKILL_ROOT / "references" / "delegated-execution" / "validate.py"
-        )
-        self.assertIn("duplicate observation names", validator)
-        self.assertIn("candidate mismatch for", validator)
 
     def test_evidence_contract_precedence_resolves_the_tdd_conflicts(self):
         for required in (
