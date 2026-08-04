@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -167,6 +168,30 @@ class DiffEvidencePathTests(unittest.TestCase):
         errors = VALIDATOR.validate_packet(self.referencing(self.evidence))
         self.assertEqual(
             ["$.candidate.diff.path: referenced diff evidence file is empty"],
+            errors,
+        )
+        self.assertTrue(VALIDATOR.is_blockable_packet_error(errors[0]))
+
+    def test_a_relative_reference_is_rejected_even_when_it_resolves(self):
+        """A relative reference binds a lens to whatever its own cwd holds.
+
+        The builder and each lens revalidate the same packet from different
+        working directories, so the check must reject the reference itself
+        rather than accept whichever same-named file happens to be nearby.
+        """
+        self.evidence.write_text(self.diff)
+        packet = self.referencing(Path(self.evidence.name))
+        previous = Path.cwd()
+        os.chdir(self.directory.name)
+        try:
+            errors = VALIDATOR.validate_packet(packet)
+        finally:
+            os.chdir(previous)
+        self.assertEqual(
+            [
+                "$.candidate.diff.path: referenced diff evidence file must be "
+                "an absolute path"
+            ],
             errors,
         )
         self.assertTrue(VALIDATOR.is_blockable_packet_error(errors[0]))

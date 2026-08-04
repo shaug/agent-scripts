@@ -22,12 +22,19 @@ summary: Chronological history of repository and skill changes.
   generic `oneOf` support — reporting the closest branch's own errors rather
   than a generic no-form-matched message, so every existing blockable-error
   pattern keeps matching — and fails closed when a referenced diff file is
-  absent or empty, classifying both as missing review evidence so the review
-  yields `blocked` instead of reading an unreadable reference as a smaller diff.
-  Fixtures under `review-suite/fixtures/` and the eval strata stay inline and
-  pass unmodified; all seven bundled `references/review-suite/` copies
-  (including `review-fix-loop`'s) are re-synced via `just sync-contracts` and
-  the drift tests pass. On the dispatch side, `implement-epic` gains file-based
+  absent, empty, or named by a relative path, classifying all three as missing
+  review evidence so the review yields `blocked` instead of reading an
+  unresolvable reference as a smaller diff. The absolute-path requirement came
+  out of this change's own review: because the reference is now the sole binding
+  between a lens and the diff it reviews, and the builder and each lens
+  revalidate the same packet from their own working directories, a relative
+  reference could resolve to a different same-named file and bind a lens to a
+  diff that is not the candidate's — a substitution no candidate-identity check
+  can catch, since those compare SHAs and never the diff's provenance. Fixtures
+  under `review-suite/fixtures/` and the eval strata stay inline and pass
+  unmodified; all seven bundled `references/review-suite/` copies (including
+  `review-fix-loop`'s) are re-synced via `just sync-contracts` and the drift
+  tests pass. On the dispatch side, `implement-epic` gains file-based
   child-dispatch artifacts under `.implement-epic/` — a brief file as the single
   source of a child's task requirements and a per-dispatch report file the
   executing context appends to across rounds — plus the no-pasted-history rule
@@ -41,7 +48,7 @@ summary: Chronological history of repository and skill changes.
   attribution from superpowers' `subagent-driven-development` fresh-context
   construction, already recorded as that skill's secondary registry entry. Adds
   a `missing-diff-evidence-file` orchestration eval case proving the fail-closed
-  path, and eleven behavioral tests bound to the ticket's acceptance criteria,
+  path, and twelve behavioral tests bound to the ticket's acceptance criteria,
   each observed failing at base `83a526b` and passing at head
 
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring

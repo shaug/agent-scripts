@@ -459,8 +459,8 @@
       "schema_version": "1.4",
       "lens": "aggregate",
       "candidate": {
-        "head_sha": "8080808080808080808080808080808080808080",
-        "comparison_base_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+        "head_sha": "a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+        "comparison_base_sha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3"
       },
       "verdict": "blocked",
       "findings": [],

@@ -67,6 +67,10 @@ BLOCKABLE_PACKET_ERROR_PATTERNS = (
         r"(missing|empty)$"
     ),
     re.compile(
+        r"^\$\.candidate\.diff\.path: referenced diff evidence file must be an "
+        r"absolute path$"
+    ),
+    re.compile(
         r"^\$\.change_contract: missing required property "
         r"'(goal|acceptance_criteria|non_goals|preserved_behaviors)'$"
     ),
@@ -207,12 +211,26 @@ def _check_diff_evidence_path(packet: dict[str, Any]) -> list[str]:
     inline `content` reports — and not a candidate with a smaller diff. The
     emptiness bar mirrors the inline form's `minLength: 1` exactly so neither
     form is stricter than the other.
+
+    The reference must be absolute. A relative path resolves against whatever
+    working directory happens to be current, and the builder and each lens
+    revalidate the same packet from different directories, so a relative
+    reference either reports absent evidence that exists or — worse — resolves
+    to a different file of the same name and binds a lens to a diff that is not
+    the candidate's. Candidate-identity checks compare SHAs and cannot detect
+    that substitution. This mirrors why `_schema_file` above resolves its own
+    schemas `__file__`-relative rather than from the current directory.
     """
     diff = packet.get("candidate", {}).get("diff")
     location = diff.get("path") if isinstance(diff, dict) else None
     if not location:
         return []
     evidence = Path(location)
+    if not evidence.is_absolute():
+        return [
+            "$.candidate.diff.path: referenced diff evidence file must be an "
+            "absolute path"
+        ]
     if not evidence.is_file():
         return ["$.candidate.diff.path: referenced diff evidence file is missing"]
     if evidence.stat().st_size == 0:

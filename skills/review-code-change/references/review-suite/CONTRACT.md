@@ -89,10 +89,16 @@ malformed. Both assert `complete: true` and mean the same thing to a lens — th
 reviewed candidate is the whole diff, never a summary of it.
 
 A packet builder that writes the diff to a file writes it **outside the
-candidate worktree**. Evidence written inside the worktree registers as a
-candidate mutation and fails the before/after integrity check that proves the
-review was read-only, so keeping the evidence elsewhere is what keeps that check
-trivially satisfied rather than something the builder must exempt itself from.
+candidate worktree**, and records an **absolute** path. Evidence written inside
+the worktree registers as a candidate mutation and fails the before/after
+integrity check that proves the review was read-only, so keeping the evidence
+elsewhere is what keeps that check trivially satisfied rather than something the
+builder must exempt itself from. A relative path is rejected because the builder
+and every lens revalidate the same packet from their own working directories: a
+relative reference either reports evidence absent that exists, or resolves to a
+different file of the same name and binds a lens to a diff that is not the
+candidate's — a substitution no candidate-identity check can catch, because
+those compare SHAs and never the diff's provenance.
 
 A referenced file that is absent or empty is missing review evidence, exactly as
 an absent inline `content` is: `scripts/validate.py` fails closed on it and the
