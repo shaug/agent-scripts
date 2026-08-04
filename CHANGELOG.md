@@ -86,6 +86,7 @@ summary: Chronological history of repository and skill changes.
   orchestration eval case proving the fail-closed path, and twelve behavioral
   tests bound to the ticket's acceptance criteria, each observed failing at base
   `73f1aa8` and passing at head (`8f3f0adb7607ff1e4a880b224c8eff475c28fbb2`)
+
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add
   `skills/ready-ticket`, which turns a vague idea or an unready GitHub or Linear

@@ -336,12 +336,11 @@ improvising.
 
 ### Route a not-ready ticket to `ready-ticket`
 
-A ticket that fails the body-level conditions above — a missing observable goal,
-absent or unusable acceptance criteria, no non-goals or preserved behavior, no
-required verification, or an unresolved product, data, authorization, migration,
-destructive, or architecture decision — is not a dead end. Two checkable facts
-decide the branch: whether ticket editing is authorized, and whether closing the
-gap would decide something this skill may not decide.
+A ticket that fails the body-level conditions above — including an unresolved
+product, data, authorization, migration, destructive, or architecture decision —
+is not a dead end. Two checkable facts decide the branch: whether ticket editing
+is authorized, and whether closing the gap would decide something this skill may
+not decide.
 
 - **Ticket editing is authorized and the gap is not one of those decisions.**
   The preceding paragraph governs unchanged: make the ticket
