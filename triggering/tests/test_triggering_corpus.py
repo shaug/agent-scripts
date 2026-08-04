@@ -57,18 +57,27 @@ class CorpusCoverageTests(unittest.TestCase):
             )
 
     def test_the_named_collision_prompts_are_present_in_both_directions(self) -> None:
-        prompts = {case["prompt"]: case for case in CORPUS["cases"]}
-        self.assertIn("Review my change.", prompts)
-        self.assertIn("Before merging, give this a proper review.", prompts)
+        """Both named prompts, both filed from the skills they pull between.
 
-        review_my_change = [
-            case for case in CORPUS["cases"] if case["prompt"] == "Review my change."
-        ]
-        self.assertEqual(
-            {case["skill"] for case in review_my_change},
-            {"review-code-change", "review-code-simplicity"},
-            "the review collision must be filed from both sides",
-        )
+        Asserting mere presence for one of them let it ship filed from a single
+        side, which is the omission this now fails on.
+        """
+        both_directions = {
+            "Review my change.": {"review-code-change", "review-code-simplicity"},
+            "Before merging, give this a proper review.": {
+                "review-code-change",
+                "babysit-pr",
+            },
+        }
+        for prompt, expected_sides in both_directions.items():
+            filed_under = {
+                case["skill"] for case in CORPUS["cases"] if case["prompt"] == prompt
+            }
+            self.assertEqual(
+                filed_under,
+                expected_sides,
+                f"{prompt!r} must be filed from both sides it pulls between",
+            )
 
     def test_implement_ticket_n_is_asserted_from_both_sides(self) -> None:
         cases = [

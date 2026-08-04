@@ -170,6 +170,11 @@
       "case_id": "review-solution-simplicity-negative-plan",
       "expected_skill": null,
       "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "babysit-pr-collision-before-merging",
+      "expected_skill": "review-code-change",
+      "rationale": "The reverse direction of the named merge-adjacent collision. babysit-pr owns the published-PR lifecycle and its description claims merge language, so it is the skill most likely to claim this prompt; the request is for a review, and the suite entry point owns it. Filed here so babysit-pr's own recorded triggering run exercises the collision \u2014 without this case that run stays unanimously green while its description starts claiming review language."
     }
   ]
 }

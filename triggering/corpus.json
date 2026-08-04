@@ -38,6 +38,12 @@
       "prompt": "Help me plan out how to restructure the payments module."
     },
     {
+      "id": "babysit-pr-collision-before-merging",
+      "skill": "babysit-pr",
+      "kind": "collision",
+      "prompt": "Before merging, give this a proper review."
+    },
+    {
       "id": "babysit-pr-negative-debug",
       "skill": "babysit-pr",
       "kind": "negative",

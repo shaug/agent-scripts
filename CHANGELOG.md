@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
@@ -95,7 +95,7 @@ summary: Chronological history of repository and skill changes.
   for the `load-bearing` case, which makes that the cheapest seam to cover
   first. An earlier draft blamed an expired OAuth session instead, which this
   change's own recorded runs disprove — review caught it, and the corrected gaps
-  say what is actually missing. The description tier records 34/34 with every
+  say what is actually missing. The description tier records 35/35 with every
   case unanimous at five repetitions, and per-case agreement and vote counts are
   preserved, which is how a previously observed 4/5 pull from planning language
   toward `ready-ticket` could be shown not to reproduce and marked as such
