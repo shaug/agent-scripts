@@ -40,16 +40,18 @@ summary: Chronological history of repository and skill changes.
   executing context appends to across rounds — plus the no-pasted-history rule
   with its failure mode: each pasted round lengthens the next prompt, so
   dispatch reproduces stale context faster than it delivers current
-  requirements. Delegated execution stays out of the mandate because the
-  coordinator is contractually opaque and this repository cannot bind its prompt
-  format, so `implement-ticket`'s delegated-worker paragraph carries the rule as
+  requirements. That dot directory ships the skill-local `.gitignore`
+  `AGENTS.md` requires, in the shape `skills/ready-ticket` established.
+  Delegated execution stays out of the mandate because the coordinator is
+  contractually opaque and this repository cannot bind its prompt format, so
+  `implement-ticket`'s delegated-worker paragraph carries the rule as
   recommend-only prose that never returns `blocked` for its absence, and
   `references/delegated-execution/CONTRACT.md` is unchanged. Ported with
   attribution from superpowers' `subagent-driven-development` fresh-context
   construction, already recorded as that skill's secondary registry entry. Adds
   a `missing-diff-evidence-file` orchestration eval case proving the fail-closed
   path, and twelve behavioral tests bound to the ticket's acceptance criteria,
-  each observed failing at base `83a526b` and passing at head
+  each observed failing at base `73f1aa8` and passing at head
 
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add
@@ -93,7 +95,9 @@ summary: Chronological history of repository and skill changes.
   contorting either description. Ships 24 result-blind eval cases with their
   expectations held separately and a 31-assertion contract test;
   pressure-testing from baseline is #137's, so the rationalization table carries
-  anticipated rather than verbatim wording and says so (`73f1aa8e2fc34fa93f989c0e146efacfe41133e7`)
+  anticipated rather than verbatim wording and says so
+  (`73f1aa8e2fc34fa93f989c0e146efacfe41133e7`)
+
 ## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, then added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule
 
 - feat(skills): define the peer-skill convention and registry, and rewrite all
