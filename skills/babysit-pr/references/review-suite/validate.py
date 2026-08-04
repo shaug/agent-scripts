@@ -58,10 +58,14 @@ BLOCKABLE_PACKET_ERROR_PATTERNS = (
     ),
     re.compile(
         r"^\$\.candidate\.diff: missing required property "
-        r"'(format|complete|content)'$"
+        r"'(format|complete|content|path)'$"
     ),
     re.compile(r"^\$\.candidate\.diff\.complete: expected constant True$"),
-    re.compile(r"^\$\.candidate\.diff\.content: string is too short$"),
+    re.compile(r"^\$\.candidate\.diff\.(content|path): string is too short$"),
+    re.compile(
+        r"^\$\.candidate\.diff\.path: referenced diff evidence file is "
+        r"(missing|empty)$"
+    ),
     re.compile(
         r"^\$\.change_contract: missing required property "
         r"'(goal|acceptance_criteria|non_goals|preserved_behaviors)'$"
@@ -105,6 +109,18 @@ def validate_schema(value: Any, schema: dict[str, Any], at: str = "$") -> list[s
     expected_type = schema.get("type")
     if expected_type and not _is_type(value, expected_type):
         return [f"{at}: expected {expected_type}"]
+
+    if branches := schema.get("oneOf"):
+        # Every `oneOf` in this repository's schemas has branches made mutually
+        # exclusive by `additionalProperties: false`, so no value can satisfy
+        # two of them and a match by any branch is the match. On failure,
+        # report the closest branch's own errors instead of a generic
+        # "no form matched": the caller needs the actionable message for the
+        # form it was evidently aiming at, and BLOCKABLE_PACKET_ERROR_PATTERNS
+        # is written against those exact messages.
+        attempts = [validate_schema(value, branch, at) for branch in branches]
+        if all(attempts):
+            errors.extend(min(attempts, key=len))
 
     if "const" in schema:
         const = schema["const"]
@@ -150,6 +166,8 @@ def validate_packet(packet: dict[str, Any]) -> list[str]:
     if errors:
         return errors
 
+    errors.extend(_check_diff_evidence_path(packet))
+
     for index, validation in enumerate(packet.get("validation", [])):
         status = validation.get("status")
         if status in {"passed", "failed"} and not validation.get("result"):
@@ -178,6 +196,28 @@ def validate_packet(packet: dict[str, Any]) -> list[str]:
                 + ", ".join(active)
             )
     return errors
+
+
+def _check_diff_evidence_path(packet: dict[str, Any]) -> list[str]:
+    """Fail closed when a path-form candidate diff references no readable file.
+
+    The path form exists so lens dispatch carries a reference instead of the
+    complete diff, which means the file is the evidence. An absent or empty
+    file is therefore missing review evidence — the same condition an absent
+    inline `content` reports — and not a candidate with a smaller diff. The
+    emptiness bar mirrors the inline form's `minLength: 1` exactly so neither
+    form is stricter than the other.
+    """
+    diff = packet.get("candidate", {}).get("diff")
+    location = diff.get("path") if isinstance(diff, dict) else None
+    if not location:
+        return []
+    evidence = Path(location)
+    if not evidence.is_file():
+        return ["$.candidate.diff.path: referenced diff evidence file is missing"]
+    if evidence.stat().st_size == 0:
+        return ["$.candidate.diff.path: referenced diff evidence file is empty"]
+    return []
 
 
 def validate_result(result: dict[str, Any]) -> list[str]:

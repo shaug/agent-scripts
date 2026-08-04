@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -21,6 +23,11 @@ SPEC.loader.exec_module(VALIDATOR)
 
 def load(path: Path):
     return json.loads(path.read_text())
+
+
+def compact(value: str) -> str:
+    """Collapse wrapping and Markdown emphasis so phrases survive reflow."""
+    return re.sub(r"\s+", " ", value.replace("*", "")).strip()
 
 
 class OrchestrationContractTests(unittest.TestCase):
@@ -72,6 +79,38 @@ class OrchestrationContractTests(unittest.TestCase):
         ):
             self.assertTrue((bundle / name).is_file(), name)
 
+    def test_lens_dispatch_references_the_diff_by_path(self):
+        for name, source in (("skill", self.skill), ("protocol", self.protocol)):
+            with self.subTest(source=name):
+                text = compact(source)
+                self.assertIn("candidate.diff.path", text)
+                self.assertIn("outside the candidate worktree", text)
+        self.assertIn(
+            "Do not paste the complete diff into a lens invocation",
+            compact(self.skill),
+        )
+        self.assertIn(
+            "do not inline the complete diff into any lens invocation",
+            compact(self.protocol),
+        )
+
+    def test_bundled_validator_accepts_a_path_referenced_candidate_diff(self):
+        packet = load(REVIEW_SUITE / "fixtures" / "clean-change" / "packet.json")
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / "candidate.diff"
+            evidence.write_text(packet["candidate"]["diff"]["content"])
+            packet["candidate"]["diff"] = {
+                "format": "unified_diff",
+                "complete": True,
+                "path": str(evidence),
+            }
+            self.assertEqual([], VALIDATOR.validate_packet(packet))
+
+            evidence.unlink()
+            errors = VALIDATOR.validate_packet(packet)
+            self.assertTrue(errors)
+            self.assertTrue(all(map(VALIDATOR.is_blockable_packet_error, errors)))
+
     def test_forward_evaluations_cover_every_case_and_conform(self):
         self.assertEqual(set(self.cases), set(self.results))
         for case_id, record in self.results.items():
@@ -121,6 +160,7 @@ class OrchestrationContractTests(unittest.TestCase):
             ),
             "missing-dependency": ([], "blocked"),
             "missing-evidence": ([], "blocked"),
+            "missing-diff-evidence-file": ([], "blocked"),
             "deferred-only-clean": (
                 ["solution_simplicity", "correctness", "code_simplicity"],
                 "clean",

@@ -348,6 +348,13 @@ subagent, or equivalent context must own exactly one verified worktree and
 feature branch exclusively. Never allow two implementation contexts to mutate
 the same candidate. Preserve unrelated branches, worktrees, and user changes.
 
+When a delegated context is used, prefer handing it file paths for requirements
+and status over pasting accumulated history into its prompt: each pasted round
+lengthens the next prompt and reproduces superseded context beside the current
+requirement. This is a recommendation, not a gate — the delegated-execution
+contract binds a coordinator's checkpoint protocol, not its prompt format, so
+this skill cannot require it and never returns `blocked` for its absence.
+
 ### 2. Implement only the live contract
 
 - Read nearby code and tests before editing.

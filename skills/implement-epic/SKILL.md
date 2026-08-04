@@ -191,6 +191,20 @@ Invoke `implement-ticket` once with a concise handoff containing:
 - the explicit decomposition grant or its explicit absence; and
 - any epic-level rollout or merge-order constraint that qualifies the child.
 
+Deliver that handoff as files. Under `.implement-epic/` write one **brief** file
+per selected child — the single source of its task requirements — and one
+**report** file per dispatch, which the executing context appends its status to
+across rounds. The dispatch prompt carries those two paths plus a short contract
+naming what the report must record; it does not restate the brief.
+
+Never paste accumulated history — an earlier round, a prior report, or previous
+dispatch prose — into a later prompt. Each pasted round makes the next prompt
+longer than the last, so dispatch reproduces stale context faster than it
+delivers current requirements, and the executing context receives superseded and
+live instructions mixed together with nothing marking which is which. Revise the
+brief and let the report accumulate on disk. Keep `.implement-epic/` ignored and
+out of commits and PRs.
+
 The primary context may follow `implement-ticket` directly. A delegated worker,
 subagent, or equivalent context must have exclusive ownership of one verified
 ticket worktree and branch. Never run two mutating contexts against the same

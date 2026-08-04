@@ -183,6 +183,13 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertIn("full-chain representation on the base", self.contract)
         self.assertIn("gains no decomposition mechanics", self.contract)
 
+    def test_child_dispatch_uses_file_artifacts_and_forbids_pasted_history(self):
+        self.assertIn("`.implement-epic/`", self.contract)
+        self.assertIn("brief", self.contract)
+        self.assertIn("report", self.contract)
+        self.assertIn("Never paste accumulated history", self.contract)
+        self.assertIn("ignored and out of commits and PRs", self.contract)
+
     def test_epic_does_not_own_lens_mechanics(self):
         self.assertNotIn("review-solution-simplicity", self.contract)
         self.assertNotIn("review-correctness", self.contract)

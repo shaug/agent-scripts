@@ -45,9 +45,14 @@ fresh or minimally inherited read-only context with:
   current SHA/environment, source, and status;
 - every named architecture, design, contract, migration, and rollout document;
 - repository instructions and representative nearby code and tests;
-- the exact captured head and comparison-base SHAs plus the complete
-  `base...HEAD` diff; and
+- the exact captured head and comparison-base SHAs plus the location of a file
+  holding the complete `base...HEAD` diff; and
 - exact focused and full validation evidence, including unavailable checks.
+
+Write that diff file to a temporary directory outside the ticket worktree and
+hand over its path, not the diff text. Writing it inside the worktree would show
+up as a candidate mutation in the integrity check below, and inlining it spends
+the reviewer's context on an artifact it can read for itself.
 
 Exclude the implementation transcript, intended solution, prior conclusions,
 suspected findings, and fixture expected outputs. After review, verify that

@@ -269,6 +269,20 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("category-mismatched", self.skill_compact)
         self.assertIn("return `blocked`", self.skill_compact)
 
+    def test_review_dispatch_hands_the_diff_by_path_outside_the_worktree(self):
+        gates = compact(self.gates)
+        self.assertIn(
+            "the location of a file holding the complete `base...HEAD` diff", gates
+        )
+        self.assertIn("outside the ticket worktree", gates)
+        self.assertIn("hand over its path, not the diff text", gates)
+
+    def test_delegated_dispatch_recommends_paths_over_pasted_history(self):
+        self.assertIn("prefer handing it file paths", self.skill_compact)
+        self.assertIn("pasting accumulated history", self.skill_compact)
+        self.assertIn("recommendation, not a gate", self.skill_compact)
+        self.assertIn("never returns `blocked` for its absence", self.skill_compact)
+
     def test_closing_syntax_and_post_merge_transition_are_acceptance_gated(self):
         self.assertIn("non-closing reference", self.skill_compact)
         self.assertIn("`Fixes #<issue>`", self.github)

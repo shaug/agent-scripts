@@ -55,7 +55,7 @@ Required packet sections are:
 
 1. `repository`: repository identity and base branch.
 2. `candidate`: the captured head, the comparison base or merge base, and the
-   complete candidate diff.
+   complete candidate diff in one of the two forms below.
 3. `change_contract`: observable goal, non-empty acceptance criteria, explicit
    non-goals, and behavior or invariants to preserve.
 4. `sources`: applicable repository instructions, named design or contract
@@ -72,8 +72,32 @@ on it. Optional `base_drift` records why evidence was retained or reset after
 the base advanced.
 
 Do not infer missing intent. Missing repository identity, goal, acceptance
-criteria, candidate identity, a complete diff, or required validation evidence
-prevents a trustworthy review and must yield a `blocked` result.
+criteria, candidate identity, a complete diff in either form below, or required
+validation evidence prevents a trustworthy review and must yield a `blocked`
+result.
+
+### The candidate diff: inline or referenced by path
+
+`candidate.diff` carries the complete diff in exactly one of two forms:
+
+- **inline** — `content` holds the unified diff itself; and
+- **referenced** — `path` holds the location of a file whose content is that
+  diff.
+
+The forms are mutually exclusive: a diff object carrying both or neither is
+malformed. Both assert `complete: true` and mean the same thing to a lens — the
+reviewed candidate is the whole diff, never a summary of it.
+
+A packet builder that writes the diff to a file writes it **outside the
+candidate worktree**. Evidence written inside the worktree registers as a
+candidate mutation and fails the before/after integrity check that proves the
+review was read-only, so keeping the evidence elsewhere is what keeps that check
+trivially satisfied rather than something the builder must exempt itself from.
+
+A referenced file that is absent or empty is missing review evidence, exactly as
+an absent inline `content` is: `scripts/validate.py` fails closed on it and the
+review yields `blocked`. Never read an unreadable reference as a candidate whose
+diff is merely smaller.
 
 ## Finding semantics
 

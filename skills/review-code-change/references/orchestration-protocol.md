@@ -11,6 +11,11 @@ Read applicable repository instructions and named specifications, then capture
 the complete diff, exact candidate identity, representative nearby code and
 tests, validation evidence, and worktree state.
 
+Write the captured diff to a file outside the candidate worktree and record its
+location as `candidate.diff.path`. Dispatch every lens with the packet and let
+it read the diff from that path; do not inline the complete diff into any lens
+invocation.
+
 Run the shared packet validator — the bundled dependency-free copy at
 [references/review-suite/validate.py](review-suite/validate.py), or the
 canonical `review-suite/scripts/validate.py` inside the source monorepo. Do not
