@@ -450,5 +450,24 @@
       ],
       "next_action": "No further review action is required; the correctness fix restarted and cleanly completed the full three-lens sequence on the new head."
     }
+  },
+  {
+    "case_id": "missing-diff-evidence-file",
+    "observed_sequence": [],
+    "stopped_reason": "evidence_packet_incomplete",
+    "result": {
+      "schema_version": "1.4",
+      "lens": "aggregate",
+      "candidate": {
+        "head_sha": "a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+        "comparison_base_sha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3"
+      },
+      "verdict": "blocked",
+      "findings": [],
+      "blocking_reasons": [
+        "The packet references a candidate diff file that does not exist."
+      ],
+      "next_action": "Rewrite the complete diff to a file outside the candidate worktree, record that path in the packet, revalidate it, then restart the full review sequence."
+    }
   }
 ]

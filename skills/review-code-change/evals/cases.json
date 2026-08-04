@@ -110,5 +110,13 @@
       "correctness": {"schema_version": "1.4", "lens": "correctness", "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}, "verdict": "clean", "findings": [], "blocking_reasons": []},
       "code_simplicity": {"schema_version": "1.4", "lens": "code_simplicity", "candidate": {"head_sha": "a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2", "comparison_base_sha": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"}, "verdict": "clean", "findings": [], "blocking_reasons": []}
     }
+  },
+  {
+    "id": "missing-diff-evidence-file",
+    "candidate": {"head_sha": "a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3", "comparison_base_sha": "b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3"},
+    "available_dependencies": ["review-solution-simplicity", "review-correctness", "review-code-simplicity"],
+    "evidence": {"complete": false, "blocking_reasons": ["The packet references a candidate diff file that does not exist."]},
+    "cycle": 1, "phase": "full",
+    "harness_outcomes": {}
   }
 ]

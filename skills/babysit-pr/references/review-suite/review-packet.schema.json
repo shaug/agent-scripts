@@ -36,14 +36,28 @@
           "pattern": "^[0-9a-f]{40}$"
         },
         "diff": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["format", "complete", "content"],
-          "properties": {
-            "format": {"enum": ["unified_diff"]},
-            "complete": {"const": true},
-            "content": {"type": "string", "minLength": 1}
-          }
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["format", "complete", "content"],
+              "properties": {
+                "format": {"enum": ["unified_diff"]},
+                "complete": {"const": true},
+                "content": {"type": "string", "minLength": 1}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["format", "complete", "path"],
+              "properties": {
+                "format": {"enum": ["unified_diff"]},
+                "complete": {"const": true},
+                "path": {"type": "string", "minLength": 1}
+              }
+            }
+          ]
         }
       }
     },

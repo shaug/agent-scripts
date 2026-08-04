@@ -3,7 +3,10 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
 import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -118,6 +121,120 @@ class PacketValidationTests(unittest.TestCase):
     def test_malformed_validation_item_returns_errors(self):
         self.packet["validation"] = ["pytest"]
         self.assertTrue(VALIDATOR.validate_packet(self.packet))
+
+
+class DiffEvidencePathTests(unittest.TestCase):
+    """A packet may carry the complete diff inline or reference it by path.
+
+    #130: lens dispatch stopped inlining the complete diff, so the packet
+    builder writes it to a file outside the candidate worktree and records the
+    path. Both forms must validate, and a referenced file that is absent or
+    empty is missing review evidence, not a smaller diff.
+    """
+
+    def setUp(self):
+        self.packet = load(ROOT / "fixtures" / "clean-change" / "packet.json")
+        self.diff = self.packet["candidate"]["diff"]["content"]
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.evidence = Path(self.directory.name) / "candidate.diff"
+
+    def referencing(self, location: Path):
+        packet = copy.deepcopy(self.packet)
+        packet["candidate"]["diff"] = {
+            "format": "unified_diff",
+            "complete": True,
+            "path": str(location),
+        }
+        return packet
+
+    def test_packet_referencing_a_written_diff_file_is_accepted(self):
+        self.evidence.write_text(self.diff)
+        self.assertEqual([], VALIDATOR.validate_packet(self.referencing(self.evidence)))
+
+    def test_inline_diff_packet_is_still_accepted(self):
+        self.assertEqual([], VALIDATOR.validate_packet(self.packet))
+
+    def test_absent_diff_file_is_reported_as_missing_review_evidence(self):
+        errors = VALIDATOR.validate_packet(self.referencing(self.evidence))
+        self.assertEqual(
+            ["$.candidate.diff.path: referenced diff evidence file is missing"],
+            errors,
+        )
+        self.assertTrue(VALIDATOR.is_blockable_packet_error(errors[0]))
+
+    def test_empty_diff_file_is_reported_as_missing_review_evidence(self):
+        self.evidence.write_text("")
+        errors = VALIDATOR.validate_packet(self.referencing(self.evidence))
+        self.assertEqual(
+            ["$.candidate.diff.path: referenced diff evidence file is empty"],
+            errors,
+        )
+        self.assertTrue(VALIDATOR.is_blockable_packet_error(errors[0]))
+
+    def test_a_relative_reference_is_rejected_even_when_it_resolves(self):
+        """A relative reference binds a lens to whatever its own cwd holds.
+
+        The builder and each lens revalidate the same packet from different
+        working directories, so the check must reject the reference itself
+        rather than accept whichever same-named file happens to be nearby.
+        """
+        self.evidence.write_text(self.diff)
+        packet = self.referencing(Path(self.evidence.name))
+        previous = Path.cwd()
+        os.chdir(self.directory.name)
+        try:
+            errors = VALIDATOR.validate_packet(packet)
+        finally:
+            os.chdir(previous)
+        self.assertEqual(
+            [
+                "$.candidate.diff.path: referenced diff evidence file must be "
+                "an absolute path"
+            ],
+            errors,
+        )
+        self.assertTrue(VALIDATOR.is_blockable_packet_error(errors[0]))
+
+    def test_a_diff_cannot_carry_both_forms(self):
+        self.evidence.write_text(self.diff)
+        packet = self.referencing(self.evidence)
+        packet["candidate"]["diff"]["content"] = self.diff
+        self.assertTrue(VALIDATOR.validate_packet(packet))
+
+    def test_a_diff_carrying_neither_form_is_rejected(self):
+        packet = self.referencing(self.evidence)
+        del packet["candidate"]["diff"]["path"]
+        self.assertIn(
+            "$.candidate.diff: missing required property 'content'",
+            VALIDATOR.validate_packet(packet),
+        )
+
+    def test_missing_diff_evidence_pairs_with_blocked_but_never_clean(self):
+        packet = self.referencing(self.evidence)
+        result = load(ROOT / "fixtures" / "clean-change" / "expected.json")
+        blocked = copy.deepcopy(result)
+        blocked["verdict"] = "blocked"
+        blocked["blocking_reasons"] = ["The referenced candidate diff is unreadable."]
+        self.assertEqual([], VALIDATOR.validate_pair(packet, blocked))
+        self.assertTrue(VALIDATOR.validate_pair(packet, result))
+
+    def test_cli_rejects_a_packet_whose_referenced_diff_is_absent(self):
+        packet_file = Path(self.directory.name) / "packet.json"
+        packet_file.write_text(json.dumps(self.referencing(self.evidence)))
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "validate.py"),
+                "packet",
+                str(packet_file),
+            ],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        self.assertEqual(1, completed.returncode)
+        self.assertIn("referenced diff evidence file is missing", completed.stderr)
 
 
 class ResultValidationTests(unittest.TestCase):

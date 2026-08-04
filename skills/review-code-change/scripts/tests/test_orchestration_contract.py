@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
-REPOSITORY_ROOT = SKILL_ROOT.parents[1]
-REVIEW_SUITE = REPOSITORY_ROOT / "review-suite"
 # Import the skill's own bundled validator so these tests exercise the
 # installed layout, not only the canonical monorepo copy.
 SPEC = importlib.util.spec_from_file_location(
@@ -21,6 +20,10 @@ SPEC.loader.exec_module(VALIDATOR)
 
 def load(path: Path):
     return json.loads(path.read_text())
+
+
+def compact(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
 
 
 class OrchestrationContractTests(unittest.TestCase):
@@ -72,6 +75,21 @@ class OrchestrationContractTests(unittest.TestCase):
         ):
             self.assertTrue((bundle / name).is_file(), name)
 
+    def test_lens_dispatch_references_the_diff_by_path(self):
+        # The shared contract owns the write-it-outside-the-worktree rule; this
+        # skill states the builder obligation once and the protocol states only
+        # the dispatch clause it owns.
+        skill = compact(self.skill)
+        self.assertIn("outside the candidate worktree", skill)
+        self.assertIn("absolute location as the packet's `candidate.diff.path`", skill)
+        self.assertIn("Do not paste the complete diff into a lens invocation", skill)
+
+        protocol = compact(self.protocol)
+        self.assertIn("read the diff from `candidate.diff.path`", protocol)
+        self.assertIn(
+            "do not inline the complete diff into any lens invocation", protocol
+        )
+
     def test_forward_evaluations_cover_every_case_and_conform(self):
         self.assertEqual(set(self.cases), set(self.results))
         for case_id, record in self.results.items():
@@ -121,6 +139,7 @@ class OrchestrationContractTests(unittest.TestCase):
             ),
             "missing-dependency": ([], "blocked"),
             "missing-evidence": ([], "blocked"),
+            "missing-diff-evidence-file": ([], "blocked"),
             "deferred-only-clean": (
                 ["solution_simplicity", "correctness", "code_simplicity"],
                 "clean",

@@ -4,7 +4,60 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge
+## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge, then moved review-packet diff evidence and epic child dispatch onto files instead of inlined context
+
+- feat(review-suite,skills): deliver review-packet and epic-dispatch context via
+  files instead of inlined context (issue #130, epic #119, the epic's only
+  unblocked child) — stop spending a reviewer's and a dispatched worker's
+  context on artifacts they can read for themselves. `candidate.diff` becomes a
+  schema `oneOf`: the existing inline unified-diff string, or an evidence-path
+  object naming a file whose content is that diff. The packet builder writes the
+  complete diff to a temporary directory **outside** the candidate worktree and
+  records the path, so the existing before/after read-only integrity check stays
+  trivially satisfied by construction rather than needing an exemption; lens
+  dispatch in `review-code-change`'s `SKILL.md` and
+  `references/orchestration-protocol.md`, and the caller-side invocation prose
+  in `implement-ticket`'s `references/review-and-merge-gates.md`, now hand the
+  path and no longer inline the complete `base...HEAD` diff. `validate.py` gains
+  generic `oneOf` support — reporting the closest branch's own errors rather
+  than a generic no-form-matched message, so every existing blockable-error
+  pattern keeps matching — and fails closed when a referenced diff file is
+  absent, empty, or named by a relative path, classifying all three as missing
+  review evidence so the review yields `blocked` instead of reading an
+  unresolvable reference as a smaller diff. The absolute-path requirement came
+  out of this change's own review: because the reference is now the sole binding
+  between a lens and the diff it reviews, and the builder and each lens
+  revalidate the same packet from their own working directories, a relative
+  reference could resolve to a different same-named file and bind a lens to a
+  diff that is not the candidate's — a substitution no candidate-identity check
+  can catch, since those compare SHAs and never the diff's provenance. Fixtures
+  under `review-suite/fixtures/` and the eval strata stay inline and pass
+  unmodified; all seven bundled `references/review-suite/` copies (including
+  `review-fix-loop`'s) are re-synced via `just sync-contracts` and the drift
+  tests pass. On the dispatch side, `implement-epic` gains file-based
+  child-dispatch artifacts under `.implement-epic/` — a brief file as the single
+  source of a child's task requirements and a per-dispatch report file the
+  executing context appends to across rounds — plus the no-pasted-history rule
+  with its failure mode: each pasted round lengthens the next prompt, so
+  dispatch reproduces stale context faster than it delivers current
+  requirements. Those two paths are absolute and the directory sits at the
+  coordinator's working root outside every candidate worktree, for the same
+  cross-context reason as the diff reference: the executing context owns a
+  different worktree, and because the prompt deliberately does not restate the
+  brief, an unresolvable path dispatches a worker with no requirements at all
+  while the prompt still looks complete. That dot directory ships the
+  skill-local `.gitignore` `AGENTS.md` requires, in the shape
+  `skills/ready-ticket` established. Delegated execution stays out of the
+  mandate because the coordinator is contractually opaque and this repository
+  cannot bind its prompt format, so `implement-ticket`'s delegated-worker
+  paragraph carries the rule as recommend-only prose that never returns
+  `blocked` for its absence, and `references/delegated-execution/CONTRACT.md` is
+  unchanged. Ported with attribution from superpowers'
+  `subagent-driven-development` fresh-context construction, already recorded as
+  that skill's secondary registry entry. Adds a `missing-diff-evidence-file`
+  orchestration eval case proving the fail-closed path, and twelve behavioral
+  tests bound to the ticket's acceptance criteria, each observed failing at base
+  `73f1aa8` and passing at head
 
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add
@@ -49,6 +102,7 @@ summary: Chronological history of repository and skill changes.
   expectations held separately and a 31-assertion contract test;
   pressure-testing from baseline is #137's, so the rationalization table carries
   anticipated rather than verbatim wording and says so
+  (`73f1aa8e2fc34fa93f989c0e146efacfe41133e7`)
 
 ## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, then added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule
 
