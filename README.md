@@ -61,6 +61,12 @@ causes the workflow to fail closed.
 
 Current reusable agent skills:
 
+- `skills/ready-ticket` — turn a vague idea or an unready GitHub or Linear
+  ticket into an implementation-ready ticket body: elicit the open product
+  decisions, write acceptance criteria as observable public-surface behaviors,
+  self-review the draft, and terminate in the body itself. Fully standalone; it
+  borrows `superpowers:brainstorming`'s questioning discipline and recommends
+  `load-bearing` verification only when those peers are present
 - `skills/babysit-pr` — monitor one existing GitHub pull request through
   current-head CI, feedback, repository-owned re-review, mergeability, and an
   explicitly authorized completion policy
@@ -145,6 +151,7 @@ Run skill-specific tests:
 just test-carve-changesets
 just test-review-suite
 just test-babysit-pr
+just test-ready-ticket
 just test-implement-ticket
 just test-implement-epic
 just test-review-fix-loop

@@ -89,6 +89,9 @@ test-plugins:
 test-babysit-pr:
   python3 -m unittest discover -s {{skills_dir}}/babysit-pr/scripts/tests -p 'test_*.py'
 
+test-ready-ticket:
+  python3 -m unittest discover -s {{skills_dir}}/ready-ticket/scripts/tests -p 'test_*.py'
+
 test-implement-ticket:
   python3 -m unittest discover -s {{skills_dir}}/implement-ticket/scripts/tests -p 'test_*.py'
 
