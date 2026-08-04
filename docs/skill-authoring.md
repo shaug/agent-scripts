@@ -534,6 +534,139 @@ then diverges unpredictably in the remaining ten — which is the part this
 repository deliberately decided differently and the only part where the question
 was ever live.
 
+## The peer-skill convention
+
+Peer skill libraries own in-phase methodology; this repository owns the outer
+loop — ticket, readiness, authority, evidence, PR lifecycle, merge. A skill here
+may point at a peer as the recommended method for a phase. It may never depend
+on one.
+
+### Detect peers in prose, never at runtime
+
+Reference a peer **by name in prose**, conditioned on its availability in the
+session skill listing. Do not probe for an install, read a manifest, shell out
+to a package manager, or add the peer to any dependency declaration.
+
+*Prevents:* runtime probing turns an optional recommendation into a coupling.
+The probe becomes a thing that can fail, a thing that must be mocked in tests,
+and a thing that pins a peer's directory layout — so a peer that reorganizes
+breaks a skill that was only ever supposed to suggest it. Prose degrades
+silently and correctly; a probe degrades loudly and wrongly.
+
+### Peer absence is silent fallback, never a blocker
+
+When a named peer is not in the session listing, fall back to the skill's
+built-in behavior without comment. A missing peer is never a `blocked` condition
+and never a caveat on a result.
+
+**Never condition a quality outcome on peer availability.** The outcome stays
+enforced by this repository's own validation and review gates unconditionally;
+only the *method* is delegated.
+
+*Prevents:* two opposite failures. A skill that blocks on a missing peer has
+made an optional library mandatory, which is the dependency the convention
+exists to avoid. A skill that quietly lowers its bar when the peer is absent has
+made its guarantees depend on the reader's install state, so the same skill
+produces different quality on two machines and neither run says so. Keeping the
+gate in the house and the method in the peer is what makes absence safe.
+
+### Precedence is already settled
+
+[Peer precedence](#peer-precedence) already settles the ordering between a
+loaded peer's absolutes and this repository's contracts, including what an
+autonomous run does with a peer's ask-a-human escape valve. Reference that rule
+from a seam; do not restate it.
+
+*Prevents:* a restated rule is a second source of truth that drifts from the
+first, and the drift shows up exactly where the two were supposed to agree.
+
+### Keep the trigger namespaces disjoint
+
+Descriptions here claim **tracker-ticket, pull-request-lifecycle, merge,
+epic-orchestration, and repository-owned-review-invocation** language. They must
+not claim **planning, debugging, test-driven-development, or brainstorming**
+language, which is what peer skills trigger on.
+
+Where an overlap is structural rather than accidental — a peer whose trigger is
+broad enough to cover any implementation work, for instance — the registry
+records the disposition instead of the description contorting to avoid it.
+
+*Prevents:* description-based routing is winner-takes-attention. Two skills
+claiming the same words means the one that loads is decided by phrasing
+accident, not by which one owns the work. The failure is invisible from either
+skill's side: each looks correct in isolation, and only the pair misroutes.
+
+### The peer pin
+
+Registry entries below refer to **superpowers** (obra/superpowers) at commit
+`44c9b2d6e889982ac18c27d05a19fefe335194e1`, which carries fourteen skills, and
+to **load-bearing** (danshapiro/skill-load-bearing) at its reviewed head.
+
+*Prevents:* an unpinned registry describes a moving target, so an entry that was
+accurate when written becomes wrong without anything changing here. Upstream
+drift is absorbed by re-reviewing against a new pin and updating the entries —
+not by treating the entries as approximate.
+
+## Named-peer registry
+
+Every skill of a registered peer carries exactly one **primary form**. A
+house-territory skill may additionally carry a recorded **secondary entry** as a
+pattern-port source. A peer joins by adding entries here plus the seam
+references that use them — not by inventing a new convention.
+
+The four forms come from the parent epic:
+
+- **Referenced peer** — an agent-scripts skill points at it by name as the
+  recommended method for a phase.
+- **Ported with attribution** — an operational or authoring *pattern*, not a
+  whole methodology, is adapted into house prose with its source recorded.
+  Porting a pattern is licensed; duplicating a methodology surface is not.
+- **House territory** — functionality a peer also offers, where this repository
+  deliberately keeps its own path, with the rationale recorded.
+- **No relationship** — no interaction, with a one-line reason.
+
+### superpowers
+
+| Skill                            | Primary form              | Rationale                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test-driven-development`        | Referenced peer           | Red–green loop discipline is method; the house contracts only what test evidence must demonstrate. Seam: #126.                                                                                                                                                                                                                                                   |
+| `systematic-debugging`           | Referenced peer           | Hypothesis-driven diagnosis is method the house has no equivalent of and does not want to own. Seam: #127.                                                                                                                                                                                                                                                       |
+| `brainstorming`                  | Referenced peer (bounded) | Borrow the questioning discipline — one question at a time, intent before construction — and nothing past design approval. Its step 9 hands off to `writing-plans`; ticket authoring is house-owned, so the borrow stops at the handoff. Seam: #124.                                                                                                             |
+| `receiving-code-review`          | Ported with attribution   | Its stance — verify feedback technically rather than agree performatively or implement blindly — is adapted into the house feedback-disposition rules (accept / reject with evidence / defer / block). Seam: #127.                                                                                                                                               |
+| `using-git-worktrees`            | Ported with attribution   | The isolated-workspace pattern is adapted into `implement-ticket`'s one-ticket-one-worktree rule. Seam: #134.                                                                                                                                                                                                                                                    |
+| `writing-skills`                 | Ported with attribution   | Source for this document's description rules, form-to-failure taxonomy, and pressure-testing protocol. Reviewed source, not governing — see [Governance](#governance).                                                                                                                                                                                           |
+| `verification-before-completion` | Ported with attribution   | "Evidence before claims, always" is already embodied in the house evidence-binding contract, which additionally binds each claim to a candidate SHA and expires it on a head change.                                                                                                                                                                             |
+| `dispatching-parallel-agents`    | Ported with attribution   | The post-parallel verification habit is adapted; the dispatch mechanics are not. Seam: #131.                                                                                                                                                                                                                                                                     |
+| `subagent-driven-development`    | House territory           | Executor exclusivity: it dispatches a fresh implementer subagent per task inside one session, while the house requires exactly one executor to own a unit of work. *Secondary entry — ported mechanics:* its fresh-context construction (a subagent never inherits session history; the caller builds exactly the context it needs) is the source for #130–#133. |
+| `executing-plans`                | House territory           | Same executor-exclusivity boundary, across sessions rather than within one.                                                                                                                                                                                                                                                                                      |
+| `finishing-a-development-branch` | House territory           | Merge boundary: it verifies tests, presents integration options, executes the choice, and cleans up — all of which `implement-ticket` and `babysit-pr` own under explicit authority grades. Seam: #128.                                                                                                                                                          |
+| `writing-plans`                  | House territory           | Ticket authoring is house-owned; the ticket body is the contract. Plan files do not bind ticket-driven work, and its emitted plan header ("REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development … or superpowers:executing-plans") is an executor mandate neutralized by #128's rule.                                                                 |
+| `requesting-code-review`         | House territory           | Review *production* is house-owned: typed schemas, fail-closed evidence binding, and candidate-identity rules. This is the existing "never depends on a third-party review skill" stance, recorded with its rationale.                                                                                                                                           |
+| `using-superpowers`              | No relationship           | Session bootstrap for the peer's own library; agent-scripts routing is description-based and needs no bootstrap step.                                                                                                                                                                                                                                            |
+
+### load-bearing
+
+| Skill          | Primary form                          | Rationale                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `load-bearing` | Referenced peer, explicit-invoke-only | Pre-execution verification of a plan's falsifiable assumptions, classified by late-falsification cost. Its own description restricts it to explicit user request, so no trigger-collision audit applies. **Actor semantics:** interactive — offer it once, and the user's explicit yes constitutes the peer's required request; autonomous — record the recommendation in the run's evidence and proceed. Seams: ticket authoring and pre-implementation. |
+
+### Trigger-collision audit
+
+Audited at the pin above. Each row states the overlap and how it is
+dispositioned; no description was contorted to dodge a structural overlap.
+
+| agent-scripts skill          | Overlapping peer trigger                                                                                                                                  | Disposition                                                                                                                                                                                                                                                        |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `implement-ticket`           | `brainstorming` ("before any creative work - creating features… or modifying behavior"); `test-driven-development` ("implementing any feature or bugfix") | Structural. Both peers trigger before or inside construction; this skill triggers on a tracker ticket whose contract is already authored. Description claims ticket and delivery language only, never "creating features" or "before writing implementation code". |
+| `implement-epic`             | `writing-plans`, `executing-plans` (multi-step work, plan execution)                                                                                      | Structural. Description claims epic, sub-issue, and dependency-graph language; it never claims plan authoring or plan execution.                                                                                                                                   |
+| `babysit-pr`                 | `systematic-debugging` ("any bug, test failure"); `receiving-code-review` ("receiving code review feedback")                                              | Structural. Description binds every trigger to an existing published pull request and says "failing CI checks", not bare test failures.                                                                                                                            |
+| `carve-changesets`           | `finishing-a-development-branch` ("decide how to integrate the work")                                                                                     | Structural, and resolved by house territory: description claims oversized-branch recomposition and stacked-PR publication, not the integrate-or-not decision.                                                                                                      |
+| `review-code-change`         | `requesting-code-review` ("before merging to verify work meets requirements")                                                                             | Structural, and resolved by house territory. Description claims the repository-owned suite and its aggregate verdict explicitly.                                                                                                                                   |
+| `review-correctness`         | `systematic-debugging` (bugs)                                                                                                                             | Bounded. Description claims reviewing a change *for* bugs against a stated goal, not diagnosing an observed failure.                                                                                                                                               |
+| `review-solution-simplicity` | none found                                                                                                                                                | No peer claims architecture-level over-engineering review.                                                                                                                                                                                                         |
+| `review-code-simplicity`     | none found                                                                                                                                                | No peer claims local implementation-complexity review.                                                                                                                                                                                                             |
+| `review-fix-loop`            | `requesting-code-review`; `verification-before-completion` (completion claims)                                                                            | Structural. Description claims driving one already-committed candidate to review convergence under a named publication policy; neither peer claims convergence or publication.                                                                                     |
+
 ## Context economy
 
 Everything in `SKILL.md` is loaded on every run that triggers the skill.

@@ -1,6 +1,6 @@
 ---
 name: review-correctness
-description: Review a code change, diff, PR, branch, or patch for bugs and material behavioral, security, authorization, compatibility, data-integrity, performance, and validation failures against its stated goal. Use when asked to find bugs or run a correctness-focused review, either from raw repository and ticket evidence or from the repository-owned shared review packet. Returns only the shared finding and verdict shape and never modifies the reviewed candidate.
+description: 'Use when a code change, diff, PR, branch, or patch should be examined for bugs and material behavioral, security, authorization, compatibility, data-integrity, performance, or validation failures against its stated goal. Accepts either raw repository and ticket evidence or the repository-owned shared review packet. Read-only: never modifies the reviewed candidate. Returns only the shared finding and verdict shape.'
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

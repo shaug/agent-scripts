@@ -1,6 +1,6 @@
 ---
 name: review-code-simplicity
-description: Review a code change, diff, PR, branch, patch, or tests for local implementation complexity, meaningful DRY and reuse opportunities, unnecessary control flow, and bespoke code replaceable by established repository modules or justified dependencies. Use when asked to simplify code or run an implementation-level simplicity review, either from raw evidence or the shared review packet. Preserves the chosen architecture and behavior, returns only the shared result shape, and never modifies the candidate.
+description: Use when a code change, diff, PR, branch, patch, or tests should be examined for local implementation complexity — meaningful duplication and reuse opportunities, unnecessary control flow, and bespoke code an established repository module or justified dependency already covers. Accepts either raw evidence or the repository-owned shared review packet. Read-only, and preserves the chosen architecture and behavior. Returns only the shared result shape.
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

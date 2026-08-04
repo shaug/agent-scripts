@@ -1,6 +1,6 @@
 ---
 name: implement-epic
-description: Implement, work through, or finish one or more GitHub or Linear epics through their live dependency graphs by selecting ready PR-sized children and invoking the repository-owned implement-ticket skill exactly once per child. Use when asked to sequence an entire epic, a parent issue with sub-issues, one named child, or a named subset; refreshes graph state after merges, preserves authority and isolation boundaries, and verifies epic-wide acceptance and closeout without duplicating single-ticket implementation, review, PR, merge, or cleanup mechanics.
+description: 'Use when a GitHub or Linear epic, a parent issue with sub-issues, one named child, or a named subset should be worked through its live dependency graph. Scope is selection and sequencing: it delegates each ready PR-sized child to the repository-owned implement-ticket skill and never implements, reviews, publishes, or merges a child itself. Refreshes native graph state after every merge, preserves authority and isolation boundaries unexpanded, and holds parent closeout to its own explicit authority.'
 ---
 
 # Implement Epic

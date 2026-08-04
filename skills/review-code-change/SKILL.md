@@ -1,6 +1,6 @@
 ---
 name: review-code-change
-description: Review a code change, diff, PR, branch, or patch with the complete repository-owned review suite. Use when asked to review a change or run code review; builds a trustworthy evidence packet, invokes solution simplicity, correctness, and code simplicity in order, reconciles their results, and returns one bounded aggregate verdict. Fails closed when evidence or local lens skills are missing, remains read-only, and never depends on a third-party review skill.
+description: "Use when a code change, diff, PR, branch, or patch should be reviewed with the complete repository-owned review suite, or when asked to run code review. Scope is one candidate, read-only: it never modifies what it reviews and never depends on a third-party review skill. Fails closed when required evidence or a local lens skill is missing. Returns one bounded aggregate verdict reconciled across the repository's solution-simplicity, correctness, and code-simplicity lenses."
 allowed-tools: Read, Grep, Glob, Bash, Agent, Task, Skill
 ---
 

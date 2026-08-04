@@ -4,8 +4,56 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-03 — Established the written skill-authoring methodology, including the house testing doctrine, as the repository's authoring standard
+## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, then added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule
 
+- feat(skills): define the peer-skill convention and registry, and rewrite all
+  nine trigger descriptions (issue #123, epic #117, the epic's second and final
+  child) — extend `docs/skill-authoring.md` with a "The peer-skill convention"
+  section and a "Named-peer registry" section, then rewrite every skill's
+  trigger description to the description-states-when rule the document
+  established in #122. The convention states prose-level soft detection against
+  the session skill listing (no runtime probing, no manifest coupling, no
+  dependency declaration, because a probe turns an optional recommendation into
+  a coupling that can fail); the fallback rule that peer absence is a silent
+  fallback to built-in behavior and never a `blocked` condition, with the
+  stronger corollary that a quality outcome is never conditioned on peer
+  availability — only the method is delegated, while the outcome stays enforced
+  by this repository's own gates, so the same skill cannot produce different
+  quality on two machines; a pointer to #122's existing peer-precedence rule
+  rather than a restatement of it; trigger-namespace rules claiming
+  tracker-ticket, PR-lifecycle, merge, epic-orchestration, and
+  repository-owned-review-invocation language while disclaiming planning,
+  debugging, TDD, and brainstorming language, with structurally unavoidable
+  overlaps dispositioned in the registry instead of dodged by contorted wording;
+  and the peer pin (superpowers at `44c9b2d6e889982ac18c27d05a19fefe335194e1`,
+  fourteen skills; load-bearing at its reviewed head), since an unpinned
+  registry describes a moving target. The registry classifies all fourteen
+  pinned superpowers skills plus load-bearing into one primary form each from
+  the epic's taxonomy, with a rationale per entry: referenced peers
+  (`test-driven-development`, `systematic-debugging`, and `brainstorming` as a
+  bounded borrow of questioning discipline that stops at its design-approval
+  handoff to `writing-plans`); ported with attribution (`receiving-code-review`,
+  `using-git-worktrees`, `writing-skills`, `verification-before-completion`,
+  `dispatching-parallel-agents`); house territory (`subagent-driven-development`
+  and `executing-plans` for executor exclusivity,
+  `finishing-a-development-branch` for the merge boundary, `writing-plans`
+  because ticket authoring is house-owned and its emitted "REQUIRED SUB-SKILL"
+  plan header is an executor mandate, and `requesting-code-review` because
+  review production is house-owned through typed schemas, fail-closed evidence
+  binding, and candidate-identity rules); and no relationship
+  (`using-superpowers`, a bootstrap for the peer's own library).
+  `subagent-driven-development` carries the required secondary pattern-port
+  entry for its fresh-context subagent construction. load-bearing is recorded
+  explicit-invoke-only with its actor semantics: interactive offers once and the
+  user's yes is the peer's required request, autonomous records the
+  recommendation in evidence and proceeds. A trigger-collision audit table
+  records each of the nine descriptions against the overlapping peer trigger
+  terms at the pin. The nine rewrites drop the workflow summaries that let an
+  agent execute a lossy paraphrase without loading the body — `review-fix-loop`,
+  the longest, falls from 923 to 589 characters — and each now states when to
+  use, the scope boundary, and the terminal result shape a caller needs to
+  route. This is a deliberate triggering-behavior change; #136's corpus verifies
+  it after the fact
 - docs: write the skill-authoring methodology document with the house testing
   doctrine (issue #122, epic #117, the epic's first child) — add
   `docs/skill-authoring.md` combining empirical prose discipline with this
@@ -59,7 +107,7 @@ summary: Chronological history of repository and skill changes.
   and budgeting body growth qualitatively rather than by token count. Closes
   with an authoring checklist. Scope held to doctrine: the peer-skill convention
   and named-peer registry remain with issue #123, and retrofitting existing
-  skills remains with epic #119
+  skills remains with epic #119 (`4e60776d1fea8b966754f8be6da5bebd99478e67`)
 
 ## 2026-07-31 — Unified the duplicated JSON-schema validation engine between review-suite and review-fix-loop, packaged and documented the standalone review-fix-loop skill, added the review-fix-loop cross-cutting evaluation corpus, recorded the first review-fix-loop `update_pr` fix cycle
 
