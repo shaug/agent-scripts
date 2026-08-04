@@ -87,7 +87,8 @@ class PeerCompositionSectionTests(unittest.TestCase):
         self.assertIn("Nothing here degrades when a peer is absent", self.compact)
 
     def test_the_seam_table_marks_every_row_landed_or_planned(self):
-        """Catches a row citing a ticket in neither declared tuple."""
+        """Row-driven: catches a row citing a ticket in neither declared tuple,
+        as well as a marker outside the closed Landed/Planned vocabulary."""
         self.assertGreaterEqual(len(self.seam_rows), 10)
         for row in self.seam_rows:
             with self.subTest(row=row[:60]):
@@ -96,10 +97,18 @@ class PeerCompositionSectionTests(unittest.TestCase):
                     ("Landed", "Planned"),
                     "each seam row must end in a Landed or Planned marker",
                 )
+                match = re.search(r"issues/(\d+)\)", row)
+                self.assertIsNotNone(match, "each seam row must cite an issue")
+                self.assertIn(
+                    f"#{match.group(1)}",
+                    SEAM_STATUS,
+                    f"#{match.group(1)} is not a declared seam ticket",
+                )
 
     def test_each_seam_row_matches_its_declared_status(self):
-        """Two-directional: without this, rewriting every row to Planned, or
-        marking an open-ticket seam Landed, both leave the suite green."""
+        """Ticket-driven, the complementary direction: without this, rewriting
+        every row to Planned, or marking an open-ticket seam Landed, both leave
+        the suite green."""
         for ticket, status in SEAM_STATUS.items():
             link = f"issues/{ticket.lstrip('#')})"
             matching = [row for row in self.seam_rows if link in row]
