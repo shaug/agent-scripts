@@ -56,7 +56,7 @@ summary: Chronological history of repository and skill changes.
 - feat(evals): build the triggering-and-composition test corpus (issue #136,
   epic #120, the epic's second leaf) — forward evals ask whether a skill's prose
   governs behavior once it is loaded; this corpus asks the prior question,
-  whether it is the one that loads at all. `triggering/corpus.json` carries 34
+  whether it is the one that loads at all. `triggering/corpus.json` carries 35
   prompts across all ten skills: positive prompts each must claim, negative
   prompts it must not, and the named collision prompts — "Review my change." and
   "Before merging, give this a proper review." filed from both sides, and
