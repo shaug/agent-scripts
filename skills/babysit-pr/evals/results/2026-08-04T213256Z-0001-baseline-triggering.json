@@ -1,0 +1,105 @@
+{
+  "candidate": {
+    "branch": "scott/136-triggering-corpus",
+    "sha": "6a7a0d423eb0d5e55f7defad17ef147979cec927",
+    "worktree_clean": true
+  },
+  "case_evidence": {
+    "babysit-pr-collision-before-merging": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": "review-code-change",
+      "tier": "description",
+      "votes": {
+        "review-code-change": 5
+      }
+    },
+    "babysit-pr-negative-debug": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": null,
+      "tier": "description",
+      "votes": {
+        "none": 5
+      }
+    },
+    "babysit-pr-negative-plan": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": null,
+      "tier": "description",
+      "votes": {
+        "none": 5
+      }
+    },
+    "babysit-pr-positive-babysit": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": "babysit-pr",
+      "tier": "description",
+      "votes": {
+        "babysit-pr": 5
+      }
+    },
+    "babysit-pr-positive-green": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": "babysit-pr",
+      "tier": "description",
+      "votes": {
+        "babysit-pr": 5
+      }
+    },
+    "babysit-pr-positive-watch": {
+      "agreement": 1.0,
+      "repetitions": 5,
+      "selected_skill": "babysit-pr",
+      "tier": "description",
+      "votes": {
+        "babysit-pr": 5
+      }
+    }
+  },
+  "cases": {
+    "babysit-pr-collision-before-merging": "pass",
+    "babysit-pr-negative-debug": "pass",
+    "babysit-pr-negative-plan": "pass",
+    "babysit-pr-positive-babysit": "pass",
+    "babysit-pr-positive-green": "pass",
+    "babysit-pr-positive-watch": "pass"
+  },
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "triggering/runner.py",
+    "--skill",
+    "babysit-pr",
+    "--executor",
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3 triggering/executors/description_executor.py"
+  ],
+  "compared_to": null,
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 0
+  },
+  "exit_code": 0,
+  "failures": [],
+  "forward_evals": false,
+  "gap": null,
+  "limitation": null,
+  "note": "'Description tier, re-recorded after the merge-adjacent collision case was filed from this side. Five repetitions per prompt in independent processes, majority rules; each case records its own agreement fraction and vote counts.'",
+  "output_tail": "{\n  \"failed\": 0,\n  \"failures\": [],\n  \"passed\": 6,\n  \"tiers\": [\n    \"description\"\n  ],\n  \"total\": 6\n}",
+  "recorded_at": "2026-08-04T21:32:56Z",
+  "schema": "eval-run-summary/1",
+  "skill": "babysit-pr",
+  "stage": "baseline",
+  "status": "completed",
+  "suite": "triggering",
+  "tier": "real-model",
+  "totals": {
+    "failed": 0,
+    "passed": 6,
+    "total": 6
+  }
+}
