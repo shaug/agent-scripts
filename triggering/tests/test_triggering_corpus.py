@@ -223,13 +223,16 @@ class CompositionCaseTests(unittest.TestCase):
         """
         named_in_prose = set()
         for skill_md in (REPOSITORY_ROOT / "skills").glob("*/SKILL.md"):
-            for line in skill_md.read_text(encoding="utf-8").splitlines():
-                for peer in re.findall(r"`(superpowers:[a-z-]+|load-bearing)`", line):
-                    if (
-                        "available in the session skill listing" in line
-                        or "load it" in line
-                    ):
-                        named_in_prose.add(peer.replace("superpowers:", ""))
+            # Normalize whitespace across the whole file before matching. The
+            # repository wraps prose at 80 columns, so an availability
+            # condition routinely straddles a line break — matching per line
+            # silently skipped three of the five landed seams, including both
+            # seams this test exists to catch.
+            prose = re.sub(r"\s+", " ", skill_md.read_text(encoding="utf-8"))
+            for match in re.finditer(r"`(superpowers:[a-z-]+|load-bearing)`", prose):
+                window = prose[match.end() : match.end() + 80]
+                if "available in the session skill listing" in window:
+                    named_in_prose.add(match.group(1).replace("superpowers:", ""))
 
         covered = " ".join(case["seam"] for case in COMPOSITION["cases"])
         missing = sorted(peer for peer in named_in_prose if peer not in covered)

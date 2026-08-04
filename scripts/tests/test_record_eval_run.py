@@ -229,6 +229,35 @@ class RecorderTests(unittest.TestCase):
         self.assertEqual(summary["cases"], {"alpha": "pass"})
         self.assertEqual(summary["case_evidence"]["alpha"]["agreement"], 0.6)
 
+    def test_forward_evals_describes_the_forward_suite_under_any_suite(self) -> None:
+        """The field means "this skill has a real-model *forward* executor".
+
+        Asserted on the written summary, and with a discriminating pair: both
+        skills are recorded under the triggering suite, where both have a
+        real-model entry. A suite-relative implementation reports True for
+        both, which is the defect that made eight triggering summaries claim a
+        forward executor their skill does not have.
+        """
+        for skill, expected in (
+            ("implement-ticket", True),
+            ("carve-changesets", False),
+        ):
+            with self.subTest(skill=skill):
+                (self.skills / skill / "evals").mkdir(parents=True, exist_ok=True)
+                self.run_recorder(
+                    skill,
+                    "--suite",
+                    "triggering",
+                    "--command",
+                    self.stub(passed=["alpha"], failed=[]),
+                    "--per-case-output-dir",
+                )
+                summary = json.loads(
+                    self.results(skill)[-1].read_text(encoding="utf-8")
+                )
+                self.assertEqual(summary["suite"], "triggering")
+                self.assertIs(summary["forward_evals"], expected)
+
     # A diff is only meaningful against a comparable run: same tier, and one
     # that actually produced case outcomes.
     def test_diff_is_not_drawn_against_an_incomparable_run(self) -> None:
@@ -403,28 +432,6 @@ class NormIsStatedTests(unittest.TestCase):
             identity = record_eval_run.candidate_identity()
 
         self.assertFalse(identity["worktree_clean"])
-
-    def test_forward_evals_stays_forward_relative_under_any_suite(self) -> None:
-        """The field means "this skill has a real-model *forward* executor".
-
-        Making it suite-relative made every triggering summary claim that for
-        skills whose only real-model executor is the triggering one.
-        """
-        for suite in ("forward", "triggering"):
-            with self.subTest(suite=suite):
-                stdout = io.StringIO()
-                with contextlib.redirect_stdout(stdout):
-                    record_eval_run.main(
-                        ["carve-changesets", "--suite", suite, "--dry-run"]
-                    )
-                self.assertIn(
-                    "carve-changesets", json.loads(stdout.getvalue())["skill"]
-                )
-
-        self.assertNotIn("real_model", record_eval_run.EVAL_TARGETS["carve-changesets"])
-        self.assertIn(
-            "real_model", record_eval_run.TRIGGERING_TARGETS["carve-changesets"]
-        )
 
     def test_suite_selects_the_registry_and_is_recorded(self) -> None:
         stdout = io.StringIO()
