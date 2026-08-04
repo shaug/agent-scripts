@@ -970,5 +970,77 @@
       "worktree": {"path": null, "exclusive_owner": true, "tracked": [], "untracked": []},
       "handoff": {"created": false, "result_well_formed": true, "external_content": {"verified_claims": ["G-521 parser contract exists on current main"], "verified_dependency_outcome": true, "ready_child": "G-522"}}
     }
+  },
+  {
+    "id": "evidence-feature-behavioral-test",
+    "target_skill": "implement-ticket",
+    "request": "Implement GitHub ticket G-810, a new CSV export endpoint.",
+    "authority": {"merge": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-810", "state": "open", "whole_epic": false, "acceptance_evidence": [], "change_kind": "feature"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "CI and clean review required"},
+      "pr": {"state": "open", "merged": false, "head": "head-304", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-304", "patch": "ticket-scoped patch", "resulting_tree": "tree-304"},
+      "checks": {"status": "success", "items": [{"name": "ci", "head": "head-304"}]},
+      "reviews": {"initial": "clean", "head": "head-304", "connector_head": "head-304", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g304", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "result_head": "head-304"}
+    }
+  },
+  {
+    "id": "evidence-bug-fix-regression-test",
+    "target_skill": "implement-ticket",
+    "request": "Fix GitHub ticket G-811, a reported off-by-one in pagination.",
+    "authority": {"merge": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-811", "state": "open", "whole_epic": false, "acceptance_evidence": [], "change_kind": "bug_fix"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "CI and clean review required"},
+      "pr": {"state": "open", "merged": false, "head": "head-304", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-304", "patch": "ticket-scoped patch", "resulting_tree": "tree-304"},
+      "checks": {"status": "success", "items": [{"name": "ci", "head": "head-304"}]},
+      "reviews": {"initial": "clean", "head": "head-304", "connector_head": "head-304", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g304", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "result_head": "head-304"}
+    }
+  },
+  {
+    "id": "evidence-refactor-preservation",
+    "target_skill": "implement-ticket",
+    "request": "Implement GitHub ticket G-812, a behavior-preserving extraction.",
+    "authority": {"merge": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-812", "state": "open", "whole_epic": false, "acceptance_evidence": [], "change_kind": "refactor"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "CI and clean review required"},
+      "pr": {"state": "open", "merged": false, "head": "head-304", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-304", "patch": "ticket-scoped patch", "resulting_tree": "tree-304"},
+      "checks": {"status": "success", "items": [{"name": "ci", "head": "head-304"}]},
+      "reviews": {"initial": "clean", "head": "head-304", "connector_head": "head-304", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g304", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "result_head": "head-304"}
+    }
+  },
+  {
+    "id": "evidence-docs-config-exemption",
+    "target_skill": "implement-ticket",
+    "request": "Implement GitHub ticket G-813, a README and lint-config update.",
+    "authority": {"merge": false},
+    "capabilities": {"review_code_change": true, "babysit_pr": true},
+    "artifacts": {
+      "ticket": {"tracker": "github", "id": "G-813", "state": "open", "whole_epic": false, "acceptance_evidence": [], "change_kind": "docs_config"},
+      "repository": {"repo": "example/project", "tracker": "github", "pr_host": "github", "instructions": "CI and clean review required"},
+      "pr": {"state": "open", "merged": false, "head": "head-304", "base": "base-1", "mergeable": true},
+      "diff": {"base": "base-1", "head": "head-304", "patch": "ticket-scoped patch", "resulting_tree": "tree-304"},
+      "checks": {"status": "success", "items": [{"name": "ci", "head": "head-304"}]},
+      "reviews": {"initial": "clean", "head": "head-304", "connector_head": "head-304", "items": []},
+      "threads": {"items": [], "unresolved": 0},
+      "worktree": {"path": "/worktrees/g304", "exclusive_owner": true, "tracked": [], "untracked": []},
+      "handoff": {"created": true, "result_well_formed": true, "result_head": "head-304"}
+    }
   }
 ]

@@ -392,12 +392,24 @@ requirement. This is a recommendation, not a gate — the delegated-execution
 contract binds a coordinator's checkpoint protocol, not its prompt format, so
 this skill cannot require it and never returns `blocked` for its absence.
 
+A delegated worker owes the same change-demonstrating-test evidence as a
+standalone run. Pass
+[the evidence contract](#the-change-demonstrating-test-evidence-contract) into
+that context and require its identifier and observations back in the validation
+evidence. The contract is peer-independent, so a delegated run produces it
+whether or not any peer methodology skill is loaded there, and a peer's
+ask-a-human clause maps to the typed `blocked` result rather than stalling the
+delegation.
+
 ### 2. Implement only the live contract
 
 - Read nearby code and tests before editing.
 - Preserve explicit non-goals and named existing behavior.
 - Follow established architecture, idioms, shared modules, and extension points.
-- Add focused behavior tests with the implementation.
+- Produce the tests
+  [the evidence contract](#the-change-demonstrating-test-evidence-contract)
+  requires. Write the failing behavioral test before the implementation: the
+  evidence slot is far easier to produce honestly than to retrofit.
 - Update executable contract or contributor documentation when behavior changes.
 - Avoid speculative backfills, compatibility layers, abstractions, or adjacent
   ticket work for conditions not evidenced by the ticket or repository.
@@ -405,6 +417,25 @@ this skill cannot require it and never returns `blocked` for its absence.
 Apply incidental changes only for a demonstrated ticket-scoped correctness,
 security, acceptance, architecture, or validation need. Defer polish, broad
 refactors, hypothetical hardening, and sibling work.
+
+Before implementing, when `load-bearing` is available in the session skill
+listing and the ticket rests on unproven technical assumptions whose late
+falsification would be costly — architecture, data model, API contract,
+concurrency, or deployment: interactive runs offer it once, and the user's
+explicit yes constitutes the peer's required request; autonomous and delegated
+runs record the recommendation in the run's evidence and proceed. Do not
+re-verify an assumption the ticket body already records as verified at authoring
+time. A falsified assumption is evidence that the ticket body needs revision;
+take the existing not-ready path rather than redesigning the ticket here.
+
+While implementing, when `superpowers:test-driven-development` is available in
+the session skill listing, load it as the recommended method for producing the
+contracted evidence. It supplies method, not a gate: the evidence contract
+governs what the tests must demonstrate, and the precedence rule below resolves
+any conflict.
+
+When neither peer is in the listing, run the built-in behavior without comment.
+Peer absence changes nothing about what this skill requires.
 
 ### 3. Validate in layers
 
@@ -426,6 +457,46 @@ from feature failures. Do not claim completion while required validation or
 acceptance evidence is failing, missing, unavailable, stale, or
 category-mismatched.
 
+#### The change-demonstrating-test evidence contract
+
+Validation evidence carries one required change-demonstrating-test slot. Record
+which form applies, its identifier, and the observations that satisfy it.
+
+| Change                       | Required evidence                                                                                                                                          | Identifier                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| Feature work                 | behavioral tests encoding the ticket's acceptance criteria against the product's public surface, shown failing at the base SHA and passing at the head SHA | `evidence_behavioral_test`       |
+| Bug fix                      | a regression test reproducing the reported symptom, red at the base SHA and green at the head SHA                                                          | `evidence_regression_test`       |
+| Behavior-preserving refactor | the existing behavioral suite green at both base and head, with no behavioral-test changes needed                                                          | `evidence_refactor_preservation` |
+| Docs or config only          | no behavioral test; record the exemption itself                                                                                                            | `evidence_docs_config_exemption` |
+
+The two exemptions are named and closed. A change that alters observable
+behavior is not a refactor, and a change touching executable code is not
+docs-only, whatever the diff's shape suggests.
+
+**Anti-coupling.** The contracted tests assert surface behavior — API, CLI,
+observable output — never implementation internals. A test that would churn
+under a behavior-preserving refactor does not satisfy the slot. *Failure mode:*
+a test written against internals passes by construction, so it leaves the
+authored criterion unverified while appearing to cover it, and it turns every
+later behavior-preserving change into a rewrite — the suite ends up obstructing
+the change safety it was built to provide.
+
+**Precedence.** This contract and its exemptions supersede the absolutes of any
+loaded peer. Three conflicts are resolved here rather than per run:
+
+- a peer's universal red–green law versus the refactor exemption — the exemption
+  holds, and a behavior-preserving refactor needs no new behavioral test;
+- a peer's process law versus retroactive evidence — the slot requires the
+  base-failing and head-passing observations, so evidence produced after the
+  implementation satisfies it, even though writing the test first is far easier;
+  and
+- a peer's per-unit test checklist versus surface tests — surface behavior per
+  acceptance criterion is what this repository requires, because per-unit tests
+  against internals violate the anti-coupling rule above.
+
+A peer instruction to consult a human maps to the typed `blocked` result in an
+autonomous or delegated run rather than stalling.
+
 ### 4. Run bounded repository-owned review
 
 Follow [review and merge gates](references/review-and-merge-gates.md). Keep
@@ -436,9 +507,18 @@ intended solution, prior conclusions, and suspected findings.
 
 Apply only material ticket-scoped blocking and strong-recommendation findings.
 Preserve deferred findings without expanding scope. After a fix, rerun affected
-and required validation, commit a new head, rebuild the evidence, and follow the
+and required validation, rebuild the change-demonstrating-test evidence the fix
+invalidated, commit a new head, rebuild the evidence packet, and follow the
 suite's re-review instruction. Use at most three full fix/re-review cycles by
 default.
+
+When a fix fails repeatedly and `superpowers:systematic-debugging` is available
+in the session skill listing, load it as the recommended diagnosis method. Its
+architecture-escalation rule aligns with this section's final-cycle behavior:
+when material findings remain after the last cycle, preserve the candidate and
+return `blocked` with the unresolved evidence rather than continuing to patch.
+When the peer is not in the listing, diagnose from logs and evidence without
+comment.
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
 mutation, or unavailable required evidence as a failed local gate. The review

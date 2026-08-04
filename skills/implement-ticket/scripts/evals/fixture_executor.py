@@ -15,6 +15,19 @@ import os
 import re
 import sys
 
+# Change-demonstrating-test evidence slot. One identifier per change kind, so a
+# run that names no kind emits no evidence action and grades as missing it.
+EVIDENCE_ACTIONS = {
+    "feature": "evidence_behavioral_test",
+    "bug_fix": "evidence_regression_test",
+    "refactor": "evidence_refactor_preservation",
+    "docs_config": "evidence_docs_config_exemption",
+}
+
+
+def evidence_action(ticket: dict) -> str | None:
+    return EVIDENCE_ACTIONS.get(ticket.get("change_kind"))
+
 
 def compact(text: str) -> str:
     """Normalize whitespace so Markdown reflows do not break matching."""
@@ -605,6 +618,10 @@ def action_result(payload: dict) -> dict:
         )
     elif checks.get("classification") == "infrastructure":
         actions.extend(["retry_diagnosed_run_only", "make_no_code_mutation"])
+
+    slot = evidence_action(ticket)
+    if slot:
+        actions.append(slot)
 
     if not worktree.get("exclusive_owner", True):
         return {

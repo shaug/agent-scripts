@@ -47,6 +47,27 @@ binds the run to:
 - the caller's last consumed checkpoint sequence; and
 - an opaque continuation token.
 
+Required validation expectations include the change-demonstrating-test evidence
+slot that `implement-ticket` requires of every run. The delegate records which
+form applies — `evidence_behavioral_test`, `evidence_regression_test`,
+`evidence_refactor_preservation`, or `evidence_docs_config_exemption` — and the
+observations that satisfy it: behavioral tests encoding the ticket's acceptance
+criteria against the product's public surface, failing at the base SHA and
+passing at the head SHA for feature work; a regression test red at base and
+green at head for a bug fix; the existing behavioral suite green at both SHAs
+with no behavioral-test changes for a behavior-preserving refactor; or the
+recorded exemption for a docs-or-config-only change. Those tests assert surface
+behavior and never implementation internals, so a test that would churn under a
+behavior-preserving refactor does not satisfy the slot.
+
+This obligation is prose riding in the existing validation evidence; it adds no
+invocation or result field. It is peer-independent and supersedes the absolutes
+of any peer methodology skill loaded in the delegate's context — including a
+universal red–green law, which the two named exemptions override, and a per-unit
+test checklist, which the surface-behavior requirement overrides. A peer
+instruction to consult a human maps to the typed `blocked` result rather than
+stalling the delegation.
+
 The checkpoint command is an array of executable and argument strings. Agent
 Scripts sends one JSON checkpoint request on standard input and requires exactly
 one JSON checkpoint response on standard output. It does not invoke a shell,
