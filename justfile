@@ -107,6 +107,19 @@ eval-implement-ticket-claude:
   python3 {{skills_dir}}/implement-ticket/scripts/evals/run_forward.py \
     --executor "python3 {{skills_dir}}/implement-ticket/scripts/evals/claude_executor.py"
 
+# Run a skill's evaluations and record the summary as committed evidence under
+# skills/<skill>/evals/results/, per the eval-evidence norm in AGENTS.md.
+# Prefers the real-model forward-eval executor where the skill has one and
+# falls back to the deterministic tier with the gap recorded where it does not.
+# Deliberately excluded from `test`, `lint`, and `check`: the real-model tier
+# spends money, and the norm records evidence rather than gating CI.
+#
+# `{{args}}` is substituted textually before bash sees it, as in the other
+# executor recipes here, so an argument containing shell metacharacters needs
+# its own inner quotes: --note "'text with (parens)'".
+eval-record skill *args:
+  python3 scripts/record_eval_run.py "{{skill}}" {{args}}
+
 test-implement-epic:
   python3 -m unittest discover -s {{skills_dir}}/implement-epic/scripts/tests -p 'test_*.py'
 

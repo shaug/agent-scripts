@@ -4,7 +4,66 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge and wired `implement-ticket`'s not-ready dead end into it as a recommendation edge, then moved review-packet diff evidence and epic child dispatch onto files instead of inlined context
+## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge and wired `implement-ticket`'s not-ready dead end into it as a recommendation edge, moved review-packet diff evidence and epic child dispatch onto files instead of inlined context, then put the eval-evidence norm into force so a skill-prose change ships with a recorded run
+
+- feat(evals): institute the eval-evidence norm for skill-prose changes (issue
+  #135, epic #120, the epic's first leaf and the gate on its other two) — a
+  change to a skill's normative prose now ships with a recorded model-behavior
+  run. `AGENTS.md` gains the norm with its real-model-executor-where-one-exists
+  scope; `docs/skill-authoring.md`'s eval-backed change norm stops being a
+  placeholder pointing at this issue and states what the recorded evidence has
+  to be worth. The tool side is `scripts/record_eval_run.py` behind
+  `just eval-record <skill>`, which runs a skill's evaluations and writes one
+  JSON summary per run to `skills/<skill>/evals/results/`. Three properties of
+  that format exist because the alternative hides a regression rather than
+  surfacing it. Summaries carry **per-case** outcomes and a **diff against the
+  skill's previous recorded run**, not a pass percentage: a prose edit that
+  leaves the count identical while moving which cases pass has changed behavior,
+  and the count conceals exactly the movement worth recording. Each summary
+  names the **tier** that produced it, because a deterministic replay proves the
+  harness and corpus still agree with each other and cannot prove the edited
+  sentence still steers a model — no model read it — so a skill with no
+  real-model executor records the deterministic tier *plus* the gap text, and
+  the two tiers are never confusable in the evidence. And a run is recorded
+  under one of **three statuses**: `completed`, `failed`, and `attempted`, the
+  last reserved for evaluations that could not run at all. Review caught the
+  collapse of the middle one — a deterministic run that went red was being filed
+  as `attempted`, which is the path the norm mandates for eight of the ten
+  skills, and whose established reading is *evidence deferred, land the change
+  anyway*. That reading turns the exact regression the norm exists to catch into
+  a routine deferral notice, so `attempted` now means only that no evidence
+  could be collected, and a diff is drawn solely against a prior run of the same
+  tier that produced case outcomes — a cross-tier comparison reports the tier
+  change as behavioral movement, and one against an empty run reports "nothing
+  regressed" when nothing was compared. Filenames carry a per-directory sequence
+  after the timestamp: two runs recorded in the same second would otherwise sort
+  by stage name, which reverses a before/after pair and inverts its recorded
+  diff. A skill's evals are **registry data** — `implement-ticket` and
+  `implement-epic` real-model, `carve-changesets` and `review-fix-loop`
+  deterministic, all four already satisfying the per-case and aggregate
+  interface — and a skill with no corpus records nothing and states the gap in
+  its PR. Review rejected the earlier fallback to a skill's own unit tests: they
+  cannot observe `SKILL.md` prose, so for eight of the ten skills the norm would
+  have mandated committing a summary whose cases, totals, and diff were
+  structurally empty — a per-change obligation to duplicate `just test` in
+  exchange for evidence the norm itself calls insufficient. Results are
+  deliberately **not** a CI gate — a model-in-the-loop run is neither free nor
+  perfectly repeatable, so a required check over one spends money to buy
+  flakiness, and the first red run from ordinary variance trains everyone to
+  re-run it until it goes green. Runs are recorded from a committed, clean tree
+  and committed on top, so each summary's `candidate.sha` names a commit a later
+  reader can resolve rather than one amended away, and `worktree_clean` is left
+  unknown rather than asserted when git cannot be read. Adds
+  `.github/PULL_REQUEST_TEMPLATE.md` pointing at the norm, and fifteen
+  behavioral tests bound to the ticket's acceptance criteria, each observed
+  failing at base `8f3f0ad` and passing at head. The baselines are committed in
+  a follow-up commit on this branch, recorded from the clean tree at the code
+  commit. This candidate's own baseline is the norm's fallback path in practice
+  rather than in theory: the `claude` CLI was present but headless auth failed
+  with an OAuth-token-revoked 401, so the attempt is committed with its
+  diagnosis alongside a deterministic baseline passing 54/54, and the real-model
+  baseline is deferred to #145. A real-model adapter for `carve-changesets` is
+  deferred to #144
 
 - feat(implement-ticket): route not-ready blocked results to ready-ticket (issue
   #125, epic #118) — give `implement-ticket`'s not-ready `blocked` result a
@@ -33,6 +92,7 @@ summary: Chronological history of repository and skill changes.
   legend pointing at the owning section rather than restating its rules. Also
   corrects the README's plugin-installation count from nine skills to ten, stale
   since `ready-ticket` landed earlier today
+  (`ee4b8d7bdbf573fccc8c1b8dc11b937357e38604`)
 
 - feat(review-suite,skills): deliver review-packet and epic-dispatch context via
   files instead of inlined context (issue #130, epic #119, the epic's only
