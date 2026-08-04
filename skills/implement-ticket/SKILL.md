@@ -241,11 +241,18 @@ implement-epic
     ├── review-code-change          # initial candidate review
     ├── babysit-pr                  # ordinary single-PR lifecycle
     │   └── review-code-change      # after a head-changing fix
-    └── carve-changesets            # authority-gated oversized path
-        ├── review-code-change      # each exact changeset
-        └── babysit-pr              # each changeset PR lifecycle
-            └── review-code-change  # after a head-changing fix
+    ├── carve-changesets            # authority-gated oversized path
+    │   ├── review-code-change      # each exact changeset
+    │   └── babysit-pr              # each changeset PR lifecycle
+    │       └── review-code-change  # after a head-changing fix
+    ┊
+    ┈▷ ready-ticket                 # recommendation only, never invoked
 ```
+
+Solid edges are invocation. The dashed edge to `ready-ticket` is a
+recommendation this skill names in a not-ready `blocked` result and never calls;
+it is one-way, because `ready-ticket` terminates in a ticket body and never
+invokes `implement-ticket`.
 
 `babysit-pr` and `carve-changesets` must never invoke `implement-ticket`.
 `carve-changesets` must never invoke `implement-epic`. Do not re-enter this
@@ -328,6 +335,30 @@ available post-merge verification and tracker authority.
 When ticket editing is authorized, make an unclear ticket implementation-ready
 and re-read it. Otherwise stop with the missing decision rather than
 improvising.
+
+### Route a not-ready ticket to `ready-ticket`
+
+A ticket that fails the body-level conditions above — a missing observable goal,
+absent or unusable acceptance criteria, no non-goals or preserved behavior, no
+required verification, or an unresolved product, data, authorization, migration,
+destructive, or architecture decision — is not a dead end. Return `blocked` and
+name repository-owned `ready-ticket` as the remediation path, including the
+stable marker `implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>`.
+
+This is a recommendation, not a dispatch. Never invoke `ready-ticket`, run its
+elicitation, or author the ticket body from inside this skill; the caller
+decides whether to run it. Report which body-level conditions failed so the
+caller hands `ready-ticket` a concrete gap rather than the whole ticket.
+
+The edge is one-way by construction: `ready-ticket` terminates in a ticket body
+and must never invoke `implement-ticket`, so the recommendation cannot form a
+cycle. If the incoming handoff already carries this same marker, return
+`blocked` with a routing-cycle reason instead of recommending it again.
+
+A blocker other than body readiness — an unresolved native dependency, a missing
+prerequisite outcome, an absent authority, or a competing canonical candidate —
+keeps its own `blocked` reason and does not carry this marker. `ready-ticket`
+cannot repair any of those.
 
 ## Execute one ticket
 

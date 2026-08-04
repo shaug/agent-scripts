@@ -4,7 +4,31 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge, then moved review-packet diff evidence and epic child dispatch onto files instead of inlined context
+## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge and wired `implement-ticket`'s not-ready dead end into it as a recommendation edge, then moved review-packet diff evidence and epic child dispatch onto files instead of inlined context
+
+- feat(implement-ticket): route not-ready blocked results to ready-ticket (issue
+  #125, epic #118) — give `implement-ticket`'s not-ready `blocked` result a
+  sanctioned next step instead of a dead end. A ticket that fails the body-level
+  readiness conditions now returns `blocked` naming repository-owned
+  `ready-ticket` and carrying the stable marker
+  `implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>`, in the same
+  form as the existing `requires-epic` marker, so contract tests can assert its
+  exact shape and a caller can detect a routing loop. The edge is a
+  **recommendation, not a dispatch**: `implement-ticket` never invokes
+  `ready-ticket`, never runs its elicitation, and never authors a body itself —
+  the caller decides — which is what keeps the authority boundary and the
+  readiness bar unchanged. It is one-way by construction, because `ready-ticket`
+  terminates in a ticket body and never invokes `implement-ticket`, so no cycle
+  can form; the incoming-marker check returns a routing-cycle `blocked` rather
+  than recommending again. Only body readiness carries the marker: an unresolved
+  native dependency, a missing prerequisite outcome, an absent authority, or a
+  competing canonical candidate keeps its own blocked reason, because
+  `ready-ticket` cannot repair any of those. Both dependency-documentation
+  surfaces — the README chain and `implement-ticket`'s own dependency prose —
+  now render the recommendation as a dashed `┈▷` edge annotated "recommendation
+  only, never invoked", with solid edges reserved for invocation. Also corrects
+  the README's plugin-installation count from nine skills to ten, stale since
+  `ready-ticket` landed earlier today
 
 - feat(review-suite,skills): deliver review-packet and epic-dispatch context via
   files instead of inlined context (issue #130, epic #119, the epic's only
@@ -57,8 +81,7 @@ summary: Chronological history of repository and skill changes.
   that skill's secondary registry entry. Adds a `missing-diff-evidence-file`
   orchestration eval case proving the fail-closed path, and twelve behavioral
   tests bound to the ticket's acceptance criteria, each observed failing at base
-  `73f1aa8` and passing at head
-
+  `73f1aa8` and passing at head (`8f3f0adb7607ff1e4a880b224c8eff475c28fbb2`)
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add
   `skills/ready-ticket`, which turns a vague idea or an unready GitHub or Linear
