@@ -32,8 +32,10 @@ changes that alter no obligation do not.
   and after the change and commit both summaries. `implement-ticket` is the
   skill this covers today; `implement-epic` is covered through the same corpus.
 - **Where one does not**, record the skill's deterministic corpus replay —
-  `carve-changesets` and `review-fix-loop` have one. Its summary carries the gap
-  text stating that no model read the prose.
+  `carve-changesets` and `review-fix-loop` have one. Any deterministic run
+  carries gap text stating that no model read the prose, whether or not a
+  real-model executor exists for that skill: the gap describes what the run
+  collected, not what the registry offers.
 - **Where the skill has no corpus at all**, `just eval-record` says so instead
   of recording something. State that gap in the pull request. Do not substitute
   the skill's unit tests: they cannot observe `SKILL.md` prose, so a summary
@@ -47,14 +49,34 @@ just eval-record implement-ticket --stage before
 
 Summaries land in `skills/<skill>/evals/results/` as one JSON file per run,
 carrying the recorded date, the tier and exact executor command, the candidate
-SHA, per-case pass/fail, and the diff against that skill's previous recorded run
-of the same tier. They are committed evidence, not a CI gate; no check blocks on
-them.
+SHA, per-case pass/fail, each case's own observation, and the diff against that
+skill's previous recorded run. They are committed evidence, not a CI gate; no
+check blocks on them.
+
+A run also names its **suite**. `forward` asks whether a skill's prose governs
+behavior once the skill is loaded; `triggering` asks the prior question, whether
+it is the one that loads at all — `just eval-record <skill> --suite triggering`,
+with `triggering/` owning that corpus. A non-forward suite is part of the
+summary's filename, and a diff is scoped to the same tier **and** the same
+suite, because comparing across either reports a change of question as
+behavioral movement.
+
+Per-case observations are recorded rather than reduced to pass/fail, because a
+tier may report more than an outcome — the triggering corpus's description tier
+reports how many of its repetitions agreed. Variance is the metric there, and a
+case degrading from unanimous to a bare majority still records `pass`.
 
 Record from a committed, clean tree, so the summary's `candidate.sha` names a
 commit a later reader can resolve, and commit the summaries on top. A run
 recorded from a dirty tree — or from a commit later amended away — names a tree
 nobody else can retrieve, which is the one thing the record exists to supply.
+
+Summaries already written under `evals/results/` are the one exemption, and it
+is narrow by construction. Recording several skills in sequence writes a summary
+per skill, so without the exemption only the first run of a batch could report a
+clean tree and every later one would carry false dirt. Sibling evidence cannot
+change what an eval read. Any other uncommitted change still makes a run
+unclean.
 
 Each run records one of three statuses. `completed` and `failed` both mean the
 evaluations ran, and a `failed` run commits its failures. `attempted` means they

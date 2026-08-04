@@ -14,6 +14,7 @@ import importlib.util
 import io
 import json
 import shlex
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -200,6 +201,63 @@ class RecorderTests(unittest.TestCase):
         self.assertEqual(summary["exit_code"], 1)
         self.assertTrue(summary["failures"])
 
+    def test_a_cases_own_observation_survives_into_the_summary(self) -> None:
+        """Variance is the metric, so pass/fail alone is not enough evidence.
+
+        A case degrading from unanimous to a bare majority still records
+        `pass`; without the case's own observation the recorded baseline
+        cannot show that movement.
+        """
+        harness = self.root / "voting_harness.py"
+        harness.write_text(
+            "import json, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "d = pathlib.Path(args[args.index('--output-dir') + 1])\n"
+            "(d / 'alpha.json').write_text(json.dumps({'agreement': 0.6}))\n"
+            "print(json.dumps({'total': 1, 'passed': 1, 'failed': 0, 'failures': []}))\n",
+            encoding="utf-8",
+        )
+
+        self.run_recorder(
+            "demo-skill",
+            "--command",
+            shlex.join([sys.executable, str(harness)]),
+            "--per-case-output-dir",
+        )
+
+        summary = self.read_only_summary("demo-skill")
+        self.assertEqual(summary["cases"], {"alpha": "pass"})
+        self.assertEqual(summary["case_evidence"]["alpha"]["agreement"], 0.6)
+
+    def test_forward_evals_describes_the_forward_suite_under_any_suite(self) -> None:
+        """The field means "this skill has a real-model *forward* executor".
+
+        Asserted on the written summary, and with a discriminating pair: both
+        skills are recorded under the triggering suite, where both have a
+        real-model entry. A suite-relative implementation reports True for
+        both, which is the defect that made eight triggering summaries claim a
+        forward executor their skill does not have.
+        """
+        for skill, expected in (
+            ("implement-ticket", True),
+            ("carve-changesets", False),
+        ):
+            with self.subTest(skill=skill):
+                (self.skills / skill / "evals").mkdir(parents=True, exist_ok=True)
+                self.run_recorder(
+                    skill,
+                    "--suite",
+                    "triggering",
+                    "--command",
+                    self.stub(passed=["alpha"], failed=[]),
+                    "--per-case-output-dir",
+                )
+                summary = json.loads(
+                    self.results(skill)[-1].read_text(encoding="utf-8")
+                )
+                self.assertEqual(summary["suite"], "triggering")
+                self.assertIs(summary["forward_evals"], expected)
+
     # A diff is only meaningful against a comparable run: same tier, and one
     # that actually produced case outcomes.
     def test_diff_is_not_drawn_against_an_incomparable_run(self) -> None:
@@ -266,7 +324,8 @@ class RecorderTests(unittest.TestCase):
         summary = self.read_only_summary("tested-skill")
         self.assertEqual(summary["tier"], "deterministic")
         self.assertFalse(summary["forward_evals"])
-        self.assertIn("no real-model executor", summary["gap"])
+        self.assertIn("no model read the prose", summary["gap"])
+        self.assertIn("No real-model executor is registered", summary["gap"])
 
     # A skill with no registered corpus records nothing: substituting its unit
     # tests would commit a summary with no cases, totals, or diff.
@@ -330,8 +389,60 @@ class NormIsStatedTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         resolved = json.loads(stdout.getvalue())
         self.assertEqual(resolved["tier"], "deterministic")
-        self.assertIn("no real-model executor", resolved["gap"])
+        self.assertIn("No real-model executor is registered", resolved["gap"])
         self.assertIn("carve-changesets", " ".join(resolved["command"]))
+
+    def test_deterministic_run_states_the_gap_even_where_a_model_tier_exists(
+        self,
+    ) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            record_eval_run.main(
+                ["implement-ticket", "--tier", "deterministic", "--dry-run"]
+            )
+
+        resolved = json.loads(stdout.getvalue())
+        self.assertEqual(resolved["tier"], "deterministic")
+        self.assertIn("no model read the prose", resolved["gap"])
+        self.assertNotIn("No real-model executor is registered", resolved["gap"])
+
+    def test_a_previous_summary_does_not_make_the_next_run_look_dirty(self) -> None:
+        """Recording several skills in sequence must not report false dirt.
+
+        Each summary is itself a file in the tree, so without the exemption
+        only the first run of a batch could ever report a clean worktree.
+        """
+        status = "?? skills/babysit-pr/evals/results/2026-01-01T000000Z-0001-x.json\n"
+        with mock.patch.object(
+            record_eval_run.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, status, ""),
+        ):
+            identity = record_eval_run.candidate_identity()
+
+        self.assertTrue(identity["worktree_clean"])
+
+    def test_real_dirt_still_makes_a_run_unclean(self) -> None:
+        status = " M scripts/record_eval_run.py\n"
+        with mock.patch.object(
+            record_eval_run.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, status, ""),
+        ):
+            identity = record_eval_run.candidate_identity()
+
+        self.assertFalse(identity["worktree_clean"])
+
+    def test_suite_selects_the_registry_and_is_recorded(self) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            record_eval_run.main(
+                ["implement-ticket", "--suite", "triggering", "--dry-run"]
+            )
+        resolved = json.loads(stdout.getvalue())
+
+        self.assertEqual(resolved["suite"], "triggering")
+        self.assertIn("triggering/runner.py", " ".join(resolved["command"]))
 
     def test_just_exposes_the_recorder_as_eval_record(self) -> None:
         justfile = (REPOSITORY_ROOT / "justfile").read_text(encoding="utf-8")

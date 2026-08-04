@@ -1,0 +1,227 @@
+{
+  "schema": "triggering-corpus/1",
+  "skills": [
+    "babysit-pr",
+    "carve-changesets",
+    "implement-epic",
+    "implement-ticket",
+    "ready-ticket",
+    "review-code-change",
+    "review-code-simplicity",
+    "review-correctness",
+    "review-fix-loop",
+    "review-solution-simplicity"
+  ],
+  "cases": [
+    {
+      "id": "babysit-pr-positive-watch",
+      "skill": "babysit-pr",
+      "kind": "positive",
+      "prompt": "Watch PR 482 and let me know when it's ready to merge."
+    },
+    {
+      "id": "babysit-pr-positive-green",
+      "skill": "babysit-pr",
+      "kind": "positive",
+      "prompt": "CI is red on my open pull request \u2014 drive it to green and merge it when the checks pass."
+    },
+    {
+      "id": "babysit-pr-positive-babysit",
+      "skill": "babysit-pr",
+      "kind": "positive",
+      "prompt": "Babysit this PR until it closes."
+    },
+    {
+      "id": "babysit-pr-negative-plan",
+      "skill": "babysit-pr",
+      "kind": "negative",
+      "prompt": "Help me plan out how to restructure the payments module."
+    },
+    {
+      "id": "babysit-pr-collision-before-merging",
+      "skill": "babysit-pr",
+      "kind": "collision",
+      "prompt": "Before merging, give this a proper review."
+    },
+    {
+      "id": "babysit-pr-negative-debug",
+      "skill": "babysit-pr",
+      "kind": "negative",
+      "prompt": "This test fails intermittently and I can't work out why \u2014 walk me through diagnosing it."
+    },
+    {
+      "id": "carve-changesets-positive-split",
+      "skill": "carve-changesets",
+      "kind": "positive",
+      "prompt": "This branch is way too big for one pull request. Split it into a stack of reviewable changesets."
+    },
+    {
+      "id": "carve-changesets-positive-stack",
+      "skill": "carve-changesets",
+      "kind": "positive",
+      "prompt": "Carve my branch into stacked PRs and propagate them as each one merges."
+    },
+    {
+      "id": "carve-changesets-negative-brainstorm",
+      "skill": "carve-changesets",
+      "kind": "negative",
+      "prompt": "Let's brainstorm some ideas for how the onboarding flow could work."
+    },
+    {
+      "id": "carve-changesets-negative-tdd",
+      "skill": "carve-changesets",
+      "kind": "negative",
+      "prompt": "Use test-driven development to build the rate limiter \u2014 write the failing test first."
+    },
+    {
+      "id": "implement-epic-positive-epic",
+      "skill": "implement-epic",
+      "kind": "positive",
+      "prompt": "Work through epic 120 and its sub-issues."
+    },
+    {
+      "id": "implement-epic-positive-parent",
+      "skill": "implement-epic",
+      "kind": "positive",
+      "prompt": "This parent issue has six sub-issues \u2014 sequence them through their dependency graph."
+    },
+    {
+      "id": "implement-epic-positive-subset",
+      "skill": "implement-epic",
+      "kind": "positive",
+      "prompt": "Implement just the first two children of LIN-330, in dependency order."
+    },
+    {
+      "id": "implement-epic-negative-plan",
+      "skill": "implement-epic",
+      "kind": "negative",
+      "prompt": "Draft me a rollout plan for the migration."
+    },
+    {
+      "id": "implement-ticket-positive-numbered",
+      "skill": "implement-ticket",
+      "kind": "positive",
+      "prompt": "Implement ticket 412."
+    },
+    {
+      "id": "implement-ticket-positive-issue",
+      "skill": "implement-ticket",
+      "kind": "positive",
+      "prompt": "Take issue #77 from open to merged."
+    },
+    {
+      "id": "implement-ticket-positive-fix",
+      "skill": "implement-ticket",
+      "kind": "positive",
+      "prompt": "Fix the bug described in LIN-902 and open a PR for it."
+    },
+    {
+      "id": "implement-ticket-negative-tdd",
+      "skill": "implement-ticket",
+      "kind": "negative",
+      "prompt": "Walk me through the red-green-refactor loop for this parser."
+    },
+    {
+      "id": "implement-ticket-negative-debug",
+      "skill": "implement-ticket",
+      "kind": "negative",
+      "prompt": "Something's wrong with the cache and I want to debug it systematically."
+    },
+    {
+      "id": "ready-ticket-positive-vague",
+      "skill": "ready-ticket",
+      "kind": "positive",
+      "prompt": "I have a vague idea for a feature \u2014 turn it into a ticket I can hand to someone."
+    },
+    {
+      "id": "ready-ticket-positive-sharpen",
+      "skill": "ready-ticket",
+      "kind": "positive",
+      "prompt": "This issue has no acceptance criteria and the goal is fuzzy. Make it implementation-ready."
+    },
+    {
+      "id": "ready-ticket-negative-implement",
+      "skill": "ready-ticket",
+      "kind": "negative",
+      "prompt": "Implement ticket 412."
+    },
+    {
+      "id": "ready-ticket-negative-brainstorm",
+      "skill": "ready-ticket",
+      "kind": "negative",
+      "prompt": "Let's brainstorm what the product should even do here \u2014 I don't know what I want yet."
+    },
+    {
+      "id": "review-code-change-positive-review",
+      "skill": "review-code-change",
+      "kind": "positive",
+      "prompt": "Run a code review on this branch."
+    },
+    {
+      "id": "review-code-change-positive-collision",
+      "skill": "review-code-change",
+      "kind": "collision",
+      "prompt": "Review my change."
+    },
+    {
+      "id": "review-code-change-positive-before-merging",
+      "skill": "review-code-change",
+      "kind": "collision",
+      "prompt": "Before merging, give this a proper review."
+    },
+    {
+      "id": "review-code-change-negative-plan",
+      "skill": "review-code-change",
+      "kind": "negative",
+      "prompt": "Plan the refactor of the notification service for me."
+    },
+    {
+      "id": "review-code-simplicity-positive",
+      "skill": "review-code-simplicity",
+      "kind": "positive",
+      "prompt": "Look at this diff for duplication and unnecessary control flow I could simplify locally."
+    },
+    {
+      "id": "review-code-simplicity-negative-suite",
+      "skill": "review-code-simplicity",
+      "kind": "collision",
+      "prompt": "Review my change."
+    },
+    {
+      "id": "review-correctness-positive",
+      "skill": "review-correctness",
+      "kind": "positive",
+      "prompt": "Check this patch for bugs and security problems against what it says it does."
+    },
+    {
+      "id": "review-correctness-negative-debug",
+      "skill": "review-correctness",
+      "kind": "negative",
+      "prompt": "Help me debug why this function returns the wrong value at runtime."
+    },
+    {
+      "id": "review-fix-loop-positive",
+      "skill": "review-fix-loop",
+      "kind": "positive",
+      "prompt": "Keep reviewing and fixing this candidate until the review comes back clean."
+    },
+    {
+      "id": "review-fix-loop-negative-single",
+      "skill": "review-fix-loop",
+      "kind": "collision",
+      "prompt": "Run a code review on this branch."
+    },
+    {
+      "id": "review-solution-simplicity-positive",
+      "skill": "review-solution-simplicity",
+      "kind": "positive",
+      "prompt": "Is this design over-engineered for what the ticket actually asked for?"
+    },
+    {
+      "id": "review-solution-simplicity-negative-plan",
+      "skill": "review-solution-simplicity",
+      "kind": "negative",
+      "prompt": "Brainstorm a simpler architecture with me from scratch."
+    }
+  ]
+}

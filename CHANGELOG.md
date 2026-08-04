@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
@@ -52,6 +52,56 @@ summary: Chronological history of repository and skill changes.
   records. `babysit-pr` has no registered eval corpus, so `just eval-record`
   records nothing for it and that gap is stated rather than papered over with
   its unit tests, which cannot observe `SKILL.md` prose
+
+- feat(evals): build the triggering-and-composition test corpus (issue #136,
+  epic #120, the epic's second leaf) — forward evals ask whether a skill's prose
+  governs behavior once it is loaded; this corpus asks the prior question,
+  whether it is the one that loads at all. `triggering/corpus.json` carries 35
+  prompts across all ten skills: positive prompts each must claim, negative
+  prompts it must not, and the named collision prompts — "Review my change." and
+  "Before merging, give this a proper review." filed from both sides, and
+  "Implement ticket 412." filed from both `implement-ticket` and `ready-ticket`
+  so the pair must agree on who wins. The answer key lives apart in
+  `expectations.json`, and the runner enforces the separation structurally: an
+  executor receives the prompt and the catalog of live skill descriptions and
+  nothing else — no case id, no `kind`, no filed-under skill — with a test
+  asserting that payload shape. The catalog is read from the `SKILL.md` files
+  rather than copied, so the corpus cannot drift out of agreement with the
+  descriptions it tests. Three tiers, each declaring itself in every recorded
+  result: `headless` observes which skill a real session loaded, `description`
+  asks a model to route from the catalog, and `fixture` is a rule table that
+  exercises the harness and reads nothing. The fallback applies to the whole
+  runner rather than to collisions alone because whether headless output
+  reliably reports skill invocation is unverified, and the headless executor
+  fails loudly instead of answering "no skill" when it cannot tell — recording
+  an unobservable invocation as `none` would silently pass every negative case.
+  The `description` tier follows #122's micro-test protocol: five repetitions in
+  independent processes, majority wins, agreement fraction recorded so a 3/5
+  result is never reported as 5/5. Writing the corpus surfaced a modelling error
+  worth recording: a negative case asserts which skill must *not* win, which is
+  not the same as asserting that nothing wins — "Implement ticket 412." is a
+  negative for `ready-ticket` whose correct answer is `implement-ticket`, and
+  the first draft's answer key said `none`. Peer-dependent expectations moved to
+  the composition cases for the same reason: this tier's catalog contains only
+  what is installed, so an absent peer cannot be picked and an expectation
+  naming it would fail for install state rather than for routing. Recording goes
+  through #135's convention rather than a second format: `record_eval_run.py`
+  gains a `--suite` dimension, diffs never cross suites, and filenames carry the
+  suite. Seven composition cases cover the four seams named in shipped prose;
+  none could run, and each records the real reason — no composition harness
+  exists, because this runner grades routing from a description catalog while a
+  composition case needs a real session with the peer installed. Provisioning is
+  a second, independent blocker wherever superpowers is required; it is not one
+  for the `load-bearing` case, which makes that the cheapest seam to cover
+  first. An earlier draft blamed an expired OAuth session instead, which this
+  change's own recorded runs disprove — review caught it, and the corrected gaps
+  say what is actually missing. The description tier records 35/35 with every
+  case unanimous at five repetitions, and per-case agreement and vote counts are
+  preserved, which is how a previously observed 4/5 pull from planning language
+  toward `ready-ticket` could be shown not to reproduce and marked as such
+  rather than shipped as a standing overlap. Twenty-one behavioral tests bound
+  to the ticket's acceptance criteria, wired into `just test` and CI, each
+  observed failing at the state it guards
 
 - feat(implement-ticket): add the behavioral-test evidence contract and peer
   methodology slots (issue #126, epic #118) — give the implementation phase a
