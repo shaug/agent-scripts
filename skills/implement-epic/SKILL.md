@@ -234,6 +234,11 @@ of them as delivered. Each child's gates ran against its own candidate in
 isolation; nothing has yet exercised the combination, and non-overlap analysis
 predicts independence rather than demonstrating it.
 
+That verification habit is ported with attribution from superpowers'
+`dispatching-parallel-agents`. Only the habit is adapted: this skill dispatches
+one child per verified worktree through `implement-ticket` and gains none of
+that peer's fan-out mechanics.
+
 ### 4. Verify the terminal result
 
 Do not trust a reported result until ticket identity, repository, base,

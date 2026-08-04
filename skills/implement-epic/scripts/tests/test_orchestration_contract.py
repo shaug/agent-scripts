@@ -212,6 +212,15 @@ class ImplementEpicContractTests(unittest.TestCase):
         )
         self.assertIn("nothing has yet exercised the combination", self.contract)
 
+    def test_ported_habit_records_its_source_at_the_seam(self):
+        # The named-peer registry admits a peer by its entry plus the seam
+        # references that use it, so the ported habit records its source here.
+        self.assertIn(
+            "ported with attribution from superpowers' `dispatching-parallel-agents`",
+            self.contract,
+        )
+        self.assertIn("gains none of that peer's fan-out mechanics", self.contract)
+
     def test_tier_guidance_names_no_product_or_model(self):
         for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
             self.assertNotIn(banned, self.contract.lower())
