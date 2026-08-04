@@ -249,10 +249,8 @@ implement-epic
     ┈▷ ready-ticket                 # recommendation only, never invoked
 ```
 
-Solid edges are invocation. The dashed edge to `ready-ticket` is a
-recommendation this skill names in a not-ready `blocked` result and never calls;
-it is one-way, because `ready-ticket` terminates in a ticket body and never
-invokes `implement-ticket`.
+Solid edges are invocation. The dashed edge is a recommendation, governed by
+[Route a not-ready ticket to `ready-ticket`](#route-a-not-ready-ticket-to-ready-ticket).
 
 `babysit-pr` and `carve-changesets` must never invoke `implement-ticket`.
 `carve-changesets` must never invoke `implement-epic`. Do not re-enter this

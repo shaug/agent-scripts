@@ -29,9 +29,10 @@ summary: Chronological history of repository and skill changes.
   `ready-ticket` cannot repair any of those. Both dependency-documentation
   surfaces — the README chain and `implement-ticket`'s own dependency prose —
   now render the recommendation as a dashed `┈▷` edge annotated "recommendation
-  only, never invoked", with solid edges reserved for invocation. Also corrects
-  the README's plugin-installation count from nine skills to ten, stale since
-  `ready-ticket` landed earlier today
+  only, never invoked", with solid edges reserved for invocation and the diagram
+  legend pointing at the owning section rather than restating its rules. Also
+  corrects the README's plugin-installation count from nine skills to ten, stale
+  since `ready-ticket` landed earlier today
 
 - feat(review-suite,skills): deliver review-packet and epic-dispatch context via
   files instead of inlined context (issue #130, epic #119, the epic's only

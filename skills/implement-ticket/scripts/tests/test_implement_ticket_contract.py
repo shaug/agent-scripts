@@ -142,6 +142,15 @@ class ImplementTicketContractTests(unittest.TestCase):
         )
         self.assertIn("`ready-ticket` cannot repair any of those", self.skill_compact)
 
+    def test_each_recommendation_edge_rule_has_exactly_one_owner(self):
+        """One owner per rule, so a later narrowing cannot strand a stale copy."""
+        self.assertEqual(1, self.skill_compact.count("Never invoke `ready-ticket`"))
+        self.assertEqual(1, self.skill_compact.count("terminates in a ticket body"))
+        # The diagram legend points at the owning section instead of restating it.
+        self.assertIn(
+            "The dashed edge is a recommendation, governed by", self.skill_compact
+        )
+
     def test_dependency_surfaces_annotate_the_recommendation_edge(self):
         readme = compact(read(REPOSITORY_ROOT / "README.md"))
         for surface in (self.skill_compact, readme):
