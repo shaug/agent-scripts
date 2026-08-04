@@ -47,6 +47,50 @@ binds the run to:
 - the caller's last consumed checkpoint sequence; and
 - an opaque continuation token.
 
+Required validation expectations include the change-demonstrating-test evidence
+slot that `implement-ticket` requires of every run. The delegate records which
+form applies — `evidence_behavioral_test`, `evidence_regression_test`,
+`evidence_refactor_preservation`, or `evidence_docs_config_exemption` — and the
+observations that satisfy it: behavioral tests encoding the ticket's acceptance
+criteria against the product's public surface, failing at the base SHA and
+passing at the head SHA for feature work; a regression test red at base and
+green at head for a bug fix; the existing behavioral suite green at both SHAs
+with no behavioral-test changes for a behavior-preserving refactor; or the
+recorded exemption for a docs-or-config-only change. Those tests assert surface
+behavior and never implementation internals, so a test that would churn under a
+behavior-preserving refactor does not satisfy the slot.
+
+Encode the slot inside the existing observation shape. Two bundled-validator
+rules constrain it, and a violation of either blocks execution: no
+`$.validation` entry may carry a `candidate_sha` other than the candidate head
+SHA or `null`, and no two entries may share a byte-identical `name`. The
+base-failing observation therefore cannot be bound to the base SHA; name that
+SHA instead.
+
+Two encodings satisfy both rules without any schema change, and a delegate may
+use either:
+
+- one entry whose `name` carries the identifier and both observations, bound to
+  the candidate head SHA; or
+- two entries with distinct names, where the base-failing entry leaves
+  `candidate_sha` as `null` and the head-passing entry is bound to the head SHA.
+
+When the caller also lists the slot identifier among its required validation
+commands, that entry is additionally bound by the delivery-terminal rule: its
+`name` must equal the caller's command string exactly and its `candidate_sha`
+must be the head SHA, so a composed name is rejected there. Carry the
+base-failing observation in a second, differently named entry in that case.
+
+This obligation is prose riding in the existing validation evidence; it adds no
+invocation or result field. It is peer-independent and supersedes the absolutes
+of any peer methodology skill loaded in the delegate's context — including a
+universal red–green law, which the two named exemptions override; a process law
+requiring the test first, since the slot requires the base-failing and
+head-passing observations and evidence produced after the implementation
+satisfies it; and a per-unit test checklist, which the surface-behavior
+requirement overrides. A peer instruction to consult a human maps to the typed
+`blocked` result rather than stalling the delegation.
+
 The checkpoint command is an array of executable and argument strings. Agent
 Scripts sends one JSON checkpoint request on standard input and requires exactly
 one JSON checkpoint response on standard output. It does not invoke a shell,

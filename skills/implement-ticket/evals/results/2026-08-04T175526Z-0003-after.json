@@ -1,0 +1,35 @@
+{
+  "candidate": {
+    "branch": "scott/126-behavioral-test-evidence",
+    "sha": "34249d621e5deb6e7cc0bf0446686229ce5d5714",
+    "worktree_clean": true
+  },
+  "cases": {},
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "skills/implement-ticket/scripts/evals/run_forward.py",
+    "--executor",
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3 skills/implement-ticket/scripts/evals/claude_executor.py"
+  ],
+  "compared_to": null,
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 0
+  },
+  "exit_code": 1,
+  "failures": [],
+  "forward_evals": true,
+  "gap": null,
+  "limitation": "eval command exited 1 without an aggregate summary; model-behavior evidence not collected",
+  "note": "After-stage run for issue #126, which adds the change-demonstrating-test evidence contract and three availability-conditioned peer methodology slots to implement-ticket's normative prose. Real-model tier attempted; the environment's claude CLI still fails headless auth, the same limitation the #135 baseline recorded and deferred to issue #145. Model-behavior evidence for this change is deferred to the first capable run.",
+  "output_tail": "\u2026 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-126-evidence/skills/implement-ticket/scripts/evals/run_forward.py\", line 50, in run_executor\n    raise RuntimeError(\nRuntimeError: executor exited 1: Traceback (most recent call last):\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-126-evidence/skills/implement-ticket/scripts/evals/claude_executor.py\", line 264, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-126-evidence/skills/implement-ticket/scripts/evals/claude_executor.py\", line 257, in main\n    observed = run_claude(build_prompt(payload), args.claude_bin, args.model)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-126-evidence/skills/implement-ticket/scripts/evals/claude_executor.py\", line 214, in run_claude\n    return extract_json_object(result_text)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-126-evidence/skills/implement-ticket/scripts/evals/claude_executor.py\", line 192, in extract_json_object\n    return json.loads(candidate[start : end + 1])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/decoder.py\", line 353, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\njson.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 2024 (char 2023)",
+  "recorded_at": "2026-08-04T17:55:26Z",
+  "schema": "eval-run-summary/1",
+  "skill": "implement-ticket",
+  "stage": "after",
+  "status": "attempted",
+  "tier": "real-model",
+  "totals": null
+}

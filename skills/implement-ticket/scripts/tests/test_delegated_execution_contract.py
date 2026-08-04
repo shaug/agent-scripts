@@ -1077,5 +1077,122 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         self.assertIn("versioned delegated-execution contract", result_reference)
 
 
+class EvidenceSlotEncodingTests(unittest.TestCase):
+    """The documented encodings must actually pass the bundled validator.
+
+    Asserting against the validator rather than against its error strings is
+    the point: prose describing rules the validator does not implement reads as
+    verified while being false.
+    """
+
+    BASE_SHA = "a" * 40
+
+    def setUp(self):
+        self.validator = load_validator()
+        self.invocation = invocation()
+        self.result = result()
+        self.head = self.result["candidate"]["head_sha"]
+        self.baseline = set(
+            self.validator.validate_result_for_invocation(self.invocation, self.result)
+        )
+
+    def added_errors(self, entries, extra_required=None):
+        invocation_copy = copy.deepcopy(self.invocation)
+        result_copy = copy.deepcopy(self.result)
+        if extra_required:
+            invocation_copy["validation"] = list(invocation_copy["validation"]) + [
+                extra_required
+            ]
+        result_copy["validation"] = list(result_copy["validation"]) + entries
+        errors = self.validator.validate_result_for_invocation(
+            invocation_copy, result_copy
+        )
+        return sorted(set(errors) - self.baseline)
+
+    def observation(self, name, outcome, candidate_sha):
+        return {
+            "name": name,
+            "outcome": outcome,
+            "candidate_sha": candidate_sha,
+            "observed_at": "2026-08-04T00:00:00Z",
+        }
+
+    def test_single_entry_encoding_is_accepted(self):
+        self.assertEqual(
+            [],
+            self.added_errors(
+                [
+                    self.observation(
+                        "evidence_behavioral_test: failed at base, passed at head",
+                        "passed",
+                        self.head,
+                    )
+                ]
+            ),
+        )
+
+    def test_two_entry_encoding_with_unbound_base_is_accepted(self):
+        self.assertEqual(
+            [],
+            self.added_errors(
+                [
+                    self.observation(
+                        f"evidence_behavioral_test failing at base {self.BASE_SHA}",
+                        "failed",
+                        None,
+                    ),
+                    self.observation(
+                        "evidence_behavioral_test passing at head",
+                        "passed",
+                        self.head,
+                    ),
+                ]
+            ),
+        )
+
+    def test_base_sha_binding_is_rejected(self):
+        errors = self.added_errors(
+            [
+                self.observation(
+                    "evidence_behavioral_test at base", "failed", self.BASE_SHA
+                )
+            ]
+        )
+        self.assertTrue(any("candidate mismatch" in error for error in errors), errors)
+
+    def test_byte_identical_names_are_rejected(self):
+        errors = self.added_errors(
+            [
+                self.observation("evidence_behavioral_test", "failed", None),
+                self.observation("evidence_behavioral_test", "passed", self.head),
+            ]
+        )
+        self.assertTrue(
+            any("duplicate observation names" in error for error in errors), errors
+        )
+
+    def test_caller_named_slot_requires_the_exact_command_name(self):
+        composed = self.added_errors(
+            [
+                self.observation(
+                    "evidence_behavioral_test: failed at base, passed at head",
+                    "passed",
+                    self.head,
+                )
+            ],
+            extra_required="evidence_behavioral_test",
+        )
+        self.assertTrue(
+            any("evidence_behavioral_test" in error for error in composed), composed
+        )
+        self.assertEqual(
+            [],
+            self.added_errors(
+                [self.observation("evidence_behavioral_test", "passed", self.head)],
+                extra_required="evidence_behavioral_test",
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

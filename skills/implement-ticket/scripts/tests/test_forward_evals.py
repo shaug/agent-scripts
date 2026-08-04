@@ -50,7 +50,7 @@ class ForwardEvaluationTests(unittest.TestCase):
             "worktree",
             "handoff",
         }
-        self.assertEqual(54, len(self.cases))
+        self.assertEqual(58, len(self.cases))
         for case in self.cases:
             self.assertEqual(required, set(case["artifacts"]), case["id"])
 
@@ -105,9 +105,9 @@ class ForwardEvaluationTests(unittest.TestCase):
             [sys.executable, str(EXECUTOR_PATH)],
         )
         self.assertEqual([], failures)
-        self.assertEqual(54, len(observations))
+        self.assertEqual(58, len(observations))
         process_ids = {result["executor_pid"] for result in observations.values()}
-        self.assertEqual(54, len(process_ids))
+        self.assertEqual(58, len(process_ids))
 
     def test_reference_executor_evaluates_the_supplied_skill_prompt(self):
         payload = RUNNER.build_payload(self.cases[2])

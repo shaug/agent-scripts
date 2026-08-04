@@ -16,6 +16,13 @@ from pathlib import Path
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY_ROOT = SKILL_ROOT.parents[1]
 
+EVIDENCE_IDENTIFIERS = (
+    "evidence_behavioral_test",
+    "evidence_regression_test",
+    "evidence_refactor_preservation",
+    "evidence_docs_config_exemption",
+)
+
 
 def read(path: Path) -> str:
     return path.read_text()
@@ -159,6 +166,182 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("Solid edges are invocation", self.skill_compact)
         self.assertIn("Solid edges are invocation", readme)
         self.assertIn("cannot close a cycle", readme)
+
+    def test_change_demonstrating_test_slot_is_required_in_both_paths(self):
+        """The evidence contract is peer-independent, so both paths state it."""
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        for surface in (self.skill_compact, delegated):
+            for identifier in EVIDENCE_IDENTIFIERS:
+                self.assertIn(f"`{identifier}`", surface)
+            self.assertIn(
+                "failing at the base SHA and passing at the head SHA", surface
+            )
+            self.assertIn(
+                "red at base", surface.replace("red at the base SHA", "red at base")
+            )
+            self.assertIn("behavior-preserving refactor", surface)
+            self.assertIn("implementation internals", surface)
+
+    def test_evidence_identifiers_are_in_the_shared_action_vocabulary(self):
+        executor = read(SKILL_ROOT / "scripts" / "evals" / "claude_executor.py")
+        for identifier in EVIDENCE_IDENTIFIERS:
+            self.assertIn(f'"{identifier}"', executor)
+        fixture = read(SKILL_ROOT / "scripts" / "evals" / "fixture_executor.py")
+        for identifier in EVIDENCE_IDENTIFIERS:
+            self.assertIn(f'"{identifier}"', fixture)
+
+    def test_every_evidence_slot_is_forward_eval_covered(self):
+        forward = {
+            item["case_id"]: item
+            for item in json.loads(
+                read(SKILL_ROOT / "evals" / "forward_expectations.json")
+            )
+        }
+        covered = set()
+        for expectation in forward.values():
+            covered |= set(expectation.get("required_actions") or []) & set(
+                EVIDENCE_IDENTIFIERS
+            )
+        self.assertEqual(set(EVIDENCE_IDENTIFIERS), covered)
+
+        # A slot claimed for the wrong change kind must be gradable as wrong.
+        for expectation in forward.values():
+            required = set(expectation.get("required_actions") or []) & set(
+                EVIDENCE_IDENTIFIERS
+            )
+            if not required:
+                continue
+            forbidden = set(expectation.get("forbidden_actions") or [])
+            self.assertEqual(
+                set(EVIDENCE_IDENTIFIERS) - required,
+                forbidden & set(EVIDENCE_IDENTIFIERS),
+            )
+
+    def test_every_ticket_required_evidence_element_is_pinned(self):
+        """Each normative element must be red-at-base, not silently deletable."""
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        # Acceptance criterion 1 names the delegated-worker paragraph as a target.
+        self.assertIn(
+            "A delegated worker owes the same change-demonstrating-test evidence as "
+            "a standalone run",
+            self.skill_compact,
+        )
+        # The one-line inline fallback admonition the ticket's Scope requires.
+        self.assertIn(
+            "Write the failing behavioral test before the implementation",
+            self.skill_compact,
+        )
+        # The exemptions are closed, so neither absorbs adjacent change kinds.
+        self.assertIn("The two exemptions are named and closed", self.skill_compact)
+        # The ask-a-human mapping the authoring checklist requires of every seam.
+        for surface in (self.skill_compact, delegated):
+            self.assertIn("maps to the typed `blocked` result", surface)
+        # Criterion 4: the registry's load-bearing actor semantics, both branches.
+        self.assertIn(
+            "interactive runs offer it once, and the user's explicit yes constitutes "
+            "the peer's required request",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "autonomous and delegated runs record the recommendation in the run's "
+            "evidence and proceed",
+            self.skill_compact,
+        )
+        # Criterion 4: silent fallback for the third peer, which the two-peer
+        # sentence does not cover.
+        self.assertIn(
+            "When the peer is not in the listing, diagnose from logs and evidence "
+            "without comment",
+            self.skill_compact,
+        )
+        # Criterion 2: the precedence rule appears in BOTH paths, not just SKILL.md.
+        self.assertIn(
+            "supersedes the absolutes of any peer methodology skill", delegated
+        )
+
+    def test_delegated_evidence_slot_documents_both_valid_encodings(self):
+        """Prose only; the encodings themselves are exercised against validate.py
+        in test_delegated_execution_contract.EvidenceSlotEncodingTests."""
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        for required in (
+            "no `$.validation` entry may carry a `candidate_sha` other than the "
+            "candidate head SHA or `null`",
+            "no two entries may share a byte-identical `name`",
+            "Two encodings satisfy both rules",
+            "its `name` must equal the caller's command string exactly",
+        ):
+            self.assertIn(required, delegated)
+
+    def test_evidence_contract_precedence_resolves_the_tdd_conflicts(self):
+        for required in (
+            "supersede the absolutes of any loaded peer",
+            "universal red–green law versus the refactor exemption",
+            "process law versus retroactive evidence",
+            "per-unit test checklist versus surface tests",
+        ):
+            self.assertIn(required, self.skill_compact)
+
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        for resolution in (
+            "which the two named exemptions override",
+            "which the surface-behavior requirement overrides",
+            "evidence produced after the implementation satisfies it",
+        ):
+            self.assertIn(resolution, delegated)
+
+    def test_anti_coupling_rule_states_its_failure_mode(self):
+        self.assertIn(
+            "A test that would churn under a behavior-preserving refactor does not "
+            "satisfy the slot",
+            self.skill_compact,
+        )
+        self.assertIn("passes by construction", self.skill_compact)
+        self.assertIn(
+            "obstructing the change safety it was built to provide", self.skill_compact
+        )
+
+    def test_peer_methodology_slots_add_no_hard_dependency(self):
+        """Each peer is availability-conditioned and absent from every gate."""
+        for peer in (
+            "`load-bearing`",
+            "`superpowers:test-driven-development`",
+            "`superpowers:systematic-debugging`",
+        ):
+            self.assertIn(
+                f"{peer} is available in the session skill listing", self.skill_compact
+            )
+        self.assertIn(
+            "When neither peer is in the listing, run the built-in behavior without "
+            "comment",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "Peer absence changes nothing about what this skill requires",
+            self.skill_compact,
+        )
+        # No peer may appear in the fail-closed pre-mutation dependency gate.
+        gate = compact(read(SKILL_ROOT / "references" / "babysit-pr-handoff.md"))
+        for peer_name in (
+            "load-bearing",
+            "test-driven-development",
+            "systematic-debugging",
+        ):
+            self.assertNotIn(peer_name, gate)
+
+    def test_load_bearing_excludes_authoring_time_verified_assumptions(self):
+        self.assertIn(
+            "Do not re-verify an assumption the ticket body already records as "
+            "verified at authoring time",
+            self.skill_compact,
+        )
 
     def test_dependency_names_are_repository_owned_and_acyclic(self):
         self.assertIn("review-code-change", self.skill_compact)

@@ -4,7 +4,53 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge and wired `implement-ticket`'s not-ready dead end into it as a recommendation edge, moved review-packet diff evidence and epic child dispatch onto files instead of inlined context, then put the eval-evidence norm into force so a skill-prose change ships with a recorded run
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots
+
+- feat(implement-ticket): add the behavioral-test evidence contract and peer
+  methodology slots (issue #126, epic #118) — give the implementation phase a
+  required change-demonstrating-test slot and make the peers that supply method
+  strictly optional. Per the house testing doctrine (#122), this repository
+  contracts the evidence and peers own the method: feature work shows behavioral
+  tests encoding the ticket's acceptance criteria against the product's public
+  surface failing at the base SHA and passing at the head SHA
+  (`evidence_behavioral_test`); a bug fix shows a regression test red at base
+  and green at head (`evidence_regression_test`); and two named, closed
+  exemptions cover a behavior-preserving refactor, which needs only the existing
+  behavioral suite green at both SHAs (`evidence_refactor_preservation`), and a
+  docs-or-config-only change, which records the exemption itself
+  (`evidence_docs_config_exemption`). The anti-coupling rule ships with its
+  failure mode: a test asserting internals passes by construction, leaves the
+  authored criterion unverified while appearing to cover it, and turns every
+  later behavior-preserving change into a rewrite, so the suite ends up
+  obstructing the change safety it was built to provide. The precedence rule
+  from #122 resolves the three live TDD conflicts in place rather than per run —
+  a universal red–green law loses to the refactor exemption, a process law loses
+  to retroactive base/head observations, and a per-unit checklist loses to
+  surface-behavior-per-criterion — and a peer's ask-a-human clause maps to the
+  typed `blocked` result. Three peer slots are availability-conditioned with
+  silent fallback: `load-bearing` before implementation under the registry's
+  actor semantics, explicitly skipping assumptions `ready-ticket` already
+  recorded as verified at authoring time; `superpowers:test-driven-development`
+  during implementation as the recommended method for producing the contracted
+  evidence; and `superpowers:systematic-debugging` on repeated fix failures, its
+  architecture escalation aligned with the fix loop's existing final-cycle
+  escalate-and-block text (#132 is still open, so the ticket's fallback
+  applies). Both placement targets carry the contract: the direct path in
+  `SKILL.md`'s implementation and fix-loop sections, and the delegated path in
+  `references/delegated-execution/CONTRACT.md`'s Invocation section plus the
+  delegated-worker paragraph — as prose riding in the existing validation
+  evidence, with no invocation or result schema change. The four identifiers
+  join the shared forward-eval action vocabulary in `claude_executor.py` and
+  `fixture_executor.py`, and four new result-blind forward cases cover one
+  change kind each while forbidding the other three slots, so claiming the wrong
+  slot grades as wrong. The eval-evidence norm landed mid-flight (#135, PR
+  #148), so this change records its runs rather than the planned marker the
+  ticket originally allowed: the deterministic after-run is 58/58 and diffs
+  against the recorded baseline as 54 unchanged with nothing newly failing or
+  newly passing, and the real-model attempt is recorded as `attempted` because
+  the environment's headless `claude` auth still fails — the same limitation the
+  baseline recorded and deferred to #145, so model-behavior evidence for this
+  change is deferred to the first capable run
 
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a
@@ -63,7 +109,7 @@ summary: Chronological history of repository and skill changes.
   with an OAuth-token-revoked 401, so the attempt is committed with its
   diagnosis alongside a deterministic baseline passing 54/54, and the real-model
   baseline is deferred to #145. A real-model adapter for `carve-changesets` is
-  deferred to #144
+  deferred to #144 (`67ff0dbce8c534bcf82bde033f5534bb3f2db265`)
 
 - feat(implement-ticket): route not-ready blocked results to ready-ticket (issue
   #125, epic #118) — give `implement-ticket`'s not-ready `blocked` result a
