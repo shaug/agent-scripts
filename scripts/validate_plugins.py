@@ -16,6 +16,7 @@ REQUIRED_SKILLS = {
     "carve-changesets",
     "implement-epic",
     "implement-ticket",
+    "ready-ticket",
     "review-code-change",
     "review-code-simplicity",
     "review-correctness",

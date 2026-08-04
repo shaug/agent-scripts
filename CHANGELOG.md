@@ -4,6 +4,52 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge
+
+- feat(skills): add the ready-ticket skill for peer-aware ticket authoring
+  (issue #124, epic #118, the epic's first seam leaf) — add
+  `skills/ready-ticket`, which turns a vague idea or an unready GitHub or Linear
+  ticket into an implementation-ready ticket body and terminates in that body,
+  never in a spec or plan file. Readiness is defined by reference rather than
+  reinvented: the target is exactly the body-level conditions of
+  `implement-ticket`'s readiness gate (observable goal, acceptance criteria,
+  non-goals, preserved behavior, required verification classifiable as pre- or
+  post-merge, and no unresolved product, data, authorization, migration,
+  destructive, or architecture decision), so the two skills cannot drift into
+  disagreeing about what "ready" means. Four exhaustive typed terminal results,
+  each fixture-covered: `ticket_ready` (body stored in the tracker and reread to
+  confirm it matches what was approved, because a successful API response is
+  delivery state and not proof of the stored contract), `draft_ready` (returned
+  on either of two grounds — ticket-management authority absent, or no tracker
+  chosen and none choosable in this run; that authority grant defaults to off
+  and is never inferred from tracker read access or from phrasing such as "file
+  this" or "write it up"), `decomposition_recommended` (multi-subsystem work
+  handed back to the operator with its rationale; epic authoring is a recorded
+  deferral of this epic, not an omission), and `blocked` as the honest fallback.
+  Acceptance criteria must be observable behaviors of the product's public
+  surface so each is directly encodable as a behavioral test; a criterion
+  assertable only against internals is treated as a readiness defect to fix
+  during elicitation, per the house testing doctrine from #122. An unconditional
+  four-scan self-review — placeholder, contradiction, scope, ambiguity — runs
+  identically with or without any peer, so no-placeholders rigor never depends
+  on install state. The two peer seams follow #123's registry exactly: the
+  `superpowers:brainstorming` borrow takes the questioning discipline (one
+  question at a time, intent before construction) and stops at its
+  design-approval handoff to `writing-plans`, with a peer plan header's
+  "REQUIRED SUB-SKILL" executor mandate explicitly non-binding; and
+  `load-bearing` carries the registry's actor semantics verbatim — interactive
+  offers once and the user's explicit yes is the peer's required request,
+  autonomous records the recommendation in evidence and proceeds — with silence
+  when the peer is absent. GitHub and Linear adapter references mirror
+  `implement-ticket`'s pattern and hold the line that authoring a body is not
+  graph or workflow authority. Also records the `ready-ticket` row in the
+  registry's trigger-collision audit against `brainstorming`, the epic's
+  highest-risk collision, resolved by artifact and terminus rather than by
+  contorting either description. Ships 24 result-blind eval cases with their
+  expectations held separately and a 31-assertion contract test;
+  pressure-testing from baseline is #137's, so the rationalization table carries
+  anticipated rather than verbatim wording and says so
+
 ## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, then added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule
 
 - feat(skills): define the peer-skill convention and registry, and rewrite all
@@ -53,7 +99,7 @@ summary: Chronological history of repository and skill changes.
   the longest, falls from 923 to 589 characters — and each now states when to
   use, the scope boundary, and the terminal result shape a caller needs to
   route. This is a deliberate triggering-behavior change; #136's corpus verifies
-  it after the fact
+  it after the fact (`83a526bbee6598ef6c508550485ea20d1ebc4daa`)
 - docs: write the skill-authoring methodology document with the house testing
   doctrine (issue #122, epic #117, the epic's first child) — add
   `docs/skill-authoring.md` combining empirical prose discipline with this
