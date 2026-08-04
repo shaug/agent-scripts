@@ -24,6 +24,12 @@ if missing (network required).
 
 ## Skill Conventions
 
+- [`docs/skill-authoring.md`](docs/skill-authoring.md) is the authoring standard
+  for every new skill and for any edit that changes an existing skill's
+  normative behavior. Follow it for descriptions, body form, pressure and
+  micro-testing, the contractual layer, peer precedence, and context economy.
+  Its testing doctrine reaches further than skill authoring: it governs test
+  evidence for any change to this repository's code.
 - Skill root contains `SKILL.md` and optional `scripts/`, `references/`, and
   `assets/`.
 - Tests live under `scripts/tests/` and should use `unittest`.
