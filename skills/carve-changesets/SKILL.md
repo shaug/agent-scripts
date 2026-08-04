@@ -133,6 +133,20 @@ fixes and rebuilds invalidated validation and review evidence. Return
 `chain_ready` only after every local candidate and the full chain satisfy the
 contract.
 
+Each changeset's reviewer receives evidence and contracts, never conclusions. If
+the invocation being written steers the answer — "do not flag", "this is fine",
+a pre-judged severity, or the verdict expected back — stop and rewrite it. The
+pressure is specific to a chain: an earlier changeset reviewed clean, so it is
+tempting to tell the next reviewer the design is already settled. A steered
+reviewer returns confirmation, not review, and a chain compounds one such result
+across every changeset that follows.
+
+Give each changeset review a capability tier adequate for judgment: it inherits
+the session's tier by default rather than the cheapest one, and a review that
+missed a defect a later changeset surfaces escalates one tier instead of
+rerunning identically. Prefer one well-briefed review per changeset to several
+thin ones — a chain multiplies the cost of a rerun by its remaining length.
+
 ### 3. Publish
 
 Require publish authority before any remote mutation. `push-chain` and

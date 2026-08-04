@@ -36,6 +36,17 @@ class CarveChangesetsContractTests(unittest.TestCase):
         ):
             self.assertIn(discipline, self.skill)
 
+    def test_changeset_review_dispatch_carries_integrity_tier_and_turn_count(self):
+        self.assertIn("receives evidence and contracts, never conclusions", self.skill)
+        self.assertIn("stop and rewrite it", self.skill)
+        self.assertIn("returns confirmation, not review", self.skill)
+        self.assertIn("capability tier adequate for judgment", self.skill)
+        self.assertIn("Prefer one well-briefed review per changeset", self.skill)
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
+            self.assertNotIn(banned, self.skill.lower())
+
     def test_the_bundled_copy_exists(self):
         self.assertTrue(
             (

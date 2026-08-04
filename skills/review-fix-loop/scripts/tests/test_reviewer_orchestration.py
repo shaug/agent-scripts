@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import copy
 import importlib.util
+import re
 import unittest
 from pathlib import Path
 
@@ -762,6 +763,35 @@ class BuildReviewerBriefingTests(unittest.TestCase):
             independence="fresh_subagent", head_sha=HEAD, comparison_base_sha=BASE
         )
         self.assertIn("implementation transcript", briefing)
+
+
+class ReviewerDispatchProseTests(unittest.TestCase):
+    """The reviewer-orchestration reference is normative dispatch prose.
+
+    The isolation rules above are enforced in code; the prompt wrapped around
+    the packet is not, so the rule that keeps it unsteered lives in prose and
+    is pinned here by stable phrase.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        text = (SKILL_ROOT / "references" / "reviewer-orchestration.md").read_text()
+        cls.reference = re.sub(r"\s+", " ", text).strip()
+
+    def test_dispatch_states_no_conclusion(self):
+        self.assertIn("**States no conclusion.**", self.reference)
+        self.assertIn("never the answer", self.reference)
+        self.assertIn("stop and rewrite it", self.reference)
+        self.assertIn("A steered reviewer returns confirmation", self.reference)
+
+    def test_dispatch_carries_tier_and_turn_count_guidance(self):
+        self.assertIn("capability tier adequate for judgment", self.reference)
+        self.assertIn("escalates one tier", self.reference)
+        self.assertIn("Prefer one well-briefed pass", self.reference)
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        for banned in ("gpt", "opus", "sonnet", "haiku", "gemini"):
+            self.assertNotIn(banned, self.reference.lower())
 
 
 if __name__ == "__main__":

@@ -1,0 +1,50 @@
+{
+  "candidate": {
+    "branch": "scott/131-dispatch-guidance",
+    "sha": "a1ee71cc43ab04af221667a184f7dbf3edac77f1",
+    "worktree_clean": false
+  },
+  "cases": {
+    "decompose-independent-subsystems": "pass",
+    "mechanical-guardrail-exception": "pass",
+    "oversized-guardrail-negotiation": "pass",
+    "publish-with-merge-withheld": "pass",
+    "recover-successor-suffix": "pass",
+    "refuse-dirty-source": "pass",
+    "refuse-source-behind-base": "pass",
+    "refuse-validated-reorder": "pass",
+    "reject-conflicting-successor-lineage": "pass",
+    "reject-original-source-mutation": "pass",
+    "separate-mechanical-rename": "pass",
+    "validated-plan-conflict": "pass"
+  },
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "skills/carve-changesets/scripts/evals/runner.py"
+  ],
+  "compared_to": "2026-08-04T202243Z-0002-after.json",
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 12
+  },
+  "exit_code": 0,
+  "failures": [],
+  "forward_evals": false,
+  "gap": "no real-model executor for this skill; recorded tier is deterministic, so no model read the prose and the model-behavior evidence is absent",
+  "limitation": null,
+  "note": null,
+  "output_tail": "{\n  \"failed\": 0,\n  \"failures\": [],\n  \"mode\": \"forward\",\n  \"passed\": 12,\n  \"total\": 12\n}",
+  "recorded_at": "2026-08-04T22:42:47Z",
+  "schema": "eval-run-summary/1",
+  "skill": "carve-changesets",
+  "stage": "before",
+  "status": "completed",
+  "tier": "deterministic",
+  "totals": {
+    "failed": 0,
+    "passed": 12,
+    "total": 12
+  }
+}

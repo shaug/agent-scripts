@@ -213,12 +213,26 @@ live instructions mixed together with nothing marking which is which. Revise the
 brief and let the report accumulate on disk. Keep `.implement-epic/` ignored and
 out of commits and PRs.
 
+Choose the cheapest capability tier adequate for the child: mechanical
+transcription and enumeration take the cheapest tier, a child requiring judgment
+inherits the session's tier, and repeated failure at the same tier escalates one
+tier rather than re-dispatching identically. State the tier when it matters — an
+omitted selection silently inherits the session's. Prefer fewer, better-briefed
+dispatches to many thin ones: a child that has to be re-dispatched costs more
+than the tier it saved, and the brief is where that cost is avoided.
+
 The primary context may follow `implement-ticket` directly. A delegated worker,
 subagent, or equivalent context must have exclusive ownership of one verified
 ticket worktree and branch. Never run two mutating contexts against the same
 candidate. Parallelize only explicitly authorized children whose graph,
 repository, file/contract ownership, rollout, and merge-order analysis proves no
 material overlap.
+
+After integrating explicitly authorized parallel children, run the complete
+required validation suite once against the integrated state before treating any
+of them as delivered. Each child's gates ran against its own candidate in
+isolation; nothing has yet exercised the combination, and non-overlap analysis
+predicts independence rather than demonstrating it.
 
 ### 4. Verify the terminal result
 

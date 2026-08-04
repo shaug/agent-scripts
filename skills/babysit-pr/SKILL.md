@@ -265,6 +265,19 @@ After any head-changing fix:
 Exclude implementation transcripts, intended fixes, prior conclusions, suspected
 findings, and expected evaluation outputs from review evidence.
 
+The reviewer receives evidence and contracts, never conclusions. If the
+invocation being written steers the answer — "do not flag", "this is fine", a
+pre-judged severity, or the verdict expected back — stop and rewrite it. The
+pressure is sharpest here: the fix was just written to satisfy a prior finding,
+so it is tempting to dispatch the re-review already knowing what it should say.
+A steered reviewer returns confirmation, not review.
+
+Give the re-review a capability tier adequate for judgment: it inherits the
+session's tier by default rather than the cheapest one, and a review that missed
+a defect a later cycle surfaces escalates one tier instead of rerunning
+identically. Prefer one well-briefed re-review to several thin ones; each one
+spends a cycle from the bounded budget.
+
 For a standalone `ready_to_merge` or `merge_when_ready` invocation, establish
 valid `review-code-change` evidence for the current candidate when the caller
 did not supply it. This does not transfer ownership of the ticket's initial

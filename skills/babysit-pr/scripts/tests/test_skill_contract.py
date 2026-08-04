@@ -46,6 +46,20 @@ class BabysitPrContractTests(unittest.TestCase):
         self.assertNotIn("REVIEW_BOT_LOGIN_KEYWORDS", self.watcher)
         self.assertNotIn("/tmp/codex", self.watcher)
 
+    def test_re_review_dispatch_carries_integrity_tier_and_turn_count(self):
+        skill = compact(self.skill)
+        self.assertIn(
+            "The reviewer receives evidence and contracts, never conclusions", skill
+        )
+        self.assertIn("stop and rewrite it", skill)
+        self.assertIn("returns confirmation, not review", skill)
+        self.assertIn("capability tier adequate for judgment", skill)
+        self.assertIn("Prefer one well-briefed re-review", skill)
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
+            self.assertNotIn(banned, compact(self.skill).lower())
+
     def test_completion_policies_and_terminal_states_are_stable(self):
         for policy in (
             "ready_to_merge",

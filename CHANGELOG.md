@@ -41,6 +41,36 @@ summary: Chronological history of repository and skill changes.
   skills. Thirty-eight behavioral tests bound to the ticket's acceptance
   criteria
 
+- feat(skills): add tier, turn-count, reviewer-integrity, and post-parallel
+  guidance to dispatch prose (issue #131, epic #119) — the pipeline composes
+  dispatches constantly and said nothing about how to size them or how to keep a
+  reviewer honest. Three implementer-dispatch sites (`implement-ticket`'s
+  delegated-worker paragraph, `implement-epic`'s child-dispatch prose, and a
+  prose-only note in the delegated-execution contract's Invocation section) now
+  carry tier and turn-count guidance: cheapest tier adequate for the work,
+  inherit the session's tier for judgment work, escalate one tier on repeated
+  failure rather than retrying identically, and prefer fewer, better-briefed
+  dispatches because one that must be re-asked costs more than the tier it
+  saved. The contract note explicitly adds no field and gates nothing, so a
+  coordinator ignoring it stays conformant. Five reviewer-dispatch sites
+  (`review-and-merge-gates.md`, `review-code-change`'s orchestration protocol,
+  `babysit-pr`'s post-head-change re-review, `carve-changesets`' per-changeset
+  review, and `review-fix-loop`'s reviewer orchestration) additionally carry the
+  reviewer-integrity rule: reviewers receive evidence and contracts, never
+  conclusions, and a prompt that steers the verdict gets rewritten. Each site
+  names where its own pressure comes from — a fix just written to satisfy a
+  finding, an earlier changeset already reviewed clean, a loop that converges on
+  confirmation it never earned — because a steered reviewer returns confirmation
+  that is indistinguishable from a clean result at the point it is consumed.
+  `implement-epic`'s explicitly-authorized parallel path gains post-integration
+  verification: run the full required suite once against the integrated state,
+  since each child's gates ran against its own candidate and non-overlap
+  analysis predicts independence rather than demonstrating it. Wording stays
+  product-agnostic (capability tiers and roles, never model names or product
+  APIs), enforced by a per-skill assertion. No contract fields, schemas, or
+  terminal states change. Ten prose-contract assertions across six skills, each
+  observed failing at base `a1ee71c` and passing at head
+
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
   `review-suite/consumption-disciplines.md` as the canonical statement of how a

@@ -198,6 +198,24 @@ class ImplementEpicContractTests(unittest.TestCase):
         self.assertIn("those two locations as absolute paths", self.contract)
         self.assertIn("a relative path resolves against its directory", self.contract)
 
+    def test_child_dispatch_carries_tier_and_turn_count_guidance(self):
+        self.assertIn("cheapest capability tier adequate for the child", self.contract)
+        self.assertIn("inherits the session's tier", self.contract)
+        self.assertIn("escalates one tier", self.contract)
+        self.assertIn("fewer, better-briefed dispatches", self.contract)
+
+    def test_parallel_path_verifies_the_integrated_state(self):
+        self.assertIn(
+            "run the complete required validation suite once against the "
+            "integrated state",
+            self.contract,
+        )
+        self.assertIn("nothing has yet exercised the combination", self.contract)
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
+            self.assertNotIn(banned, self.contract.lower())
+
     def test_epic_does_not_own_lens_mechanics(self):
         self.assertNotIn("review-solution-simplicity", self.contract)
         self.assertNotIn("review-correctness", self.contract)

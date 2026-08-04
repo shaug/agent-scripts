@@ -547,6 +547,38 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("recommendation, not a gate", self.skill_compact)
         self.assertIn("never returns `blocked` for its absence", self.skill_compact)
 
+    def test_implementer_dispatch_carries_tier_and_turn_count_guidance(self):
+        self.assertIn(
+            "cheapest capability tier adequate for the work", self.skill_compact
+        )
+        self.assertIn("inherits the session's tier", self.skill_compact)
+        self.assertIn("escalates one tier", self.skill_compact)
+        self.assertIn("fewer, better-briefed dispatches", self.skill_compact)
+
+    def test_reviewer_dispatch_carries_integrity_tier_and_turn_count(self):
+        gates = compact(self.gates)
+        self.assertIn(
+            "Reviewers receive evidence and contracts, never conclusions", gates
+        )
+        self.assertIn("stop and rewrite it", gates)
+        self.assertIn("returns confirmation, not review", gates)
+        self.assertIn("capability tier adequate for judgment", gates)
+        self.assertIn("Prefer one well-briefed review", gates)
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        # The ticket's non-goal: roles, not product APIs or model names.
+        surface = compact(self.skill + self.gates)
+        for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "o3", "gemini"):
+            self.assertNotIn(banned, surface.lower())
+
+    def test_delegated_execution_gains_prose_only_and_no_new_field(self):
+        contract = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        self.assertIn("Capability tier is deliberately not a field here", contract)
+        self.assertIn("adds no field, gates nothing", contract)
+        self.assertIn("remains contract-conformant", contract)
+
     def test_closing_syntax_and_post_merge_transition_are_acceptance_gated(self):
         self.assertIn("non-closing reference", self.skill_compact)
         self.assertIn("`Fixes #<issue>`", self.github)

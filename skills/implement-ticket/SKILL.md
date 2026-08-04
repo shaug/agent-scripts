@@ -392,6 +392,14 @@ requirement. This is a recommendation, not a gate — the delegated-execution
 contract binds a coordinator's checkpoint protocol, not its prompt format, so
 this skill cannot require it and never returns `blocked` for its absence.
 
+Choose the cheapest capability tier adequate for the work: mechanical
+transcription and enumeration take the cheapest tier, judgment work inherits the
+session's tier, and repeated failure at the same tier escalates one tier rather
+than retrying identically. State the tier when it matters — an omitted selection
+silently inherits the session's, so a dispatch meant to be cheap is only cheap
+by accident. Prefer fewer, better-briefed dispatches to many thin ones: a
+dispatch that has to be re-asked costs more than the tier it saved.
+
 A delegated worker owes the same change-demonstrating-test evidence as a
 standalone run. Pass
 [the evidence contract](#the-change-demonstrating-test-evidence-contract) into
