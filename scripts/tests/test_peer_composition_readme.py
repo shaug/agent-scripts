@@ -1,9 +1,14 @@
 """Contract invariants for the README's "Using beside peer skills" section.
 
 Checks stable identifiers only — the five composition rules, the seam table's
-ticket references, and the planned/landed markers — not phrasing. The section
-makes claims about peer behavior and about which seams exist, and both go stale
-silently, so the assertions here are the only thing that fails when they do.
+ticket references, and the landed/planned markers — not phrasing.
+
+The seam table's status column is declared in the two tuples below and asserted
+against the table in both directions, so the table and the tuples must be edited
+together: marking an open-ticket seam Landed fails, and leaving a landed seam's
+row marked Planned fails too. Nothing here observes GitHub, so a seam landing
+without any edit to this file is not detected — moving its ticket between the
+tuples is the step that makes the suite hold the table to it.
 """
 
 from __future__ import annotations
@@ -88,6 +93,20 @@ class PeerCompositionSectionTests(unittest.TestCase):
                     ("Landed", "Planned"),
                     "each seam row must end in a Landed or Planned marker",
                 )
+
+    def test_every_landed_seam_row_is_marked_landed(self):
+        """Without this, rewriting every row to Planned leaves the suite green."""
+        for line in self.section.splitlines():
+            if not (line.startswith("| ") and "issues/" in line):
+                continue
+            for ticket in LANDED_SEAM_TICKETS:
+                if f"issues/{ticket.lstrip('#')})" in line:
+                    with self.subTest(ticket=ticket):
+                        self.assertEqual(
+                            "Landed",
+                            last_cell(line),
+                            f"{ticket} has landed and must be marked Landed",
+                        )
 
     def test_no_unlanded_seam_is_described_without_a_planned_marker(self):
         for line in self.section.splitlines():
