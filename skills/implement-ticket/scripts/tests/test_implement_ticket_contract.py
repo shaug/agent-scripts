@@ -112,13 +112,28 @@ class ImplementTicketContractTests(unittest.TestCase):
         """The new edge is a recommendation, so no cycle and no implicit dispatch."""
         for required in (
             "This is a recommendation, not a dispatch",
-            "Never invoke `ready-ticket`, run its elicitation, or author the ticket "
-            "body from inside this skill",
+            "Never invoke `ready-ticket` or run its elicitation from inside this skill",
             "the caller decides whether to run it",
             "`ready-ticket` terminates in a ticket body and must never invoke "
             "`implement-ticket`",
         ):
             self.assertIn(required, self.skill_compact)
+
+    def test_authorized_body_repair_survives_the_new_routing_branch(self):
+        """Routing must not silently narrow the pre-existing readiness remediation."""
+        self.assertIn(
+            "When ticket editing is authorized, make an unclear ticket "
+            "implementation-ready and re-read it",
+            self.skill_compact,
+        )
+        for required in (
+            "Two checkable facts decide the branch",
+            "The preceding paragraph governs unchanged",
+            "Do not return `blocked` and do not emit the marker",
+        ):
+            self.assertIn(required, self.skill_compact)
+        # The prohibition must not reach the authorized repair the gate already allows.
+        self.assertNotIn("or author the ticket body from inside", self.skill_compact)
 
     def test_only_body_readiness_carries_the_ready_ticket_marker(self):
         self.assertIn(

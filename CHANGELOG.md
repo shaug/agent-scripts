@@ -15,12 +15,15 @@ summary: Chronological history of repository and skill changes.
   form as the existing `requires-epic` marker, so contract tests can assert its
   exact shape and a caller can detect a routing loop. The edge is a
   **recommendation, not a dispatch**: `implement-ticket` never invokes
-  `ready-ticket`, never runs its elicitation, and never authors a body itself —
-  the caller decides — which is what keeps the authority boundary and the
-  readiness bar unchanged. It is one-way by construction, because `ready-ticket`
-  terminates in a ticket body and never invokes `implement-ticket`, so no cycle
-  can form; the incoming-marker check returns a routing-cycle `blocked` rather
-  than recommending again. Only body readiness carries the marker: an unresolved
+  `ready-ticket` and never runs its elicitation — the caller decides. The
+  readiness bar itself is untouched, and so is the gate's existing remediation:
+  when ticket editing is authorized and the gap is not a product, data,
+  authorization, migration, destructive, or architecture decision, the skill
+  still repairs the body in place and continues, and only the other branch emits
+  the marker. It is one-way by construction, because `ready-ticket` terminates
+  in a ticket body and never invokes `implement-ticket`, so no cycle can form;
+  the incoming-marker check returns a routing-cycle `blocked` rather than
+  recommending again. Only body readiness carries the marker: an unresolved
   native dependency, a missing prerequisite outcome, an absent authority, or a
   competing canonical candidate keeps its own blocked reason, because
   `ready-ticket` cannot repair any of those. Both dependency-documentation

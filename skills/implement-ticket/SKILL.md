@@ -341,14 +341,23 @@ improvising.
 A ticket that fails the body-level conditions above — a missing observable goal,
 absent or unusable acceptance criteria, no non-goals or preserved behavior, no
 required verification, or an unresolved product, data, authorization, migration,
-destructive, or architecture decision — is not a dead end. Return `blocked` and
-name repository-owned `ready-ticket` as the remediation path, including the
-stable marker `implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>`.
+destructive, or architecture decision — is not a dead end. Two checkable facts
+decide the branch: whether ticket editing is authorized, and whether closing the
+gap would decide something this skill may not decide.
 
-This is a recommendation, not a dispatch. Never invoke `ready-ticket`, run its
-elicitation, or author the ticket body from inside this skill; the caller
-decides whether to run it. Report which body-level conditions failed so the
-caller hands `ready-ticket` a concrete gap rather than the whole ticket.
+- **Ticket editing is authorized and the gap is not a product, data,
+  authorization, migration, destructive, or architecture decision.** The
+  preceding paragraph governs unchanged: make the ticket implementation-ready,
+  re-read it, and continue. Do not return `blocked` and do not emit the marker.
+- **Otherwise** — ticket editing is unauthorized, or the gap is one of those
+  decisions this skill may not make for the requester. Return `blocked` and name
+  repository-owned `ready-ticket` as the remediation path, including the stable
+  marker `implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>`.
+
+This is a recommendation, not a dispatch. Never invoke `ready-ticket` or run its
+elicitation from inside this skill; the caller decides whether to run it. Report
+which body-level conditions failed so the caller hands `ready-ticket` a concrete
+gap rather than the whole ticket.
 
 The edge is one-way by construction: `ready-ticket` terminates in a ticket body
 and must never invoke `implement-ticket`, so the recommendation cannot form a
