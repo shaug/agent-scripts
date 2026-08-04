@@ -40,7 +40,18 @@ summary: Chronological history of repository and skill changes.
   blocked-with-evidence terminal; a contract test asserts the peer never appears
   in the fail-closed capability requirements. Reviewer-side contracts, lens
   rubrics, severity vocabulary, and every consuming skill's own cycle budget are
-  untouched
+  untouched. Eval evidence under the now-in-force norm: `implement-ticket`
+  deterministic 58/58 with the same-tier diff reporting 58 unchanged and nothing
+  newly failing or newly passing, `carve-changesets` deterministic completed,
+  and the `implement-ticket` real-model tier recorded as `attempted`. That
+  attempt got further than the #135 baseline's — headless auth succeeded and
+  cases executed for roughly 25 minutes — before `run_forward` aborted on a
+  `JSONDecodeError` parsing a model response, reproducibly at the same point
+  across two runs, so the blocker is response parsing in
+  `claude_executor.extract_json_object` rather than the OAuth failure #145
+  records. `babysit-pr` has no registered eval corpus, so `just eval-record`
+  records nothing for it and that gap is stated rather than papered over with
+  its unit tests, which cannot observe `SKILL.md` prose
 
 - feat(implement-ticket): add the behavioral-test evidence contract and peer
   methodology slots (issue #126, epic #118) — give the implementation phase a

@@ -1,0 +1,50 @@
+{
+  "candidate": {
+    "branch": "scott/127-consumption-disciplines",
+    "sha": "0a1cd5287caa12fddb94e282bdf0f4ee0f01a184",
+    "worktree_clean": true
+  },
+  "cases": {
+    "decompose-independent-subsystems": "pass",
+    "mechanical-guardrail-exception": "pass",
+    "oversized-guardrail-negotiation": "pass",
+    "publish-with-merge-withheld": "pass",
+    "recover-successor-suffix": "pass",
+    "refuse-dirty-source": "pass",
+    "refuse-source-behind-base": "pass",
+    "refuse-validated-reorder": "pass",
+    "reject-conflicting-successor-lineage": "pass",
+    "reject-original-source-mutation": "pass",
+    "separate-mechanical-rename": "pass",
+    "validated-plan-conflict": "pass"
+  },
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "skills/carve-changesets/scripts/evals/runner.py"
+  ],
+  "compared_to": null,
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 0
+  },
+  "exit_code": 0,
+  "failures": [],
+  "forward_evals": false,
+  "gap": "no real-model executor for this skill; recorded tier is deterministic, so no model read the prose and the model-behavior evidence is absent",
+  "limitation": null,
+  "note": "After-stage run for issue #127, which points carve-changesets' review communication at the bundled consumption disciplines.",
+  "output_tail": "{\n  \"failed\": 0,\n  \"failures\": [],\n  \"mode\": \"forward\",\n  \"passed\": 12,\n  \"total\": 12\n}",
+  "recorded_at": "2026-08-04T18:49:52Z",
+  "schema": "eval-run-summary/1",
+  "skill": "carve-changesets",
+  "stage": "after",
+  "status": "completed",
+  "tier": "deterministic",
+  "totals": {
+    "failed": 0,
+    "passed": 12,
+    "total": 12
+  }
+}
