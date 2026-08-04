@@ -179,6 +179,100 @@ summaries `just eval-record` appends are excluded, because neither changes what
 an installed skill does. The comparison is against the working tree, so update
 the checkout first if it may be behind.
 
+## Using beside peer skills
+
+These skills are designed to sit alongside peer methodology libraries —
+[superpowers](https://github.com/obra/superpowers) and
+[load-bearing](https://github.com/danshapiro/skill-load-bearing) — and to work
+identically without them.
+
+**Division of labor.** Peers own in-phase methodology: how to brainstorm, how to
+run a red–green loop, how to debug a failure hypothesis-first. This repository
+owns the outer loop: ticket readiness, authority grades, evidence contracts,
+review production, and the post-publication pull-request lifecycle.
+
+**Awareness mechanism.** A skill names a peer in prose, conditioned on that peer
+appearing in the session skill listing. There is no install probe, no manifest
+read, no package-manager call, and no dependency declaration. A missing peer is
+a silent fallback to built-in behavior — never a `blocked` condition and never a
+caveat on a result.
+
+**The guarantee.** Nothing here degrades when a peer is absent. Peers supply
+method; every quality outcome stays enforced by this repository's own validation
+and review gates. Installing a peer should change how a phase is carried out,
+never whether a contract is met.
+
+### Composition rules
+
+These resolve collisions that arise from co-installation. They are rules, not
+preferences, because a collision left unresolved is settled differently on each
+run — usually by whichever text was read most recently.
+
+**1. A ready ticket satisfies brainstorming's design-approval gate.** A ticket
+that passes the readiness gate has already been through elicitation:
+`ready-ticket` records the resolved product decisions in the body and, in an
+interactive run, obtains explicit approval of that body. Brainstorming applies
+*before* a ticket exists, never mid-pipeline. *Why:* re-opening design questions
+against an approved contract reverses a decision the requester already made, and
+it does so invisibly, because the reopened discussion looks like diligence.
+
+**2. Exactly one executor owns a unit of work.** Ticket-driven work stays in
+`implement-ticket` regardless of peer plan headers. `writing-plans` stamps its
+plans with an executor mandate naming its own sub-skills; that mandate does not
+bind work driven by a tracker ticket. *Why:* two executors on one unit produce
+two candidates for one ticket, and neither can be verified as the canonical one.
+
+**3. Review production is house-owned inside the pipeline.** The review suite's
+typed schemas, fail-closed evidence binding, and candidate-identity rules are
+what make a verdict checkable by its caller. `requesting-code-review` applies
+outside the pipeline, not within it. *Why:* a review whose result shape a caller
+cannot validate is indistinguishable from no review, and the failure is silent.
+
+**4. Only the pull-request option composes at the merge boundary.**
+`finishing-a-development-branch` offers three integration options — merge
+locally, push and create a pull request, or keep the branch. For tracked work,
+only the pull-request option composes. The local-merge option bypasses the
+review contracts, `babysit-pr`, and the tracker transition, and is out of
+bounds. `babysit-pr` begins at an existing pull request; peer plan and spec
+files are orientation only, while live pull-request and tracker state are
+execution state. *Why:* a local merge produces delivery with no reviewed
+candidate, no remote gate, and no tracker record — the three things the
+post-publication lifecycle exists to establish.
+
+**5. Known overlaps are documented, not dodged.** Some peers carry trigger
+descriptions broad enough to cover any implementation work, and no edit to this
+repository can fully resolve that from one side. Those overlaps are recorded in
+the named-peer registry's trigger-collision audit in
+[`docs/skill-authoring.md`](docs/skill-authoring.md) with their dispositions,
+rather than worked around by contorting a description. *Why:* description-based
+routing is winner-takes-attention, and a contorted description misroutes the
+requests the skill was built for while still losing the contested ones.
+Empirical confirmation of the audit's dispositions is planned in
+[issue #136](https://github.com/shaug/agent-scripts/issues/136); until it lands,
+the audit records reasoning rather than measurement.
+
+### Seam table
+
+Where the two libraries meet, and what each seam does. Update this table as
+seams land.
+
+| Seam                             | Peer                                         | What composes                                                                                                                                                                                  | Ticket                                                    | Status  |
+| -------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------- |
+| Ticket authoring                 | `superpowers:brainstorming`                  | `ready-ticket` borrows the questioning discipline — one question at a time, intent before construction — and stops at design approval; it never creates a spec or plan file                    | [#124](https://github.com/shaug/agent-scripts/issues/124) | Landed  |
+| Not-ready routing                | —                                            | `implement-ticket`'s not-ready `blocked` result names `ready-ticket` as the remediation path; a recommendation, never a dispatch                                                               | [#125](https://github.com/shaug/agent-scripts/issues/125) | Landed  |
+| Pre-implementation verification  | `load-bearing`                               | Offered once in an interactive run when the ticket rests on costly-to-falsify assumptions; recorded and passed over in an autonomous one. Skips assumptions already verified at authoring time | [#126](https://github.com/shaug/agent-scripts/issues/126) | Landed  |
+| Implementation method            | `superpowers:test-driven-development`        | Supplies the method for producing the house's change-demonstrating-test evidence; the evidence contract and its exemptions govern                                                              | [#126](https://github.com/shaug/agent-scripts/issues/126) | Landed  |
+| Finding and feedback consumption | `superpowers:receiving-code-review`          | Ported with attribution into `review-suite/consumption-disciplines.md`, bundled into the three skills that consume findings                                                                    | [#127](https://github.com/shaug/agent-scripts/issues/127) | Landed  |
+| CI diagnosis                     | `superpowers:systematic-debugging`           | Recommended in `babysit-pr`'s CI-diagnosis loop after repeated failed fixes; its architecture escalation maps to the skill's blocked-with-evidence terminal                                    | [#127](https://github.com/shaug/agent-scripts/issues/127) | Landed  |
+| Merge boundary                   | `superpowers:finishing-a-development-branch` | House territory. Composition rule 4 above records which of its three options composes                                                                                                          | [#128](https://github.com/shaug/agent-scripts/issues/128) | Landed  |
+| Worktree isolation               | `superpowers:using-git-worktrees`            | The isolated-workspace pattern, ported into `implement-ticket`'s one-ticket-one-worktree rule                                                                                                  | [#134](https://github.com/shaug/agent-scripts/issues/134) | Planned |
+| Parallel dispatch                | `superpowers:dispatching-parallel-agents`    | The post-parallel verification habit is ported; the dispatch mechanics are not                                                                                                                 | [#131](https://github.com/shaug/agent-scripts/issues/131) | Planned |
+
+The registry in [`docs/skill-authoring.md`](docs/skill-authoring.md) classifies
+every peer skill into one of four forms — referenced peer, ported with
+attribution, house territory, or no relationship — and is the authority when
+this summary and the registry disagree.
+
 ## Quick Start
 
 Run the core checks:
