@@ -1,6 +1,6 @@
 ---
 name: babysit-pr
-description: Watch, monitor, or babysit an existing GitHub pull request through current-head CI, review feedback, mergeability, and optional merge. Use when asked to watch a PR until it is ready to merge, merge it when explicitly authorized, shepherd it through failing checks and review comments, or keep watching until it closes; diagnoses failures, makes only authorized ticket-scoped fixes, reruns validation and repository-owned review after head changes, and returns a candidate-bound terminal handoff.
+description: 'Use when an existing GitHub pull request needs watching, shepherding, or merging — asked to babysit or monitor a PR, drive it to green through failing CI checks and published review comments, merge it once explicitly authorized, or keep watching until it closes. Scope is one already-published PR: it never selects or implements a ticket, creates the branch or the PR, transitions a tracker item, deletes branches, or deploys. Returns one candidate-bound terminal state: ready_to_merge, merged, closed, or blocked.'
 ---
 
 # Babysit PR

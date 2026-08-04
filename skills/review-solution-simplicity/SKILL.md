@@ -1,6 +1,6 @@
 ---
 name: review-solution-simplicity
-description: Review a code change, diff, PR, branch, or patch for whole-solution over-engineering by mapping its major mechanisms to stated requirements and proposing a materially smaller requirement-complete design. Use when asked whether a change is over-engineered or for an architecture-level simplicity review, either from raw ticket and repository evidence or from the shared review packet. Preserves justified safety and operational complexity, returns only the shared result shape, and never modifies the candidate.
+description: Use when a code change, diff, PR, branch, or patch should be examined for whole-solution over-engineering — whether its major mechanisms are each justified by a stated requirement, and whether a materially smaller requirement-complete design exists. Accepts either raw ticket and repository evidence or the repository-owned shared review packet. Read-only, and preserves justified safety and operational complexity. Returns only the shared result shape.
 allowed-tools: Read, Grep, Glob, Bash
 ---
 

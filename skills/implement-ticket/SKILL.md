@@ -1,6 +1,6 @@
 ---
 name: implement-ticket
-description: Implement, build, or fix exactly one standalone GitHub or Linear ticket or issue, or one named child of a larger epic, through an isolated candidate and either one pull request or an explicitly authorized carved stack. Use when asked to implement a ticket end to end; resolves live ticket and dependency context, enforces readiness and authority boundaries, implements and validates one coherent change, runs an initial repository-owned review, chooses the publication path from the live cognitive-load guardrails, delegates the published lifecycle, and verifies tracker, mainline, and cleanup outcomes. Detects whole-epic requests before mutation and routes them toward implement-epic without creating a circular skill dependency.
+description: 'Use when exactly one GitHub or Linear ticket or issue — standalone, or one named child of an epic — should go from open to delivered. Scope is one ticket and one publication, either a single pull request or an explicitly authorized carved stack: it enforces readiness and authority boundaries, delegates the initial review and the published PR lifecycle to the repository-owned skills, and verifies tracker, mainline, and cleanup outcomes. Detects a whole-epic request before any mutation and routes it toward implement-epic. Returns one terminal state: ready_pr, ready_prs, merged, blocked, or requires_epic.'
 ---
 
 # Implement Ticket

@@ -1,6 +1,6 @@
 ---
 name: carve-changesets
-description: Recompose a large review-ready source branch into an ordered chain of intentional, independently reviewable changesets while preserving its final behavior. Use when asked to split, carve, decompose, publish, review, merge, or propagate an oversized branch as stacked GitHub pull requests; keeps proposal state ephemeral, promotes truth into git and GitHub, delegates repository review and PR lifecycle work, and requires explicit authority for every remote mutation.
+description: 'Use when a large but coherent review-ready branch must be recomposed into an ordered chain of independently reviewable changesets — asked to split, carve, decompose, stack, publish, or propagate a branch too large for one pull request. The requested boundary may stop at a proposal, at a local chain, at open GitHub pull requests, or at a fully merged and propagated chain. Scope is recomposing an existing branch with its final behavior preserved: it never re-implements the work, delegates per-changeset review and PR lifecycle to the repository-owned skills, and requires explicit authority for every remote mutation. Returns one terminal state: plan_ready, chain_ready, prs_open, all_merged, or blocked.'
 ---
 
 # Carve Changesets
