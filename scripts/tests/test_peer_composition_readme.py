@@ -25,6 +25,13 @@ README = REPOSITORY_ROOT / "README.md"
 LANDED_SEAM_TICKETS = ("#124", "#125", "#126", "#127", "#128")
 PLANNED_SEAM_TICKETS = ("#131", "#134")
 
+# One ticket-to-status lookup, so the two directional tests below share it
+# rather than each re-deriving their own view of the same two tuples.
+SEAM_STATUS = {
+    **dict.fromkeys(LANDED_SEAM_TICKETS, "Landed"),
+    **dict.fromkeys(PLANNED_SEAM_TICKETS, "Planned"),
+}
+
 
 def compact(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
@@ -43,6 +50,11 @@ class PeerCompositionSectionTests(unittest.TestCase):
             0
         ]
         cls.compact = compact(cls.section)
+        cls.seam_rows = [
+            line
+            for line in cls.section.splitlines()
+            if line.startswith("| ") and "issues/" in line
+        ]
 
     def test_the_section_exists_with_its_division_of_labor(self):
         self.assertIn("Division of labor", self.compact)
@@ -74,19 +86,10 @@ class PeerCompositionSectionTests(unittest.TestCase):
     def test_the_guarantee_of_standalone_function_is_stated(self):
         self.assertIn("Nothing here degrades when a peer is absent", self.compact)
 
-    def test_the_seam_table_marks_landed_and_planned_seams(self):
-        for ticket in LANDED_SEAM_TICKETS:
-            self.assertIn(f"issues/{ticket.lstrip('#')})", self.section, ticket)
-        for ticket in PLANNED_SEAM_TICKETS:
-            self.assertIn(f"issues/{ticket.lstrip('#')})", self.section, ticket)
-        # Every table row ends in exactly one status marker.
-        rows = [
-            line
-            for line in self.section.splitlines()
-            if line.startswith("| ") and "issues/" in line
-        ]
-        self.assertGreaterEqual(len(rows), 10)
-        for row in rows:
+    def test_the_seam_table_marks_every_row_landed_or_planned(self):
+        """Catches a row citing a ticket in neither declared tuple."""
+        self.assertGreaterEqual(len(self.seam_rows), 10)
+        for row in self.seam_rows:
             with self.subTest(row=row[:60]):
                 self.assertIn(
                     last_cell(row),
@@ -94,32 +97,20 @@ class PeerCompositionSectionTests(unittest.TestCase):
                     "each seam row must end in a Landed or Planned marker",
                 )
 
-    def test_every_landed_seam_row_is_marked_landed(self):
-        """Without this, rewriting every row to Planned leaves the suite green."""
-        for line in self.section.splitlines():
-            if not (line.startswith("| ") and "issues/" in line):
-                continue
-            for ticket in LANDED_SEAM_TICKETS:
-                if f"issues/{ticket.lstrip('#')})" in line:
-                    with self.subTest(ticket=ticket):
-                        self.assertEqual(
-                            "Landed",
-                            last_cell(line),
-                            f"{ticket} has landed and must be marked Landed",
-                        )
-
-    def test_no_unlanded_seam_is_described_without_a_planned_marker(self):
-        for line in self.section.splitlines():
-            if not (line.startswith("| ") and "issues/" in line):
-                continue
-            for ticket in PLANNED_SEAM_TICKETS:
-                if f"issues/{ticket.lstrip('#')})" in line:
-                    with self.subTest(ticket=ticket):
-                        self.assertEqual(
-                            "Planned",
-                            last_cell(line),
-                            f"{ticket} has not landed and must be marked Planned",
-                        )
+    def test_each_seam_row_matches_its_declared_status(self):
+        """Two-directional: without this, rewriting every row to Planned, or
+        marking an open-ticket seam Landed, both leave the suite green."""
+        for ticket, status in SEAM_STATUS.items():
+            link = f"issues/{ticket.lstrip('#')})"
+            matching = [row for row in self.seam_rows if link in row]
+            with self.subTest(ticket=ticket):
+                self.assertTrue(matching, f"no seam row cites {ticket}")
+                for row in matching:
+                    self.assertEqual(
+                        status,
+                        last_cell(row),
+                        f"{ticket} is {status.lower()} and its row must say so",
+                    )
 
     def test_the_unmeasured_overlap_audit_carries_its_planned_marker(self):
         self.assertIn("planned in", self.compact)
