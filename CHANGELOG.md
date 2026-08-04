@@ -45,7 +45,6 @@ summary: Chronological history of repository and skill changes.
   change kind each while forbidding the other three slots, so claiming the wrong
   slot grades as wrong. Forward evals: 58/58
 
-
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a
   change to a skill's normative prose now ships with a recorded model-behavior

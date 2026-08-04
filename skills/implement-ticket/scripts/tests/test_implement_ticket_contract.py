@@ -240,6 +240,28 @@ class ImplementTicketContractTests(unittest.TestCase):
         # The ask-a-human mapping the authoring checklist requires of every seam.
         for surface in (self.skill_compact, delegated):
             self.assertIn("maps to the typed `blocked` result", surface)
+        # Criterion 4: the registry's load-bearing actor semantics, both branches.
+        self.assertIn(
+            "interactive runs offer it once, and the user's explicit yes constitutes "
+            "the peer's required request",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "autonomous and delegated runs record the recommendation in the run's "
+            "evidence and proceed",
+            self.skill_compact,
+        )
+        # Criterion 4: silent fallback for the third peer, which the two-peer
+        # sentence does not cover.
+        self.assertIn(
+            "When the peer is not in the listing, diagnose from logs and evidence "
+            "without comment",
+            self.skill_compact,
+        )
+        # Criterion 2: the precedence rule appears in BOTH paths, not just SKILL.md.
+        self.assertIn(
+            "supersedes the absolutes of any peer methodology skill", delegated
+        )
 
     def test_delegated_evidence_slot_documents_both_valid_encodings(self):
         """Prose only; the encodings themselves are exercised against validate.py
