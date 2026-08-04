@@ -117,7 +117,11 @@ class RecorderTests(unittest.TestCase):
         self.assertRegex(summary["recorded_at"], r"^\d{4}-\d{2}-\d{2}T")
         self.assertEqual(summary["totals"], {"total": 2, "passed": 2, "failed": 0})
         self.assertEqual(summary["cases"], {"alpha": "pass", "beta": "pass"})
-        self.assertIn("python3", " ".join(summary["command"]))
+        # The exact command is recorded verbatim, so a reader can tell what
+        # actually ran. Assert the harness, not the interpreter's filename,
+        # which differs between environments.
+        self.assertEqual(summary["command"][0], sys.executable)
+        self.assertIn(str(self.harness), summary["command"])
 
     # AC: summaries carry per-case pass/fail, not just an aggregate.
     def test_failed_cases_are_recorded_individually(self) -> None:
