@@ -4,7 +4,7 @@ A personal monorepo for agent skills and supporting scripts.
 
 ## Installation
 
-Install the plugin when you need any composed workflow. It packages all nine
+Install the plugin when you need any composed workflow. It packages all ten
 skills together so stable-name dependencies such as `implement-ticket`,
 `review-code-change`, and `babysit-pr` are available in the same fresh session.
 
@@ -111,16 +111,26 @@ implement-epic
     ├── review-code-change          # initial candidate review
     ├── babysit-pr                  # ordinary single-PR lifecycle
     │   └── review-code-change      # after a head-changing fix
-    └── carve-changesets            # authority-gated oversized path
-        ├── review-code-change      # each exact changeset
-        └── babysit-pr              # each changeset PR lifecycle
-            └── review-code-change  # after a head-changing fix
+    ├── carve-changesets            # authority-gated oversized path
+    │   ├── review-code-change      # each exact changeset
+    │   └── babysit-pr              # each changeset PR lifecycle
+    │       └── review-code-change  # after a head-changing fix
+    ┊
+    ┈▷ ready-ticket                 # recommendation only, never invoked
 
 carve-changesets
 ├── review-code-change              # direct per-changeset review
 └── babysit-pr                      # each published PR lifecycle
     └── review-code-change          # after a head-changing fix
 ```
+
+Solid edges are invocation. The single dashed edge is a recommendation:
+`implement-ticket` names `ready-ticket` in a not-ready `blocked` result,
+carrying the marker
+`implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>`, and the caller
+decides whether to run it. Nothing invokes `ready-ticket` automatically, and
+`ready-ticket` never invokes `implement-ticket`, so the recommendation cannot
+close a cycle.
 
 Compatible runtimes may provide named subagents or equivalent isolated
 implementation and review contexts. Files under each skill's `agents/` directory

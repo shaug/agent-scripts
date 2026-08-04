@@ -98,6 +98,68 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("routing cycle detected", self.all_contract)
         self.assertIn("implement-epic", self.skill_compact)
 
+    def test_not_ready_routing_marker_and_cycle_guard_are_stable(self):
+        self.assertIn(
+            "implement-ticket:requires-ready-ticket:<tracker>:<ticket-id>",
+            self.all_contract,
+        )
+        self.assertIn("ready-ticket", self.skill_compact)
+        self.assertIn(
+            "routing-cycle reason instead of recommending it", self.skill_compact
+        )
+
+    def test_ready_ticket_is_recommended_and_never_invoked(self):
+        """The new edge is a recommendation, so no cycle and no implicit dispatch."""
+        for required in (
+            "This is a recommendation, not a dispatch",
+            "Never invoke `ready-ticket` or run its elicitation from inside this skill",
+            "the caller decides whether to run it",
+            "`ready-ticket` terminates in a ticket body and must never invoke "
+            "`implement-ticket`",
+        ):
+            self.assertIn(required, self.skill_compact)
+
+    def test_authorized_body_repair_survives_the_new_routing_branch(self):
+        """Routing must not silently narrow the pre-existing readiness remediation."""
+        self.assertIn(
+            "When ticket editing is authorized, make an unclear ticket "
+            "implementation-ready and re-read it",
+            self.skill_compact,
+        )
+        for required in (
+            "Two checkable facts decide the branch",
+            "The preceding paragraph governs unchanged",
+            "Do not return `blocked` and do not emit the marker",
+        ):
+            self.assertIn(required, self.skill_compact)
+        # The prohibition must not reach the authorized repair the gate already allows.
+        self.assertNotIn("or author the ticket body from inside", self.skill_compact)
+
+    def test_only_body_readiness_carries_the_ready_ticket_marker(self):
+        self.assertIn(
+            "keeps its own `blocked` reason and does not carry this marker",
+            self.skill_compact,
+        )
+        self.assertIn("`ready-ticket` cannot repair any of those", self.skill_compact)
+
+    def test_each_recommendation_edge_rule_has_exactly_one_owner(self):
+        """One owner per rule, so a later narrowing cannot strand a stale copy."""
+        self.assertEqual(1, self.skill_compact.count("Never invoke `ready-ticket`"))
+        self.assertEqual(1, self.skill_compact.count("terminates in a ticket body"))
+        # The diagram legend points at the owning section instead of restating it.
+        self.assertIn(
+            "The dashed edge is a recommendation, governed by", self.skill_compact
+        )
+
+    def test_dependency_surfaces_annotate_the_recommendation_edge(self):
+        readme = compact(read(REPOSITORY_ROOT / "README.md"))
+        for surface in (self.skill_compact, readme):
+            self.assertIn("┈▷ ready-ticket", surface)
+            self.assertIn("recommendation only, never invoked", surface)
+        self.assertIn("Solid edges are invocation", self.skill_compact)
+        self.assertIn("Solid edges are invocation", readme)
+        self.assertIn("cannot close a cycle", readme)
+
     def test_dependency_names_are_repository_owned_and_acyclic(self):
         self.assertIn("review-code-change", self.skill_compact)
         self.assertIn("babysit-pr", self.skill_compact)
