@@ -345,10 +345,10 @@ destructive, or architecture decision — is not a dead end. Two checkable facts
 decide the branch: whether ticket editing is authorized, and whether closing the
 gap would decide something this skill may not decide.
 
-- **Ticket editing is authorized and the gap is not a product, data,
-  authorization, migration, destructive, or architecture decision.** The
-  preceding paragraph governs unchanged: make the ticket implementation-ready,
-  re-read it, and continue. Do not return `blocked` and do not emit the marker.
+- **Ticket editing is authorized and the gap is not one of those decisions.**
+  The preceding paragraph governs unchanged: make the ticket
+  implementation-ready, re-read it, and continue. Do not return `blocked` and do
+  not emit the marker.
 - **Otherwise** — ticket editing is unauthorized, or the gap is one of those
   decisions this skill may not make for the requester. Return `blocked` and name
   repository-owned `ready-ticket` as the remediation path, including the stable
