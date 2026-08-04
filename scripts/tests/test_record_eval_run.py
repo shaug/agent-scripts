@@ -201,6 +201,34 @@ class RecorderTests(unittest.TestCase):
         self.assertEqual(summary["exit_code"], 1)
         self.assertTrue(summary["failures"])
 
+    def test_a_cases_own_observation_survives_into_the_summary(self) -> None:
+        """Variance is the metric, so pass/fail alone is not enough evidence.
+
+        A case degrading from unanimous to a bare majority still records
+        `pass`; without the case's own observation the recorded baseline
+        cannot show that movement.
+        """
+        harness = self.root / "voting_harness.py"
+        harness.write_text(
+            "import json, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "d = pathlib.Path(args[args.index('--output-dir') + 1])\n"
+            "(d / 'alpha.json').write_text(json.dumps({'agreement': 0.6}))\n"
+            "print(json.dumps({'total': 1, 'passed': 1, 'failed': 0, 'failures': []}))\n",
+            encoding="utf-8",
+        )
+
+        self.run_recorder(
+            "demo-skill",
+            "--command",
+            shlex.join([sys.executable, str(harness)]),
+            "--per-case-output-dir",
+        )
+
+        summary = self.read_only_summary("demo-skill")
+        self.assertEqual(summary["cases"], {"alpha": "pass"})
+        self.assertEqual(summary["case_evidence"]["alpha"]["agreement"], 0.6)
+
     # A diff is only meaningful against a comparable run: same tier, and one
     # that actually produced case outcomes.
     def test_diff_is_not_drawn_against_an_incomparable_run(self) -> None:
@@ -375,6 +403,39 @@ class NormIsStatedTests(unittest.TestCase):
             identity = record_eval_run.candidate_identity()
 
         self.assertFalse(identity["worktree_clean"])
+
+    def test_forward_evals_stays_forward_relative_under_any_suite(self) -> None:
+        """The field means "this skill has a real-model *forward* executor".
+
+        Making it suite-relative made every triggering summary claim that for
+        skills whose only real-model executor is the triggering one.
+        """
+        for suite in ("forward", "triggering"):
+            with self.subTest(suite=suite):
+                stdout = io.StringIO()
+                with contextlib.redirect_stdout(stdout):
+                    record_eval_run.main(
+                        ["carve-changesets", "--suite", suite, "--dry-run"]
+                    )
+                self.assertIn(
+                    "carve-changesets", json.loads(stdout.getvalue())["skill"]
+                )
+
+        self.assertNotIn("real_model", record_eval_run.EVAL_TARGETS["carve-changesets"])
+        self.assertIn(
+            "real_model", record_eval_run.TRIGGERING_TARGETS["carve-changesets"]
+        )
+
+    def test_suite_selects_the_registry_and_is_recorded(self) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            record_eval_run.main(
+                ["implement-ticket", "--suite", "triggering", "--dry-run"]
+            )
+        resolved = json.loads(stdout.getvalue())
+
+        self.assertEqual(resolved["suite"], "triggering")
+        self.assertIn("triggering/runner.py", " ".join(resolved["command"]))
 
     def test_just_exposes_the_recorder_as_eval_record(self) -> None:
         justfile = (REPOSITORY_ROOT / "justfile").read_text(encoding="utf-8")

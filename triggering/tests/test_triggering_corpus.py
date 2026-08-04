@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import shlex
 import subprocess
 import sys
@@ -211,6 +212,31 @@ class CompositionCaseTests(unittest.TestCase):
                 self.assertGreater(
                     len(case["gap"]), 80, f"{case['id']} gap is not specific"
                 )
+
+    def test_every_seam_named_in_shipped_prose_has_a_case(self) -> None:
+        """A seam that has landed must be exercised or explicitly gapped.
+
+        Derived from the prose rather than listed here, so a newly landed seam
+        without a composition case fails instead of passing silently — which is
+        how the test-driven-development and systematic-debugging seams were
+        missed when they landed.
+        """
+        named_in_prose = set()
+        for skill_md in (REPOSITORY_ROOT / "skills").glob("*/SKILL.md"):
+            for line in skill_md.read_text(encoding="utf-8").splitlines():
+                for peer in re.findall(r"`(superpowers:[a-z-]+|load-bearing)`", line):
+                    if (
+                        "available in the session skill listing" in line
+                        or "load it" in line
+                    ):
+                        named_in_prose.add(peer.replace("superpowers:", ""))
+
+        covered = " ".join(case["seam"] for case in COMPOSITION["cases"])
+        missing = sorted(peer for peer in named_in_prose if peer not in covered)
+
+        self.assertEqual(
+            missing, [], f"landed seams with no composition case: {missing}"
+        )
 
     def test_peer_install_state_is_recorded_for_every_required_peer(self) -> None:
         for case in COMPOSITION["cases"]:

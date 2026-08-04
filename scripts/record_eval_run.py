@@ -193,8 +193,15 @@ def resolve_command(
 
 def run_command(
     command: list[str], reports_per_case: bool
-) -> tuple[subprocess.CompletedProcess[str], dict[str, str]]:
-    """Execute the eval command from the repository root."""
+) -> tuple[subprocess.CompletedProcess[str], dict[str, str], dict[str, dict | None]]:
+    """Execute the eval command from the repository root.
+
+    Returns the process, the pass/fail map the diff is computed over, and each
+    case's own observation. The third is kept because a harness may report more
+    than pass/fail — the description tier reports how many of its repetitions
+    agreed — and discarding it would leave a case degrading from 5/5 to 3/5
+    recorded as an unchanged `pass`.
+    """
     if not reports_per_case:
         completed = subprocess.run(
             command,
@@ -203,7 +210,7 @@ def run_command(
             capture_output=True,
             check=False,
         )
-        return completed, {}
+        return completed, {}, {}
 
     with tempfile.TemporaryDirectory() as directory:
         completed = subprocess.run(
@@ -213,8 +220,13 @@ def run_command(
             capture_output=True,
             check=False,
         )
-        observed = sorted(path.stem for path in Path(directory).glob("*.json"))
-    return completed, {case_id: "pass" for case_id in observed}
+        evidence = {}
+        for path in sorted(Path(directory).glob("*.json")):
+            try:
+                evidence[path.stem] = json.loads(path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                evidence[path.stem] = None
+    return completed, {case_id: "pass" for case_id in evidence}, evidence
 
 
 def parse_summary(stdout: str) -> dict | None:
@@ -372,6 +384,7 @@ def build_summary(
     command: list[str],
     completed: subprocess.CompletedProcess[str],
     cases: dict[str, str],
+    case_evidence: dict[str, dict | None],
     expects_summary: bool,
     recorded_at: datetime,
     previous: dict | None,
@@ -435,7 +448,11 @@ def build_summary(
         "suite": suite,
         "recorded_at": recorded_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tier": tier,
-        "forward_evals": "real_model" in SUITES[suite].get(skill, {}),
+        # Deliberately keyed off the forward suite whatever suite is being
+        # recorded: the field's recorded meaning is "this skill has a
+        # real-model forward executor", and making it suite-relative made
+        # every triggering summary assert that for skills with none.
+        "forward_evals": "real_model" in EVAL_TARGETS.get(skill, {}),
         "gap": gap,
         "note": note,
         "command": command,
@@ -445,6 +462,7 @@ def build_summary(
         "limitation": limitation,
         "totals": totals,
         "cases": cases,
+        "case_evidence": case_evidence,
         "failures": failures,
         "compared_to": compared_to,
         "diff": diff,
@@ -509,7 +527,7 @@ def record(
     command, resolved_tier, gap, reports_per_case = resolve_command(
         skill, tier, override, per_case, suite
     )
-    completed, cases = run_command(command, reports_per_case)
+    completed, cases, case_evidence = run_command(command, reports_per_case)
     recorded_at = utc_now()
     directory = results_dir(skill)
     summary = build_summary(
@@ -522,6 +540,7 @@ def record(
         command=command,
         completed=completed,
         cases=cases,
+        case_evidence=case_evidence,
         expects_summary=reports_per_case,
         recorded_at=recorded_at,
         previous=previous_run(directory, resolved_tier, cases, suite),
