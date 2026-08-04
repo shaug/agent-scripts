@@ -219,6 +219,28 @@ class ImplementTicketContractTests(unittest.TestCase):
                 forbidden & set(EVIDENCE_IDENTIFIERS),
             )
 
+    def test_every_ticket_required_evidence_element_is_pinned(self):
+        """Each normative element must be red-at-base, not silently deletable."""
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        # Acceptance criterion 1 names the delegated-worker paragraph as a target.
+        self.assertIn(
+            "A delegated worker owes the same change-demonstrating-test evidence as "
+            "a standalone run",
+            self.skill_compact,
+        )
+        # The one-line inline fallback admonition the ticket's Scope requires.
+        self.assertIn(
+            "Write the failing behavioral test before the implementation",
+            self.skill_compact,
+        )
+        # The exemptions are closed, so neither absorbs adjacent change kinds.
+        self.assertIn("The two exemptions are named and closed", self.skill_compact)
+        # The ask-a-human mapping the authoring checklist requires of every seam.
+        for surface in (self.skill_compact, delegated):
+            self.assertIn("maps to the typed `blocked` result", surface)
+
     def test_evidence_contract_precedence_resolves_the_tdd_conflicts(self):
         for required in (
             "supersede the absolutes of any loaded peer",
@@ -227,6 +249,16 @@ class ImplementTicketContractTests(unittest.TestCase):
             "per-unit test checklist versus surface tests",
         ):
             self.assertIn(required, self.skill_compact)
+
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        for resolution in (
+            "which the two named exemptions override",
+            "which the surface-behavior requirement overrides",
+            "evidence produced after the implementation satisfies it",
+        ):
+            self.assertIn(resolution, delegated)
 
     def test_anti_coupling_rule_states_its_failure_mode(self):
         self.assertIn(

@@ -63,10 +63,12 @@ behavior-preserving refactor does not satisfy the slot.
 This obligation is prose riding in the existing validation evidence; it adds no
 invocation or result field. It is peer-independent and supersedes the absolutes
 of any peer methodology skill loaded in the delegate's context — including a
-universal red–green law, which the two named exemptions override, and a per-unit
-test checklist, which the surface-behavior requirement overrides. A peer
-instruction to consult a human maps to the typed `blocked` result rather than
-stalling the delegation.
+universal red–green law, which the two named exemptions override; a process law
+requiring the test first, since the slot requires the base-failing and
+head-passing observations and evidence produced after the implementation
+satisfies it; and a per-unit test checklist, which the surface-behavior
+requirement overrides. A peer instruction to consult a human maps to the typed
+`blocked` result rather than stalling the delegation.
 
 The checkpoint command is an array of executable and argument strings. Agent
 Scripts sends one JSON checkpoint request on standard input and requires exactly
