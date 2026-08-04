@@ -85,7 +85,7 @@ class PeerCompositionSectionTests(unittest.TestCase):
             for line in self.section.splitlines()
             if line.startswith("| ") and "issues/" in line
         ]
-        self.assertGreaterEqual(len(rows), 9)
+        self.assertGreaterEqual(len(rows), 10)
         for row in rows:
             with self.subTest(row=row[:60]):
                 self.assertIn(
