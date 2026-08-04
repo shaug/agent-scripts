@@ -43,7 +43,14 @@ summary: Chronological history of repository and skill changes.
   join the shared forward-eval action vocabulary in `claude_executor.py` and
   `fixture_executor.py`, and four new result-blind forward cases cover one
   change kind each while forbidding the other three slots, so claiming the wrong
-  slot grades as wrong. Forward evals: 58/58
+  slot grades as wrong. The eval-evidence norm landed mid-flight (#135, PR
+  #148), so this change records its runs rather than the planned marker the
+  ticket originally allowed: the deterministic after-run is 58/58 and diffs
+  against the recorded baseline as 54 unchanged with nothing newly failing or
+  newly passing, and the real-model attempt is recorded as `attempted` because
+  the environment's headless `claude` auth still fails — the same limitation the
+  baseline recorded and deferred to #145, so model-behavior evidence for this
+  change is deferred to the first capable run
 
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a
