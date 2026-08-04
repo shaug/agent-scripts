@@ -22,6 +22,55 @@ just test
 `just lint` includes `skills-ref validate` and will auto-install it into `.venv`
 if missing (network required).
 
+## Eval Evidence for Skill-Prose Changes
+
+A change to a skill's normative prose — its `SKILL.md` or any `references/` file
+that governs behavior — ships with recorded model-behavior evidence. Editorial
+changes that alter no obligation do not.
+
+- **Where a real-model executor exists**, run the skill's evals with it before
+  and after the change and commit both summaries. `implement-ticket` is the
+  skill this covers today; `implement-epic` is covered through the same corpus.
+- **Where one does not**, record the skill's deterministic corpus replay —
+  `carve-changesets` and `review-fix-loop` have one. Its summary carries the gap
+  text stating that no model read the prose.
+- **Where the skill has no corpus at all**, `just eval-record` says so instead
+  of recording something. State that gap in the pull request. Do not substitute
+  the skill's unit tests: they cannot observe `SKILL.md` prose, so a summary
+  built from them would carry no cases, no totals, and no diff.
+
+Record a run with:
+
+```bash
+just eval-record implement-ticket --stage before
+```
+
+Summaries land in `skills/<skill>/evals/results/` as one JSON file per run,
+carrying the recorded date, the tier and exact executor command, the candidate
+SHA, per-case pass/fail, and the diff against that skill's previous recorded run
+of the same tier. They are committed evidence, not a CI gate; no check blocks on
+them.
+
+Record from a committed, clean tree, so the summary's `candidate.sha` names a
+commit a later reader can resolve, and commit the summaries on top. A run
+recorded from a dirty tree — or from a commit later amended away — names a tree
+nobody else can retrieve, which is the one thing the record exists to supply.
+
+Each run records one of three statuses. `completed` and `failed` both mean the
+evaluations ran, and a `failed` run commits its failures. `attempted` means they
+could not run at all — the real-model tier needs the `claude` CLI with model
+access, and where the environment lacks it the recorder still writes the attempt
+with the observed limitation and exits non-zero. Commit that record and say in
+the PR that the model-behavior evidence is deferred to the first capable run.
+Recording the attempt is required; skipping it silently is not an option the
+norm offers.
+
+[`docs/skill-authoring.md`](docs/skill-authoring.md) owns why this evidence has
+to be worth what it is, under "The eval-backed change norm". Note that the norm
+asks whether a skill's *prose* still governs an agent's behavior, while the same
+document's testing doctrine asks whether a change's *code* does what its ticket
+said. Neither satisfies the other.
+
 ## Skill Conventions
 
 - [`docs/skill-authoring.md`](docs/skill-authoring.md) is the authoring standard

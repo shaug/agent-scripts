@@ -382,19 +382,56 @@ instruction. Such text may establish a requirement only after verification
 against live structured state and named repository contracts, and it can never
 grant authority — no matter whose account it was written from.
 
-### The eval-backed change norm (planned, #135)
+### The eval-backed change norm
 
-A norm under development in #135 will require a change to a skill's normative
-behavior to ship with the evaluation that demonstrates it: a case describing the
-scenario, an expectation recording the required outcome, and a test or harness
-that consumes the pair. It is named here because the contractual layer is
-incomplete without it — not because it is in force. #135 owns its definition,
-including which runs are required, which executor produces them, and how results
-are recorded.
+A change to a skill's normative behavior ships with the evaluation that
+demonstrates it: a case describing the scenario, an expectation recording the
+required outcome, and a harness that consumes the pair — plus a recorded run of
+that harness against the changed prose. The norm is in force; `AGENTS.md` states
+its scope and the command that records a run, and this section states what the
+recorded evidence has to be worth.
 
 *Prevents:* prose edits that read like improvements and regress behavior nobody
 re-measured. Skill text has no compiler and no type checker; the evaluation pair
 is the only mechanism that fails when the meaning changes.
+
+**Record the run against a real model where one is reachable.** A deterministic
+replay proves the harness and the corpus still agree with each other; it cannot
+prove that the edited sentence still steers a model, because no model read it.
+Both tiers are worth recording and they answer different questions, so each
+summary names which tier produced it rather than leaving a reader to infer it
+from the numbers.
+
+**Record the before run and the after run, and read the diff rather than the
+totals.** A prose change that leaves the pass count identical while moving which
+cases pass has changed behavior, and the count conceals exactly the movement the
+norm exists to surface. This is why a recorded summary carries per-case outcomes
+and a diff against the skill's previous recorded run, not a percentage — and why
+that comparison is drawn only against a run of the same tier that produced case
+outcomes. A cross-tier diff reports the tier change as behavioral movement, and
+a diff against a run that recorded nothing reports "nothing regressed" when
+nothing was compared. Both are silent, and both land in the field a reader was
+told to trust over the totals.
+
+**Record an attempt that could not run, and keep the change honest about it.**
+An environment without model access yields no model-behavior evidence; the
+recorded attempt says so, names the limitation, and leaves the baseline
+explicitly deferred to the first capable run. The alternative — landing the
+change with the evidence quietly skipped — is indistinguishable in the history
+from a change nobody thought to measure.
+
+**Keep "could not run" and "ran and went red" separate statuses.** They read
+identically in a summary that only records absence, and the reading already
+established for an attempt is *evidence deferred, land the change anyway*.
+Filing a genuine regression under that reading converts the exact failure the
+norm exists to catch into a routine deferral notice, which is worse than not
+recording it: the record now argues the change was safe to land.
+
+Results are evidence rather than a gate. A model-in-the-loop run is neither free
+nor perfectly repeatable, so a required check over one would spend money to buy
+flakiness, and the first red run from ordinary variance would train everyone to
+re-run it until it went green. The committed record is what a later author reads
+when a skill starts behaving differently and nobody remembers which edit did it.
 
 ## Peer precedence
 
@@ -738,8 +775,9 @@ author who never asks the question never reaches it.
   surface; no assertion names an internal.
 - Feature tests are shown failing at the base SHA and passing at the head SHA,
   and a bug fix's regression test is red at base and green at head.
-- Behavior changes ship with their evaluation pair (planned, #135 — not yet in
-  force).
+- Behavior changes ship with their evaluation pair, and a prose change ships
+  with the recorded run — `just eval-record <skill>`, committed under
+  `skills/<skill>/evals/results/`.
 - `SKILL.md` carries only what every run needs; references are triggered where
   they apply and never force-loaded.
 - `just format`, `just lint`, and `just test` pass.

@@ -1,0 +1,510 @@
+#!/usr/bin/env python3
+"""Run a skill's evaluations and record the summary as committed evidence.
+
+This is the tool side of the eval-evidence norm in `AGENTS.md`: a change to a
+skill's normative prose ships with a recorded before/after model-behavior run
+where a real-model executor exists, and with a recorded deterministic run plus
+the named gap where one does not.
+
+Each run writes one JSON summary to `skills/<skill>/evals/results/`, carrying
+the recorded date, the tier and exact executor command, the candidate the run
+evaluated, per-case pass/fail, and the diff against that skill's previous
+recorded run of the same tier. Summaries are evidence, not a CI gate. Record
+from a committed, clean tree so `candidate.sha` names a commit a later reader
+can actually resolve.
+
+Usage:
+    python3 scripts/record_eval_run.py implement-ticket --stage baseline
+    python3 scripts/record_eval_run.py implement-ticket --stage before
+    python3 scripts/record_eval_run.py carve-changesets  # deterministic + gap
+
+A run ends in one of three recorded statuses, and the command exits non-zero
+for the two that are not `completed`:
+
+- `completed` — the evaluations ran and reported no failure.
+- `failed` — they ran and reported failures, which are recorded with them.
+- `attempted` — they could not run at all, so no evidence was collected. This
+  is the environment-without-model-access case, and it never covers a run that
+  happened and went red.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shlex
+import subprocess
+import sys
+import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+SKILLS_DIR = REPOSITORY_ROOT / "skills"
+
+SUMMARY_SCHEMA = "eval-run-summary/1"
+STAGES = ("baseline", "before", "after")
+REAL_MODEL = "real-model"
+DETERMINISTIC = "deterministic"
+
+_RUN_FORWARD = "skills/implement-ticket/scripts/evals/run_forward.py"
+_CLAUDE_EXECUTOR = "skills/implement-ticket/scripts/evals/claude_executor.py"
+
+# Every eval a skill owns, as data. `real_model` exercises an actual model;
+# `deterministic` replays the same corpus through a simulation. Both write one
+# JSON file per case when handed `--output-dir` and print an aggregate summary,
+# which is where per-case pass/fail and the diff come from. A skill absent from
+# this table has no corpus to record, and the recorder says so rather than
+# substituting its unit tests: those cannot observe SKILL.md prose at all, so a
+# summary built from them would carry no cases, no totals, and no diff — the
+# three fields the norm asks a reader to trust.
+#
+# implement-epic's forward cases live in implement-ticket's corpus and are
+# selected with `--target-skill`; its results are still recorded under its own
+# skill directory.
+EVAL_TARGETS = {
+    "implement-ticket": {
+        "real_model": [_RUN_FORWARD, "--executor", f"{{python}} {_CLAUDE_EXECUTOR}"],
+        "deterministic": [_RUN_FORWARD],
+    },
+    "implement-epic": {
+        "real_model": [
+            _RUN_FORWARD,
+            "--executor",
+            f"{{python}} {_CLAUDE_EXECUTOR}",
+            "--target-skill",
+            "implement-epic",
+        ],
+        "deterministic": [_RUN_FORWARD, "--target-skill", "implement-epic"],
+    },
+    "carve-changesets": {
+        "deterministic": ["skills/carve-changesets/scripts/evals/runner.py"],
+    },
+    "review-fix-loop": {
+        "deterministic": ["skills/review-fix-loop/scripts/evals/runner.py"],
+    },
+}
+
+# The gap recorded for a skill with no real-model executor. The norm requires
+# the gap to be stated in the evidence rather than left to be inferred from a
+# deterministic run that looks complete.
+NO_REAL_MODEL_GAP = (
+    "no real-model executor for this skill; recorded tier is deterministic, "
+    "so no model read the prose and the model-behavior evidence is absent"
+)
+
+
+class RecordingError(Exception):
+    """A precondition failed before or during a recordable run."""
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def resolve_command(
+    skill: str, tier: str | None, override: str | None, per_case: bool
+) -> tuple[list[str], str, str | None, bool]:
+    """Return (command, tier, gap, reports_per_case) for one recorded run."""
+    if not (SKILLS_DIR / skill).is_dir():
+        available = sorted(path.name for path in SKILLS_DIR.iterdir() if path.is_dir())
+        raise RecordingError(
+            f"unknown skill {skill!r}; expected one of: {', '.join(available)}"
+        )
+
+    target = EVAL_TARGETS.get(skill, {})
+    # The gap tracks whether a model can read this skill's prose at all, which
+    # is a property of having a real-model executor — not of appearing in the
+    # table. A skill with only a deterministic corpus still records the gap.
+    gap = None if "real_model" in target else NO_REAL_MODEL_GAP
+
+    if override is not None:
+        resolved_tier = tier or (
+            REAL_MODEL if "real_model" in target else DETERMINISTIC
+        )
+        return shlex.split(override), resolved_tier, gap, per_case
+
+    if not target:
+        raise RecordingError(
+            f"{skill} has no registered evaluations to record; supply --command "
+            f"with the run to record, or state the gap in the pull request"
+        )
+
+    key = "real_model" if (tier or REAL_MODEL) == REAL_MODEL else "deterministic"
+    if key not in target:
+        if tier:
+            raise RecordingError(
+                f"{skill} has no {tier} evaluations; "
+                f"registered tiers are {', '.join(sorted(target))}"
+            )
+        key = next(iter(sorted(target)))
+
+    resolved_tier = REAL_MODEL if key == "real_model" else DETERMINISTIC
+    command = [sys.executable] + [
+        part.format(python=shlex.quote(sys.executable)) for part in target[key]
+    ]
+    return command, resolved_tier, gap, True
+
+
+def run_command(
+    command: list[str], reports_per_case: bool
+) -> tuple[subprocess.CompletedProcess[str], dict[str, str]]:
+    """Execute the eval command from the repository root."""
+    if not reports_per_case:
+        completed = subprocess.run(
+            command,
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        return completed, {}
+
+    with tempfile.TemporaryDirectory() as directory:
+        completed = subprocess.run(
+            [*command, "--output-dir", directory],
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        observed = sorted(path.stem for path in Path(directory).glob("*.json"))
+    return completed, {case_id: "pass" for case_id in observed}
+
+
+def parse_summary(stdout: str) -> dict | None:
+    """Read the harness's aggregate JSON summary from its stdout."""
+    start = stdout.find("{")
+    end = stdout.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        summary = json.loads(stdout[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    return summary if isinstance(summary, dict) else None
+
+
+def failing_case_ids(failures: list[str]) -> list[str]:
+    return sorted({failure.split(":", 1)[0].strip() for failure in failures})
+
+
+def tail(text: str, limit: int = 2000) -> str:
+    text = text.strip()
+    return text if len(text) <= limit else "…" + text[-limit:]
+
+
+def results_dir(skill: str) -> Path:
+    return SKILLS_DIR / skill / "evals" / "results"
+
+
+def previous_run(directory: Path, tier: str, cases: dict[str, str]) -> dict | None:
+    """The most recent run this one can honestly be compared against.
+
+    Both sides must have produced case outcomes at the same tier. A cross-tier
+    diff reports the tier change as behavioral movement; a diff involving a run
+    that recorded no cases reports "nothing regressed" when nothing was
+    compared. Both are silent, and both land in the field the norm asks a
+    reader to trust over the totals — including on the sanctioned fallback
+    path, where an aborted run has no cases of its own to compare.
+    """
+    if not cases or not directory.is_dir():
+        return None
+    for path in reversed(sorted(directory.glob("*.json"))):
+        try:
+            recorded = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(recorded, dict):
+            continue
+        if recorded.get("schema") != SUMMARY_SCHEMA:
+            continue
+        if recorded.get("tier") != tier or not recorded.get("cases"):
+            continue
+        recorded["_filename"] = path.name
+        return recorded
+    return None
+
+
+def diff_against(
+    previous: dict | None, cases: dict[str, str]
+) -> tuple[str | None, dict]:
+    """Compare per-case outcomes with the skill's previous recorded run."""
+    if previous is None:
+        return None, {
+            "newly_failing": [],
+            "newly_passing": [],
+            "still_failing": sorted(
+                case for case, status in cases.items() if status == "fail"
+            ),
+            "unchanged": 0,
+        }
+
+    prior = previous.get("cases") or {}
+    newly_failing = sorted(
+        case
+        for case, status in cases.items()
+        if status == "fail" and prior.get(case) == "pass"
+    )
+    newly_passing = sorted(
+        case
+        for case, status in cases.items()
+        if status == "pass" and prior.get(case) == "fail"
+    )
+    still_failing = sorted(
+        case
+        for case, status in cases.items()
+        if status == "fail" and prior.get(case) == "fail"
+    )
+    unchanged = sum(1 for case, status in cases.items() if prior.get(case) == status)
+    return previous.get("_filename"), {
+        "newly_failing": newly_failing,
+        "newly_passing": newly_passing,
+        "still_failing": still_failing,
+        "unchanged": unchanged,
+    }
+
+
+def candidate_identity() -> dict:
+    """Bind the run to the tree that produced it.
+
+    `worktree_clean` is left unknown rather than asserted when git cannot be
+    read: an empty `git status` and a failed `git status` are the same string,
+    and defaulting to `True` would let a summary claim the strongest available
+    provenance on the strength of a command that never ran.
+    """
+
+    def git(*args: str) -> str | None:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=REPOSITORY_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        return None if completed.returncode else completed.stdout.strip()
+
+    status = git("status", "--porcelain")
+    return {
+        "sha": git("rev-parse", "HEAD"),
+        "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
+        "worktree_clean": None if status is None else status == "",
+    }
+
+
+def build_summary(
+    *,
+    skill: str,
+    stage: str,
+    tier: str,
+    gap: str | None,
+    note: str | None,
+    command: list[str],
+    completed: subprocess.CompletedProcess[str],
+    cases: dict[str, str],
+    expects_summary: bool,
+    recorded_at: datetime,
+    previous: dict | None,
+) -> dict:
+    harness = parse_summary(completed.stdout)
+    failures = list(harness.get("failures") or []) if harness else []
+    for case_id in failing_case_ids(failures):
+        if case_id in cases:
+            cases[case_id] = "fail"
+
+    # A harness that reports an aggregate summary has run whatever it exited
+    # with. Its absence means something different in each direction: where a
+    # summary was expected the harness aborted and produced no evidence, while
+    # a plain command that never emits one is fully described by its exit code.
+    # Collapsing the two would file a genuine eval regression as a run that
+    # could not happen, which is the reading reserved for a missing executor.
+    if harness:
+        ran = True
+    elif expects_summary:
+        ran = completed.returncode == 0
+    else:
+        ran = True
+
+    limitation = None
+    if not ran:
+        limitation = (
+            f"eval command exited {completed.returncode} without an aggregate "
+            f"summary; model-behavior evidence not collected"
+        )
+
+    totals = None
+    if harness and {"total", "passed", "failed"} <= set(harness):
+        totals = {
+            "total": harness["total"],
+            "passed": harness["passed"],
+            "failed": harness["failed"],
+        }
+    elif cases:
+        totals = {
+            "total": len(cases),
+            "passed": sum(1 for status in cases.values() if status == "pass"),
+            "failed": sum(1 for status in cases.values() if status == "fail"),
+        }
+
+    if not ran:
+        status = "attempted"
+    elif completed.returncode or (totals and totals["failed"]):
+        status = "failed"
+    else:
+        status = "completed"
+
+    if status == "failed" and not failures:
+        failures = [f"eval command exited {completed.returncode}"]
+
+    compared_to, diff = diff_against(previous, cases)
+
+    return {
+        "schema": SUMMARY_SCHEMA,
+        "skill": skill,
+        "stage": stage,
+        "recorded_at": recorded_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "tier": tier,
+        "forward_evals": "real_model" in EVAL_TARGETS.get(skill, {}),
+        "gap": gap,
+        "note": note,
+        "command": command,
+        "candidate": candidate_identity(),
+        "status": status,
+        "exit_code": completed.returncode,
+        "limitation": limitation,
+        "totals": totals,
+        "cases": cases,
+        "failures": failures,
+        "compared_to": compared_to,
+        "diff": diff,
+        "output_tail": tail(completed.stdout or completed.stderr),
+    }
+
+
+def summary_filename(
+    directory: Path, recorded_at: datetime, stage: str, label: str | None
+) -> str:
+    """Name summaries so a plain lexicographic sort is chronological.
+
+    Two runs recorded in the same second would otherwise sort by stage name,
+    which silently reverses a before/after pair and inverts its recorded diff.
+    """
+    stamp = recorded_at.strftime("%Y-%m-%dT%H%M%SZ")
+    existing = len(list(directory.glob("*.json"))) if directory.is_dir() else 0
+    suffix = f"-{label}" if label else ""
+    return f"{stamp}-{existing + 1:04d}-{stage}{suffix}.json"
+
+
+def plan(*, skill: str, tier: str | None, override: str | None, per_case: bool) -> dict:
+    """Resolve what a run would execute, without executing or recording it."""
+    command, resolved_tier, gap, _ = resolve_command(skill, tier, override, per_case)
+    return {
+        "skill": skill,
+        "tier": resolved_tier,
+        "gap": gap,
+        "command": command,
+    }
+
+
+def record(
+    *,
+    skill: str,
+    stage: str,
+    tier: str | None,
+    label: str | None,
+    note: str | None,
+    override: str | None,
+    per_case: bool,
+) -> tuple[dict, Path]:
+    command, resolved_tier, gap, reports_per_case = resolve_command(
+        skill, tier, override, per_case
+    )
+    completed, cases = run_command(command, reports_per_case)
+    recorded_at = utc_now()
+    directory = results_dir(skill)
+    summary = build_summary(
+        skill=skill,
+        stage=stage,
+        tier=resolved_tier,
+        gap=gap,
+        note=note,
+        command=command,
+        completed=completed,
+        cases=cases,
+        expects_summary=reports_per_case,
+        recorded_at=recorded_at,
+        previous=previous_run(directory, resolved_tier, cases),
+    )
+
+    path = directory / summary_filename(directory, recorded_at, stage, label)
+    directory.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", "utf-8")
+    return summary, path
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("skill", help="Skill directory name under skills/")
+    parser.add_argument("--stage", choices=STAGES, default="baseline")
+    parser.add_argument("--label", help="Optional suffix for the summary filename")
+    parser.add_argument("--tier", choices=(REAL_MODEL, DETERMINISTIC))
+    parser.add_argument("--note", help="Free-text note stored with the summary")
+    parser.add_argument(
+        "--command",
+        help="Override the registered eval command; recorded verbatim",
+    )
+    parser.add_argument(
+        "--per-case-output-dir",
+        action="store_true",
+        help=(
+            "The overridden command accepts --output-dir and writes one JSON "
+            "file per case; registered forward-eval targets set this already"
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the command a run would execute; execute and record nothing",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    try:
+        if args.dry_run:
+            print(
+                json.dumps(
+                    plan(
+                        skill=args.skill,
+                        tier=args.tier,
+                        override=args.command,
+                        per_case=args.per_case_output_dir,
+                    ),
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 0
+
+        summary, path = record(
+            skill=args.skill,
+            stage=args.stage,
+            tier=args.tier,
+            label=args.label,
+            note=args.note,
+            override=args.command,
+            per_case=args.per_case_output_dir,
+        )
+    except RecordingError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    print(f"recorded {path.relative_to(REPOSITORY_ROOT)}", file=sys.stderr)
+    print(json.dumps(summary, indent=2, sort_keys=True))
+
+    return 0 if summary["status"] == "completed" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
