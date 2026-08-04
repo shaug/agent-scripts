@@ -48,10 +48,12 @@ test: test-plugins
   if [ "$found" -eq 0 ]; then \
     echo "No skill tests found under {{skills_dir}}/*/scripts/tests"; \
   fi; \
-  if [ -d review-suite/scripts/tests ]; then \
-    echo "Running tests in review-suite/scripts/tests"; \
-    python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'; \
-  fi
+  for tests in review-suite/scripts/tests triggering/tests; do \
+    if [ -d "$tests" ]; then \
+      echo "Running tests in $tests"; \
+      python3 -m unittest discover -s "$tests" -p 'test_*.py'; \
+    fi; \
+  done
 
 test-review-suite:
   python3 -m unittest discover -s review-suite/scripts/tests -p 'test_*.py'
@@ -151,6 +153,12 @@ eval-carve-changesets:
 # Forward-evaluate through any fresh-process stdin/stdout JSON adapter.
 eval-carve-changesets-executor executor:
   python3 {{skills_dir}}/carve-changesets/scripts/evals/runner.py --executor "{{executor}}"
+
+# Run the triggering-and-composition corpus: which skill does a prompt route
+# to? The default executor is a deterministic stand-in that exercises the
+# harness without a model; pass --executor to grade a real router.
+eval-triggering *args:
+  python3 triggering/runner.py {{args}}
 
 validate-skills: lint-skills
 

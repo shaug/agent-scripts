@@ -32,8 +32,10 @@ changes that alter no obligation do not.
   and after the change and commit both summaries. `implement-ticket` is the
   skill this covers today; `implement-epic` is covered through the same corpus.
 - **Where one does not**, record the skill's deterministic corpus replay —
-  `carve-changesets` and `review-fix-loop` have one. Its summary carries the gap
-  text stating that no model read the prose.
+  `carve-changesets` and `review-fix-loop` have one. Any deterministic run
+  carries gap text stating that no model read the prose, whether or not a
+  real-model executor exists for that skill: the gap describes what the run
+  collected, not what the registry offers.
 - **Where the skill has no corpus at all**, `just eval-record` says so instead
   of recording something. State that gap in the pull request. Do not substitute
   the skill's unit tests: they cannot observe `SKILL.md` prose, so a summary
@@ -55,6 +57,13 @@ Record from a committed, clean tree, so the summary's `candidate.sha` names a
 commit a later reader can resolve, and commit the summaries on top. A run
 recorded from a dirty tree — or from a commit later amended away — names a tree
 nobody else can retrieve, which is the one thing the record exists to supply.
+
+Summaries already written under `evals/results/` are the one exemption, and it
+is narrow by construction. Recording several skills in sequence writes a summary
+per skill, so without the exemption only the first run of a batch could report a
+clean tree and every later one would carry false dirt. Sibling evidence cannot
+change what an eval read. Any other uncommitted change still makes a run
+unclean.
 
 Each run records one of three statuses. `completed` and `failed` both mean the
 evaluations ran, and a `failed` run commits its failures. `attempted` means they

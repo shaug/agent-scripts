@@ -14,6 +14,7 @@ import importlib.util
 import io
 import json
 import shlex
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -266,7 +267,8 @@ class RecorderTests(unittest.TestCase):
         summary = self.read_only_summary("tested-skill")
         self.assertEqual(summary["tier"], "deterministic")
         self.assertFalse(summary["forward_evals"])
-        self.assertIn("no real-model executor", summary["gap"])
+        self.assertIn("no model read the prose", summary["gap"])
+        self.assertIn("No real-model executor is registered", summary["gap"])
 
     # A skill with no registered corpus records nothing: substituting its unit
     # tests would commit a summary with no cases, totals, or diff.
@@ -330,8 +332,49 @@ class NormIsStatedTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         resolved = json.loads(stdout.getvalue())
         self.assertEqual(resolved["tier"], "deterministic")
-        self.assertIn("no real-model executor", resolved["gap"])
+        self.assertIn("No real-model executor is registered", resolved["gap"])
         self.assertIn("carve-changesets", " ".join(resolved["command"]))
+
+    def test_deterministic_run_states_the_gap_even_where_a_model_tier_exists(
+        self,
+    ) -> None:
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            record_eval_run.main(
+                ["implement-ticket", "--tier", "deterministic", "--dry-run"]
+            )
+
+        resolved = json.loads(stdout.getvalue())
+        self.assertEqual(resolved["tier"], "deterministic")
+        self.assertIn("no model read the prose", resolved["gap"])
+        self.assertNotIn("No real-model executor is registered", resolved["gap"])
+
+    def test_a_previous_summary_does_not_make_the_next_run_look_dirty(self) -> None:
+        """Recording several skills in sequence must not report false dirt.
+
+        Each summary is itself a file in the tree, so without the exemption
+        only the first run of a batch could ever report a clean worktree.
+        """
+        status = "?? skills/babysit-pr/evals/results/2026-01-01T000000Z-0001-x.json\n"
+        with mock.patch.object(
+            record_eval_run.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, status, ""),
+        ):
+            identity = record_eval_run.candidate_identity()
+
+        self.assertTrue(identity["worktree_clean"])
+
+    def test_real_dirt_still_makes_a_run_unclean(self) -> None:
+        status = " M scripts/record_eval_run.py\n"
+        with mock.patch.object(
+            record_eval_run.subprocess,
+            "run",
+            return_value=subprocess.CompletedProcess([], 0, status, ""),
+        ):
+            identity = record_eval_run.candidate_identity()
+
+        self.assertFalse(identity["worktree_clean"])
 
     def test_just_exposes_the_recorder_as_eval_record(self) -> None:
         justfile = (REPOSITORY_ROOT / "justfile").read_text(encoding="utf-8")

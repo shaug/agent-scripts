@@ -100,6 +100,47 @@ summary: Chronological history of repository and skill changes.
   change is deferred to the first capable run
   (`12c25845b40a19b7f3262406fa170cc4422512ca`)
 
+- feat(evals): build the triggering-and-composition test corpus (issue #136,
+  epic #120, the epic's second leaf) — forward evals ask whether a skill's prose
+  governs behavior once it is loaded; this corpus asks the prior question,
+  whether it is the one that loads at all. `triggering/corpus.json` carries 34
+  prompts across all ten skills: positive prompts each must claim, negative
+  prompts it must not, and the named collision prompts — "Review my change." and
+  "Before merging, give this a proper review." filed from both sides, and
+  "Implement ticket 412." filed from both `implement-ticket` and `ready-ticket`
+  so the pair must agree on who wins. The answer key lives apart in
+  `expectations.json`, and the runner enforces the separation structurally: an
+  executor receives the prompt and the catalog of live skill descriptions and
+  nothing else — no case id, no `kind`, no filed-under skill — with a test
+  asserting that payload shape. The catalog is read from the `SKILL.md` files
+  rather than copied, so the corpus cannot drift out of agreement with the
+  descriptions it tests. Three tiers, each declaring itself in every recorded
+  result: `headless` observes which skill a real session loaded, `description`
+  asks a model to route from the catalog, and `fixture` is a rule table that
+  exercises the harness and reads nothing. The fallback applies to the whole
+  runner rather than to collisions alone because whether headless output
+  reliably reports skill invocation is unverified, and the headless executor
+  fails loudly instead of answering "no skill" when it cannot tell — recording
+  an unobservable invocation as `none` would silently pass every negative case.
+  The `description` tier follows #122's micro-test protocol: five repetitions in
+  independent processes, majority wins, agreement fraction recorded so a 3/5
+  result is never reported as 5/5. Writing the corpus surfaced a modelling error
+  worth recording: a negative case asserts which skill must *not* win, which is
+  not the same as asserting that nothing wins — "Implement ticket 412." is a
+  negative for `ready-ticket` whose correct answer is `implement-ticket`, and
+  the first draft's answer key said `none`. Peer-dependent expectations moved to
+  the composition cases for the same reason: this tier's catalog contains only
+  what is installed, so an absent peer cannot be picked and an expectation
+  naming it would fail for install state rather than for routing. Recording goes
+  through #135's convention rather than a second format: `record_eval_run.py`
+  gains a `--suite` dimension, diffs never cross suites, and filenames carry the
+  suite. Five composition cases cover the landed seams; none could run, and each
+  records its own specific gap — superpowers is not installed at the registry
+  pin, and independently the environment has no model access — with the
+  `load-bearing` case noting that its provisioning half is already satisfied so
+  model access alone unblocks it. Eighteen behavioral tests bound to the
+  ticket's acceptance criteria, wired into `just test` and CI
+
 - feat(evals): institute the eval-evidence norm for skill-prose changes (issue
   #135, epic #120, the epic's first leaf and the gate on its other two) — a
   change to a skill's normative prose now ships with a recorded model-behavior

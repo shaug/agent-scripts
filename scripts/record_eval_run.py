@@ -85,12 +85,53 @@ EVAL_TARGETS = {
     },
 }
 
-# The gap recorded for a skill with no real-model executor. The norm requires
-# the gap to be stated in the evidence rather than left to be inferred from a
-# deterministic run that looks complete.
-NO_REAL_MODEL_GAP = (
-    "no real-model executor for this skill; recorded tier is deterministic, "
-    "so no model read the prose and the model-behavior evidence is absent"
+_TRIGGERING_RUNNER = "triggering/runner.py"
+_DESCRIPTION_EXECUTOR = "triggering/executors/description_executor.py"
+
+# The triggering corpus is one corpus covering every skill, so each skill's
+# entry is the same runner filtered to that skill's cases. Its real-model tier
+# is the description executor; the headless executor is selected explicitly,
+# because whether headless output reports skill invocation is unverified.
+TRIGGERING_TARGETS = {
+    skill: {
+        "real_model": [
+            _TRIGGERING_RUNNER,
+            "--skill",
+            skill,
+            "--executor",
+            f"{{python}} {_DESCRIPTION_EXECUTOR}",
+        ],
+        "deterministic": [_TRIGGERING_RUNNER, "--skill", skill],
+    }
+    for skill in (
+        "babysit-pr",
+        "carve-changesets",
+        "implement-epic",
+        "implement-ticket",
+        "ready-ticket",
+        "review-code-change",
+        "review-code-simplicity",
+        "review-correctness",
+        "review-fix-loop",
+        "review-solution-simplicity",
+    )
+}
+
+FORWARD_SUITE = "forward"
+TRIGGERING_SUITE = "triggering"
+SUITES = {FORWARD_SUITE: EVAL_TARGETS, TRIGGERING_SUITE: TRIGGERING_TARGETS}
+
+# The gap recorded whenever a run's own tier means no model read the prose. It
+# is a property of the run, not of the registry: a deterministic run of a skill
+# that has a real-model executor still collected no model-behavior evidence, and
+# a summary that stayed silent about that would read as though it had.
+NO_MODEL_READ_GAP = (
+    "recorded tier is deterministic, so no model read the prose and the "
+    "model-behavior evidence is absent"
+)
+NO_REAL_MODEL_EXECUTOR = (
+    " No real-model executor is registered for this skill, so this tier is the "
+    "only one available here."
 )
 
 
@@ -103,7 +144,11 @@ def utc_now() -> datetime:
 
 
 def resolve_command(
-    skill: str, tier: str | None, override: str | None, per_case: bool
+    skill: str,
+    tier: str | None,
+    override: str | None,
+    per_case: bool,
+    suite: str = FORWARD_SUITE,
 ) -> tuple[list[str], str, str | None, bool]:
     """Return (command, tier, gap, reports_per_case) for one recorded run."""
     if not (SKILLS_DIR / skill).is_dir():
@@ -112,22 +157,22 @@ def resolve_command(
             f"unknown skill {skill!r}; expected one of: {', '.join(available)}"
         )
 
-    target = EVAL_TARGETS.get(skill, {})
-    # The gap tracks whether a model can read this skill's prose at all, which
-    # is a property of having a real-model executor — not of appearing in the
-    # table. A skill with only a deterministic corpus still records the gap.
-    gap = None if "real_model" in target else NO_REAL_MODEL_GAP
+    target = SUITES[suite].get(skill, {})
+    has_real_model = "real_model" in target
+
+    def gap_for(resolved_tier: str) -> str | None:
+        if resolved_tier == REAL_MODEL:
+            return None
+        return NO_MODEL_READ_GAP + ("" if has_real_model else NO_REAL_MODEL_EXECUTOR)
 
     if override is not None:
-        resolved_tier = tier or (
-            REAL_MODEL if "real_model" in target else DETERMINISTIC
-        )
-        return shlex.split(override), resolved_tier, gap, per_case
+        resolved_tier = tier or (REAL_MODEL if has_real_model else DETERMINISTIC)
+        return shlex.split(override), resolved_tier, gap_for(resolved_tier), per_case
 
     if not target:
         raise RecordingError(
-            f"{skill} has no registered evaluations to record; supply --command "
-            f"with the run to record, or state the gap in the pull request"
+            f"{skill} has no registered {suite} evaluations to record; supply "
+            f"--command with the run to record, or state the gap in the pull request"
         )
 
     key = "real_model" if (tier or REAL_MODEL) == REAL_MODEL else "deterministic"
@@ -143,7 +188,7 @@ def resolve_command(
     command = [sys.executable] + [
         part.format(python=shlex.quote(sys.executable)) for part in target[key]
     ]
-    return command, resolved_tier, gap, True
+    return command, resolved_tier, gap_for(resolved_tier), True
 
 
 def run_command(
@@ -198,7 +243,9 @@ def results_dir(skill: str) -> Path:
     return SKILLS_DIR / skill / "evals" / "results"
 
 
-def previous_run(directory: Path, tier: str, cases: dict[str, str]) -> dict | None:
+def previous_run(
+    directory: Path, tier: str, cases: dict[str, str], suite: str
+) -> dict | None:
     """The most recent run this one can honestly be compared against.
 
     Both sides must have produced case outcomes at the same tier. A cross-tier
@@ -220,6 +267,11 @@ def previous_run(directory: Path, tier: str, cases: dict[str, str]) -> dict | No
         if recorded.get("schema") != SUMMARY_SCHEMA:
             continue
         if recorded.get("tier") != tier or not recorded.get("cases"):
+            continue
+        # A triggering run and a forward-eval run measure different things, so
+        # a diff across them would report the change of question as behavioral
+        # movement.
+        if recorded.get("suite", FORWARD_SUITE) != suite:
             continue
         recorded["_filename"] = path.name
         return recorded
@@ -265,6 +317,15 @@ def diff_against(
     }
 
 
+# Recorded summaries are themselves files in the tree, so a run that records
+# several skills in sequence would see its own earlier summaries as dirt and
+# report every run after the first as unclean. Sibling evidence cannot change
+# what an eval read, so cleanliness is computed over everything else — and the
+# exemption is narrow and named rather than a general tolerance for a dirty
+# tree.
+RESULTS_PATH_MARKER = "/evals/results/"
+
+
 def candidate_identity() -> dict:
     """Bind the run to the tree that produced it.
 
@@ -285,10 +346,18 @@ def candidate_identity() -> dict:
         return None if completed.returncode else completed.stdout.strip()
 
     status = git("status", "--porcelain")
+    if status is None:
+        relevant = None
+    else:
+        relevant = [
+            line
+            for line in status.splitlines()
+            if RESULTS_PATH_MARKER not in line.replace("\\", "/")
+        ]
     return {
         "sha": git("rev-parse", "HEAD"),
         "branch": git("rev-parse", "--abbrev-ref", "HEAD"),
-        "worktree_clean": None if status is None else status == "",
+        "worktree_clean": None if relevant is None else not relevant,
     }
 
 
@@ -299,6 +368,7 @@ def build_summary(
     tier: str,
     gap: str | None,
     note: str | None,
+    suite: str,
     command: list[str],
     completed: subprocess.CompletedProcess[str],
     cases: dict[str, str],
@@ -362,9 +432,10 @@ def build_summary(
         "schema": SUMMARY_SCHEMA,
         "skill": skill,
         "stage": stage,
+        "suite": suite,
         "recorded_at": recorded_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tier": tier,
-        "forward_evals": "real_model" in EVAL_TARGETS.get(skill, {}),
+        "forward_evals": "real_model" in SUITES[suite].get(skill, {}),
         "gap": gap,
         "note": note,
         "command": command,
@@ -382,7 +453,11 @@ def build_summary(
 
 
 def summary_filename(
-    directory: Path, recorded_at: datetime, stage: str, label: str | None
+    directory: Path,
+    recorded_at: datetime,
+    stage: str,
+    label: str | None,
+    suite: str = FORWARD_SUITE,
 ) -> str:
     """Name summaries so a plain lexicographic sort is chronological.
 
@@ -391,15 +466,29 @@ def summary_filename(
     """
     stamp = recorded_at.strftime("%Y-%m-%dT%H%M%SZ")
     existing = len(list(directory.glob("*.json"))) if directory.is_dir() else 0
-    suffix = f"-{label}" if label else ""
-    return f"{stamp}-{existing + 1:04d}-{stage}{suffix}.json"
+    parts = [stamp, f"{existing + 1:04d}", stage]
+    if suite != FORWARD_SUITE:
+        parts.append(suite)
+    if label:
+        parts.append(label)
+    return "-".join(parts) + ".json"
 
 
-def plan(*, skill: str, tier: str | None, override: str | None, per_case: bool) -> dict:
+def plan(
+    *,
+    skill: str,
+    tier: str | None,
+    override: str | None,
+    per_case: bool,
+    suite: str = FORWARD_SUITE,
+) -> dict:
     """Resolve what a run would execute, without executing or recording it."""
-    command, resolved_tier, gap, _ = resolve_command(skill, tier, override, per_case)
+    command, resolved_tier, gap, _ = resolve_command(
+        skill, tier, override, per_case, suite
+    )
     return {
         "skill": skill,
+        "suite": suite,
         "tier": resolved_tier,
         "gap": gap,
         "command": command,
@@ -415,9 +504,10 @@ def record(
     note: str | None,
     override: str | None,
     per_case: bool,
+    suite: str = FORWARD_SUITE,
 ) -> tuple[dict, Path]:
     command, resolved_tier, gap, reports_per_case = resolve_command(
-        skill, tier, override, per_case
+        skill, tier, override, per_case, suite
     )
     completed, cases = run_command(command, reports_per_case)
     recorded_at = utc_now()
@@ -428,15 +518,16 @@ def record(
         tier=resolved_tier,
         gap=gap,
         note=note,
+        suite=suite,
         command=command,
         completed=completed,
         cases=cases,
         expects_summary=reports_per_case,
         recorded_at=recorded_at,
-        previous=previous_run(directory, resolved_tier, cases),
+        previous=previous_run(directory, resolved_tier, cases, suite),
     )
 
-    path = directory / summary_filename(directory, recorded_at, stage, label)
+    path = directory / summary_filename(directory, recorded_at, stage, label, suite)
     directory.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", "utf-8")
     return summary, path
@@ -448,6 +539,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--stage", choices=STAGES, default="baseline")
     parser.add_argument("--label", help="Optional suffix for the summary filename")
     parser.add_argument("--tier", choices=(REAL_MODEL, DETERMINISTIC))
+    parser.add_argument(
+        "--suite",
+        choices=tuple(SUITES),
+        default=FORWARD_SUITE,
+        help="Which corpus to run: the skill's forward evals or the triggering corpus",
+    )
     parser.add_argument("--note", help="Free-text note stored with the summary")
     parser.add_argument(
         "--command",
@@ -480,6 +577,7 @@ def main(argv: list[str] | None = None) -> int:
                         tier=args.tier,
                         override=args.command,
                         per_case=args.per_case_output_dir,
+                        suite=args.suite,
                     ),
                     indent=2,
                     sort_keys=True,
@@ -495,6 +593,7 @@ def main(argv: list[str] | None = None) -> int:
             note=args.note,
             override=args.command,
             per_case=args.per_case_output_dir,
+            suite=args.suite,
         )
     except RecordingError as error:
         print(f"error: {error}", file=sys.stderr)

@@ -1,0 +1,24 @@
+{
+  "schema": "triggering-known-overlaps/1",
+  "note": "Overlaps observed during a recorded run, kept as data rather than folded into the corpus. The disposition for each is documentation and user guidance in #128, not a description edit here — contorting a description to dodge a structural overlap is what the peer-skill convention forbids.",
+  "overlaps": [
+    {
+      "id": "planning-language-pulls-toward-ready-ticket",
+      "observed_at": {
+        "tier": "description",
+        "case_id": "review-code-change-negative-plan",
+        "prompt": "Plan the refactor of the notification service for me.",
+        "expected_skill": null,
+        "repetitions": 5,
+        "agreement": 0.8,
+        "votes": { "none": 4, "ready-ticket": 1 }
+      },
+      "claimed_by": "ready-ticket",
+      "belongs_to": "no agent-scripts skill; planning language is peer-owned",
+      "severity": "minor",
+      "reading": "The expected answer won the majority, so the case passes. But one repetition in five routed pure planning language to ready-ticket, which is the only house skill whose description reaches toward unformed work ('a vague idea, feature request, or unready ticket'). The pull is real and it is in the direction the peer-skill convention warns about: descriptions here must not claim planning language.",
+      "why_not_fixed_here": "Two reasons. The overlap is structural rather than accidental — ready-ticket exists to take in vague input, so the boundary between 'vague idea for a ticket' and 'plan this work' is genuinely narrow, and the registry records structural overlaps instead of contorting a description around them. And a 4/5 majority is thin evidence to edit prose on: the eval-evidence norm exists so a change is made against recorded behavior, and one observation at one tier is where a hypothesis starts, not where it is confirmed.",
+      "next_evidence": "Re-observe on the next recorded description-tier run. A repeat at 3/5 or worse, or the same pull appearing on other planning prompts, would justify a description edit with before/after evidence. #128 cites this observation either way."
+    }
+  ]
+}

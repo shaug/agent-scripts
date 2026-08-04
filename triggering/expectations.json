@@ -1,0 +1,175 @@
+{
+  "schema": "triggering-expectations/1",
+  "expectations": [
+    {
+      "case_id": "babysit-pr-positive-watch",
+      "expected_skill": "babysit-pr",
+      "rationale": "Own-language prompt for babysit-pr."
+    },
+    {
+      "case_id": "babysit-pr-positive-green",
+      "expected_skill": "babysit-pr",
+      "rationale": "Own-language prompt for babysit-pr."
+    },
+    {
+      "case_id": "babysit-pr-positive-babysit",
+      "expected_skill": "babysit-pr",
+      "rationale": "Own-language prompt for babysit-pr."
+    },
+    {
+      "case_id": "babysit-pr-negative-plan",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "babysit-pr-negative-debug",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "carve-changesets-positive-split",
+      "expected_skill": "carve-changesets",
+      "rationale": "Own-language prompt for carve-changesets."
+    },
+    {
+      "case_id": "carve-changesets-positive-stack",
+      "expected_skill": "carve-changesets",
+      "rationale": "Own-language prompt for carve-changesets."
+    },
+    {
+      "case_id": "carve-changesets-negative-brainstorm",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "carve-changesets-negative-tdd",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "implement-epic-positive-epic",
+      "expected_skill": "implement-epic",
+      "rationale": "Own-language prompt for implement-epic."
+    },
+    {
+      "case_id": "implement-epic-positive-parent",
+      "expected_skill": "implement-epic",
+      "rationale": "Own-language prompt for implement-epic."
+    },
+    {
+      "case_id": "implement-epic-positive-subset",
+      "expected_skill": "implement-epic",
+      "rationale": "Own-language prompt for implement-epic."
+    },
+    {
+      "case_id": "implement-epic-negative-plan",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "implement-ticket-positive-numbered",
+      "expected_skill": "implement-ticket",
+      "rationale": "The ticket's named case: implement-ticket must trigger and no peer skill may interpose."
+    },
+    {
+      "case_id": "implement-ticket-positive-issue",
+      "expected_skill": "implement-ticket",
+      "rationale": "Own-language prompt for implement-ticket."
+    },
+    {
+      "case_id": "implement-ticket-positive-fix",
+      "expected_skill": "implement-ticket",
+      "rationale": "Own-language prompt for implement-ticket."
+    },
+    {
+      "case_id": "implement-ticket-negative-tdd",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "implement-ticket-negative-debug",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "ready-ticket-positive-vague",
+      "expected_skill": "ready-ticket",
+      "rationale": "Own-language prompt for ready-ticket."
+    },
+    {
+      "case_id": "ready-ticket-positive-sharpen",
+      "expected_skill": "ready-ticket",
+      "rationale": "Own-language prompt for ready-ticket."
+    },
+    {
+      "case_id": "ready-ticket-negative-implement",
+      "expected_skill": "implement-ticket",
+      "rationale": "Execution language, not authoring language: ready-ticket must not claim it, and the correct pick is implement-ticket. A negative case asserts which skill must NOT win, which is not the same as asserting that nothing wins."
+    },
+    {
+      "case_id": "ready-ticket-negative-brainstorm",
+      "expected_skill": null,
+      "rationale": "Pure ideation: no agent-scripts skill may claim it. With superpowers installed the expected pick becomes superpowers:brainstorming, which is why that assertion lives in the peer-installed composition tier rather than here \u2014 this tier's catalog contains only what is actually installed."
+    },
+    {
+      "case_id": "review-code-change-positive-review",
+      "expected_skill": "review-code-change",
+      "rationale": "Own-language prompt for review-code-change."
+    },
+    {
+      "case_id": "review-code-change-positive-collision",
+      "expected_skill": "review-code-change",
+      "rationale": "Named collision prompt: generic review language must reach the suite entry point, not a single lens."
+    },
+    {
+      "case_id": "review-code-change-positive-before-merging",
+      "expected_skill": "review-code-change",
+      "rationale": "Named collision prompt: merge-adjacent review language must not route to babysit-pr or implement-ticket."
+    },
+    {
+      "case_id": "review-code-change-negative-plan",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "review-code-simplicity-positive",
+      "expected_skill": "review-code-simplicity",
+      "rationale": "Own-language prompt for review-code-simplicity."
+    },
+    {
+      "case_id": "review-code-simplicity-negative-suite",
+      "expected_skill": "review-code-change",
+      "rationale": "Reverse direction of the review collision: a lens must not claim the suite's generic language."
+    },
+    {
+      "case_id": "review-correctness-positive",
+      "expected_skill": "review-correctness",
+      "rationale": "Own-language prompt for review-correctness."
+    },
+    {
+      "case_id": "review-correctness-negative-debug",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    },
+    {
+      "case_id": "review-fix-loop-positive",
+      "expected_skill": "review-fix-loop",
+      "rationale": "Own-language prompt for review-fix-loop."
+    },
+    {
+      "case_id": "review-fix-loop-negative-single",
+      "expected_skill": "review-code-change",
+      "rationale": "A single review pass is not the convergence loop."
+    },
+    {
+      "case_id": "review-solution-simplicity-positive",
+      "expected_skill": "review-solution-simplicity",
+      "rationale": "Own-language prompt for review-solution-simplicity."
+    },
+    {
+      "case_id": "review-solution-simplicity-negative-plan",
+      "expected_skill": null,
+      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+    }
+  ]
+}

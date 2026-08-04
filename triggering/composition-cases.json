@@ -1,0 +1,67 @@
+{
+  "schema": "triggering-composition/1",
+  "peers": {
+    "superpowers": {
+      "source": "obra/superpowers",
+      "pin": "44c9b2d6e889982ac18c27d05a19fefe335194e1",
+      "installed": false
+    },
+    "load-bearing": {
+      "source": "danshapiro/skill-load-bearing",
+      "pin": "reviewed head",
+      "installed": true
+    }
+  },
+  "cases": [
+    {
+      "id": "gate-satisfaction-ready-ticket-does-not-rebrainstorm",
+      "seam": "ready-ticket ↔ superpowers:brainstorming (#124)",
+      "requires_peers": ["superpowers"],
+      "prompt": "Here's a rough idea for a feature. Work it up into a ticket I can hand to an implementer.",
+      "expected_behavior": "ready-ticket runs its elicitation and terminates in a ticket body. superpowers:brainstorming may inform the questioning, but the run must not re-enter open-ended ideation after the ticket's intent is settled, and must not hand off to writing-plans.",
+      "why_it_matters": "The registry records this borrow as bounded: it takes the questioning discipline and stops at brainstorming's step 9 handoff, because ticket authoring is house-owned. If the peer re-triggers past that boundary the seam has failed open.",
+      "status": "not_run",
+      "gap": "superpowers is not installed in this environment, and no isolated environment with it at pin 44c9b2d was provisioned. Independently, the run would need real-model access, which this environment lacks: the claude CLI is present but its headless OAuth session is expired (401, revoked token). Both conditions must be resolved before this case can produce evidence."
+    },
+    {
+      "id": "executor-exclusivity-ticket-work-does-not-route-to-sdd",
+      "seam": "implement-ticket ↔ superpowers:subagent-driven-development",
+      "requires_peers": ["superpowers"],
+      "prompt": "Implement ticket 412.",
+      "expected_behavior": "implement-ticket owns the work end to end. subagent-driven-development must not claim it, and no dispatch of a fresh implementer subagent per task may displace the house rule that exactly one executor owns a unit of work.",
+      "why_it_matters": "The registry files subagent-driven-development as house territory precisely on executor exclusivity. This is the case that would detect the peer's broad trigger claiming pipeline work — the vice-versa collision #128 documents rather than fixes.",
+      "status": "not_run",
+      "gap": "superpowers is not installed in this environment, and no isolated environment with it at pin 44c9b2d was provisioned. Independently, the run would need real-model access, which this environment lacks: the claude CLI is present but its headless OAuth session is expired (401, revoked token). Both conditions must be resolved before this case can produce evidence."
+    },
+    {
+      "id": "executing-plans-does-not-claim-ticket-execution",
+      "seam": "implement-ticket ↔ superpowers:executing-plans",
+      "requires_peers": ["superpowers"],
+      "prompt": "Take issue #77 from open to merged.",
+      "expected_behavior": "implement-ticket triggers. executing-plans must not claim cross-session ticket execution, which the registry files as the same executor-exclusivity boundary.",
+      "why_it_matters": "writing-plans emits a header naming subagent-driven-development or executing-plans as a required sub-skill. That header is an executor mandate the house neutralizes in prose; this case is where the neutralization would be observed rather than asserted.",
+      "status": "not_run",
+      "gap": "superpowers is not installed in this environment, and no isolated environment with it at pin 44c9b2d was provisioned. Independently, the run would need real-model access, which this environment lacks: the claude CLI is present but its headless OAuth session is expired (401, revoked token). Both conditions must be resolved before this case can produce evidence."
+    },
+    {
+      "id": "finishing-a-development-branch-does-not-claim-the-merge-boundary",
+      "seam": "babysit-pr ↔ superpowers:finishing-a-development-branch (#128)",
+      "requires_peers": ["superpowers"],
+      "prompt": "This branch is done — take it through to merged.",
+      "expected_behavior": "The merge boundary stays house-owned under explicit authority grades. finishing-a-development-branch must not present integration options or execute a merge on its own terms.",
+      "why_it_matters": "The peer verifies tests, offers integration options, executes, and cleans up — all of which implement-ticket and babysit-pr own under graded authority. An overlap here is a merge executed outside the authority matrix.",
+      "status": "not_run",
+      "gap": "superpowers is not installed in this environment, and no isolated environment with it at pin 44c9b2d was provisioned. Independently, the run would need real-model access, which this environment lacks: the claude CLI is present but its headless OAuth session is expired (401, revoked token). Both conditions must be resolved before this case can produce evidence."
+    },
+    {
+      "id": "load-bearing-offer-semantics-autonomous-run",
+      "seam": "ticket authoring and pre-implementation ↔ load-bearing",
+      "requires_peers": ["load-bearing"],
+      "prompt": "Implement ticket 412.",
+      "expected_behavior": "load-bearing does not self-trigger — its own description restricts it to explicit user request. In an autonomous run the recommendation is recorded in the run's evidence and the run proceeds; it is never a blocker and never a prompt for a human.",
+      "why_it_matters": "The registry records explicit-invoke-only actor semantics for this peer. A self-triggering load-bearing would stall an autonomous run at exactly the point the peer-precedence rule maps to the typed blocked result instead.",
+      "status": "not_run",
+      "gap": "load-bearing IS installed in this environment, so the provisioning half of this case is satisfied and it is the one composition case that could run here on that axis. It is still not_run because the run needs real-model access: the claude CLI is present but its headless OAuth session is expired (401, revoked token). Resolving model access alone unblocks this case."
+    }
+  ]
+}
