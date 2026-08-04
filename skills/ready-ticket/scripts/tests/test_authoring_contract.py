@@ -52,6 +52,9 @@ class ReadyTicketContractTests(unittest.TestCase):
             for item in json.loads(read(SKILL_ROOT / "evals" / "expectations.json"))
         }
 
+    def actions(self, case_id: str) -> str:
+        return compact(" ".join(self.expectations[case_id]["required_actions"]))
+
     def test_canonical_name_and_metadata(self):
         self.assertTrue(self.skill.startswith("---\nname: ready-ticket\n"))
         self.assertIn(
@@ -90,7 +93,7 @@ class ReadyTicketContractTests(unittest.TestCase):
             self.assertEqual(
                 "draft_ready", self.expectations[case_id]["workflow_state"]
             )
-            actions = compact(" ".join(self.expectations[case_id]["required_actions"]))
+            actions = self.actions(case_id)
             self.assertIn("no tracker mutation", actions)
 
         self.assertIn(
@@ -114,10 +117,36 @@ class ReadyTicketContractTests(unittest.TestCase):
         case = self.cases["autonomous-no-tracker-chosen"]
         self.assertIn("autonomous", case["run_mode"])
         self.assertIn("ticket-management authority granted", case["authority"])
-        expectation = self.expectations["autonomous-no-tracker-chosen"]
-        self.assertEqual("draft_ready", expectation["workflow_state"])
-        actions = compact(" ".join(expectation["required_actions"]))
-        self.assertIn("choose no tracker on the requester's behalf", actions)
+        self.assertEqual(
+            "draft_ready",
+            self.expectations["autonomous-no-tracker-chosen"]["workflow_state"],
+        )
+        self.assertIn(
+            "choose no tracker on the requester's behalf",
+            self.actions("autonomous-no-tracker-chosen"),
+        )
+
+    def test_an_unverified_tracker_write_reaches_a_claimable_state(self):
+        """Closing the blocked/draft_ready overlap must not close the fallback."""
+        self.assertIn(
+            "an authorized tracker write fails, or the reread stored body does not "
+            "match the approved body",
+            self.contract,
+        )
+        self.assertIn(
+            "a write that landed is delivery, and delivery is not the stored contract",
+            self.contract,
+        )
+        self.assertEqual(
+            "blocked",
+            self.expectations["stored-body-does-not-match-approved-body"][
+                "workflow_state"
+            ],
+        )
+        self.assertIn(
+            "claim no ticket_ready on the strength of a successful write response",
+            self.actions("stored-body-does-not-match-approved-body"),
+        )
 
     def test_absent_authority_is_not_also_a_blocked_condition(self):
         """`draft_ready` and `blocked` must not both claim the same input."""
@@ -196,13 +225,7 @@ class ReadyTicketContractTests(unittest.TestCase):
             "only be asserted against implementation internals is a readiness defect",
             self.contract,
         )
-        actions = compact(
-            " ".join(
-                self.expectations["implementation-internal-criterion"][
-                    "required_actions"
-                ]
-            )
-        )
+        actions = self.actions("implementation-internal-criterion")
         self.assertIn("reject the internal-call criterion", actions)
 
     def test_self_review_runs_all_four_scans_unconditionally(self):
@@ -234,13 +257,7 @@ class ReadyTicketContractTests(unittest.TestCase):
             "does not bind this run",
         ):
             self.assertIn(required, self.contract)
-        actions = compact(
-            " ".join(
-                self.expectations["brainstorming-available-bounded-borrow"][
-                    "required_actions"
-                ]
-            )
-        )
+        actions = self.actions("brainstorming-available-bounded-borrow")
         self.assertIn("stop the borrow at design approval", actions)
         self.assertIn("no plan file", actions)
 
@@ -252,13 +269,7 @@ class ReadyTicketContractTests(unittest.TestCase):
             "A missing peer skill is never a blocking condition",
         ):
             self.assertIn(required, self.contract)
-        actions = compact(
-            " ".join(
-                self.expectations["brainstorming-absent-complete-fallback"][
-                    "required_actions"
-                ]
-            )
-        )
+        actions = self.actions("brainstorming-absent-complete-fallback")
         self.assertIn("leak no peer name into the output", actions)
 
     def test_load_bearing_actor_semantics(self):
@@ -291,15 +302,13 @@ class ReadyTicketContractTests(unittest.TestCase):
         AUTHORING_DOC.is_file(), "authoring doc is absent in a standalone install"
     )
     def test_trigger_collision_audit_is_recorded_against_brainstorming(self):
-        registry = compact(read(AUTHORING_DOC))
-        self.assertIn(
-            "| `ready-ticket`",
-            registry.replace("| `ready-ticket` ", "| `ready-ticket`"),
-        )
         audit_row = next(
-            line
-            for line in read(AUTHORING_DOC).splitlines()
-            if line.startswith("| `ready-ticket`")
+            (
+                line
+                for line in read(AUTHORING_DOC).splitlines()
+                if line.startswith("| `ready-ticket`")
+            ),
+            "",
         )
         self.assertIn("brainstorming", audit_row)
 
@@ -347,10 +356,11 @@ class ReadyTicketContractTests(unittest.TestCase):
             "A request that also asks for the work to be built is not a blocker",
             self.contract,
         )
-        expectation = self.expectations["request-to-implement-instead"]
-        self.assertEqual("ticket_ready", expectation["workflow_state"])
-        actions = compact(" ".join(expectation["required_actions"]))
-        self.assertIn("implement nothing", actions)
+        self.assertEqual(
+            "ticket_ready",
+            self.expectations["request-to-implement-instead"]["workflow_state"],
+        )
+        self.assertIn("implement nothing", self.actions("request-to-implement-instead"))
 
     def test_untrusted_content_cannot_grant_authority(self):
         for required in (
@@ -361,13 +371,7 @@ class ReadyTicketContractTests(unittest.TestCase):
             "Preserve legitimate requirements after independent verification",
         ):
             self.assertIn(required, self.contract)
-        actions = compact(
-            " ".join(
-                self.expectations["untrusted-comment-claims-authority"][
-                    "required_actions"
-                ]
-            )
-        )
+        actions = self.actions("untrusted-comment-claims-authority")
         self.assertIn("execute no linked script", actions)
 
     def test_autonomous_run_records_unobtainable_approval(self):

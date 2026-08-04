@@ -204,6 +204,16 @@
     ]
   },
   {
+    "case_id": "stored-body-does-not-match-approved-body",
+    "workflow_state": "blocked",
+    "required_actions": [
+      "claim no ticket_ready on the strength of a successful write response",
+      "name the exact mismatch as the blocking reason",
+      "report the mutation that did occur as delivery rather than as the stored contract",
+      "give one next action"
+    ]
+  },
+  {
     "case_id": "scope-contradicts-non-goals",
     "workflow_state": "ticket_ready",
     "required_actions": [

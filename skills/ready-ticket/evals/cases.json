@@ -189,6 +189,15 @@
     "elicitation": "the requester says the ticket body holds the requirements and they do not remember them"
   },
   {
+    "id": "stored-body-does-not-match-approved-body",
+    "request": "Make GH-806 ready.",
+    "ticket": "GH-806 is open; after the approved body is written, rereading the issue shows the stored body is missing its Required verification section",
+    "run_mode": "interactive",
+    "authority": "ticket-management authority granted",
+    "peers": "no peer skills in the session listing",
+    "elicitation": "the requester resolves every open product decision and approves the drafted body"
+  },
+  {
     "id": "scope-contradicts-non-goals",
     "request": "Get the audit-log ticket ready.",
     "ticket": "none",

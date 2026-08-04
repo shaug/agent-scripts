@@ -286,9 +286,13 @@ Return `blocked` when:
 
 - a product, data, authorization, migration, destructive, or architecture
   decision is unresolved and no requester can resolve it in this run;
-- the live tracker item cannot be read and the request depends on it; or
+- the live tracker item cannot be read and the request depends on it;
 - a requester's objection to the drafted body cannot be resolved into a ready
-  body.
+  body; or
+- an authorized tracker write fails, or the reread stored body does not match
+  the approved body, so `ticket_ready` cannot be claimed against live state.
+  Report the mutation that did occur and the exact mismatch; a write that landed
+  is delivery, and delivery is not the stored contract.
 
 A request that also asks for the work to be built is not a blocker. Author the
 body, terminate on it, and report that implementation was not performed and is

@@ -45,8 +45,8 @@ summary: Chronological history of repository and skill changes.
   graph or workflow authority. Also records the `ready-ticket` row in the
   registry's trigger-collision audit against `brainstorming`, the epic's
   highest-risk collision, resolved by artifact and terminus rather than by
-  contorting either description. Ships 23 result-blind eval cases with their
-  expectations held separately and a 30-assertion contract test;
+  contorting either description. Ships 24 result-blind eval cases with their
+  expectations held separately and a 31-assertion contract test;
   pressure-testing from baseline is #137's, so the rationalization table carries
   anticipated rather than verbatim wording and says so
 
