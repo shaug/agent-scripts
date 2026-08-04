@@ -4,7 +4,39 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, then added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence
+
+- feat(scripts): detect drift between installed skill copies and this repository
+  — add `scripts/check_installed_skills.py` and the `just check-installed`
+  recipe, which compare an installed skills directory (`~/.agents/skills` by
+  default, overridable with `--skills-root` or `$AGENTS_SKILLS_DIR`) against the
+  working tree, name every differing, absent, and leftover file per skill, and
+  exit non-zero on drift. A skill is distributed by copying its folder out of
+  this repository, so an installed copy is a snapshot that never learns about
+  later commits, and `just sync-contracts` does not reach it: that recipe
+  refreshes only the bundles inside this repository. The resulting failure is
+  silent in the worst place. A stale review skill still runs, validates its own
+  result against the stale schema it bundles, and returns a verdict, because the
+  snapshot is internally consistent — old prose, old schema, and old validator
+  all agree with each other, so no check confined to the snapshot can detect the
+  problem. Detection therefore has to compare against a source of truth outside
+  it. Observed in the field before this change: an installed distribution pinned
+  at `schema_version` 1.0 accepted an aggregate `clean` review result carrying
+  no `lens_executions` evidence at all, which the canonical 1.4 contract
+  rejects, while its `review-correctness/SKILL.md` was missing the entire
+  required consumer/impact traversal pass. Runtime byproducts are excluded from
+  the comparison — `__pycache__`, `*.pyc`, `.DS_Store`, and the skill-local
+  record-keeping directories `AGENTS.md` prescribes — because they are written
+  after installation rather than distributed. A repository skill that is simply
+  not installed is named but does not fail the check: declining to install a
+  skill is a choice, not staleness in the ones that are installed. Deliberately
+  kept out of `lint` and `check`, whose gates must stay reproducible in
+  continuous integration where no installed distribution exists; the command
+  exits zero with a note when the directory is absent. Not a skill-prose change,
+  so the eval-evidence norm's recorded-run requirement does not apply. Nine
+  behavioral tests bound to the criteria above assert at the command's public
+  surface — its exit status and its printed report — and were each observed
+  failing at base `1001595` and passing at head.
 
 - fix(implement-ticket): retry `claude_executor.py`'s real-model call on
   malformed JSON instead of aborting the whole forward-eval run (issue #154) —
@@ -31,6 +63,7 @@ summary: Chronological history of repository and skill changes.
   retry-then-succeed, exhausting all attempts, and no retry on a CLI exit
   failure. Not a skill-prose change, so the eval-evidence norm's recorded-run
   requirement does not apply; the diagnostic evidence above is the record.
+  (1001595a0c06c604bd1e02ea9b6c73bba881d0ed)
 
 - feat(implement-ticket): add scoped per-finding re-review and escalated
   final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop

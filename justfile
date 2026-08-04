@@ -36,6 +36,17 @@ sync-contracts:
     echo "Synced $scripts_dest/review_gate.py and $tests_dest/test_review_gate.py"; \
   done
 
+# Compare the separately installed skill copies under ~/.agents/skills against
+# this repository's working tree. `sync-contracts` above only refreshes the
+# copies bundled *inside* this repository; an installed snapshot is a distinct
+# distribution that keeps running stale prose and stale contracts until it is
+# re-installed. Deliberately excluded from `lint` and `check`: the installed
+# path is machine-specific and absent in continuous integration.
+#
+# Override the location with --skills-root or $AGENTS_SKILLS_DIR.
+check-installed *args:
+  python3 scripts/check_installed_skills.py {{args}}
+
 test: test-plugins
   @found=0; \
   for tests in {{skills_dir}}/*/scripts/tests; do \

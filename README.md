@@ -147,6 +147,23 @@ files and refresh the copies with:
 just sync-contracts
 ```
 
+That recipe refreshes only the copies bundled inside this repository. Skills
+installed elsewhere — under `~/.agents/skills`, a plugin directory, or any other
+distribution — are snapshots taken at install time, and they keep running the
+prose and contracts they shipped with until they are re-installed. The failure
+is silent by construction: a stale review skill validates its own result against
+the stale schema it bundles, so every part of the snapshot agrees with every
+other part and a weakened review still reports a verdict. Compare an installed
+distribution against this repository with:
+
+```bash
+just check-installed
+```
+
+It exits non-zero when an installed copy has drifted, names the differing files,
+and is skipped when no installed distribution is present. The comparison is
+against the working tree, so update the checkout first if it may be behind.
+
 ## Quick Start
 
 Run the core checks:
