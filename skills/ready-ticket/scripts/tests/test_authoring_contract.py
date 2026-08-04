@@ -100,6 +100,25 @@ class ReadyTicketContractTests(unittest.TestCase):
             "Writing requires explicit ticket-management authority", self.linear
         )
 
+    def test_draft_ready_covers_the_unchosen_tracker_ground(self):
+        """Every path routed to `draft_ready` is claimable under its definition."""
+        self.assertIn(
+            "either ticket-management authority was absent or no tracker owns the "
+            "request and none could be chosen in this run",
+            self.contract,
+        )
+        self.assertIn(
+            "In an autonomous run with no tracker chosen, terminate in `draft_ready`",
+            self.contract,
+        )
+        case = self.cases["autonomous-no-tracker-chosen"]
+        self.assertIn("autonomous", case["run_mode"])
+        self.assertIn("ticket-management authority granted", case["authority"])
+        expectation = self.expectations["autonomous-no-tracker-chosen"]
+        self.assertEqual("draft_ready", expectation["workflow_state"])
+        actions = compact(" ".join(expectation["required_actions"]))
+        self.assertIn("choose no tracker on the requester's behalf", actions)
+
     def test_absent_authority_is_not_also_a_blocked_condition(self):
         """`draft_ready` and `blocked` must not both claim the same input."""
         blocked_bullet = compact(

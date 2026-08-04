@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule, then authored the first peer-aware seam skill, `ready-ticket`, at the pipeline's upstream edge
+## 2026-08-04 — Authored `ready-ticket`, the first peer-aware seam skill, at the pipeline's upstream edge
 
 - feat(skills): add the ready-ticket skill for peer-aware ticket authoring
   (issue #124, epic #118, the epic's first seam leaf) — add
@@ -20,7 +20,8 @@ summary: Chronological history of repository and skill changes.
   each fixture-covered: `ticket_ready` (body stored in the tracker and reread to
   confirm it matches what was approved, because a successful API response is
   delivery state and not proof of the stored contract), `draft_ready` (returned
-  whenever ticket-management authority is absent — that grant defaults to off
+  on either of two grounds — ticket-management authority absent, or no tracker
+  chosen and none choosable in this run; that authority grant defaults to off
   and is never inferred from tracker read access or from phrasing such as "file
   this" or "write it up"), `decomposition_recommended` (multi-subsystem work
   handed back to the operator with its rationale; epic authoring is a recorded
@@ -44,10 +45,13 @@ summary: Chronological history of repository and skill changes.
   graph or workflow authority. Also records the `ready-ticket` row in the
   registry's trigger-collision audit against `brainstorming`, the epic's
   highest-risk collision, resolved by artifact and terminus rather than by
-  contorting either description. Ships 22 result-blind eval cases with their
-  expectations held separately and a 29-assertion contract test;
+  contorting either description. Ships 23 result-blind eval cases with their
+  expectations held separately and a 30-assertion contract test;
   pressure-testing from baseline is #137's, so the rationalization table carries
   anticipated rather than verbatim wording and says so
+
+## 2026-08-03 — Established the written skill-authoring methodology including the house testing doctrine, then added the peer-skill convention with a complete named-peer registry and rewrote all nine trigger descriptions to the description-states-when rule
+
 - feat(skills): define the peer-skill convention and registry, and rewrite all
   nine trigger descriptions (issue #123, epic #117, the epic's second and final
   child) — extend `docs/skill-authoring.md` with a "The peer-skill convention"

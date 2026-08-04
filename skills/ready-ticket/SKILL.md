@@ -258,9 +258,11 @@ be claimed, and the caller verifies the evidence rather than the label.
   run was autonomous and the evidence records that body approval was not
   obtainable. Ticket-management authority was granted and used.
 - `draft_ready` — the drafted body satisfies the same readiness target and
-  passes the same scans, ticket-management authority was absent, and no tracker
-  mutation occurred. Return the complete body to the caller; a path or a summary
-  is not the body.
+  passes the same scans, no tracker mutation occurred, and either
+  ticket-management authority was absent or no tracker owns the request and none
+  could be chosen in this run. Both grounds are equally valid; report which one
+  applied. Return the complete body to the caller; a path or a summary is not
+  the body.
 - `decomposition_recommended` — the work spans multiple independently valuable,
   separately trackable subsystems; the rationale names each part and its
   boundary; no ticket, parent, child, or relationship was created or modified.

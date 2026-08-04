@@ -171,6 +171,15 @@
     "elicitation": "no product decision remains open after the named documents are read"
   },
   {
+    "id": "autonomous-no-tracker-chosen",
+    "request": "Write up the connection-pool exhaustion problem as a ticket.",
+    "ticket": "none; no tracker item exists yet and the run was not told which tracker owns this work",
+    "run_mode": "autonomous; no requester is reachable in this run",
+    "authority": "ticket-management authority granted for both the GitHub repository and the Linear workspace",
+    "peers": "no peer skills in the session listing",
+    "elicitation": "the repository's connection-pool design document and existing tests resolve every product decision in the body"
+  },
+  {
     "id": "tracker-unreadable",
     "request": "Make LIN-940 ready.",
     "ticket": "the Linear workspace cannot be reached in this run and no copy of LIN-940's body is available",

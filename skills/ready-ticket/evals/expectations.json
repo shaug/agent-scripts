@@ -185,6 +185,16 @@
     ]
   },
   {
+    "case_id": "autonomous-no-tracker-chosen",
+    "workflow_state": "draft_ready",
+    "required_actions": [
+      "choose no tracker on the requester's behalf even though authority covers both",
+      "perform no tracker mutation",
+      "return the complete body to the caller",
+      "report the unchosen tracker as the ground rather than absent authority"
+    ]
+  },
+  {
     "case_id": "tracker-unreadable",
     "workflow_state": "blocked",
     "required_actions": [
