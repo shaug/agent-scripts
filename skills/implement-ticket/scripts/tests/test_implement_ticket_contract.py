@@ -241,6 +241,28 @@ class ImplementTicketContractTests(unittest.TestCase):
         for surface in (self.skill_compact, delegated):
             self.assertIn("maps to the typed `blocked` result", surface)
 
+    def test_delegated_evidence_slot_states_a_validator_satisfiable_encoding(self):
+        """The prose must be satisfiable under the contract's own validator."""
+        delegated = compact(
+            read(SKILL_ROOT / "references" / "delegated-execution" / "CONTRACT.md")
+        )
+        for required in (
+            "write the identifier and both the base-failing and head-passing "
+            "observations into one `$.validation` entry's `name`",
+            "leave that entry's `candidate_sha` at the candidate head SHA or `null`",
+            "An entry bound to the base SHA fails this contract's candidate-mismatch "
+            "rule",
+            "repeating the identifier across two entries fails its duplicate-name rule",
+        ):
+            self.assertIn(required, delegated)
+
+        # The encoding must stay true to the validator that enforces it.
+        validator = read(
+            SKILL_ROOT / "references" / "delegated-execution" / "validate.py"
+        )
+        self.assertIn("duplicate observation names", validator)
+        self.assertIn("candidate mismatch for", validator)
+
     def test_evidence_contract_precedence_resolves_the_tdd_conflicts(self):
         for required in (
             "supersede the absolutes of any loaded peer",

@@ -60,6 +60,15 @@ recorded exemption for a docs-or-config-only change. Those tests assert surface
 behavior and never implementation internals, so a test that would churn under a
 behavior-preserving refactor does not satisfy the slot.
 
+Encode the slot inside the existing observation shape: write the identifier and
+both the base-failing and head-passing observations into one `$.validation`
+entry's `name`, and leave that entry's `candidate_sha` at the candidate head SHA
+or `null`. An entry bound to the base SHA fails this contract's
+candidate-mismatch rule, and repeating the identifier across two entries fails
+its duplicate-name rule — both of which block execution. One entry per slot with
+the base observation named rather than separately bound is the only encoding
+that satisfies both rules without a schema change.
+
 This obligation is prose riding in the existing validation evidence; it adds no
 invocation or result field. It is peer-independent and supersedes the absolutes
 of any peer methodology skill loaded in the delegate's context — including a
