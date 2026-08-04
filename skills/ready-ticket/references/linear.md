@@ -28,20 +28,26 @@ Writing requires explicit ticket-management authority. Without it, terminate in
 `draft_ready` and hand the complete body to the caller; do not create a triage
 issue, a draft, or a comment containing the body.
 
-With that authority:
+With that authority, take one of two write paths:
 
-- Replace the issue description with the authored body in full. Do not append it
-  below a stale description, which leaves two contracts in one field.
-- Preserve the existing title unless the outcome changed; when it did, update
-  the title to name the new observable outcome.
-- Record the audit trail — the decisions reached, what was rejected, and why —
-  as a comment. The description is the contract; the comment is only the record.
+- **No issue backs the request yet.** Create one in the chosen team with the
+  authored body as its description and a title naming the observable outcome.
+  Creating that issue is the authorized write; leave its state, estimate,
+  priority, assignee, project, and cycle at their defaults.
+- **An issue already exists.** Replace its description with the authored body in
+  full. Do not append it below a stale description, which leaves two contracts
+  in one field. Preserve the existing title unless the outcome changed; when it
+  did, update the title to name the new observable outcome.
 
-Do not change workflow state, estimate, priority, assignee, project, or cycle,
-and do not create or modify a parent, sub-issue, or blocking relationship.
-Authoring a description is not graph or workflow authority. In particular, do
-not move the issue out of triage or into a ready or started state; scheduling is
-the operator's decision.
+On either path, record the audit trail — the decisions reached, what was
+rejected, and why — as a comment. The description is the contract; the comment
+is only the record.
+
+Beyond creating the one authored issue, do not change workflow state, estimate,
+priority, assignee, project, or cycle, and do not create or modify a parent,
+sub-issue, or blocking relationship. Authoring a description is not graph or
+workflow authority. In particular, do not move an issue out of triage or into a
+ready or started state; scheduling is the operator's decision.
 
 ## Verify what was written
 

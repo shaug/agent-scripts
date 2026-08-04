@@ -100,6 +100,22 @@ class ReadyTicketContractTests(unittest.TestCase):
             "Writing requires explicit ticket-management authority", self.linear
         )
 
+    def test_absent_authority_is_not_also_a_blocked_condition(self):
+        """`draft_ready` and `blocked` must not both claim the same input."""
+        blocked_bullet = compact(
+            self.skill.split("- `blocked` — the honest fallback", 1)[1].split(
+                "\n\n", 1
+            )[0]
+        )
+        self.assertNotIn("authority is missing", blocked_bullet)
+        self.assertIn(
+            "Absent ticket-management authority is not one of them", self.contract
+        )
+        stop_conditions = compact(
+            self.skill.split("## Stop conditions", 1)[1].split("A request that", 1)[0]
+        )
+        self.assertNotIn("authority", stop_conditions)
+
     def test_ticket_management_authority_defaults_off_and_is_never_inferred(self):
         for required in (
             "separate grant that defaults to off",
@@ -297,9 +313,10 @@ class ReadyTicketContractTests(unittest.TestCase):
             )
 
     def test_authoring_authority_never_implies_graph_or_workflow_authority(self):
-        self.assertIn("Authoring a body is not graph authority", self.github)
+        self.assertIn("Authoring a body is not graph authority", compact(self.github))
         self.assertIn(
-            "Authoring a description is not graph or workflow authority", self.linear
+            "Authoring a description is not graph or workflow authority",
+            compact(self.linear),
         )
         self.assertIn(
             "never implies authority to implement it, to change its native relationships",
@@ -352,6 +369,25 @@ class ReadyTicketContractTests(unittest.TestCase):
             self.expectations["autonomous-unresolved-product-decision"][
                 "workflow_state"
             ],
+        )
+
+    def test_both_write_paths_are_specified(self):
+        """`ticket_ready` is reachable whether or not an issue already exists."""
+        for adapter in (self.github, self.linear):
+            text = compact(adapter)
+            self.assertIn("No issue backs the request yet", text)
+            self.assertIn("An issue already exists", text)
+            self.assertIn("Creating that issue is the authorized write", text)
+        self.assertNotIn("Do not open, close, reopen", compact(self.github))
+        self.assertIn(
+            "The requester chooses it when none does; never pick one for them",
+            self.contract,
+        )
+        no_ticket_case = self.cases["vague-idea-interactive-authoring"]
+        self.assertIn("no tracker item exists yet", no_ticket_case["ticket"])
+        self.assertEqual(
+            "ticket_ready",
+            self.expectations["vague-idea-interactive-authoring"]["workflow_state"],
         )
 
     def test_written_body_is_verified_against_live_state(self):

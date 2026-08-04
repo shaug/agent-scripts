@@ -45,7 +45,7 @@ summary: Chronological history of repository and skill changes.
   registry's trigger-collision audit against `brainstorming`, the epic's
   highest-risk collision, resolved by artifact and terminus rather than by
   contorting either description. Ships 22 result-blind eval cases with their
-  expectations held separately and a 27-assertion contract test;
+  expectations held separately and a 29-assertion contract test;
   pressure-testing from baseline is #137's, so the rationalization table carries
   anticipated rather than verbatim wording and says so
 - feat(skills): define the peer-skill convention and registry, and rewrite all

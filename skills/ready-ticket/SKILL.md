@@ -63,7 +63,9 @@ Before the first question, establish and record:
 
 - the request and, when one exists, the live ticket identity, body, state, and
   native parent, sub-issue, and blocker relationships;
-- the owning tracker, or that no tracker owns the request yet;
+- the owning tracker, or that no tracker owns the request yet. The requester
+  chooses it when none does; never pick one for them. In an autonomous run with
+  no tracker chosen, terminate in `draft_ready`;
 - **run mode**: interactive when a requester can answer questions in this run,
   autonomous when none can;
 - **ticket-management authority**: granted or absent. Creating or updating a
@@ -263,9 +265,11 @@ be claimed, and the caller verifies the evidence rather than the label.
   separately trackable subsystems; the rationale names each part and its
   boundary; no ticket, parent, child, or relationship was created or modified.
 - `blocked` — the honest fallback. Give one concrete blocking reason and one
-  next action. Use it whenever a product decision is unresolved, required
-  authority is missing, a requester objection cannot be resolved, or the live
-  tracker item cannot be read.
+  next action. Use it for exactly the conditions listed under
+  [Stop conditions](#stop-conditions). Absent ticket-management authority is not
+  one of them: it returns `draft_ready` with the body, because withholding a
+  finished body over a grant the caller never made returns nothing where
+  something was ready.
 
 Report with the result: run mode, owning tracker and ticket identity or its
 absence, ticket-management authority granted or absent, the complete body for
