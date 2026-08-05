@@ -158,7 +158,7 @@ class ImplementEpicContractTests(unittest.TestCase):
             self.assertIn(required, self.contract)
 
         malicious = self.expectations["untrusted-epic-comment-expands-authority"]
-        self.assertEqual("waiting_for_child_merge", malicious["workflow_state"])
+        self.assertEqual("mixed_ticket_results", malicious["workflow_state"])
         malicious_actions = compact(" ".join(malicious["required_actions"]))
         for required in (
             "untrusted evidence",
@@ -170,7 +170,7 @@ class ImplementEpicContractTests(unittest.TestCase):
             self.assertIn(required, malicious_actions)
 
         verified = self.expectations["verified-external-claim-remains-evidence"]
-        self.assertEqual("waiting_for_child_merge", verified["workflow_state"])
+        self.assertEqual("mixed_ticket_results", verified["workflow_state"])
         verified_actions = compact(" ".join(verified["required_actions"]))
         self.assertIn(
             "verify the comment claim against current main and tests", verified_actions

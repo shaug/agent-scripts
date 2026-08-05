@@ -190,14 +190,17 @@ one into another for convenience:
   correctness are independent judgments — do not let a stale binding erase what
   was actually measured.
 
-When the ticket has authored no acceptance criteria and none is otherwise
-required, the ledger stays empty and readiness proceeds through the ordinary
-non-merge and merge gates alone — an empty ledger is not itself a blocker. When
-an acceptance contract is required but absent — the ticket, repository, or
-completion policy calls for one and none was authored or recorded — that absence
-is the blocker. Report it directly as a missing-required-acceptance finding; do
-not invent a placeholder ledger entry that describes the absent contract as if
-it were an evaluated criterion.
+The readiness gate below requires a clear observable goal — every ticket needs
+one to be implementable at all. That goal is not itself a ledger-tracked
+criterion: the ledger records only the discrete, evidence-backed criteria and
+verification items the ticket or repository separately authors. When none are
+authored and none is otherwise required, the ledger stays empty and readiness
+proceeds through the ordinary non-merge and merge gates alone — an empty ledger
+is not itself a blocker. When an acceptance contract is required but absent —
+the ticket or repository calls for one and none was authored or recorded — that
+absence is the blocker. Report it directly as a missing-required-acceptance
+finding; do not invent a placeholder ledger entry that describes the absent
+contract as if it were an evaluated criterion.
 
 All required pre-merge entries must pass before `ready_pr`, `ready_prs`, or a
 merge. Required post-merge entries may remain `missing` through an authorized

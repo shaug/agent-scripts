@@ -8,23 +8,23 @@ summary: Chronological history of repository and skill changes.
 
 - chore(implement-ticket): record after-eval for epic terminal-state and
   acceptance-ledger prose fixes — commits the real-model forward-eval `after`
-  summary (`2026-08-05T155750Z-0017-after.json`), recorded against the
-  `before` run `2026-08-05T070156Z-0014-before.json` that #160 produced.
-  Totals moved from 32/58 to 34/58 passed. Both targeted clusters improved:
-  every one of the four originally-failing `implement-epic` terminal_state
-  mismatches now correctly reports `mixed_ticket_results` instead of the one
-  processed child's raw state, and every previously-failing
-  `acceptance_statuses` mismatch is resolved except one partial case
-  (`epic-auto-closed-child-incomplete` still omits a passing entry alongside
-  the missing one — a related but distinct ledger-completeness gap, not the
-  currency-vs-correctness conflation this change targeted). Three unrelated
-  cases newly failed on single missing actions in sections this change never
-  touched, consistent with this real-model executor's documented run-to-run
-  noise rather than a regression. An intermediate run also surfaced and was
-  used to catch a real regression from an earlier, overly broad version of the
-  acceptance-ledger wording; that intermediate evidence was discarded rather
-  than committed, since it reflected a superseded prose state
-  (`9bafd49bc305e408e1493472e7d9c8af77487769`).
+  summary (`2026-08-05T155750Z-0017-after.json`), recorded against the `before`
+  run `2026-08-05T070156Z-0014-before.json` that #160 produced. Totals moved
+  from 32/58 to 34/58 passed. Both targeted clusters improved: every one of the
+  four originally-failing `implement-epic` terminal_state mismatches now
+  correctly reports `mixed_ticket_results` instead of the one processed child's
+  raw state, and every previously-failing `acceptance_statuses` mismatch is
+  resolved except one partial case (`epic-auto-closed-child-incomplete` still
+  omits a passing entry alongside the missing one — a related but distinct
+  ledger-completeness gap, not the currency-vs-correctness conflation this
+  change targeted). Three unrelated cases newly failed on single missing actions
+  in sections this change never touched, consistent with this real-model
+  executor's documented run-to-run noise rather than a regression. An
+  intermediate run also surfaced and was used to catch a real regression from an
+  earlier, overly broad version of the acceptance-ledger wording; that
+  intermediate evidence was discarded rather than committed, since it reflected
+  a superseded prose state (`9bafd49bc305e408e1493472e7d9c8af77487769`).
+
 - fix(implement-ticket): scope missing-acceptance-contract blocker to when one
   is required — corrects the acceptance-ledger wording added in the previous
   commit: an empty ledger blocks readiness only when an acceptance contract is
@@ -38,37 +38,37 @@ summary: Chronological history of repository and skill changes.
   (whose repository instructions literally require "acceptance contract
   observation... before readiness") warrants the blocker
   (`81744589ebeb5e0251bb84d465dcdbd4437b7017`).
+
 - fix(implement-ticket,implement-epic): clarify epic terminal state and
   acceptance-status semantics — triage of the 26/58 real-model forward-eval
   failures #160's `before` run recorded (`2026-08-05T070156Z-0014-before.json`)
-  found two systemic, well-evidenced prose gaps rather than corpus drift.
-  First, `implement-epic`'s description deliberately makes no
-  single-terminal-state promise (unlike `implement-ticket`'s explicit
-  five-state contract), but nothing told the executing model that its own
-  report must never simply equal one processed child's raw terminal state;
-  when only one child was invoked, models reported that child's `ready_pr` or
-  `merged` as if it were `implement-epic`'s own result, erasing the
-  graph-refresh and requested-boundary work still owed. `SKILL.md` now states
-  explicitly that because `implement-ticket` owns terminal evidence,
-  `implement-epic` reports a distinct `mixed_ticket_results` composite
-  whenever it invoked one or more children and the epic itself has not
-  reached its own `blocked` stop or an authorized closeout — sharpened at the
-  terminal-result and report-the-epic-result sections, plus tightened
-  graph-refresh scoping (refresh only after a merge, delivery, or transition
-  that actually changed graph-visible state, not after a bare `ready_pr` or
-  `blocked`). Second, `implement-ticket`'s acceptance-ledger section recorded
-  `pass`/`fail`/`missing` per criterion without distinguishing three
-  different questions — no evidence gathered, evidence gathered but
-  non-conforming (wrong source) or genuinely failing, and conforming evidence
-  showing a genuine pass even when its candidate/deployment binding is stale
-  — so models downgraded stale-but-truthful passes to `missing` and invented
-  placeholder ledger entries when no criteria were authored. `SKILL.md` now
-  separates currency (rejected via `reject_stale_acceptance_evidence` or
-  equivalent) from the entry's own truthful status. Both gaps are
-  corroborated by the corpus's own internal consistency — a three-child
-  heterogeneous-result epic case already passed under the
-  `mixed_ticket_results` label before this change, showing the expectation
-  was reachable, just untaught
+  found two systemic, well-evidenced prose gaps rather than corpus drift. First,
+  `implement-epic`'s description deliberately makes no single-terminal-state
+  promise (unlike `implement-ticket`'s explicit five-state contract), but
+  nothing told the executing model that its own report must never simply equal
+  one processed child's raw terminal state; when only one child was invoked,
+  models reported that child's `ready_pr` or `merged` as if it were
+  `implement-epic`'s own result, erasing the graph-refresh and
+  requested-boundary work still owed. `SKILL.md` now states explicitly that
+  because `implement-ticket` owns terminal evidence, `implement-epic` reports a
+  distinct `mixed_ticket_results` composite whenever it invoked one or more
+  children and the epic itself has not reached its own `blocked` stop or an
+  authorized closeout — sharpened at the terminal-result and
+  report-the-epic-result sections, plus tightened graph-refresh scoping (refresh
+  only after a merge, delivery, or transition that actually changed
+  graph-visible state, not after a bare `ready_pr` or `blocked`). Second,
+  `implement-ticket`'s acceptance-ledger section recorded
+  `pass`/`fail`/`missing` per criterion without distinguishing three different
+  questions — no evidence gathered, evidence gathered but non-conforming (wrong
+  source) or genuinely failing, and conforming evidence showing a genuine pass
+  even when its candidate/deployment binding is stale — so models downgraded
+  stale-but-truthful passes to `missing` and invented placeholder ledger entries
+  when no criteria were authored. `SKILL.md` now separates currency (rejected
+  via `reject_stale_acceptance_evidence` or equivalent) from the entry's own
+  truthful status. Both gaps are corroborated by the corpus's own internal
+  consistency — a three-child heterogeneous-result epic case already passed
+  under the `mixed_ticket_results` label before this change, showing the
+  expectation was reachable, just untaught
   (`69491bdfd9ace7d26f817dc9f035c919e69ea90a`).
 
 - test(scripts): pin the install-directory identity guard where CI can see it
