@@ -115,16 +115,17 @@ answer. In an autonomous run, no question can be asked: see
 
 ### Rationalizations that precede an unready body
 
-Replace this table's left column with verbatim baseline wording when #137
-records it; these entries are anticipated, not observed, and are marked so no
-reader mistakes them for measured results.
+Verbatim wording from #137's baseline: fresh sessions with no ready-ticket
+discipline loaded, run against the same requests this skill is meant to govern.
+See `evals/baseline/` for the complete transcripts and the paired before/after
+comparison.
 
-| Rationalization                                                                    | Why it fails                                                                                                                           |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| "The implementer can decide this during implementation."                           | An unresolved product decision moved into implementation is decided by whoever notices it first, silently, with no record.             |
-| "I'll write `TBD` and someone will fill it in."                                    | A placeholder in a body reads as a completed slot to the readiness gate; nothing downstream distinguishes it from a real answer.       |
-| "The requester is busy; I can infer what they want."                               | An inferred product decision is indistinguishable in the body from a decided one, so the requester never learns it was made for them.  |
-| "This criterion is hard to observe from outside, so I'll assert on the internals." | A criterion only checkable against internals cannot be encoded as a behavioral test, which is the one job an acceptance criterion has. |
+| Rationalization                                                                                                                                                                      | Why it fails                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                                                     | Unreachability is not resolving authority. An open decision closed this way reads as decided to the next reader, who never learns anyone chose it — the failure autonomous mode exists to prevent, not a workaround for it.                                                  |
+| "I've marked them as candidates to trim rather than presenting them as findings."                                                                                                    | Hedged-but-asserted is not the same as elicited or verified. A checklist framing still lands in the body as content the reader has to actively distrust, rather than as a recorded open question.                                                                            |
+| "Default limits — placeholder, needs real data" — a heading, one sentence, then a concrete per-tier numeric table, all under the design section rather than the acceptance criteria. | The label reads as a hedge, but the table under it is the ticket's only stated numeric defaults, and nothing in the separate acceptance-criteria checklist below points back to it as unresolved. A reader who trusts the label and skips ahead never sees it flagged again. |
+| "**Priority:** TBD (see note on regulatory driver)"                                                                                                                                  | A placeholder in a body reads as a completed slot to the readiness gate; nothing downstream distinguishes it from a real answer.                                                                                                                                             |
 
 ## Recommend load-bearing verification when the cost is high
 

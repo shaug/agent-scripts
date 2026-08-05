@@ -80,6 +80,14 @@ EVAL_TARGETS = {
     "carve-changesets": {
         "deterministic": ["skills/carve-changesets/scripts/evals/runner.py"],
     },
+    "ready-ticket": {
+        "real_model": [
+            "skills/ready-ticket/scripts/evals/run_forward.py",
+            "--executor",
+            "{python} skills/ready-ticket/scripts/evals/claude_executor.py",
+        ],
+        "deterministic": ["skills/ready-ticket/scripts/evals/run_forward.py"],
+    },
     "review-fix-loop": {
         "deterministic": ["skills/review-fix-loop/scripts/evals/runner.py"],
     },

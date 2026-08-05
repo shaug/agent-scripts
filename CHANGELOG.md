@@ -4,7 +4,42 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline
+
+- feat(ready-ticket): pressure-test from a real baseline and record the
+  before/after (issue #137, epic #120, the epic's third and final leaf) — #124
+  shipped `ready-ticket` with a rationalization table marked "anticipated, not
+  observed," pending this ticket. Four RED scenarios ran through an isolated
+  `claude -p` session with no ready-ticket discipline loaded — no project
+  context, no CLAUDE.md, an empty settings file, from a scratch directory —
+  against the same requests the skill is meant to govern. The dominant failure
+  was not the placeholder the anticipated table guessed at: every RED run that
+  reached a full document asserted specific, unrequested technical and product
+  decisions as settled fact — rate-limit tiers, retention windows, storage
+  architecture — mostly with no hedge at all. A second, distinct failure: two of
+  the four runs wrote the ticket to a file rather than returning it as the
+  response, unannounced. Three RED scenarios were re-run GREEN with `SKILL.md`'s
+  actual prose supplied as the operating instructions, same isolation, same
+  request. All three closed: the two autonomous scenarios return `blocked`,
+  naming the identical category of decisions RED had invented, and stating
+  directly why inventing them would be wrong (*"you'd never learn a call was
+  made on your behalf — which is exactly the failure the ticket is supposed to
+  prevent"*); the interactive scenario asks exactly one clarifying question
+  instead of drafting. None of the three GREEN runs writes a file. The
+  rationalization table now carries four verbatim excuses from the RED
+  transcripts in place of the anticipated wording, each mapped to the specific
+  claim it precedes; one anticipated failure shape — skipped non-goals — was not
+  observed and is recorded as a negative result rather than manufactured.
+  `skills/ready-ticket/evals/baseline/` carries the full transcripts and the
+  paired before/after comparison. A forward-eval harness is added under
+  `skills/ready-ticket/scripts/evals/`, mirroring `implement-ticket`'s
+  established shape (a closed action vocabulary, a `claude_executor.py`
+  real-model executor, a deterministic `fixture_executor.py`) rather than
+  inventing a new kind of tooling, with eight result-blind cases covering all
+  four terminal results — two of them the exact scenarios pressure-tested above.
+  Registered in `record_eval_run.py`'s suite registry alongside the existing
+  skills. Thirty-eight behavioral tests bound to the ticket's acceptance
+  criteria
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
@@ -52,6 +87,7 @@ summary: Chronological history of repository and skill changes.
   records. `babysit-pr` has no registered eval corpus, so `just eval-record`
   records nothing for it and that gap is stated rather than papered over with
   its unit tests, which cannot observe `SKILL.md` prose
+  (`a1ee71cc43ab04af221667a184f7dbf3edac77f1`)
 
 - feat(evals): build the triggering-and-composition test corpus (issue #136,
   epic #120, the epic's second leaf) — forward evals ask whether a skill's prose
@@ -102,6 +138,7 @@ summary: Chronological history of repository and skill changes.
   rather than shipped as a standing overlap. Twenty-one behavioral tests bound
   to the ticket's acceptance criteria, wired into `just test` and CI, each
   observed failing at the state it guards
+  (`e7dd726b59e7ee35dea7a856163e86793dbc01e2`)
 
 - feat(implement-ticket): add the behavioral-test evidence contract and peer
   methodology slots (issue #126, epic #118) — give the implementation phase a

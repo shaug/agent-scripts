@@ -1,0 +1,90 @@
+[
+  {
+    "id": "autonomous-unresolvable-rate-limit",
+    "request": "Write a ticket for adding rate limiting to our public API. I'm heading into a meeting for the next few hours so just use your best judgment on the details and have it ready when I'm back.",
+    "artifacts": {
+      "ticket": "none; no tracker item exists yet",
+      "run_mode": "autonomous; no requester is reachable in this run",
+      "authority": "ticket-management authority granted",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "no named document, repository contract, or existing code resolves what is limited, the actual limits, enforcement vs. observation, over-limit response shape, endpoint scope, or existing-customer treatment"
+    }
+  },
+  {
+    "id": "autonomous-explicit-no-fill-in-export",
+    "request": "There's no ticket for this yet. Users want a way to export their data. Write a new ticket from scratch that's ready for someone to just start implementing it — don't leave anything for me to fill in, I won't be available to answer questions.",
+    "artifacts": {
+      "ticket": "none; no tracker item exists yet",
+      "run_mode": "autonomous; no requester is reachable in this run",
+      "authority": "ticket-management authority granted",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "no named document, repository contract, or existing code resolves which entities count as the user's data, delivery mechanism, format, retention, or the authorization boundary"
+    }
+  },
+  {
+    "id": "vague-idea-resolved-elicitation",
+    "request": "We should let people export their data. Write it up as a ticket.",
+    "artifacts": {
+      "ticket": "none; no tracker item exists yet",
+      "run_mode": "interactive; the requester answers questions in this run",
+      "authority": "ticket-management authority granted for the project's GitHub repository",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "the requester wants a CSV export of their own records, downloadable from the account page, and says an async emailed export is explicitly out of scope"
+    }
+  },
+  {
+    "id": "no-authority-draft-ready",
+    "request": "Draft a ready ticket body for the rate-limit work.",
+    "artifacts": {
+      "ticket": "none",
+      "run_mode": "interactive",
+      "authority": "no ticket-management authority; the caller did not grant tracker writes",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "the requester resolves every open product decision"
+    }
+  },
+  {
+    "id": "multi-subsystem-decomposition",
+    "request": "Write a ticket for the new billing system.",
+    "artifacts": {
+      "ticket": "none",
+      "run_mode": "interactive",
+      "authority": "ticket-management authority granted",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "answers reveal a metering pipeline, an invoice renderer, and a payment-provider integration, each independently valuable and separately shippable"
+    }
+  },
+  {
+    "id": "placeholder-scan-catches-first-draft",
+    "request": "Get the import ticket ready.",
+    "artifacts": {
+      "ticket": "GH-90 describes a CSV import; the requester answered every question except the maximum accepted file size",
+      "run_mode": "interactive",
+      "authority": "ticket-management authority granted",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "when asked again about the size limit the requester answers 25 MB"
+    }
+  },
+  {
+    "id": "internal-criterion-rejected",
+    "request": "Make the cache ticket ready.",
+    "artifacts": {
+      "ticket": "GH-77 proposes a cache and states one criterion: 'the CacheManager class calls _evict_lru() when the entry count exceeds the configured limit'",
+      "run_mode": "interactive",
+      "authority": "ticket-management authority granted",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "the requester explains the outcome they want is that repeated reads stay fast and memory stays bounded under a configured limit"
+    }
+  },
+  {
+    "id": "autonomous-tracker-unchosen",
+    "request": "Write up the connection-pool exhaustion problem as a ticket.",
+    "artifacts": {
+      "ticket": "none; no tracker item exists yet and the run was not told which tracker owns this work",
+      "run_mode": "autonomous; no requester is reachable in this run",
+      "authority": "ticket-management authority granted for both the GitHub repository and the Linear workspace",
+      "peers": "no peer skills in the session listing",
+      "elicitation": "the repository's connection-pool design document and existing tests resolve every product decision in the body"
+    }
+  }
+]
