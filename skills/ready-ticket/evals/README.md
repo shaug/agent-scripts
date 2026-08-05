@@ -12,12 +12,16 @@ to produce. The four terminal results — `ticket_ready`, `draft_ready`,
 `decomposition_recommended`, and `blocked` — are each covered, and the contract
 test fails if the expectation set ever drifts from exactly those four.
 
-## What is not here yet
+## Baseline pressure test and forward evals
 
-These fixtures pin the contract; they are not a pressure test. This skill was
-authored without a recorded baseline, so the rationalization table in `SKILL.md`
-carries anticipated wording rather than verbatim wording an agent produced, and
-it is marked as such. Establishing the baseline, replacing that wording, and
-running the before/after comparison belong to
-[issue #137](https://github.com/shaug/agent-scripts/issues/137), which
-pressure-tests this skill from baseline.
+`baseline/` holds #137's RED (no-skill) and GREEN (skill-loaded) transcripts,
+the mapping from verbatim baseline wording to `SKILL.md`'s rationalization
+table, and a paired before/after comparison. See
+[`baseline/README.md`](baseline/README.md).
+
+`forward_cases.json` / `forward_expectations.json` are result-blind forward-eval
+cases in the shape `../implement-ticket/evals/forward_cases.json` established,
+run through `scripts/evals/run_forward.py` with a real-model or
+deterministic-fixture executor and recorded per the #135 eval-evidence
+convention. Two of the eight cases are the strongest scenarios from the baseline
+pressure test; the rest round out coverage of all four terminal results.
