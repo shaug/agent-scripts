@@ -4,7 +4,46 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence, then closed the blind spots an adversarial review found in that very check
+
+- fix(scripts): close the drift check's own silent-success paths (adversarial
+  review of `3c18034`) — a check whose purpose is detecting a silent failure
+  must not have silent failures of its own, and the first cut had four. **A
+  stale copy under any other directory name was invisible.** The comparison loop
+  was source-driven — for each repository skill, look for a directory of that
+  name — so `review-correctness-old/`, whose `SKILL.md` still declares
+  `name: review-correctness` and which a runtime therefore still loads as that
+  skill, was never compared and never named; the command printed "Installed
+  skills match this repository" and exited 0 with a live stale rubric on disk.
+  Installed directories are now enumerated and matched by their **declared**
+  name, with the directory name itself reported as drift, because re-installing
+  will not replace a copy sitting under a different name. A directory named for
+  a repository skill is matched even when its `SKILL.md` is absent, so a gutted
+  install is reported rather than counted absent. **Comparing nothing rendered
+  as a match**: a skills root holding no copy of anything this repository ships
+  returned the same affirmative sentence and exit 0, which is the misconfigured
+  path case and now reports what it found and exits non-zero. **An explicitly
+  named root that did not exist exited 0**, so one typo in `--skills-root` or a
+  stale `$AGENTS_SKILLS_DIR` bought a check that could never fail; naming a root
+  is now an assertion that it exists, and only the built-in default may be
+  absent — that is the continuous-integration case and the only one that still
+  exits zero with a note. **A directory that could not be read was skipped
+  silently** by `os.walk`, so an unreadable subtree on both sides read as in
+  sync; walk errors are now collected and reported. Two robustness defects
+  alongside them: a dangling symlink where a distributed file belongs raised
+  `FileNotFoundError` out of `filecmp` and aborted every skill sorting after it,
+  and a symlinked interior directory reported its entire byte-identical contents
+  as `missing`. Both are fixed, the latter by following links with a realpath
+  cycle guard. Finally, `evals/results/` is excluded: `just eval-record` appends
+  a summary there on every recorded run, so those receipts re-dirtied every
+  installed copy without changing what any installed skill does — on the live
+  distribution they were three of the eight skills' only reported drift, and a
+  check that is never green is a check operators stop reading. The
+  `.<skill-name>` record-keeping exclusion is now anchored to the skill root
+  rather than matching that name at any depth. Twelve further behavioral tests
+  cover the fixed paths, including the byte-comparison path a same-length edit
+  exercises and `--skills-root` precedence over the environment, each observed
+  failing at base `3c18034` and passing at head.
 
 - feat(scripts): detect drift between installed skill copies and this repository
   — add `scripts/check_installed_skills.py` and the `just check-installed`
@@ -37,6 +76,7 @@ summary: Chronological history of repository and skill changes.
   behavioral tests bound to the criteria above assert at the command's public
   surface — its exit status and its printed report — and were each observed
   failing at base `1001595` and passing at head.
+  (3c18034f16bcfd9b03b90043b6a68750363e043c)
 
 - fix(implement-ticket): retry `claude_executor.py`'s real-model call on
   malformed JSON instead of aborting the whole forward-eval run (issue #154) —

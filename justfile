@@ -43,7 +43,9 @@ sync-contracts:
 # re-installed. Deliberately excluded from `lint` and `check`: the installed
 # path is machine-specific and absent in continuous integration.
 #
-# Override the location with --skills-root or $AGENTS_SKILLS_DIR.
+# Exit 0 in sync, 1 drifted (or nothing comparable found), 2 misconfigured.
+# Override the location with --skills-root or $AGENTS_SKILLS_DIR; only the
+# built-in default may be absent, since naming a root asserts that it exists.
 check-installed *args:
   python3 scripts/check_installed_skills.py {{args}}
 
