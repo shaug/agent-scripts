@@ -713,6 +713,14 @@ class ImplementTicketContractTests(unittest.TestCase):
             "report newly unblocked downstream work after merge", self.skill_compact
         )
 
+    def test_rationalization_table_covers_the_certified_seed_entry(self):
+        self.assertIn("The user said finish it", self.skill_compact)
+        self.assertIn(
+            "Completion language does not independently grant merge, "
+            "decomposition, deployment, or transition authority",
+            self.skill_compact,
+        )
+
     def test_runtime_adapters_exist_for_both_products(self):
         metadata = read(SKILL_ROOT / "agents" / "openai.yaml")
         self.assertIn('display_name: "Implement Ticket"', metadata)

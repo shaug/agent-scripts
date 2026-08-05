@@ -129,6 +129,19 @@ The table's left column holds the excuse in the words the agent actually
 produces. The right column holds why the rule still applies — not a restatement
 of the rule, but the specific reason that excuse fails.
 
+### Admit only sourced entries to a rationalization table
+
+A new row requires an in-repo retrievable source: an eval fixture failure, a
+GitHub PR review history entry, or a recorded eval-results observation (the
+convention this document's eval-backed change norm establishes). Review excludes
+a speculative entry — one invented rather than retrieved.
+
+*Prevents:* a table exists to answer a rationalization actually observed
+preceding a violation, per "Keep rationalizations verbatim" below. An invented
+row is a guess at what an agent might say, dressed in the table's format; it
+carries none of the format's evidentiary weight and can misdirect a reader into
+trusting an unobserved failure mode as documented.
+
 ### Wrong-shaped output — write a positive contract
 
 The agent does the work correctly and returns something the caller cannot

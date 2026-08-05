@@ -187,6 +187,13 @@ Return `all_merged` only after every PR, propagation step, final equivalence
 check against the active source, required validation, and authorized cleanup has
 been verified.
 
+Do not skip a propagation's own equivalence proof because an earlier one passed.
+Recognize the excuse and answer it with the rule that already applies:
+
+| Rationalization                          | Why it still applies                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "The equivalence check passed last time" | Each propagation step rewrites a different downstream suffix against a different current base, so `all_merged` requires the final equivalence check "against the active source" for the step being verified now — a prior pass proves nothing about this one. |
+
 ## Preserve safety and truth
 
 - Keep `.carve-changesets/` ignored and out of commits and PRs.
