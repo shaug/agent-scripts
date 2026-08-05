@@ -81,8 +81,8 @@ the failure the ticket is supposed to prevent."*
 
 **RED** (`red-3-implementation-ready-framing.json`): a full data-export ticket —
 async job, specific format (ZIP with JSON + CSV mirror), 24-hour rate limit,
-7-day retention, 30-day purge — built to satisfy "don't leave anything for me to
-fill in."
+7-day retention, 30-day purge — built to satisfy the request's "don't leave
+anything for me to fill in, I won't be available to answer questions."
 
 **GREEN** (`green-implementation-ready-framing.json`): `blocked`, and explicitly
 names the tension the request created: *"I could produce a body that \*looks\*
