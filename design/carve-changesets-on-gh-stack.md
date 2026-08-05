@@ -275,10 +275,12 @@ boundary require:
 - non-interactive `gh stack init` for explicit branches;
 - `gh stack rebase`, `push`, `submit`, `sync`, and `merge`;
 - push, submit, and push-capable sync operations that accept the manifest's
-  exact expected-old SHA for every remote branch and reject each mismatched
-  update before overwriting an unexpected head;
-- merge operations that accept the manifest's exact pull-request head set and
-  reject the request before direct merge or queue admission if any head differs;
+  expected remote state for every branch—an exact SHA or absence—and reject each
+  mismatch before creating or overwriting an unexpected ref;
+- merge operations that accept the manifest's exact mutation set and reject a
+  direct merge if any selected head differs; and
+- queue operations that durably fence the bottom pull request and every suffix
+  head and base that its landing may rebase or retarget;
 - GitHub native stacks enabled for the repository; and
 - live read access to stack, pull-request, review, check, and merge state.
 
@@ -287,25 +289,26 @@ incompatible capability returns `blocked`. It does not download a substitute
 tool or enter the retired custom stack path.
 
 At the reviewed public-preview revision, the CLI does not expose the required
-expected-head preconditions for remote updates or merges. Until a tested
-compatible version does, the skill may propose and materialize a local native
-stack, but must block before publication, remote repair, recovery, or merge.
-Post-command readback cannot substitute for a precondition because it observes
-an unauthorized write only after it has occurred.
+expected-state preconditions for remote updates or durable full-mutation-set
+fencing for merges. Until a tested compatible version does, the skill may
+propose and materialize a local native stack, but must block before publication,
+remote repair, recovery, or merge. Post-command readback cannot substitute for a
+precondition because it observes an unauthorized write only after it has
+occurred.
 
 ### Command effects and authority
 
 The adapter treats dependency commands by their real effects:
 
-| Command                | Material effects                                                                          | Required disclosure and authority                                                                                   |
-| ---------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch  | Preview config, branch, state, and checkout changes; require local materialization authority                        |
-| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                            | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged                 |
-| `gh stack rebase`      | Rewrites local layer commits and records recovery state                                   | Preview the affected suffix; require stack mutation authority                                                       |
-| `gh stack push`        | Updates active remote branches and may partly succeed                                     | Bind every update to the manifest's expected-old SHA; require publish or stack mutation authority                   |
-| `gh stack submit`      | Pushes branches, creates or updates pull requests, and updates the native stack           | Bind every pushed branch to its expected-old SHA; preview pull requests and draft or ready state; require authority |
-| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested | Preview every enabled phase; bind any push to expected-old SHAs; require authority for every resulting mutation     |
-| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                 | Bind the request to expected PR heads; require merge authority for the direct prefix or queued bottom PR            |
+| Command                | Material effects                                                                          | Required disclosure and authority                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch  | Preview config, branch, state, and checkout changes; require local materialization authority                     |
+| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                            | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged              |
+| `gh stack rebase`      | Rewrites local layer commits and records recovery state                                   | Preview the affected suffix; require stack mutation authority                                                    |
+| `gh stack push`        | Updates active remote branches and may partly succeed                                     | Bind each update to an expected SHA or absence; require publish or stack mutation authority                      |
+| `gh stack submit`      | Pushes branches, creates or updates pull requests, and updates the native stack           | Bind each push to an expected SHA or absence; preview PR and ready-state effects; require authority              |
+| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested | Preview every phase; bind each push to an expected SHA or absence; require authority for every mutation          |
+| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                 | Bind direct heads or durably fence the queued bottom and affected suffix; require authority for the mutation set |
 
 Status-only work must not hide the local refresh performed by
 `gh stack view --json`. If the caller has not authorized that bounded state
@@ -366,8 +369,9 @@ the caller has separately granted authority for that state transition. Since
 request. Layer commit messages already contain the human-readable intent,
 non-goals, and intentional incompleteness from which automatic pull-request text
 is derived. Submission is available only when the dependency binds every branch
-push to the manifest's exact expected-old SHA. A dependency that refreshes its
-own lease expectations after manifest approval does not satisfy this contract.
+push to the manifest's expected remote state: an exact SHA for an existing ref,
+or absence for a new ref. A dependency that refreshes its own lease expectations
+after manifest approval does not satisfy this contract.
 
 After submission:
 
@@ -424,8 +428,9 @@ Before mutation, resolve and report:
 - current stack and trunk identity;
 - applicable checks, reviews, and protection gates;
 - merge method and merge-queue behavior; and
-- authority covering the complete direct prefix or the one queued bottom pull
-  request.
+- authority covering the complete mutation set: the direct prefix, or the queued
+  bottom pull request plus every suffix branch and pull request that its landing
+  may rebase or retarget.
 
 For a direct prefix merge, invoke
 `gh stack merge <boundary-pr-number> --yes [--merge-method <method>]`. The
@@ -436,14 +441,20 @@ expected head. A direct merge is one all-or-nothing service operation.
 
 On merge-queue repositories, admit only the current bottom pull request with
 `gh stack merge <bottom-pr-number> --yes`. The queue chooses the merge method,
-so the wrapper omits method flags and records that they do not apply. The merge
-request must reject admission unless that pull request still has the manifest's
-expected head. Queue admission is an asynchronous handoff, not merge completion.
-After it lands, GitHub may rebase the remaining suffix. The skill then
-synchronizes, reads every new head, and rebuilds all candidate-bound validation,
-review, CI, and feedback evidence before separately authorizing and admitting
-the next bottom pull request. It never admits a prefix that GitHub may process
-in multiple autonomous groups.
+so the wrapper omits method flags and records that they do not apply. The
+manifest includes the exact bottom head and every suffix head and base that the
+landing may rebase or retarget. The dependency must fence that complete set at
+admission and keep the fence effective until landing, rejecting or canceling the
+operation before native suffix mutation if any member changes.
+
+Queue admission is an asynchronous handoff, not merge completion. Its authority
+covers the native heads and bases produced by landing the exact bottom candidate
+against the exact fenced suffix; it does not cover arbitrary replacement heads.
+After landing, the skill synchronizes, reads every new head, and rebuilds all
+candidate-bound validation, review, CI, and feedback evidence before separately
+authorizing and admitting the next bottom pull request. It never admits a prefix
+that GitHub may process in multiple autonomous groups. If the dependency cannot
+maintain the complete fence through landing, queue admission is blocked.
 
 This one-at-a-time queue admission is lifecycle coordination through the native
 stack engine, not a return to custom propagation: GitHub and `gh stack` still
@@ -515,19 +526,21 @@ A successful command followed by conflicting readback returns `blocked`.
 Readback always classifies every declared target as changed as expected,
 unchanged, or changed unexpectedly.
 
-For every push-capable `gh stack` operation, capture the old and proposed head
-of every active branch and pass the old heads as dependency-enforced
-compare-and-swap preconditions. If any precondition fails, classify all declared
-targets before retry; never overwrite the unexpected head. After any result,
-read every remote ref and report which leases advanced, which were rejected, and
-which heads are unexpected. A retry starts from that new snapshot; it never
-replays the stale manifest.
+For every push-capable `gh stack` operation, capture the expected remote state
+and proposed head of every active branch. The expected state is an exact SHA for
+an existing ref or absence for a new ref. Pass those states as
+dependency-enforced compare-and-swap preconditions. If any precondition fails,
+classify all declared targets before retry; never create or overwrite the
+unexpected ref. After any result, read every remote ref and report which leases
+advanced, which were rejected, and which heads are unexpected. A retry starts
+from that new snapshot; it never replays the stale manifest.
 
 For direct merge, pass every selected expected pull-request head as one atomic
 precondition and verify that the complete prefix either merged or remained open.
-For queue-backed merge, pass the bottom pull request's expected head,
-distinguish admission from landing, and do not admit another pull request until
-the rebased suffix has passed fresh candidate-bound gates.
+For queue-backed merge, durably fence the bottom head and every affected suffix
+head and base through landing. Distinguish admission from landing, and do not
+admit another pull request until the rebased suffix has passed fresh
+candidate-bound gates.
 
 ## Interruption and divergence
 
@@ -634,8 +647,10 @@ Cover:
 - dry-run manifests;
 - exact argv construction;
 - command-effect and authority classification;
-- exact expected-old SHA enforcement for push, submit, and push-capable sync;
-- exact expected-head enforcement for direct merge and queue admission;
+- exact expected-SHA and expected-absence enforcement for push, submit, and
+  push-capable sync;
+- exact expected-head enforcement for direct merge;
+- durable bottom-and-suffix fencing for queue admission through landing;
 - post-command readback;
 - partial push and queued-merge state classification;
 - interrupted and divergent states;
@@ -655,6 +670,8 @@ Use disposable repositories and controlled `gh stack` fixtures to cover:
 - a lower-layer fix and cascading rebase;
 - a rejected branch lease after earlier branches have updated;
 - a remote advance after manifest approval that rejects without overwriting it;
+- a same-named remote branch created after manifest approval that rejects
+  without mutation;
 - local and remote divergence;
 - partial publication;
 - an all-or-nothing direct prefix merge;
@@ -662,6 +679,8 @@ Use disposable repositories and controlled `gh stack` fixtures to cover:
   admission;
 - a queue whose group limit is smaller than the desired prefix, proving that
   only one bottom pull request is admitted before suffix revalidation;
+- an upstack head advance during queue residence that cancels or rejects the
+  landing before suffix mutation;
 - post-merge synchronization;
 - successor-source recovery; and
 - final source equivalence.
@@ -708,7 +727,7 @@ not part of the design-document changeset.
 - `carve-changesets` gains a hard dependency on a preview tool and API.
 - Compatible versions must be tested and bounded.
 - Publication and merge remain unavailable until `gh stack` exposes the required
-  expected-head preconditions.
+  expected-state preconditions and durable queue fencing.
 - Dependency commands may require interactive recovery.
 - Native stack behavior may change during public preview.
 - Existing chains require adoption before continued operation.
