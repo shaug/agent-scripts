@@ -49,6 +49,18 @@ fresh or minimally inherited read-only context with:
   holding the complete `base...HEAD` diff; and
 - exact focused and full validation evidence, including unavailable checks.
 
+Reviewers receive evidence and contracts, never conclusions. If the invocation
+being written steers the answer — "do not flag", "this is fine", a pre-judged
+severity, or the verdict expected back — stop and rewrite it. A steered reviewer
+returns confirmation, not review, and confirmation is indistinguishable from a
+clean result at the point it is consumed.
+
+Give the review a capability tier adequate for judgment: reviewing is judgment
+work, so it inherits the session's tier by default rather than the cheapest one,
+and a review that missed a defect the fix loop later surfaces escalates one tier
+instead of rerunning identically. Prefer one well-briefed review to several thin
+ones; each rerun costs a full three-lens sequence.
+
 Write that diff file to a temporary directory outside the ticket worktree and
 hand over its path, not the diff text. Writing it inside the worktree would show
 up as a candidate mutation in the integrity check below, and inlining it spends

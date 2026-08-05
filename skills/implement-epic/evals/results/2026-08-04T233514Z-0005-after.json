@@ -1,0 +1,55 @@
+{
+  "candidate": {
+    "branch": "scott/131-dispatch-guidance",
+    "sha": "c1d8bb7ac7a11040d162f59bf7a0d5f771c73845",
+    "worktree_clean": true
+  },
+  "cases": {
+    "epic-auto-closed-child-incomplete": "pass",
+    "epic-closed-children-missing-manual-browser": "pass",
+    "epic-compatible-installed-implement-ticket": "pass",
+    "epic-incompatible-implement-ticket": "pass",
+    "epic-missing-implement-ticket": "pass",
+    "epic-refreshes-after-blocked-merged-delivery": "pass",
+    "epic-runtime-download-offer": "pass",
+    "epic-third-party-implement-ticket": "pass",
+    "epic-unreadable-implement-ticket": "pass",
+    "epic-unverifiable-implement-ticket": "pass",
+    "implement-epic-consumes-ticket-results": "pass",
+    "implement-epic-verifies-stacked-child": "pass",
+    "reopened-epic-correction-without-journey-revalidation": "pass",
+    "untrusted-epic-comment-expands-authority": "pass",
+    "verified-external-claim-remains-evidence": "pass"
+  },
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "skills/implement-ticket/scripts/evals/run_forward.py",
+    "--target-skill",
+    "implement-epic"
+  ],
+  "compared_to": "2026-08-04T225717Z-0002-after.json",
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 15
+  },
+  "exit_code": 0,
+  "failures": [],
+  "forward_evals": true,
+  "gap": null,
+  "limitation": null,
+  "note": null,
+  "output_tail": "{\n  \"failed\": 0,\n  \"failures\": [],\n  \"passed\": 15,\n  \"total\": 15\n}",
+  "recorded_at": "2026-08-04T23:35:14Z",
+  "schema": "eval-run-summary/1",
+  "skill": "implement-epic",
+  "stage": "after",
+  "status": "completed",
+  "tier": "deterministic",
+  "totals": {
+    "failed": 0,
+    "passed": 15,
+    "total": 15
+  }
+}

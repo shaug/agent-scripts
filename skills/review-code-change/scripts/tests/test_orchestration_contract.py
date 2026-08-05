@@ -90,6 +90,36 @@ class OrchestrationContractTests(unittest.TestCase):
             "do not inline the complete diff into any lens invocation", protocol
         )
 
+    def test_lens_dispatch_carries_integrity_tier_and_turn_count(self):
+        protocol = compact(self.protocol)
+        self.assertIn(
+            "A lens receives evidence and contracts, never conclusions", protocol
+        )
+        self.assertIn("stop and rewrite it", protocol)
+        self.assertIn("returns confirmation, not review", protocol)
+        self.assertIn("capability tier adequate for judgment", protocol)
+        self.assertIn("Prefer one well-briefed pass", protocol)
+
+    def test_lens_integrity_rule_does_not_forbid_the_simplification_handoff(self):
+        # The integrity rule and the mandatory validated-simplification-result
+        # handoff live in the same file; the rule must name its one exception
+        # rather than silently strand "Resolve conflicts" below it.
+        protocol = compact(self.protocol)
+        self.assertIn("never conclusions about the candidate under review", protocol)
+        self.assertIn(
+            "The one exception is the validated simplification result", protocol
+        )
+        self.assertIn("contract-defined disposition input", protocol)
+        self.assertLess(
+            protocol.index("The one exception"),
+            protocol.index("For a tractable gating proposal"),
+        )
+
+    def test_tier_guidance_names_no_product_or_model(self):
+        surface = compact(self.skill + self.protocol).lower()
+        for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
+            self.assertNotIn(banned, surface)
+
     def test_forward_evaluations_cover_every_case_and_conform(self):
         self.assertEqual(set(self.cases), set(self.results))
         for case_id, record in self.results.items():

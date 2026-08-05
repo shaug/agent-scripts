@@ -59,6 +59,20 @@ The default execution mode is `fresh_subagent`. Every review pass:
 4. **Discards the reviewer context after the result.** Do not carry a reviewer
    subagent's working notes, intermediate reasoning, or session state into the
    next pass or into the fix cycle that follows.
+5. **States no conclusion.** The reviewer receives evidence and contracts and
+   never the answer. If the prompt being written steers the verdict — "do not
+   flag", "this is fine", a pre-judged severity, or the result expected back —
+   stop and rewrite it. This is the dispatch-side counterpart of step 2's
+   withholding rule: step 2 keeps the intended fix out of the packet, and this
+   keeps it out of the prompt wrapped around the packet. A steered reviewer
+   returns confirmation, and a loop that converges on confirmation reports
+   convergence it never earned.
+
+Give each review pass a capability tier adequate for judgment: it inherits the
+session's tier by default rather than the cheapest one, and a pass that missed a
+defect a later pass surfaces escalates one tier instead of rerunning
+identically. Prefer one well-briefed pass to several thin ones — every pass
+spends from the cycle budget, and the budget is what bounds this loop.
 
 `review-code-change` runs its own complete lens sequence
 (`review-solution-simplicity`, `review-correctness`, `review-code-simplicity`)

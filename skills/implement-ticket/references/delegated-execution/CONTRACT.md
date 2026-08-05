@@ -47,6 +47,15 @@ binds the run to:
 - the caller's last consumed checkpoint sequence; and
 - an opaque continuation token.
 
+Capability tier is deliberately not a field here. A coordinator composing this
+invocation still chooses one, so the recommendation applies as prose: take the
+cheapest tier adequate for the work, inherit the session's tier for judgment
+work, and escalate one tier on repeated failure rather than retrying
+identically. An omitted selection silently inherits the session's tier, so state
+it when it matters. Prefer fewer, better-briefed invocations to many thin ones.
+This adds no field, gates nothing, and never changes a terminal state — a
+coordinator that ignores it remains contract-conformant.
+
 Required validation expectations include the change-demonstrating-test evidence
 slot that `implement-ticket` requires of every run. The delegate records which
 form applies — `evidence_behavioral_test`, `evidence_regression_test`,

@@ -4,7 +4,88 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
+
+- feat(skills): add tier, turn-count, reviewer-integrity, and post-parallel
+  guidance to dispatch prose (issue #131, epic #119) — the pipeline composes
+  dispatches constantly and said nothing about how to size them or how to keep a
+  reviewer honest. Three implementer-dispatch sites (`implement-ticket`'s
+  delegated-worker paragraph, `implement-epic`'s child-dispatch prose, and a
+  prose-only note in the delegated-execution contract's Invocation section) now
+  carry tier and turn-count guidance: cheapest tier adequate for the work,
+  inherit the session's tier for judgment work, escalate one tier on repeated
+  failure rather than retrying identically, and prefer fewer, better-briefed
+  dispatches because one that must be re-asked costs more than the tier it
+  saved. The contract note explicitly adds no field and gates nothing, so a
+  coordinator ignoring it stays conformant. Five reviewer-dispatch sites
+  (`review-and-merge-gates.md`, `review-code-change`'s orchestration protocol,
+  `babysit-pr`'s post-head-change re-review, `carve-changesets`' per-changeset
+  review, and `review-fix-loop`'s reviewer orchestration) additionally carry the
+  reviewer-integrity rule: reviewers receive evidence and contracts, never
+  conclusions, and a prompt that steers the verdict gets rewritten. Each site
+  names where its own pressure comes from — a fix just written to satisfy a
+  finding, an earlier changeset already reviewed clean, a loop that converges on
+  confirmation it never earned — because a steered reviewer returns confirmation
+  that is indistinguishable from a clean result at the point it is consumed.
+  `implement-epic`'s explicitly-authorized parallel path gains post-integration
+  verification: run the full required suite once against the integrated state,
+  since each child's gates ran against its own candidate and non-overlap
+  analysis predicts independence rather than demonstrating it. Wording stays
+  product-agnostic (capability tiers and roles, never model names or product
+  APIs), enforced by a per-skill assertion. No contract fields, schemas, or
+  terminal states change. Twelve prose-contract assertions across six skills,
+  each observed failing at the branch's original base `a1ee71c` (none of these
+  eight files changed between it and this candidate's current base) and passing
+  at head. The post-parallel paragraph records its ported source at the seam,
+  which the named-peer registry requires of a "ported with attribution" row and
+  which review caught as missing. Eval evidence: the four deterministic corpora
+  are unchanged (implement-ticket 58/58, implement-epic 15/15, carve-changesets
+  12/12, review-fix-loop 20/20, each with an empty per-case diff); `babysit-pr`
+  and `review-code-change` have no corpus, so `just eval-record` records nothing
+  and that gap is stated rather than papered over with unit tests. The
+  `implement-epic` real-model tier ran six times and implicated this change's
+  own first attempt at recording the ported source. Review required the habit to
+  name its origin at the seam; satisfying that with a four-line attribution
+  paragraph beside the verification obligation coincided with
+  `epic-refreshes-after-blocked-merged-delivery` failing on
+  `missing actions: verify_epic_acceptance`, and compressing the same
+  attribution to a one-clause parenthetical coincided with its recovery. One run
+  covers each condition — no change, four-line note, one-clause note — with
+  three further runs corroborating the pattern, one of which was recorded from a
+  tree that was not clean. Only a single run ever isolated the note's absence
+  from the rest of the change. The reading those runs support is that a gate
+  competes with non-operative prose placed beside it, which is the
+  context-economy failure this repository's authoring standard already names;
+  the effect is not quantified. Every summary's `candidate.sha` names a branch
+  commit rather than a commit on `main`: this repository squash-merges, and this
+  branch was rebased twice, so the norm's requirement that a summary name a
+  commit a later reader can resolve is unattainable for any branch-recorded run
+  by construction. The per-case maps inside the summaries are the durable
+  evidence, not their SHA bindings, and that tension between the recording rule
+  and squash merging is a follow-up rather than something this ticket can
+  settle. Nothing else in the suite reacted: every unit test and both simplicity
+  lenses passed the version that regressed. `epic-unreadable-implement-ticket`
+  fails at base and passes in all five post-change real-model runs, a durable
+  gain. `epic-incompatible-implement-ticket` changes status three times across
+  those same five runs — including twice among the three runs that share the
+  four-line note's byte-identical prose blob — and fails in the sole run
+  recorded against the shipped one-clause prose, without disclosure until this
+  sentence that the run cited above for a different case's recovery also
+  regressed this one. That instability sets the tier's noise floor near one case
+  per run, which bounds every claim above. `implement-epic`'s `SKILL.md` is the
+  only one of this change's eight edited prose files a real model ever read.
+  `implement-ticket` is the one skill `AGENTS.md` names as having a real-model
+  executor and it has no real-model after run at all — its tier aborts in
+  `claude_executor.extract_json_object`, the blocker already recorded against
+  #154 — and `babysit-pr`, `review-code-change`, `carve-changesets`, and
+  `review-fix-loop` either have no corpus or record only a deterministic tier
+  whose own gap field says "no model read the prose." So seven of this change's
+  eight prose edits carry no model-behavior evidence. The norm asks for "a
+  recorded run" and a per-case diff without saying how many runs separate signal
+  from variance, and a single run here would have reported the regression, or
+  the gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and
+  the eight summaries this branch recorded from unclean trees are recorded as
+  follow-ups rather than absorbed here
 
 - feat(ready-ticket): pressure-test from a real baseline and record the
   before/after (issue #137, epic #120, the epic's third and final leaf) — #124
@@ -39,7 +120,7 @@ summary: Chronological history of repository and skill changes.
   four terminal results — two of them the exact scenarios pressure-tested above.
   Registered in `record_eval_run.py`'s suite registry alongside the existing
   skills. Thirty-eight behavioral tests bound to the ticket's acceptance
-  criteria
+  criteria (`c657611bd41d87a2822137c1ac16d8633d8b923b`)
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add

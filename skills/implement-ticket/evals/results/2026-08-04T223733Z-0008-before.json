@@ -1,0 +1,35 @@
+{
+  "candidate": {
+    "branch": "scott/131-dispatch-guidance",
+    "sha": "a1ee71cc43ab04af221667a184f7dbf3edac77f1",
+    "worktree_clean": true
+  },
+  "cases": {},
+  "command": [
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3",
+    "skills/implement-ticket/scripts/evals/run_forward.py",
+    "--executor",
+    "/Users/scott/.local/share/mise/installs/python/3.11.12/bin/python3 skills/implement-ticket/scripts/evals/claude_executor.py"
+  ],
+  "compared_to": null,
+  "diff": {
+    "newly_failing": [],
+    "newly_passing": [],
+    "still_failing": [],
+    "unchanged": 0
+  },
+  "exit_code": 1,
+  "failures": [],
+  "forward_evals": true,
+  "gap": null,
+  "limitation": "eval command exited 1 without an aggregate summary; model-behavior evidence not collected",
+  "note": null,
+  "output_tail": "\u2026 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-131-dispatch/skills/implement-ticket/scripts/evals/run_forward.py\", line 50, in run_executor\n    raise RuntimeError(\nRuntimeError: executor exited 1: Traceback (most recent call last):\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-131-dispatch/skills/implement-ticket/scripts/evals/claude_executor.py\", line 264, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-131-dispatch/skills/implement-ticket/scripts/evals/claude_executor.py\", line 257, in main\n    observed = run_claude(build_prompt(payload), args.claude_bin, args.model)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-131-dispatch/skills/implement-ticket/scripts/evals/claude_executor.py\", line 214, in run_claude\n    return extract_json_object(result_text)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.claude/worktrees/agent-scripts/ticket-131-dispatch/skills/implement-ticket/scripts/evals/claude_executor.py\", line 192, in extract_json_object\n    return json.loads(candidate[start : end + 1])\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/__init__.py\", line 346, in loads\n    return _default_decoder.decode(s)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/decoder.py\", line 337, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/scott/.local/share/mise/installs/python/3.11.12/lib/python3.11/json/decoder.py\", line 353, in raw_decode\n    obj, end = self.scan_once(s, idx)\n               ^^^^^^^^^^^^^^^^^^^^^^\njson.decoder.JSONDecodeError: Expecting ',' delimiter: line 1 column 1817 (char 1816)",
+  "recorded_at": "2026-08-04T22:37:33Z",
+  "schema": "eval-run-summary/1",
+  "skill": "implement-ticket",
+  "stage": "before",
+  "status": "attempted",
+  "tier": "real-model",
+  "totals": null
+}
