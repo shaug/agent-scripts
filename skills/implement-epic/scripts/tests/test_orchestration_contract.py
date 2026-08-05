@@ -219,7 +219,7 @@ class ImplementEpicContractTests(unittest.TestCase):
             "ported with attribution from superpowers' `dispatching-parallel-agents`",
             self.contract,
         )
-        self.assertIn("gains none of that peer's fan-out mechanics", self.contract)
+        self.assertIn("its fan-out mechanics are not", self.contract)
 
     def test_tier_guidance_names_no_product_or_model(self):
         for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):

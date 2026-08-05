@@ -232,12 +232,9 @@ After integrating explicitly authorized parallel children, run the complete
 required validation suite once against the integrated state before treating any
 of them as delivered. Each child's gates ran against its own candidate in
 isolation; nothing has yet exercised the combination, and non-overlap analysis
-predicts independence rather than demonstrating it.
-
-That verification habit is ported with attribution from superpowers'
-`dispatching-parallel-agents`. Only the habit is adapted: this skill dispatches
-one child per verified worktree through `implement-ticket` and gains none of
-that peer's fan-out mechanics.
+predicts independence rather than demonstrating it. (Habit ported with
+attribution from superpowers' `dispatching-parallel-agents`; its fan-out
+mechanics are not.)
 
 ### 4. Verify the terminal result
 
