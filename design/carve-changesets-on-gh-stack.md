@@ -216,7 +216,9 @@ never parses that file directly. It consumes the documented CLI surface.
 
 The native GitHub stack establishes trunk and ordered pull-request membership.
 Remote refs establish branch heads. Pull requests establish candidate heads,
-bases, checks, reviews, and mergeability.
+bases, checks, reviews, and mergeability. The exact pull-request head commit
+carries the remaining machine-readable `carve-changesets` identity and
+provenance.
 
 Local `gh stack` state remains useful for execution. It cannot override live
 GitHub state.
@@ -231,8 +233,8 @@ prove that the represented result matches the active immutable source.
 A semantic slug identifies a changeset. Position comes from live stack order.
 Branch names and numeric positions do not establish durable semantic identity.
 
-Commit and pull-request metadata retain only information that GitHub stacks do
-not provide:
+Machine-readable trailers on each exact layer head commit retain only
+information that GitHub stacks do not provide:
 
 - semantic slug;
 - immutable root source identity;
@@ -244,12 +246,19 @@ Every published lineage identity includes the selected remote plus an exact
 branch and stamped commit. Local-only reachability cannot establish durable
 source provenance.
 
+Before reading a trailer, the skill verifies that the native pull-request head
+and remote branch head identify the same commit. GitHub's preserved pull-request
+head identity remains the lookup key after branch deletion. A missing trailer or
+an unexplained head mismatch blocks reconstruction.
+
 Native stack number, position, predecessor, trunk, and size must not be copied
 into durable `carve-changesets` metadata. Those values come from GitHub and
 `gh stack` at read time.
 
-The redesign introduces a new metadata version for native stacks. Existing v1
-and v2 metadata remain evidence for legacy adoption. They do not establish the
+The redesign introduces a trailer-only metadata version for native stacks.
+Pull-request bodies remain human-readable and carry no new machine-readable
+`carve-changesets` block. Existing v1 and v2 commit trailers and pull-request
+blocks remain historical input for legacy adoption. They do not establish the
 post-adoption topology.
 
 ## Capability contract
@@ -339,7 +348,9 @@ single command surface. New pull requests are drafts in this mode. The wrapper
 adds `--open` only when the manifest requests ready-for-review pull requests and
 the caller has separately granted authority for that state transition. Since
 `--open` also marks existing drafts ready, the preview lists every affected pull
-request.
+request. Layer commit messages already contain the human-readable intent,
+non-goals, and intentional incompleteness from which automatic pull-request text
+is derived.
 
 After submission:
 
@@ -347,8 +358,9 @@ After submission:
 2. Verify trunk and ordered pull-request membership.
 3. Verify every remote head and pull-request base.
 4. Verify every layer diff.
-5. Add semantic context and provenance to pull-request bodies.
-6. Read back the edited pull requests.
+
+No post-submit pull-request metadata edit is required. Commit trailers are the
+sole new machine-readable semantic and provenance record.
 
 An exit code alone never proves publication.
 
@@ -425,12 +437,11 @@ An accepted fix after a prefix merge may change the intended final result.
 `carve-changesets` still creates or verifies a distinct immutable successor
 source and continuous lineage.
 
-Before any remote push, submit, sync, or metadata edit for a recovered suffix,
-every root and successor identity in that lineage must resolve at its exact
-stamped SHA on the selected remote. The preview includes those remote
-identities. Post-mutation readback verifies them again. A local-only source
-blocks recovery because a fresh clone could not reconstruct the published
-lineage.
+Before any remote push, submit, or sync for a recovered suffix, every root and
+successor identity in that lineage must resolve at its exact stamped SHA on the
+selected remote. The preview includes those remote identities. Post-mutation
+readback verifies them again. A local-only source blocks recovery because a
+fresh clone could not reconstruct the published lineage.
 
 The skill applies the fix at the correct open layer and delegates suffix
 mechanics to `gh stack rebase`, `push`, and `sync`. It does not manually
@@ -518,15 +529,17 @@ repair, propagation, or merge work. Adoption must:
 
 1. Resolve every exact branch, head, pull request, and predecessor base.
 2. Verify same-repository ownership and linear ancestry.
-3. Verify semantic slugs and immutable source provenance.
+3. Verify semantic slugs and immutable source provenance, using v1 and v2
+   pull-request blocks only as adoption evidence.
 4. Prove the complete chain against the active source.
-5. Run non-interactive `gh stack init` over the existing branches.
-6. Submit or link the native GitHub stack.
-7. Read back local and remote stack state.
-8. Promote open-layer metadata to the native-stack version when required.
+5. Promote active open-layer commits to the native trailer version, then verify
+   the rewritten heads and reconstructed chain.
+6. Run non-interactive `gh stack init` over the rewritten open branches.
+7. Submit or link the native GitHub stack.
+8. Read back local and remote stack state.
 
-Merged legacy metadata remains historical evidence. Native GitHub state controls
-the adopted open topology.
+Merged legacy commits and pull-request blocks remain unchanged historical
+evidence. Native GitHub state controls the adopted open topology.
 
 If adoption cannot be proved safe, return `blocked` with one concrete action.
 The skill does not resume the retired custom stack manager.
@@ -569,6 +582,7 @@ Verify:
 - required `gh stack` capability;
 - semantic identity independent of stack position;
 - topology read through documented surfaces;
+- one machine-readable semantic and provenance record for new native layers;
 - no legacy stack-manager fallback;
 - no single-PR implicit stack mutation; and
 - candidate-evidence invalidation after stack-wide changes.
@@ -585,7 +599,8 @@ Cover:
 - post-command readback;
 - partial push and queued-merge state classification;
 - interrupted and divergent states;
-- native metadata decoding;
+- native commit-trailer decoding;
+- legacy pull-request blocks accepted only as adoption evidence;
 - legacy adoption checks; and
 - terminal-state rendering.
 
