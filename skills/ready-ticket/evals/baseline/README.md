@@ -52,12 +52,12 @@ below.
 wording pending this ticket. It now carries these, each a direct quote from a
 RED transcript in this directory:
 
-| Verbatim excuse                                                                                                                                   | Source                                    | Failure it precedes                                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                  | `red-3-implementation-ready-framing.json` | The async/sync choice, the delivery mechanism, the file format, the numeric retention and rate-limit defaults — invented and asserted as decided, in a run explicitly told no requester was reachable. |
-| "I've marked them as candidates to trim rather than presenting them as findings."                                                                 | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize.              |
-| "Default limits — placeholder, needs real data" — immediately followed by a concrete per-tier numeric table presented as the acceptance criteria. | `red-4-autonomous-no-clarification.json`  | The placeholder label does not prevent the numbers from being read as decided; an implementer skimming the acceptance criteria sees a table, not a caveat two sections up.                             |
-| "**Priority:** TBD (see note on regulatory driver)"                                                                                               | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                             |
+| Verbatim excuse                                                                                                                                                                       | Source                                    | Failure it precedes                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                                                      | `red-3-implementation-ready-framing.json` | The async/sync choice, the delivery mechanism, the file format, the numeric retention and rate-limit defaults — invented and asserted as decided, in a run explicitly told no requester was reachable.           |
+| "I've marked them as candidates to trim rather than presenting them as findings."                                                                                                     | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize.                        |
+| "Default limits — placeholder, needs real data" — a heading, one sentence, then a concrete per-tier numeric table, sitting in the design section rather than the acceptance criteria. | `red-4-autonomous-no-clarification.json`  | The label reads as a hedge, but nothing in the ticket's separate acceptance-criteria checklist flags these numbers as unresolved; a reader who trusts the heading and moves on never sees them questioned again. |
+| "**Priority:** TBD (see note on regulatory driver)"                                                                                                                                   | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                                       |
 
 ## RED → GREEN, paired
 
@@ -85,11 +85,13 @@ async job, specific format (ZIP with JSON + CSV mirror), 24-hour rate limit,
 fill in."
 
 **GREEN** (`green-implementation-ready-framing.json`): `blocked`, and explicitly
-names the tension the request created: *"I could produce a body that looks
+names the tension the request created: *"I could produce a body that \*looks\*
 complete by choosing for you. That's precisely the failure mode this skill
-exists to prevent."* Also correctly distinguishes `blocked` from `draft_ready`
-here — the latter requires a body that already meets the readiness target, and
-none was reachable.
+exists to prevent: an inferred product decision is indistinguishable in the body
+from a decided one, so you'd never learn it was made for you — and the
+implementer would build to my guess."* Also correctly distinguishes `blocked`
+from `draft_ready` here — the latter requires a body that already meets the
+readiness target, and none was reachable.
 
 ### Pair 3 — interactive, single-shot
 
@@ -99,10 +101,11 @@ considerations — for a two-sentence request, with no question asked first.
 
 **GREEN** (`green-vague-idea-interactive.json`): exactly one question in
 response, matching "Elicit one question at a time." States plainly why neither
-terminal result applies yet rather than forcing one: *"`draft_ready` requires a
-body that fills every slot and passes the four self-review scans... `blocked`
-doesn't apply either — that's for decisions no requester can resolve, and you
-can resolve these."*
+terminal result applies yet rather than forcing one — first ruling out
+`draft_ready`: *"`draft_ready` requires a body that fills every slot and passes
+the four self-review scans"* (with the open decisions that leaves named), then
+`blocked`: *"`blocked` doesn't apply either — that's for decisions no requester
+can resolve, and you can resolve these."*
 
 ## What was not observed
 

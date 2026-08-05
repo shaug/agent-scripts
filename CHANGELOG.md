@@ -138,6 +138,7 @@ summary: Chronological history of repository and skill changes.
   rather than shipped as a standing overlap. Twenty-one behavioral tests bound
   to the ticket's acceptance criteria, wired into `just test` and CI, each
   observed failing at the state it guards
+  (`e7dd726b59e7ee35dea7a856163e86793dbc01e2`)
 
 - feat(implement-ticket): add the behavioral-test evidence contract and peer
   methodology slots (issue #126, epic #118) — give the implementation phase a
