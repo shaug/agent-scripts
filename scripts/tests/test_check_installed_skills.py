@@ -34,9 +34,21 @@ class CheckInstalledSkillsTests(unittest.TestCase):
     """The command's observable contract: what it prints and what it exits."""
 
     def setUp(self) -> None:
+        self.fresh_skills_root()
+
+    def fresh_skills_root(self) -> None:
+        """Allocate an empty installed-skills directory for one scenario."""
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.skills_root = Path(directory.name)
+
+    def write_skill(self, directory: Path, declared: str, body: str = "") -> Path:
+        """A minimal skill folder, for cases the real `skills/` cannot express."""
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "SKILL.md").write_text(
+            f"---\nname: {declared}\n---\n{body}", encoding="utf-8"
+        )
+        return directory
 
     def install(self, *skills: str, as_directory: str | None = None) -> Path:
         """Copy repository skills into the fixture as a distribution would."""
@@ -170,6 +182,61 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         )
         self.assertIn(str(stray), output)
 
+    def test_removal_advice_never_names_another_skills_install_directory(self) -> None:
+        """The one destructive instruction must not undo a re-install.
+
+        A directory matches on its declared name as well as its own, so one
+        directory can be attributed to two skills. If it is where a re-install
+        writes some other skill, telling the operator to delete it uninstalls
+        that skill one line after installing it.
+        """
+        repository = self.skills_root / "repository"
+        self.write_skill(repository / "skills" / "alpha", "alpha")
+        self.write_skill(repository / "skills" / "beta", "beta")
+
+        installed_root = self.skills_root / "installed"
+        # `<root>/beta` is where re-installing `beta` lands, and it declares
+        # `alpha`, so it is matched as a stray copy of `alpha` as well.
+        self.write_skill(installed_root / "beta", "alpha")
+
+        report = check_installed_skills.compare(repository, installed_root)
+        output = check_installed_skills.render(report)
+
+        self.assertIn("drift  alpha", output)
+        self.assertNotIn(str(installed_root / "beta"), output.split("Remove:")[-1])
+
+    def test_a_duplicated_name_key_resolves_the_way_a_loader_resolves_it(self) -> None:
+        """Last wins, so this check and the runtime agree on what is declared."""
+        repository = self.skills_root / "repository"
+        self.write_skill(repository / "skills" / "alpha", "alpha")
+
+        installed_root = self.skills_root / "installed"
+        stray = installed_root / "zzz"
+        stray.mkdir(parents=True)
+        (stray / "SKILL.md").write_text(
+            "---\nname: something-else\nname: alpha\n---\n", encoding="utf-8"
+        )
+
+        report = check_installed_skills.compare(repository, installed_root)
+
+        self.assertEqual([comparison.name for comparison in report.compared], ["alpha"])
+        self.assertEqual(report.not_installed, [])
+
+    def test_a_second_link_to_one_directory_still_contributes_its_content(self) -> None:
+        """Descending once per real directory must not drop what a path exposes."""
+        installed = self.install(A_SKILL)
+        shared = self.skills_root / "shared"
+        shared.mkdir()
+        (shared / "leftover.md").write_text("from an older release\n", "utf-8")
+        (installed / "one").symlink_to(shared, target_is_directory=True)
+        (installed / "two").symlink_to(shared, target_is_directory=True)
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 1)
+        self.assertIn("extra: one/leftover.md", output)
+        self.assertIn("extra: two/leftover.md", output)
+
     def test_renamed_copy_is_found_whatever_its_frontmatter_looks_like(self) -> None:
         """Matching must not hinge on one spelling of the declared name.
 
@@ -177,20 +244,21 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         declares, so every frontmatter shape a real skill might carry has to
         reach the same verdict as the plain unquoted one.
         """
-        for index, declaration in enumerate(
-            (
-                f"name: {A_SKILL}",
-                f'name: "{A_SKILL}"',
-                f"name: '{A_SKILL}'",
-                f"name: {A_SKILL}  # canonical",
-                f"name:    {A_SKILL}",
-            )
+        for declaration in (
+            f"name: {A_SKILL}",
+            f'name: "{A_SKILL}"',
+            f"name: '{A_SKILL}'",
+            f"name: {A_SKILL}  # canonical",
+            f"name:    {A_SKILL}",
         ):
             with self.subTest(declaration=declaration):
-                self.setUp()
-                installed = self.install(A_SKILL, as_directory=f"{A_SKILL}-old{index}")
+                self.fresh_skills_root()
+                installed = self.install(A_SKILL, as_directory=f"{A_SKILL}-old")
                 document = installed / "SKILL.md"
                 body = document.read_text(encoding="utf-8").splitlines()
+                # Pinned: replacing a line that is not the declaration would
+                # leave the original in place and test a two-`name:` document.
+                self.assertTrue(body[1].startswith("name:"), body[1])
                 body[1] = declaration
                 document.write_text(
                     "\n".join(body) + "\nSTALE RUBRIC\n", encoding="utf-8"
@@ -281,7 +349,11 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         self.assertIn("could not be read in full", output)
         self.assertIn(f"unreadable: {blocked}", output)
         self.assertNotIn("skills update", output)
-        self.assertFalse(report.is_clean)
+        self.assertNotIn("extra:", output)
+        self.assertEqual(
+            check_installed_skills.exit_code(report),
+            check_installed_skills.EXIT_MISCONFIGURED,
+        )
 
     def test_named_skills_root_that_does_not_exist_is_an_error(self) -> None:
         self.skills_root = self.skills_root / "typo"

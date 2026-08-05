@@ -169,13 +169,15 @@ integration case, and it is the one case that exits zero with a note. A root
 named explicitly through `--skills-root` or `$AGENTS_SKILLS_DIR` is an assertion
 that it exists, so a typo is an error rather than a check that can never fail.
 
-An installed copy is matched by the name its `SKILL.md` declares rather than by
+An installed copy is matched by the name its `SKILL.md` declares as well as by
 its directory name, since the declared name is what a runtime loads: a stale
 copy left under `review-correctness-old` is still a live review skill, and is
-reported as drift rather than passed over as an unrelated directory. Runtime
-byproducts and the eval summaries `just eval-record` appends are excluded,
-because neither changes what an installed skill does. The comparison is against
-the working tree, so update the checkout first if it may be behind.
+reported as drift rather than passed over as an unrelated directory. Either
+match is enough, so a frontmatter this check reads wrongly cannot hide a copy
+the plain directory name would have found. Runtime byproducts and the eval
+summaries `just eval-record` appends are excluded, because neither changes what
+an installed skill does. The comparison is against the working tree, so update
+the checkout first if it may be behind.
 
 ## Quick Start
 

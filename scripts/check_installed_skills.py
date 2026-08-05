@@ -68,7 +68,7 @@ FRONTMATTER_FENCE = "---"
 # Matched only against a line with no leading whitespace, so a `name:` appearing
 # inside an indented block scalar — a description, most plausibly — is not read
 # as the document's own name. The value runs to an unquoted `#` comment.
-NAME_FIELD = re.compile(r"name:\s*(?P<value>[^#]*?)\s*(?:#.*)?$")
+NAME_FIELD = re.compile(r"name:\s*(?P<value>[^#]*?)\s*(?:#.*)?")
 
 
 @dataclass
@@ -105,6 +105,9 @@ class Report:
     skills_root: Path
     compared: list[SkillComparison] = field(default_factory=list)
     not_installed: list[str] = field(default_factory=list)
+    # Where re-installing writes: `<root>/<skill>` for every skill this
+    # repository ships. Removal advice must never name one of these.
+    canonical_directories: set[Path] = field(default_factory=set)
     # Parts of this repository's own `skills/` tree that could not be read. A
     # comparison against a source that could not be enumerated says nothing
     # about the installed copy, so this invalidates the run rather than
@@ -148,23 +151,26 @@ def _distributed_files(root: Path, skill: str) -> tuple[set[str], list[str]]:
     for directory, subdirectories, filenames in os.walk(
         root, followlinks=True, onerror=record_unreadable
     ):
+        relative_directory = Path(directory).relative_to(root)
+        for filename in filenames:
+            if not _ignored_file(filename):
+                found.add((relative_directory / filename).as_posix())
+
+        # Descend once per real directory. Recording this level's files first
+        # means a second path reaching the same place still contributes what it
+        # exposes — two links to one directory are content at both paths — while
+        # a cycle stops here instead of walking forever.
         real = os.path.realpath(directory)
         if real in visited:
             subdirectories[:] = []
             continue
         visited.add(real)
-
-        relative_directory = Path(directory).relative_to(root)
         subdirectories[:] = [
             name
             for name in subdirectories
             if name not in IGNORED_DIRECTORY_NAMES
             and relative_directory / name not in ignored_relative
         ]
-        for filename in filenames:
-            if _ignored_file(filename):
-                continue
-            found.add((relative_directory / filename).as_posix())
 
     return found, unreadable
 
@@ -183,15 +189,18 @@ def _declared_name(skill_document: Path) -> str | None:
     lines = text.splitlines()
     if not lines or lines[0].strip() != FRONTMATTER_FENCE:
         return None
+    declared: str | None = None
     for line in lines[1:]:
         if line.strip() == FRONTMATTER_FENCE:
-            return None
+            break
         if line[:1].isspace():  # inside a nested mapping or a block scalar
             continue
         match = NAME_FIELD.fullmatch(line)
         if match:
-            return match.group("value").strip("\"'") or None
-    return None
+            # Last wins, as a YAML loader resolves a duplicate mapping key, so
+            # this check and the runtime agree on what the document declares.
+            declared = match.group("value").strip("\"'") or None
+    return declared
 
 
 def _repository_skills(repository_root: Path) -> list[str]:
@@ -202,7 +211,7 @@ def _repository_skills(repository_root: Path) -> list[str]:
     )
 
 
-def _installed_copies(skills_root: Path, skills: list[str]) -> dict[str, list[Path]]:
+def _installed_copies(skills_root: Path, skills: list[str]) -> dict[str, set[Path]]:
     """Map each repository skill to every installed directory providing it.
 
     A directory matches on either the name its `SKILL.md` declares or its own
@@ -213,23 +222,25 @@ def _installed_copies(skills_root: Path, skills: list[str]) -> dict[str, list[Pa
     absent one.
     """
     known = set(skills)
-    copies: dict[str, list[Path]] = {}
-    for document in sorted(skills_root.glob("*/SKILL.md")):
+    copies: dict[str, set[Path]] = {skill: set() for skill in skills}
+    for document in skills_root.glob("*/SKILL.md"):
         directory = document.parent
-        for candidate in {_declared_name(document), directory.name}:
-            if candidate in known and directory not in copies.get(candidate, []):
-                copies.setdefault(candidate, []).append(directory)
+        for candidate in {_declared_name(document), directory.name} & known:
+            copies[candidate].add(directory)
     for skill in skills:
         directory = skills_root / skill
-        if directory.is_dir() and directory not in copies.get(skill, []):
-            copies.setdefault(skill, []).append(directory)
+        if directory.is_dir():
+            copies[skill].add(directory)
     return copies
 
 
 def compare(repository_root: Path, skills_root: Path) -> Report:
     """Compare every repository skill installed under `skills_root`."""
-    report = Report(skills_root=skills_root)
     skills = _repository_skills(repository_root)
+    report = Report(
+        skills_root=skills_root,
+        canonical_directories={skills_root / skill for skill in skills},
+    )
     installed = _installed_copies(skills_root, skills)
 
     for skill in skills:
@@ -277,6 +288,24 @@ def render(report: Report) -> str:
     lines = [
         f"Comparing installed skills in {report.skills_root} against this repository"
     ]
+
+    if report.unreadable_sources:
+        # Said instead of the per-skill blocks, not above them. Those blocks are
+        # computed from a source that could not be enumerated, so they invent
+        # `missing` and `extra` entries; printing them under a caveat still
+        # invites an operator to act on a file that is not actually stray.
+        lines.append("")
+        lines.append(
+            "This repository's own skills tree could not be read in full, so no "
+            "comparison is trustworthy. Nothing is reported and no remediation "
+            "is suggested; re-installing from a source this incomplete would "
+            "overwrite good installed files."
+        )
+        lines.extend(
+            f"  unreadable: {path}" for path in sorted(report.unreadable_sources)
+        )
+        return "\n".join(lines)
+
     for comparison in report.compared:
         if not comparison.is_drifted:
             lines.append(f"  ok     {comparison.name}")
@@ -299,51 +328,55 @@ def render(report: Report) -> str:
         lines.append(f"  not installed: {', '.join(report.not_installed)}")
 
     lines.append("")
-    if report.unreadable_sources:
-        # Said before anything else and without remediation: re-installing from
-        # a source that could not be read would overwrite good installed files
-        # with a truncated copy of this repository.
-        lines.append(
-            "This repository's own skills tree could not be read in full, so no "
-            "comparison here is trustworthy:"
-        )
-        lines.extend(
-            f"  unreadable: {path}" for path in sorted(report.unreadable_sources)
-        )
-        return "\n".join(lines)
     if not report.compared:
         lines.append(
             f"No skill from this repository is installed in {report.skills_root}, "
             "so nothing was compared."
         )
-        return "\n".join(lines)
-    if report.is_clean:
+    elif report.is_clean:
         lines.append("Installed skills match this repository.")
-        return "\n".join(lines)
+    else:
+        names = sorted({comparison.name for comparison in report.drifted})
+        lines.append(f"Installed skills are stale: {', '.join(names)}")
+        lines.append("Re-install them from this repository, for example:")
+        lines.append(f"  skills update -g -y {' '.join(names)}")
 
-    names = sorted({comparison.name for comparison in report.drifted})
-    lines.append(f"Installed skills are stale: {', '.join(names)}")
-    lines.append("Re-install them from this repository, for example:")
-    lines.append(f"  skills update -g -y {' '.join(names)}")
-
-    # Re-installing writes `<root>/<skill>`, so it can never clear a copy that
-    # is sitting somewhere else. Those have to be removed by name.
-    stray = sorted(
-        {
-            str(comparison.directory)
-            for comparison in report.drifted
-            if comparison.misnamed
-        }
-    )
-    if stray:
-        lines.append(
-            "Re-installing cannot clear a copy under another directory name. Remove:"
+        # Re-installing writes `<root>/<skill>`, so it can never clear a copy
+        # sitting somewhere else. Those have to be removed by name — but a
+        # directory that is some other skill's canonical location is where a
+        # re-install lands, and telling an operator to delete it would uninstall
+        # that skill one line after installing it.
+        stray = sorted(
+            {
+                str(comparison.directory)
+                for comparison in report.drifted
+                if comparison.misnamed
+                and comparison.directory not in report.canonical_directories
+            }
         )
-        lines.extend(f"  {path}" for path in stray)
+        if stray:
+            lines.append(
+                "Re-installing cannot clear a copy under another directory name. "
+                "Remove:"
+            )
+            lines.extend(f"  {path}" for path in stray)
     return "\n".join(lines)
 
 
-def _parse_args(argv: list[str]) -> argparse.Namespace:
+def exit_code(report: Report) -> int:
+    """The status a completed comparison reports.
+
+    Neither an unreadable source nor an empty comparison set is a statement
+    about the installed copies: one means this repository could not be read, the
+    other that the root holds nothing to compare. Both are the operator's
+    environment, not drift.
+    """
+    if report.unreadable_sources or not report.compared:
+        return EXIT_MISCONFIGURED
+    return EXIT_IN_SYNC if report.is_clean else EXIT_DRIFTED
+
+
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Compare installed skill copies against this repository."
     )
@@ -358,9 +391,13 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _parse_args(sys.argv[1:] if argv is None else argv)
+    args = _parse_args(argv)
     supplied = args.skills_root or os.environ.get(SKILLS_ROOT_ENV)
     skills_root = Path(supplied or DEFAULT_SKILLS_ROOT).expanduser()
+    if skills_root.is_dir():
+        # Resolved so a removal target printed below is an absolute path
+        # rather than something relative to the caller's directory.
+        skills_root = skills_root.resolve()
 
     if not skills_root.is_dir():
         if supplied:
@@ -374,12 +411,7 @@ def main(argv: list[str] | None = None) -> int:
     repository_root = Path(__file__).resolve().parents[1]
     report = compare(repository_root, skills_root)
     print(render(report))
-    if report.unreadable_sources or not report.compared:
-        # Neither is a statement about the installed copies: one means this
-        # repository could not be read, the other that the root holds nothing
-        # to compare. Both are the operator's environment, not drift.
-        return EXIT_MISCONFIGURED
-    return EXIT_IN_SYNC if report.is_clean else EXIT_DRIFTED
+    return exit_code(report)
 
 
 if __name__ == "__main__":

@@ -6,6 +6,37 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence, then closed the blind spots an adversarial review found in that very check
 
+- fix(scripts): stop the drift check from recommending a destructive removal,
+  and simplify (third adversarial review round) — the check emits exactly one
+  destructive instruction, the "remove this stray directory" line round two
+  added for a copy sitting under a name a re-install can never overwrite. Round
+  two also made one directory matchable as two skills, once by its declared name
+  and once by its own, and the removal list did not account for that: an
+  installed `beta/` whose frontmatter reads `alpha` was reported as a stray copy
+  of `alpha` and named for deletion, so an operator following the printed
+  remediation in order would `skills update` a correct `beta` into place and
+  then be told to delete it. Removal advice now excludes any directory that is
+  some skill's canonical install location, and the skills root is resolved so a
+  printed target is never a bare relative path. Two further correctness fixes:
+  the untrustworthy-source banner was appended *after* the per-skill blocks it
+  disclaims, so fabricated `missing`/`extra` entries computed from a source that
+  could not be enumerated were printed above the warning about them — those
+  blocks are now suppressed entirely rather than captioned; and a duplicated
+  `name:` key resolved first-wins where a YAML loader resolves last-wins, which
+  let a runtime and this check disagree about what a document declares. The
+  realpath guard that keeps a symlink cycle terminating was dropping files
+  rather than only pruning descent, so a second link to one directory
+  contributed nothing and its content went unreported; files are recorded before
+  the guard applies. Alongside these, local simplifications that preserve
+  behavior: the copy map is built as a dict of sets, stating its dedupe rule
+  once instead of three times; `render` ends in a single exit; `argparse`'s own
+  `sys.argv` fallback replaces a hand-written conditional; the exit mapping
+  moves into a named `exit_code` so the contract is assertable rather than
+  reachable only through `main`; and the frontmatter subtests use a named
+  fixture helper instead of calling `setUp` by hand. Three further behavioral
+  tests plus one strengthened, each observed failing at base `45b1f6d` and
+  passing at head, with no other test moving.
+
 - fix(scripts): make the drift check's copy matching independent of frontmatter
   spelling (second adversarial review round) — round one closed the headline
   blind spot by matching an installed copy on the name its `SKILL.md` declares,
@@ -34,7 +65,7 @@ summary: Chronological history of repository and skill changes.
   not drift, so it joins the misconfiguration code the comment already called
   it. Five further behavioral tests, including the frontmatter input space whose
   absence let the blocking defect through, each observed failing at base
-  `4b18269` and passing at head.
+  `4b18269` and passing at head. (45b1f6d651f9748081ac4f7a502c5448e2ae3d69)
 
 - fix(scripts): close the drift check's own silent-success paths (adversarial
   review of `3c18034`) — a check whose purpose is detecting a silent failure
