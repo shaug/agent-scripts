@@ -68,8 +68,27 @@ summary: Chronological history of repository and skill changes.
   analysis predicts independence rather than demonstrating it. Wording stays
   product-agnostic (capability tiers and roles, never model names or product
   APIs), enforced by a per-skill assertion. No contract fields, schemas, or
-  terminal states change. Ten prose-contract assertions across six skills, each
-  observed failing at base `a1ee71c` and passing at head
+  terminal states change. Eleven prose-contract assertions across six skills,
+  each observed failing at base `a1ee71c` and passing at head. The post-parallel
+  paragraph records its ported source at the seam, which the named-peer registry
+  requires of a "ported with attribution" row and which review caught as
+  missing. Eval evidence: the four deterministic corpora are unchanged
+  (implement-ticket 58/58, implement-epic 15/15, carve-changesets 12/12,
+  review-fix-loop 20/20, each with an empty per-case diff); `babysit-pr` and
+  `review-code-change` have no corpus, so `just eval-record` records nothing and
+  that gap is stated rather than papered over with unit tests. The
+  `implement-epic` real-model tier ran four times and is reported as
+  inconclusive rather than as a result: two runs of byte-identical prose
+  disagreed by one case (`epic-incompatible-implement-ticket`), which puts the
+  tier's noise floor at roughly one case per run and leaves both the apparent
+  gain (`epic-unreadable-implement-ticket`, failing at base and passing in three
+  post-change runs) and the apparent regression
+  (`epic-refreshes-after-blocked-merged-delivery`, a 2–0 split aligned with the
+  attribution clause) underpowered at this sample size. No causal claim is made
+  in either direction. This surfaces a gap in the norm itself, which asks for "a
+  recorded run" and a per-case diff without saying how many runs separate signal
+  from variance on a stochastic tier; that, and the corpus's 7-of-15 baseline
+  pass rate, are recorded as follow-ups rather than absorbed here
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
