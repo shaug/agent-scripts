@@ -34,14 +34,15 @@ summary: Chronological history of repository and skill changes.
   product-agnostic (capability tiers and roles, never model names or product
   APIs), enforced by a per-skill assertion. No contract fields, schemas, or
   terminal states change. Eleven prose-contract assertions across six skills,
-  each observed failing at base `a1ee71c` and passing at head. The post-parallel
-  paragraph records its ported source at the seam, which the named-peer registry
-  requires of a "ported with attribution" row and which review caught as
-  missing. Eval evidence: the four deterministic corpora are unchanged
-  (implement-ticket 58/58, implement-epic 15/15, carve-changesets 12/12,
-  review-fix-loop 20/20, each with an empty per-case diff); `babysit-pr` and
-  `review-code-change` have no corpus, so `just eval-record` records nothing and
-  that gap is stated rather than papered over with unit tests. The
+  each observed failing at the branch's original base `a1ee71c` (none of these
+  eight files changed between it and this candidate's current base) and passing
+  at head. The post-parallel paragraph records its ported source at the seam,
+  which the named-peer registry requires of a "ported with attribution" row and
+  which review caught as missing. Eval evidence: the four deterministic corpora
+  are unchanged (implement-ticket 58/58, implement-epic 15/15, carve-changesets
+  12/12, review-fix-loop 20/20, each with an empty per-case diff); `babysit-pr`
+  and `review-code-change` have no corpus, so `just eval-record` records nothing
+  and that gap is stated rather than papered over with unit tests. The
   `implement-epic` real-model tier ran six times and implicated this change's
   own first attempt at recording the ported source. Review required the habit to
   name its origin at the seam; satisfying that with a four-line attribution
@@ -64,10 +65,14 @@ summary: Chronological history of repository and skill changes.
   and squash merging is a follow-up rather than something this ticket can
   settle. Nothing else in the suite reacted: every unit test and both simplicity
   lenses passed the version that regressed. `epic-unreadable-implement-ticket`
-  fails at base and passes in all four post-change runs. One case
-  (`epic-incompatible-implement-ticket`) flipped once across six runs of
-  byte-identical prose, putting the tier's noise floor near one case per run,
-  which bounds every claim above. `implement-ticket` is the one skill
+  fails at base and passes in all five post-change real-model runs, a durable
+  gain. `epic-incompatible-implement-ticket` changes status three times across
+  those same five runs — including twice among the three runs that share the
+  four-line note's byte-identical prose blob — and fails in the sole run
+  recorded against the shipped one-clause prose, without disclosure until this
+  sentence that the run cited above for a different case's recovery also
+  regressed this one. That instability sets the tier's noise floor near one case
+  per run, which bounds every claim above. `implement-ticket` is the one skill
   `AGENTS.md` names as having a real-model executor and it has no real-model
   after run at all — its tier aborts in `claude_executor.extract_json_object`,
   the blocker already recorded against #154 — so three of this change's eight

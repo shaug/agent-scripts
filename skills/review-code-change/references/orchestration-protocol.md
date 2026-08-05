@@ -14,12 +14,19 @@ tests, validation evidence, and worktree state.
 Dispatch every lens with the packet and let it read the diff from
 `candidate.diff.path`; do not inline the complete diff into any lens invocation.
 
-A lens receives evidence and contracts, never conclusions. If the invocation
-being written steers the answer — "do not flag", "this is fine", a pre-judged
-severity, or the verdict expected back — stop and rewrite it. A steered lens
-returns confirmation, not review, and the aggregate cannot tell the two apart.
-This is the dispatch-side counterpart of excluding the implementation
-transcript, intended solution, and suspected findings from the packet.
+A lens receives evidence and contracts, never conclusions about the candidate
+under review. If the invocation being written steers the answer — "do not flag",
+"this is fine", a pre-judged severity, or the verdict expected back — stop and
+rewrite it. A steered lens returns confirmation, not review, and the aggregate
+cannot tell the two apart. This is the dispatch-side counterpart of excluding
+the implementation transcript, intended solution, and suspected findings from
+the packet.
+
+The one exception is the validated simplification result "Sequence decisions"
+passes to correctness beside the unchanged packet: that result is a
+contract-defined disposition input, not a steer about this invocation's own
+verdict, and withholding it would silently strand the "Resolve conflicts" path
+below.
 
 Give each lens a capability tier adequate for judgment: lens review is judgment
 work, so it inherits the session's tier by default rather than the cheapest one,

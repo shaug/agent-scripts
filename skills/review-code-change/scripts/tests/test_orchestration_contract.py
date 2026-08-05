@@ -100,6 +100,21 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertIn("capability tier adequate for judgment", protocol)
         self.assertIn("Prefer one well-briefed pass", protocol)
 
+    def test_lens_integrity_rule_does_not_forbid_the_simplification_handoff(self):
+        # The integrity rule and the mandatory validated-simplification-result
+        # handoff live in the same file; the rule must name its one exception
+        # rather than silently strand "Resolve conflicts" below it.
+        protocol = compact(self.protocol)
+        self.assertIn("never conclusions about the candidate under review", protocol)
+        self.assertIn(
+            "The one exception is the validated simplification result", protocol
+        )
+        self.assertIn("contract-defined disposition input", protocol)
+        self.assertLess(
+            protocol.index("The one exception"),
+            protocol.index("For a tractable gating proposal"),
+        )
+
     def test_tier_guidance_names_no_product_or_model(self):
         surface = compact(self.skill + self.protocol).lower()
         for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
