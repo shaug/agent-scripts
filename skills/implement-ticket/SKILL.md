@@ -190,17 +190,14 @@ one into another for convenience:
   correctness are independent judgments — do not let a stale binding erase what
   was actually measured.
 
-The readiness gate below requires a clear observable goal — every ticket needs
-one to be implementable at all. That goal is not itself a ledger-tracked
-criterion: the ledger records only the discrete, evidence-backed criteria and
-verification items the ticket or repository separately authors. When none are
-authored and none is otherwise required, the ledger stays empty and readiness
-proceeds through the ordinary non-merge and merge gates alone — an empty ledger
-is not itself a blocker. When an acceptance contract is required but absent —
-the ticket or repository calls for one and none was authored or recorded — that
-absence is the blocker. Report it directly as a missing-required-acceptance
-finding; do not invent a placeholder ledger entry that describes the absent
-contract as if it were an evaluated criterion.
+When the ticket has authored no acceptance criteria and none is otherwise
+required, the ledger stays empty and readiness proceeds through the ordinary
+non-merge and merge gates alone — an empty ledger is not itself a blocker. When
+an acceptance contract is required but absent — the ticket or repository calls
+for one and none was authored or recorded — that absence is the blocker. Report
+it directly as a missing-required-acceptance finding; do not invent a
+placeholder ledger entry that describes the absent contract as if it were an
+evaluated criterion.
 
 All required pre-merge entries must pass before `ready_pr`, `ready_prs`, or a
 merge. Required post-merge entries may remain `missing` through an authorized
@@ -336,9 +333,10 @@ Proceed only when the selected ticket:
 - has no unresolved native blocker;
 - has every required closed-blocker outcome verified in its authoritative
   repository, artifact registry, tracker, or environment;
-- has a clear observable goal, acceptance criteria, non-goals, preserved
-  behavior, required verification, and enough detail to classify each evidence
-  item as pre-merge or post-merge;
+- has a clear observable goal, non-goals, preserved behavior, any acceptance
+  criteria and required verification the ticket or repository actually calls
+  for, and enough detail to classify each evidence item as pre-merge or
+  post-merge;
 - contains no unresolved product, data, authorization, migration, destructive,
   or architecture decision;
 - represents one coherent candidate that is expected to fit one reviewable PR,
