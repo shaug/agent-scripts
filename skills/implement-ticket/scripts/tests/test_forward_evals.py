@@ -3,9 +3,11 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SKILL_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_PATH = SKILL_ROOT / "scripts" / "evals" / "run_forward.py"
@@ -468,6 +470,58 @@ class ForwardEvaluationTests(unittest.TestCase):
                 "forbidden actions" in failure for failure in failed_dependency_failures
             )
         )
+
+
+class ClaudeExecutorRetryTests(unittest.TestCase):
+    """The model occasionally emits a string value with an unescaped quote,
+
+    producing a malformed *response* rather than a boundary-detection bug in
+    extract_json_object. run_claude must retry with a fresh sample instead of
+    letting one bad response sink an entire run of sequential cases.
+    """
+
+    @staticmethod
+    def _completed(result_text):
+        return subprocess.CompletedProcess(
+            args=["claude"],
+            returncode=0,
+            stdout=json.dumps({"result": result_text}),
+            stderr="",
+        )
+
+    def test_retries_after_malformed_json_then_succeeds(self):
+        malformed = '{"note": "quotes the "term" unescaped"}'
+        valid = '{"target_skill": "implement-ticket", "terminal_state": "blocked", "actions": [], "acceptance_ledger": []}'
+        with mock.patch.object(
+            CLAUDE_EXECUTOR.subprocess,
+            "run",
+            side_effect=[self._completed(malformed), self._completed(valid)],
+        ) as run_mock:
+            observed = CLAUDE_EXECUTOR.run_claude("prompt", "claude", None)
+        self.assertEqual(2, run_mock.call_count)
+        self.assertEqual("blocked", observed["terminal_state"])
+
+    def test_raises_after_exhausting_all_attempts(self):
+        malformed = '{"note": "quotes the "term" unescaped"}'
+        with mock.patch.object(
+            CLAUDE_EXECUTOR.subprocess,
+            "run",
+            side_effect=[self._completed(malformed)] * CLAUDE_EXECUTOR.RESULT_ATTEMPTS,
+        ) as run_mock:
+            with self.assertRaises(RuntimeError):
+                CLAUDE_EXECUTOR.run_claude("prompt", "claude", None)
+        self.assertEqual(CLAUDE_EXECUTOR.RESULT_ATTEMPTS, run_mock.call_count)
+
+    def test_does_not_retry_a_nonzero_exit(self):
+        failed = subprocess.CompletedProcess(
+            args=["claude"], returncode=1, stdout="", stderr="boom"
+        )
+        with mock.patch.object(
+            CLAUDE_EXECUTOR.subprocess, "run", side_effect=[failed]
+        ) as run_mock:
+            with self.assertRaises(RuntimeError):
+                CLAUDE_EXECUTOR.run_claude("prompt", "claude", None)
+        self.assertEqual(1, run_mock.call_count)
 
 
 if __name__ == "__main__":

@@ -171,7 +171,10 @@ def build_prompt(payload: dict) -> str:
             json.dumps(payload["artifacts"], indent=2, sort_keys=True),
             "",
             "## Answer format",
-            "Return ONLY one JSON object, no prose and no code fence:",
+            "Return ONLY one JSON object, no prose and no code fence. Escape",
+            'any double-quote or backslash inside a string value (e.g. \\"',
+            "and \\\\), and make sure the object is fully closed: every open",
+            "{ and [ has a matching close before you stop.",
             '{"target_skill": "' + payload["target_skill"] + '",',
             ' "terminal_state": <one of ' + json.dumps(list(TERMINAL_STATES)) + ">,",
             ' "actions": <every applicable value from this closed vocabulary>,',
@@ -192,26 +195,47 @@ def extract_json_object(text: str) -> dict:
     return json.loads(candidate[start : end + 1])
 
 
-def run_claude(prompt: str, claude_bin: str, model: str | None) -> dict:
+RESULT_ATTEMPTS = 3
+
+
+def run_claude(
+    prompt: str, claude_bin: str, model: str | None, attempts: int = RESULT_ATTEMPTS
+) -> dict:
     command = [claude_bin, "-p", "--output-format", "json"]
     if model:
         command.extend(["--model", model])
-    completed = subprocess.run(
-        command,
-        input=prompt,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if completed.returncode:
-        raise RuntimeError(
-            f"claude exited {completed.returncode}: {completed.stderr.strip()}"
+
+    # The model occasionally ends its turn (stop_reason "end_turn", not a
+    # token-limit stop) with the JSON object incomplete -- e.g. missing the
+    # final closing brace, or an unescaped quote inside a string value. This
+    # is a malformed *response*, not a boundary-detection bug in
+    # extract_json_object; retrying with a fresh, independent sample clears
+    # it almost every time. A single flaky response must not sink an entire
+    # run of many sequential cases.
+    last_error: ValueError | None = None
+    for _ in range(attempts):
+        completed = subprocess.run(
+            command,
+            input=prompt,
+            text=True,
+            capture_output=True,
+            check=False,
         )
-    envelope = json.loads(completed.stdout)
-    result_text = envelope.get("result")
-    if not isinstance(result_text, str):
-        raise RuntimeError("claude --output-format json returned no result text")
-    return extract_json_object(result_text)
+        if completed.returncode:
+            raise RuntimeError(
+                f"claude exited {completed.returncode}: {completed.stderr.strip()}"
+            )
+        envelope = json.loads(completed.stdout)
+        result_text = envelope.get("result")
+        if not isinstance(result_text, str):
+            raise RuntimeError("claude --output-format json returned no result text")
+        try:
+            return extract_json_object(result_text)
+        except ValueError as error:
+            last_error = error
+    raise RuntimeError(
+        f"executor model returned malformed JSON after {attempts} attempts: {last_error}"
+    )
 
 
 def normalize(payload: dict, observed: dict) -> dict:

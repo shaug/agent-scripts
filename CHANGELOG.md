@@ -4,7 +4,33 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, then added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+
+- fix(implement-ticket): retry `claude_executor.py`'s real-model call on
+  malformed JSON instead of aborting the whole forward-eval run (issue #154) —
+  every real-model forward-eval run against `implement-ticket` recorded since
+  #131 returned `status: attempted` on a `JSONDecodeError` inside
+  `extract_json_object`, with only an occasional run completing;
+  `run_forward.py` calls the executor once per case across 58 sequential cases
+  and aborts the entire run uncaught on the first executor failure, so even a
+  low per-call malformation rate compounds into most runs failing.
+  `extract_json_object`'s own boundary-finding was verified sound against fenced
+  code blocks, nested objects, and pretty-printed JSON — the malformation is in
+  the model's response content, not the extractor. A live 58-case sweep against
+  the real `claude` CLI reproduced the failure naturally once
+  (`evidence-bug-fix-regression-test`): the API call reported
+  `stop_reason: "end_turn"` and `is_error: false` — not a token-limit stop — yet
+  the returned JSON was missing its final closing brace, confirming the model
+  occasionally ends its turn with the object incomplete rather than the
+  extractor mis-locating a complete one. `run_claude` now retries with a fresh,
+  independent sample (up to 3 attempts) when the response fails to parse, and
+  the prompt's answer-format section explicitly asks for escaped embedded quotes
+  and fully closed brackets. A non-zero `claude` CLI exit still fails
+  immediately, unretried, since that is a different failure class. Three new
+  tests in `test_forward_evals.py` mock `subprocess.run` to cover
+  retry-then-succeed, exhausting all attempts, and no retry on a CLI exit
+  failure. Not a skill-prose change, so the eval-evidence norm's recorded-run
+  requirement does not apply; the diagnostic evidence above is the record.
 
 - feat(implement-ticket): add scoped per-finding re-review and escalated
   final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop
@@ -54,7 +80,8 @@ summary: Chronological history of repository and skill changes.
   separate follow-up rather than absorbed here. Both subsequent `after` attempts
   reverted to `attempted`, which is itself the finding: the executor is
   intermittently, not durably, functional. Model-behavior evidence for this
-  specific prose change remains unavailable.
+  specific prose change remains unavailable
+  (`ca613b8f8887f1d147193a32de9b8b815569cf5c`).
 
 ## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
 
