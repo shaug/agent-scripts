@@ -40,6 +40,11 @@ class SkillAuthoringDocTests(unittest.TestCase):
             self.doc.index("Admit only sourced entries to a rationalization table"),
         )
 
+    def test_admissible_evidence_rule_reconciles_with_the_baseline_exemplar(self):
+        self.assertIn("baseline transcript recorded under a skill's", self.doc)
+        self.assertIn("Rationalizations that precede an unready body", self.doc)
+        self.assertIn("skills/ready-ticket/evals/baseline/README.md", self.doc)
+
 
 if __name__ == "__main__":
     unittest.main()

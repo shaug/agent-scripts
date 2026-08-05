@@ -190,9 +190,9 @@ been verified.
 Do not skip a propagation's own equivalence proof because an earlier one passed.
 Recognize the excuse and answer it with the rule that already applies:
 
-| Rationalization                          | Why it still applies                                                                                                                                                                                                                                          |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "The equivalence check passed last time" | Each propagation step rewrites a different downstream suffix against a different current base, so `all_merged` requires the final equivalence check "against the active source" for the step being verified now — a prior pass proves nothing about this one. |
+| Rationalization                          | Why it still applies                                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "The equivalence check passed last time" | Each propagation step rewrites a different downstream suffix against a different current base, so live chain validation must re-derive from current git objects that the reconstructed base-plus-suffix tree equals the active source after this step — a prior pass proves nothing about this one. |
 
 ## Preserve safety and truth
 

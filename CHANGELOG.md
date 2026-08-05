@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Added rationalization tables to babysit-pr, implement-ticket, and carve-changesets, then added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+## 2026-08-05 — Added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then added rationalization tables to babysit-pr, implement-ticket, and carve-changesets
 
 - feat(skills): add rationalization tables to babysit-pr, implement-ticket, and
   carve-changesets (issue #129, epic #119) — a bare prohibition leaves an agent
@@ -42,12 +42,13 @@ summary: Chronological history of repository and skill changes.
   real-model tier for `implement-ticket` remains intermittent (#154; a follow-up
   is filed to diagnose it properly rather than work around it again): two
   `before` attempts at this ticket's own base both returned `attempted`, so no
-  before-comparison unique to this change exists. `implement-ticket`'s own two
-  `after` attempts on #132 also both returned `attempted`, with no totals
-  recorded at all, so this ticket's real-model `before`/`after` pair is the
-  first to grade the shared 58-case corpus successfully on both sides; its
-  `after` attempt reproduced the `before` run's 26-failure baseline almost
-  exactly, with one delta (`epic-incompatible-implement-ticket`, whose
+  before-comparison unique to this change exists. One `after` attempt at head
+  did execute (`status: failed`, 33/58) — the first successful real-model run
+  recorded against this ticket's own branch. With no successful `before` at this
+  base to compare against, it was compared instead against the nearest available
+  baseline, #132's own last successful real-model run (`before` at `bb31f34`,
+  32/58). It reproduced that baseline's 26-failure count almost exactly, at 25
+  failures, with one delta (`epic-incompatible-implement-ticket`, whose
   `target_skill` is `implement-epic` and whose prompt is therefore
   `implement-epic`'s `SKILL.md`, not this ticket's own). That specific case's
   volatility was independently established by #131's own five-run

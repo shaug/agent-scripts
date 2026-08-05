@@ -131,10 +131,17 @@ of the rule, but the specific reason that excuse fails.
 
 ### Admit only sourced entries to a rationalization table
 
-A new row requires an in-repo retrievable source: an eval fixture failure, a
-GitHub PR review history entry, or a recorded eval-results observation (the
-convention this document's eval-backed change norm establishes). Review excludes
-a speculative entry — one invented rather than retrieved.
+A row added after a table's certified seed entries requires an in-repo
+retrievable source: a baseline transcript recorded under a skill's
+`evals/baseline/`, per "Establish the baseline before writing" below; an eval
+fixture failure; a GitHub PR review history entry; or a recorded eval-results
+observation that itself carries the agent's own wording (the convention this
+document's eval-backed change norm establishes) — a pass/fail summary alone
+carries no wording to quote and does not qualify. Review excludes a speculative
+entry — one invented rather than retrieved. `skills/ready-ticket/SKILL.md`'s
+"Rationalizations that precede an unready body" is the in-repo exemplar: each
+row is sourced to a baseline transcript named in
+`skills/ready-ticket/evals/baseline/README.md`.
 
 *Prevents:* a table exists to answer a rationalization actually observed
 preceding a violation, per "Keep rationalizations verbatim" below. An invented
