@@ -6,6 +6,48 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence
 
+- fix(implement-ticket): edit the readiness-gate bullet itself, not just
+  adjacent prose — the prior commit reconciled the acceptance-ledger section's
+  "empty ledger is fine when none is required" language with the readiness gate
+  by adding explanatory prose nearby, but never edited the readiness gate's own
+  bullet, which still unconditionally listed "acceptance criteria" as required
+  for every ticket, leaving the actual contradiction live. Edits the bullet
+  itself to "any acceptance criteria and required verification the ticket or
+  repository actually calls for," and trims the now-redundant bridging paragraph
+  the ledger section no longer needs. Found by round 2 of an adversarial
+  read-only review loop (3 independent subagents per round:
+  correctness/behavioral-risk, solution-simplicity against
+  `docs/skill-authoring.md`, terminology/consistency) run against the
+  terminal-state and ledger fixes below — round 2's correctness reviewer
+  independently re-verified round 1's claimed fix and found it had worked around
+  the conflicting bullet instead of correcting it
+  (`a9cefad61e5db30aa0e2ea1e73c43d497c8ca534`).
+
+- fix(implement-epic,implement-ticket): resolve adversarial-review findings on
+  the terminal-state and ledger fixes — round 1 of the same review loop found
+  and fixed: `implement-epic`'s `mixed_ticket_results` rule stated with directly
+  contradictory wording in two of its three locations (whether a
+  zero-invoked-children run qualifies), one of the three under an unrelated
+  heading ("Require the ticket skill," a dependency-verification section),
+  consolidated into one canonical closed-set contract inside "Report the epic
+  result" that also names how an authorized closeout is reported (through its
+  own closeout evidence, not a fabricated single-word label, closing a
+  previously undefined case); a genuine terminology collision between
+  `skills/implement-epic/evals/expectations.json`'s (pre-existing, never
+  real-model-executed) `workflow_state: "waiting_for_child_merge"` and the
+  shared forward corpus's `terminal_state: "mixed_ticket_results"` for two
+  case_ids literally duplicated across both corpora
+  (`untrusted-epic-comment-expands-authority`,
+  `verified-external-claim-remains-evidence`), fixed by updating only those two
+  proven-colliding entries and their paired test assertions in
+  `test_orchestration_contract.py`. One reviewer-proposed fix was checked
+  against `docs/skill-authoring.md` directly and declined: adding
+  `mixed_ticket_results` to `implement-epic`'s frontmatter description, since
+  that doc frames descriptions as routing decisions rather than body-contract
+  summaries, and `implement-ticket`'s contrary example is explained by it being
+  consumed as a dependency by `implement-epic`, which `implement-epic` itself is
+  not (`71a677a59b92d1d63e1808d0128873b914b67d5d`).
+
 - chore(implement-ticket): record after-eval for epic terminal-state and
   acceptance-ledger prose fixes — commits the real-model forward-eval `after`
   summary (`2026-08-05T155750Z-0017-after.json`), recorded against the `before`
