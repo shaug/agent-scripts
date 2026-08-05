@@ -4,7 +4,49 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+## 2026-08-05 — Added rationalization tables to babysit-pr, implement-ticket, and carve-changesets, then added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+
+- feat(skills): add rationalization tables to babysit-pr, implement-ticket, and
+  carve-changesets (issue #129, epic #119) — a bare prohibition leaves an agent
+  free to construct an exception, and it almost always can; a rationalization
+  table answers the specific excuse instead. Each of the three named skills gets
+  a table containing the seed entries #129's own body certified from each
+  skill's contract-emphasis points: a "trivial" fix does not exempt a candidate
+  from re-validation, because a head change invalidates every head-bound gate by
+  SHA rather than by how small the diff looks (`babysit-pr`); a CI failure
+  "looking" flaky is not a diagnosis, because flaky classification requires log
+  evidence and consumes the tracked retry budget (`babysit-pr`); completion
+  language such as "finish it" does not independently grant merge,
+  decomposition, deployment, or transition authority (`implement-ticket`); and
+  one propagation's equivalence proof does not cover the next one, because each
+  step rewrites a different downstream suffix against a different current base
+  (`carve-changesets`). Ported with attribution from the superpowers pattern via
+  the named-peer registry (#123). `implement-epic` is deliberately excluded per
+  the ticket's own recorded rejection — its contract prose already covers the
+  graph-refresh and trust-but-verify drift modes a table would otherwise defend.
+  The admissible-evidence rule for future entries — an in-repo retrievable
+  source only: an eval fixture failure, a GitHub PR review history entry, or a
+  recorded eval-results observation, with review excluding a speculative one —
+  lives once in `docs/skill-authoring.md` beside the taxonomy's existing
+  rationalization-table guidance, since it governs how a contributor extends a
+  table later rather than something an agent executing the skill reads on every
+  run. Four prose-contract assertions, each observed failing at base `ca613b8`
+  and passing at head.
+
+  Eval evidence: the deterministic tier for `implement-ticket` and
+  `carve-changesets` is unchanged before and after (58/58 and 12/12, both with
+  an empty per-case diff) — the corpus reads only each skill's `SKILL.md` and
+  exercises routing/readiness/authority scenarios, not a rationalization table's
+  content. `babysit-pr` has no registered corpus; that gap is stated rather than
+  papered over with unit tests, which cannot observe `SKILL.md` prose. The
+  real-model tier for `implement-ticket` remains intermittent (#154; a follow-up
+  is filed to diagnose it properly rather than work around it again): two
+  `before` attempts at this ticket's own base both returned `attempted`, so no
+  before-comparison unique to this change exists. One `after` attempt did
+  execute and reproduced #132's already-recorded 26-failure baseline almost
+  exactly; its one delta is the specific case #132's own investigation already
+  established as flipping independently of prose changes, so no causal claim is
+  made about this ticket's prose from that single data point.
 
 - feat(implement-ticket): add scoped per-finding re-review and escalated
   final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop
@@ -55,6 +97,7 @@ summary: Chronological history of repository and skill changes.
   reverted to `attempted`, which is itself the finding: the executor is
   intermittently, not durably, functional. Model-behavior evidence for this
   specific prose change remains unavailable.
+  (`ca613b8f8887f1d147193a32de9b8b815569cf5c`)
 
 ## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
 
