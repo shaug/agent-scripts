@@ -193,5 +193,15 @@
     "case_id": "stable-clean-current-head-progresses-without-extra-cycle",
     "terminal_state": "ready_pr",
     "required_actions": ["consume the already-validated clean aggregate directly", "do not invoke an additional invented review cycle", "publish one ready PR"]
+  },
+  {
+    "case_id": "final-cycle-escalation-then-clean",
+    "terminal_state": "merged",
+    "required_actions": ["map each cycle's findings to a resolved, unresolved, or superseded verdict", "dispatch a fresh implementer one capability tier above the incumbent for the third cycle", "brief the escalated implementer with surviving findings and prior failed-fix summaries", "do not request a fourth cycle", "accept only the clean escalated-head review", "merge after current gates pass"]
+  },
+  {
+    "case_id": "final-cycle-escalation-still-blocked",
+    "terminal_state": "blocked",
+    "required_actions": ["dispatch a fresh implementer one capability tier above the incumbent for the third cycle", "do not request a fourth cycle", "preserve the candidate", "record that the final cycle was escalated", "return blocked with the unresolved evidence"]
   }
 ]

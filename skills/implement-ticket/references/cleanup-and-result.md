@@ -72,6 +72,11 @@ before return. Otherwise include every applicable field:
   source, and `pass`/`fail`/`missing` status;
 - focused and full validation commands, outcomes, and limitations;
 - initial `review-code-change` verdict and reviewed candidate identity;
+- when a fix cycle ran: the per-finding verdict ledger (`resolved`,
+  `unresolved`, or `superseded`, with the mapping rationale for every
+  `superseded` entry), any quarantined out-of-scope observations, and whether
+  the final cycle was escalated to a fresh implementer and at what capability
+  tier;
 - `babysit-pr` policy, terminal state, returned candidate identity, authority
   used, mutation ownership, and independently verified live-state match;
 - for a stack, `carve-changesets` source identity, guardrail and operator

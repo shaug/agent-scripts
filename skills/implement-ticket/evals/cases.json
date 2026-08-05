@@ -246,5 +246,17 @@
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
     "candidate_state": "review-code-change already returned a schema-valid aggregate clean result bound to the exact current head and base, with complete freshly executed lens_executions for all three required lenses."
+  },
+  {
+    "id": "final-cycle-escalation-then-clean",
+    "request": "Implement and merge GitHub issue G-40.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2, each fixed and rerun by the incumbent; entering the third and final cycle with findings still outstanding, a fresh implementer at one capability tier above the incumbent is dispatched, briefed with the surviving findings and prior failed-fix summaries; its fix is committed, revalidated, and review-code-change returns clean on that head; CI passes and no other remote review is required."
+  },
+  {
+    "id": "final-cycle-escalation-still-blocked",
+    "request": "Implement GitHub issue G-41.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2; the escalated fresh implementer runs the third and final cycle at one tier above the incumbent; review-code-change still returns material findings on the escalated head; no fourth cycle is requested."
   }
 ]
