@@ -172,6 +172,33 @@ output do not satisfy an explicit visual-layout requirement without a screenshot
 or geometry/computed-layout observation. Reject stale candidate or deployment
 SHAs and wrong-environment evidence.
 
+`missing`, `fail`, and `pass` answer three different questions; do not collapse
+one into another for convenience:
+
+- `missing`: no evidence was gathered or observed for this criterion at all.
+- `fail`: evidence was gathered, but it does not conform to the authored
+  category or source — a delegate's summary offered in place of the authored
+  command's own output, for example — or the conforming evidence shows a genuine
+  failure. A non-conforming source never earns `pass` merely because it asserts
+  one.
+- `pass`: category- and source-conforming evidence shows a genuine pass for the
+  candidate, deployment, or environment it was gathered against, even when that
+  binding is stale or otherwise not current for this delivery. Record the
+  truthful result of what was observed; reject the evidence's *currency*
+  separately, through `reject_stale_acceptance_evidence` or equivalent, rather
+  than rewriting a truthful `pass` into `missing` or `fail`. Currency and
+  correctness are independent judgments — do not let a stale binding erase what
+  was actually measured.
+
+When the ticket has authored no acceptance criteria and none is otherwise
+required, the ledger stays empty and readiness proceeds through the ordinary
+non-merge and merge gates alone — an empty ledger is not itself a blocker. When
+an acceptance contract is required but absent — the ticket or repository calls
+for one and none was authored or recorded — that absence is the blocker. Report
+it directly as a missing-required-acceptance finding; do not invent a
+placeholder ledger entry that describes the absent contract as if it were an
+evaluated criterion.
+
 All required pre-merge entries must pass before `ready_pr`, `ready_prs`, or a
 merge. Required post-merge entries may remain `missing` through an authorized
 merge only when the PR used non-closing syntax; afterward report delivery as
@@ -306,9 +333,10 @@ Proceed only when the selected ticket:
 - has no unresolved native blocker;
 - has every required closed-blocker outcome verified in its authoritative
   repository, artifact registry, tracker, or environment;
-- has a clear observable goal, acceptance criteria, non-goals, preserved
-  behavior, required verification, and enough detail to classify each evidence
-  item as pre-merge or post-merge;
+- has a clear observable goal, non-goals, preserved behavior, any acceptance
+  criteria and required verification the ticket or repository actually calls
+  for, and enough detail to classify each evidence item as pre-merge or
+  post-merge;
 - contains no unresolved product, data, authorization, migration, destructive,
   or architecture decision;
 - represents one coherent candidate that is expected to fit one reviewable PR,

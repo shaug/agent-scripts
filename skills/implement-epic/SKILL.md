@@ -243,6 +243,10 @@ branch/worktree, candidate, PR, validation, review, remote-gate, merge,
 delivery, criterion-specific acceptance, transition, and cleanup evidence are
 internally consistent and match live state.
 
+Each bullet below verifies the *child's* terminal state as reported evidence
+feeding this skill's own graph-level report — it is not a menu of states this
+skill returns for itself. See "Report the epic result" below for that contract.
+
 - `ready_pr`: verify the candidate is open, mergeable, at the complete
   current-candidate non-merge gate, and has every required pre-merge acceptance
   entry passing. Do not count the child complete or unblock dependents that
@@ -271,11 +275,15 @@ internally consistent and match live state.
 ### 5. Refresh or stop at the requested boundary
 
 After every verified merge, delivery, or tracker transition, reread the complete
-native graph regardless of the ticket terminal state. Then separately determine
-which edges are satisfied by delivery and which require complete acceptance. A
-merged delivery with pending acceptance remains incomplete, but its graph-state
-change must still inform the next ready set. Do not reuse an earlier ready set.
-Report newly unblocked work even when the requested boundary has been reached.
+native graph regardless of the ticket terminal state. A `ready_pr`, `ready_prs`,
+or `blocked` child result changes nothing the native graph exposes to other
+children, so it triggers no refresh by itself; refresh only after the merge,
+delivery, or transition that actually changed graph-visible state. Then
+separately determine which edges are satisfied by delivery and which require
+complete acceptance. A merged delivery with pending acceptance remains
+incomplete, but its graph-state change must still inform the next ready set. Do
+not reuse an earlier ready set. Report newly unblocked work even when the
+requested boundary has been reached.
 
 For one named child, stop after that child's completion policy. For a named
 subset, process only that subset in dependency order. Do not implement unnamed
@@ -337,3 +345,27 @@ serial critical-path and parallel-ready work, child and parent acceptance
 ledgers, closeout evidence, intentionally deferred work, and one concrete next
 action. Never report a child or parent complete from tracker state, stale
 verification, or delivery evidence alone.
+
+Because `implement-ticket` owns terminal evidence, this report is never one of
+*its* terminal states in this skill's own voice — not even when exactly one
+child was invoked this run. Adopting a single child's `ready_pr` or `merged` as
+this skill's own result misreports an epic-level run as ticket-level completion
+and erases the graph-refresh and requested-boundary work this skill still owes.
+
+Check the stop conditions above first — a child's own terminal state does not by
+itself rule a stop condition out. A child recovered with required acceptance
+still missing, for example, leaves the epic `blocked` even when the child itself
+reports `ready_pr` or a `blocked` unrelated to that missing acceptance. Only
+after confirming no stop condition applies does the ordinary case below govern.
+Label the composite report with exactly one of:
+
+- `blocked`: one of the stop conditions above applies, with the exact reason and
+  partial artifacts;
+- `mixed_ticket_results`: no stop condition applies and this is not an
+  authorized closeout, regardless of how many children this run invoked — covers
+  a merged child, an open `ready_pr`/`ready_prs` child, a refreshed graph with
+  nothing further ready, and a round that invoked no child because the requested
+  scope was already satisfied; or
+- an authorized parent closeout, reported through the closeout evidence
+  [epic closeout](references/closeout.md) requires rather than a separate
+  single-word label.
