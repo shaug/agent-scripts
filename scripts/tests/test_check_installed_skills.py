@@ -205,6 +205,23 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         self.assertIn("drift  alpha", output)
         self.assertNotIn(str(installed_root / "beta"), output.split("Remove:")[-1])
 
+    def test_removal_advice_compares_directories_by_identity_not_by_path(self) -> None:
+        """The guard has to hold wherever one directory has two unequal paths.
+
+        A symlink to the canonical directory is that case on every filesystem,
+        so this pins the guard where continuous integration runs. The
+        case-folding test below is the same defect's real-world trigger, but it
+        can only run where the filesystem folds case.
+        """
+        self.install(A_SKILL)
+        stray = self.skills_root / f"{A_SKILL}-old"
+        stray.symlink_to(self.skills_root / A_SKILL, target_is_directory=True)
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 1)
+        self.assertNotIn("Remove:", output)
+
     def test_removal_advice_survives_a_case_insensitive_filesystem(self) -> None:
         """The default skills root lives on one, where two names are one directory."""
         installed = self.install(A_SKILL, as_directory=A_SKILL.title())

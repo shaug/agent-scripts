@@ -4,7 +4,22 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence, then closed the blind spots an adversarial review found in that very check
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch
+
+- test(scripts): pin the install-directory identity guard where CI can see it
+  (fifth adversarial review round) — the regression test for the previous commit
+  reproduces its defect through case-folding, which only exists on a
+  case-insensitive filesystem. CI runs `ubuntu-latest` on ext4, so that test
+  skipped itself there, and no other test distinguished the two implementations:
+  the nearest one uses a directory that is *path-equal* to a canonical location,
+  which passes under path comparison too. Reverting the guard to path equality
+  would therefore have gone green in CI and restored the destructive
+  "re-install, then delete what you just installed" advice that four review
+  rounds converged on removing. A stray directory that is a symlink to the
+  canonical directory is path-unequal and inode-identical on every filesystem,
+  so it pins the same guard without a platform gate; the case-folding test stays
+  as documentation of the real-world trigger. Observed failing at base and
+  passing at head, with no skip on either platform.
 
 - fix(scripts): compare install directories by filesystem identity, not by path
   (fourth adversarial review round) — the guard round three added to keep the
@@ -23,6 +38,7 @@ summary: Chronological history of repository and skill changes.
   fence — that behavior is already correct and the test passes at base, but a
   mutation run showed nothing asserted it, so prose after the fence could have
   started renaming copies without the suite noticing.
+  (3f446f61b0f0260f3d8165a8f727a5fe7db07fdf)
 
 - fix(scripts): stop the drift check from recommending a destructive removal,
   and simplify (third adversarial review round) — the check emits exactly one
