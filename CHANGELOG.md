@@ -4,7 +4,9 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-07 — Migrated carve-changesets' per-changeset review/fix loop and babysit-pr's post-publication review/fix loop to delegate to review-fix-loop, completing the design's caller-migration sequence
+## 2026-08-07 — Migrated carve-changesets' per-changeset review/fix loop and babysit-pr's post-publication review/fix loop to delegate to review-fix-loop, completing the design's caller-migration sequence, then added rationalization tables to babysit-pr, implement-ticket, and carve-changesets
+
+- PLACEHOLDER-129-ENTRY
 
 - feat(carve-changesets): delegate the per-changeset review and fix loop to
   review-fix-loop (issue #105) — replace phase 2's inlined "construct and run
@@ -41,7 +43,7 @@ summary: Chronological history of repository and skill changes.
   prove; `carve-changesets` has a deterministic forward-eval corpus but no
   registered real-model executor, so both a `before` and an `after` summary are
   recorded under `skills/carve-changesets/evals/results/` per `AGENTS.md`'s
-  eval-backed change norm.
+  eval-backed change norm (20d05b0d49bb1e7930024ccc720c52ed4e320111)
 
 - feat(babysit-pr): delegate repository review and remediation to
   review-fix-loop (issue #104) — replace the inline "Revalidate and review every
