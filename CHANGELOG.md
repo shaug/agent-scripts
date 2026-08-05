@@ -33,7 +33,7 @@ summary: Chronological history of repository and skill changes.
   analysis predicts independence rather than demonstrating it. Wording stays
   product-agnostic (capability tiers and roles, never model names or product
   APIs), enforced by a per-skill assertion. No contract fields, schemas, or
-  terminal states change. Eleven prose-contract assertions across six skills,
+  terminal states change. Twelve prose-contract assertions across six skills,
   each observed failing at the branch's original base `a1ee71c` (none of these
   eight files changed between it and this candidate's current base) and passing
   at head. The post-parallel paragraph records its ported source at the seam,
@@ -72,15 +72,19 @@ summary: Chronological history of repository and skill changes.
   recorded against the shipped one-clause prose, without disclosure until this
   sentence that the run cited above for a different case's recovery also
   regressed this one. That instability sets the tier's noise floor near one case
-  per run, which bounds every claim above. `implement-ticket` is the one skill
-  `AGENTS.md` names as having a real-model executor and it has no real-model
-  after run at all — its tier aborts in `claude_executor.extract_json_object`,
-  the blocker already recorded against #154 — so three of this change's eight
-  prose edits carry no model-behavior evidence. The norm asks for "a recorded
-  run" and a per-case diff without saying how many runs separate signal from
-  variance, and a single run here would have reported the regression, or the
-  gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and the
-  eight summaries this branch recorded from unclean trees are recorded as
+  per run, which bounds every claim above. `implement-epic`'s `SKILL.md` is the
+  only one of this change's eight edited prose files a real model ever read.
+  `implement-ticket` is the one skill `AGENTS.md` names as having a real-model
+  executor and it has no real-model after run at all — its tier aborts in
+  `claude_executor.extract_json_object`, the blocker already recorded against
+  #154 — and `babysit-pr`, `review-code-change`, `carve-changesets`, and
+  `review-fix-loop` either have no corpus or record only a deterministic tier
+  whose own gap field says "no model read the prose." So seven of this change's
+  eight prose edits carry no model-behavior evidence. The norm asks for "a
+  recorded run" and a per-case diff without saying how many runs separate signal
+  from variance, and a single run here would have reported the regression, or
+  the gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and
+  the eight summaries this branch recorded from unclean trees are recorded as
   follow-ups rather than absorbed here
 
 - feat(ready-ticket): pressure-test from a real baseline and record the
