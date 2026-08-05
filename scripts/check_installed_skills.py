@@ -16,13 +16,23 @@ own silent successes as failures too. Comparing nothing, being pointed at a
 directory that does not exist, and failing to read part of a tree are all
 reported and exit non-zero rather than passing quietly.
 
-An installed copy is matched by the name its `SKILL.md` declares, not by its
-directory name, because that declared name is what an agent runtime loads. A
+An installed copy is matched by the name its `SKILL.md` declares *and* by its
+directory name, because the declared name is what an agent runtime loads and a
 stale copy left behind under a different directory name is still a live skill.
+Either match is enough: reading a declared name means parsing frontmatter, and a
+parse this check gets wrong must not be able to hide a copy that the plain
+directory name would have found.
 
 The comparison is against the working tree, not against `origin/main`: a
 checkout that is itself behind the remote will report "in sync" while both
 copies are stale. Update the checkout first when that matters.
+
+On why this is not `diff -rq` in a shell loop, which would cover most of it in a
+few lines: the declared-name matching above cannot be expressed that way without
+reading frontmatter anyway, and the exclusions here are anchored to a skill root
+rather than matched as bare names at any depth. Those two are the whole reason
+this is a Python module. The recursive comparison itself is the cheap part and
+carries no cleverness worth defending.
 """
 
 from __future__ import annotations
@@ -55,7 +65,10 @@ IGNORED_FILE_SUFFIXES = frozenset({".pyc"})
 IGNORED_SKILL_RELATIVE_DIRECTORIES = frozenset({".skill-state", "evals/results"})
 
 FRONTMATTER_FENCE = "---"
-NAME_FIELD = re.compile(r"name:\s*(\S+)")
+# Matched only against a line with no leading whitespace, so a `name:` appearing
+# inside an indented block scalar — a description, most plausibly — is not read
+# as the document's own name. The value runs to an unquoted `#` comment.
+NAME_FIELD = re.compile(r"name:\s*(?P<value>[^#]*?)\s*(?:#.*)?$")
 
 
 @dataclass
@@ -92,6 +105,11 @@ class Report:
     skills_root: Path
     compared: list[SkillComparison] = field(default_factory=list)
     not_installed: list[str] = field(default_factory=list)
+    # Parts of this repository's own `skills/` tree that could not be read. A
+    # comparison against a source that could not be enumerated says nothing
+    # about the installed copy, so this invalidates the run rather than
+    # contributing to it.
+    unreadable_sources: list[str] = field(default_factory=list)
 
     @property
     def drifted(self) -> list[SkillComparison]:
@@ -101,8 +119,9 @@ class Report:
     def is_clean(self) -> bool:
         # Comparing nothing is never a match: it means the skills root holds no
         # copy of anything this repository ships, which is a misconfigured path
-        # far more often than it is a deliberate empty install.
-        return bool(self.compared) and not self.drifted
+        # far more often than it is a deliberate empty install. `main` reports
+        # that case as misconfiguration rather than as drift.
+        return bool(self.compared) and not self.drifted and not self.unreadable_sources
 
 
 def _ignored_file(name: str) -> bool:
@@ -151,21 +170,27 @@ def _distributed_files(root: Path, skill: str) -> tuple[set[str], list[str]]:
 
 
 def _declared_name(skill_document: Path) -> str | None:
-    """The `name:` a `SKILL.md` declares in its frontmatter, if it has one."""
+    """The `name:` a `SKILL.md` declares in its frontmatter, if it has one.
+
+    Best effort by design. This is one of two ways a copy is matched, never the
+    only one, so an unparsed or oddly written frontmatter costs nothing that the
+    directory name does not already recover.
+    """
     try:
-        lines = skill_document.read_text(
-            encoding="utf-8", errors="replace"
-        ).splitlines()
+        text = skill_document.read_text(encoding="utf-8-sig", errors="replace")
     except OSError:
         return None
+    lines = text.splitlines()
     if not lines or lines[0].strip() != FRONTMATTER_FENCE:
         return None
     for line in lines[1:]:
         if line.strip() == FRONTMATTER_FENCE:
             return None
-        match = NAME_FIELD.fullmatch(line.strip())
+        if line[:1].isspace():  # inside a nested mapping or a block scalar
+            continue
+        match = NAME_FIELD.fullmatch(line)
         if match:
-            return match.group(1)
+            return match.group("value").strip("\"'") or None
     return None
 
 
@@ -180,17 +205,20 @@ def _repository_skills(repository_root: Path) -> list[str]:
 def _installed_copies(skills_root: Path, skills: list[str]) -> dict[str, list[Path]]:
     """Map each repository skill to every installed directory providing it.
 
-    A directory is matched by the name its `SKILL.md` declares, so a copy
-    renamed on disk is still found. A directory named for a repository skill is
-    matched too, even with an absent or unreadable `SKILL.md`, so a gutted
-    install is reported rather than mistaken for an absent one.
+    A directory matches on either the name its `SKILL.md` declares or its own
+    name, so a copy renamed on disk is found by the first and a copy whose
+    frontmatter this check cannot parse is still found by the second. A
+    directory named for a repository skill is matched even with an absent
+    `SKILL.md`, so a gutted install is reported rather than mistaken for an
+    absent one.
     """
     known = set(skills)
     copies: dict[str, list[Path]] = {}
     for document in sorted(skills_root.glob("*/SKILL.md")):
-        declared = _declared_name(document) or document.parent.name
-        if declared in known:
-            copies.setdefault(declared, []).append(document.parent)
+        directory = document.parent
+        for candidate in {_declared_name(document), directory.name}:
+            if candidate in known and directory not in copies.get(candidate, []):
+                copies.setdefault(candidate, []).append(directory)
     for skill in skills:
         directory = skills_root / skill
         if directory.is_dir() and directory not in copies.get(skill, []):
@@ -212,6 +240,7 @@ def compare(repository_root: Path, skills_root: Path) -> Report:
 
         source = repository_root / "skills" / skill
         source_files, source_unreadable = _distributed_files(source, skill)
+        report.unreadable_sources.extend(source_unreadable)
         for directory in sorted(directories):
             installed_files, installed_unreadable = _distributed_files(directory, skill)
             comparison = SkillComparison(
@@ -219,7 +248,7 @@ def compare(repository_root: Path, skills_root: Path) -> Report:
                 directory=directory,
                 missing=sorted(source_files - installed_files),
                 extra=sorted(installed_files - source_files),
-                unreadable=sorted(source_unreadable + installed_unreadable),
+                unreadable=sorted(installed_unreadable),
             )
             comparison.differing = sorted(
                 relative
@@ -270,6 +299,18 @@ def render(report: Report) -> str:
         lines.append(f"  not installed: {', '.join(report.not_installed)}")
 
     lines.append("")
+    if report.unreadable_sources:
+        # Said before anything else and without remediation: re-installing from
+        # a source that could not be read would overwrite good installed files
+        # with a truncated copy of this repository.
+        lines.append(
+            "This repository's own skills tree could not be read in full, so no "
+            "comparison here is trustworthy:"
+        )
+        lines.extend(
+            f"  unreadable: {path}" for path in sorted(report.unreadable_sources)
+        )
+        return "\n".join(lines)
     if not report.compared:
         lines.append(
             f"No skill from this repository is installed in {report.skills_root}, "
@@ -284,6 +325,21 @@ def render(report: Report) -> str:
     lines.append(f"Installed skills are stale: {', '.join(names)}")
     lines.append("Re-install them from this repository, for example:")
     lines.append(f"  skills update -g -y {' '.join(names)}")
+
+    # Re-installing writes `<root>/<skill>`, so it can never clear a copy that
+    # is sitting somewhere else. Those have to be removed by name.
+    stray = sorted(
+        {
+            str(comparison.directory)
+            for comparison in report.drifted
+            if comparison.misnamed
+        }
+    )
+    if stray:
+        lines.append(
+            "Re-installing cannot clear a copy under another directory name. Remove:"
+        )
+        lines.extend(f"  {path}" for path in stray)
     return "\n".join(lines)
 
 
@@ -318,6 +374,11 @@ def main(argv: list[str] | None = None) -> int:
     repository_root = Path(__file__).resolve().parents[1]
     report = compare(repository_root, skills_root)
     print(render(report))
+    if report.unreadable_sources or not report.compared:
+        # Neither is a statement about the installed copies: one means this
+        # repository could not be read, the other that the root holds nothing
+        # to compare. Both are the operator's environment, not drift.
+        return EXIT_MISCONFIGURED
     return EXIT_IN_SYNC if report.is_clean else EXIT_DRIFTED
 
 

@@ -6,6 +6,36 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence, then closed the blind spots an adversarial review found in that very check
 
+- fix(scripts): make the drift check's copy matching independent of frontmatter
+  spelling (second adversarial review round) — round one closed the headline
+  blind spot by matching an installed copy on the name its `SKILL.md` declares,
+  and a second review round showed that fix worked for exactly one spelling of
+  the field. The parser took the value as an opaque token, so
+  `name: "review-correctness"` yielded `'"review-correctness"'` — truthy, so the
+  directory-name fallback never ran, and not a known skill, so the copy was
+  dropped: a stale rubric on disk, "Installed skills match this repository",
+  exit 0, and the skill additionally asserted to be *not installed*. Not
+  hypothetical — `gh-fix-ci` in the live distribution already writes
+  `name: "gh-fix-ci"`, and every skill in this repository already quotes its
+  `description:` scalar. The structural fix is to stop treating the two matches
+  as alternatives: a directory now matches on its declared name **or** its own
+  name, so a frontmatter this check reads wrongly can no longer hide a copy that
+  the plain directory name would have found. The parser is hardened alongside it
+  (quoted values, inline comments, a BOM) and now reads only unindented keys, so
+  a `name:` inside a block scalar is no longer mistaken for the document's own.
+  Two further findings: a read failure in **this repository's** own `skills/`
+  tree was being merged into the installed copy's drift, which reported a
+  faithful copy as stale and printed remediation that would have overwritten its
+  good files with a truncated source — source-side failures now invalidate the
+  run instead of contributing to it; and a copy under a stray directory name was
+  told to re-install, which writes `<root>/<skill>` and therefore can never
+  clear it, so that case now prints the directory to remove. The exit contract
+  stops contradicting itself: nothing-to-compare is the operator's environment,
+  not drift, so it joins the misconfiguration code the comment already called
+  it. Five further behavioral tests, including the frontmatter input space whose
+  absence let the blocking defect through, each observed failing at base
+  `4b18269` and passing at head.
+
 - fix(scripts): close the drift check's own silent-success paths (adversarial
   review of `3c18034`) — a check whose purpose is detecting a silent failure
   must not have silent failures of its own, and the first cut had four. **A
@@ -44,6 +74,7 @@ summary: Chronological history of repository and skill changes.
   cover the fixed paths, including the byte-comparison path a same-length edit
   exercises and `--skills-root` precedence over the environment, each observed
   failing at base `3c18034` and passing at head.
+  (4b182690ef0cd67c77f390b892606174fccd61c3)
 
 - feat(scripts): detect drift between installed skill copies and this repository
   — add `scripts/check_installed_skills.py` and the `just check-installed`

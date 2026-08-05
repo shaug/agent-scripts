@@ -158,6 +158,77 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIn(f"installed in directory {A_SKILL}-backup", output)
 
+    def test_a_stray_copy_is_told_to_be_removed_not_re_installed(self) -> None:
+        """Re-installing writes `<root>/<skill>`, so it never clears a stray copy."""
+        stray = self.install(A_SKILL, as_directory=f"{A_SKILL}-backup")
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 1)
+        self.assertIn(
+            "Re-installing cannot clear a copy under another directory", output
+        )
+        self.assertIn(str(stray), output)
+
+    def test_renamed_copy_is_found_whatever_its_frontmatter_looks_like(self) -> None:
+        """Matching must not hinge on one spelling of the declared name.
+
+        A copy under another directory name is found by what its `SKILL.md`
+        declares, so every frontmatter shape a real skill might carry has to
+        reach the same verdict as the plain unquoted one.
+        """
+        for index, declaration in enumerate(
+            (
+                f"name: {A_SKILL}",
+                f'name: "{A_SKILL}"',
+                f"name: '{A_SKILL}'",
+                f"name: {A_SKILL}  # canonical",
+                f"name:    {A_SKILL}",
+            )
+        ):
+            with self.subTest(declaration=declaration):
+                self.setUp()
+                installed = self.install(A_SKILL, as_directory=f"{A_SKILL}-old{index}")
+                document = installed / "SKILL.md"
+                body = document.read_text(encoding="utf-8").splitlines()
+                body[1] = declaration
+                document.write_text(
+                    "\n".join(body) + "\nSTALE RUBRIC\n", encoding="utf-8"
+                )
+
+                status, output = self.run_check()
+
+                self.assertEqual(status, 1)
+                self.assertIn(f"drift  {A_SKILL}", output)
+                self.assertNotIn(A_SKILL, self.not_installed_line(output))
+
+    def test_unparsable_frontmatter_still_matches_on_the_directory_name(self) -> None:
+        """A frontmatter this check cannot read must not hide an installed copy."""
+        installed = self.install(A_SKILL)
+        document = installed / "SKILL.md"
+        document.write_text("no frontmatter at all\n", encoding="utf-8")
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 1)
+        self.assertIn("differs: SKILL.md", output)
+        self.assertNotIn(A_SKILL, self.not_installed_line(output))
+
+    def test_a_name_inside_a_block_scalar_is_not_the_declared_name(self) -> None:
+        """An indented `name:` belongs to the value it sits in, not the document."""
+        stray = self.skills_root / "unrelated"
+        stray.mkdir()
+        (stray / "SKILL.md").write_text(
+            f"---\nname: unrelated\ndescription: |\n  name: {A_SKILL}\n---\n",
+            encoding="utf-8",
+        )
+        self.install(A_SKILL)
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 0)
+        self.assertIn(f"ok     {A_SKILL}", output)
+
     def test_gutted_install_is_reported_rather_than_called_absent(self) -> None:
         installed = self.install(A_SKILL)
         (installed / "SKILL.md").unlink()
@@ -178,9 +249,39 @@ class CheckInstalledSkillsTests(unittest.TestCase):
 
         status, output = self.run_check()
 
-        self.assertEqual(status, 1)
+        self.assertEqual(status, 2)
         self.assertIn("nothing was compared", output)
         self.assertNotIn("Installed skills match this repository.", output)
+
+    def test_unreadable_repository_source_invalidates_the_run(self) -> None:
+        """A source that cannot be enumerated says nothing about a copy of it.
+
+        Reporting it as installed-copy drift would print remediation that
+        overwrites good installed files with a truncated source.
+        """
+        repository = self.skills_root / "repository"
+        source = repository / "skills" / "demo"
+        (source / "references").mkdir(parents=True)
+        (source / "SKILL.md").write_text("---\nname: demo\n---\n", encoding="utf-8")
+        (source / "references" / "rubric.md").write_text("rubric\n", encoding="utf-8")
+
+        installed_root = self.skills_root / "installed"
+        shutil.copytree(source, installed_root / "demo")
+
+        blocked = source / "references"
+        original_mode = blocked.stat().st_mode
+        blocked.chmod(0o000)
+        self.addCleanup(blocked.chmod, original_mode)
+        if os.access(blocked, os.R_OK):  # pragma: no cover - root ignores the mode
+            self.skipTest("filesystem does not enforce directory permissions")
+
+        report = check_installed_skills.compare(repository, installed_root)
+        output = check_installed_skills.render(report)
+
+        self.assertIn("could not be read in full", output)
+        self.assertIn(f"unreadable: {blocked}", output)
+        self.assertNotIn("skills update", output)
+        self.assertFalse(report.is_clean)
 
     def test_named_skills_root_that_does_not_exist_is_an_error(self) -> None:
         self.skills_root = self.skills_root / "typo"
