@@ -4,7 +4,7 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline
+## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
 
 - feat(skills): add tier, turn-count, reviewer-integrity, and post-parallel
   guidance to dispatch prose (issue #131, epic #119) — the pipeline composes
@@ -48,27 +48,34 @@ summary: Chronological history of repository and skill changes.
   paragraph beside the verification obligation coincided with
   `epic-refreshes-after-blocked-merged-delivery` failing on
   `missing actions: verify_epic_acceptance`, and compressing the same
-  attribution to a one-clause parenthetical coincided with its recovery. Stated
-  against only the runs a later reader can retrieve, that is one run per
-  condition — `a1ee71c` without the change passes, `138bc2a` with the four-line
-  note fails, `cde1032` with the one-clause note passes. Three further runs
-  corroborate the pattern but were recorded at commits the subsequent rebase
-  orphaned, and one of those was recorded from a tree that was not clean, so
-  they are named here as corroboration rather than counted as evidence; no run
-  isolates the note's absence from the rest of the change except a single
-  orphaned one. The reading the reachable runs support is that a gate competes
-  with non-operative prose placed beside it, which is the context-economy
-  failure this repository's authoring standard already names — not that the
-  effect is quantified. Nothing else in the suite reacted: every unit test and
-  both simplicity lenses passed the version that regressed.
-  `epic-unreadable-implement-ticket` fails at base and passes in all four
-  post-change runs. One case (`epic-incompatible-implement-ticket`) flipped once
-  across six runs of byte-identical prose, putting the tier's noise floor near
-  one case per run, which bounds every claim above. The norm asks for "a
-  recorded run" and a per-case diff without saying how many runs separate signal
-  from variance, and a single run here would have reported the regression, or
-  the gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and
-  the eight summaries this branch recorded from unclean trees are recorded as
+  attribution to a one-clause parenthetical coincided with its recovery. One run
+  covers each condition — no change, four-line note, one-clause note — with
+  three further runs corroborating the pattern, one of which was recorded from a
+  tree that was not clean. Only a single run ever isolated the note's absence
+  from the rest of the change. The reading those runs support is that a gate
+  competes with non-operative prose placed beside it, which is the
+  context-economy failure this repository's authoring standard already names;
+  the effect is not quantified. Every summary's `candidate.sha` names a branch
+  commit rather than a commit on `main`: this repository squash-merges, and this
+  branch was rebased twice, so the norm's requirement that a summary name a
+  commit a later reader can resolve is unattainable for any branch-recorded run
+  by construction. The per-case maps inside the summaries are the durable
+  evidence, not their SHA bindings, and that tension between the recording rule
+  and squash merging is a follow-up rather than something this ticket can
+  settle. Nothing else in the suite reacted: every unit test and both simplicity
+  lenses passed the version that regressed. `epic-unreadable-implement-ticket`
+  fails at base and passes in all four post-change runs. One case
+  (`epic-incompatible-implement-ticket`) flipped once across six runs of
+  byte-identical prose, putting the tier's noise floor near one case per run,
+  which bounds every claim above. `implement-ticket` is the one skill
+  `AGENTS.md` names as having a real-model executor and it has no real-model
+  after run at all — its tier aborts in `claude_executor.extract_json_object`,
+  the blocker already recorded against #154 — so three of this change's eight
+  prose edits carry no model-behavior evidence. The norm asks for "a recorded
+  run" and a per-case diff without saying how many runs separate signal from
+  variance, and a single run here would have reported the regression, or the
+  gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and the
+  eight summaries this branch recorded from unclean trees are recorded as
   follow-ups rather than absorbed here
 
 - feat(ready-ticket): pressure-test from a real baseline and record the
