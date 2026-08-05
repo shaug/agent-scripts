@@ -10,22 +10,22 @@ summary: Chronological history of repository and skill changes.
   malformed JSON instead of aborting the whole forward-eval run (issue #154) —
   every real-model forward-eval run against `implement-ticket` recorded since
   #131 returned `status: attempted` on a `JSONDecodeError` inside
-  `extract_json_object`, with only an occasional run completing; `run_forward.py`
-  calls the executor once per case across 58 sequential cases and aborts the
-  entire run uncaught on the first executor failure, so even a low per-call
-  malformation rate compounds into most runs failing. `extract_json_object`'s
-  own boundary-finding was verified sound against fenced code blocks, nested
-  objects, and pretty-printed JSON — the malformation is in the model's
-  response content, not the extractor. A live 58-case sweep against the real
-  `claude` CLI reproduced the failure naturally once
-  (`evidence-bug-fix-regression-test`): the API call reported `stop_reason:
-  "end_turn"` and `is_error: false` — not a token-limit stop — yet the returned
-  JSON was missing its final closing brace, confirming the model occasionally
-  ends its turn with the object incomplete rather than the extractor
-  mis-locating a complete one. `run_claude` now retries with a fresh,
+  `extract_json_object`, with only an occasional run completing;
+  `run_forward.py` calls the executor once per case across 58 sequential cases
+  and aborts the entire run uncaught on the first executor failure, so even a
+  low per-call malformation rate compounds into most runs failing.
+  `extract_json_object`'s own boundary-finding was verified sound against fenced
+  code blocks, nested objects, and pretty-printed JSON — the malformation is in
+  the model's response content, not the extractor. A live 58-case sweep against
+  the real `claude` CLI reproduced the failure naturally once
+  (`evidence-bug-fix-regression-test`): the API call reported
+  `stop_reason: "end_turn"` and `is_error: false` — not a token-limit stop — yet
+  the returned JSON was missing its final closing brace, confirming the model
+  occasionally ends its turn with the object incomplete rather than the
+  extractor mis-locating a complete one. `run_claude` now retries with a fresh,
   independent sample (up to 3 attempts) when the response fails to parse, and
-  the prompt's answer-format section explicitly asks for escaped embedded
-  quotes and fully closed brackets. A non-zero `claude` CLI exit still fails
+  the prompt's answer-format section explicitly asks for escaped embedded quotes
+  and fully closed brackets. A non-zero `claude` CLI exit still fails
   immediately, unretried, since that is a different failure class. Three new
   tests in `test_forward_evals.py` mock `subprocess.run` to cover
   retry-then-succeed, exhausting all attempts, and no retry on a CLI exit
