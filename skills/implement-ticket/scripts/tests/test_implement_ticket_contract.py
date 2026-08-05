@@ -252,10 +252,12 @@ class ImplementTicketContractTests(unittest.TestCase):
             self.skill_compact,
         )
         # Criterion 4: silent fallback for the third peer, which the two-peer
-        # sentence does not cover.
+        # sentence does not cover. Wording updated by #132, which made the
+        # subject explicit (the escalated implementer) when it reconciled
+        # this sentence with the escalated final-cycle mechanic.
         self.assertIn(
-            "When the peer is not in the listing, diagnose from logs and evidence "
-            "without comment",
+            "When the peer is not in the listing, the escalated implementer "
+            "diagnoses from logs and evidence without comment",
             self.skill_compact,
         )
         # Criterion 2: the precedence rule appears in BOTH paths, not just SKILL.md.
@@ -361,6 +363,87 @@ class ImplementTicketContractTests(unittest.TestCase):
             SKILL_ROOT / "references" / "review-suite" / "consumption-disciplines.md"
         )
         self.assertTrue(bundled.is_file())
+
+    def test_fix_loop_maps_prior_findings_to_one_of_three_verdicts(self):
+        for required in (
+            "`resolved` (no longer present)",
+            "`unresolved` (still present, matched by identifier or root cause)",
+            "`superseded`",
+            "record the mapping rationale rather than dropping it silently",
+            "Match by the prior finding's stable identifier first, then by "
+            "root-cause description",
+        ):
+            self.assertIn(required, self.skill_compact)
+
+    def test_fix_loop_quarantines_out_of_scope_findings_without_extending_it(self):
+        for required in (
+            "quarantined as an out-of-scope observation",
+            "surface it in the terminal result for the caller to disposition",
+            "Never fold a quarantined observation into the current cycle's "
+            "required fixes",
+            "it never extends the loop",
+        ):
+            self.assertIn(required, self.skill_compact)
+
+    def test_final_cycle_escalates_the_implementer_without_adding_a_cycle(self):
+        for required in (
+            "Entering the final permitted cycle with findings still "
+            "outstanding replaces the incumbent implementer",
+            "one capability tier above the incumbent's",
+            "fresh context at the same tier when no higher tier is available",
+            "This replaces the incumbent; it does not add a cycle — the "
+            "count stays at three",
+            "`review-code-change`'s own three-cycle budget for the lens "
+            "sequence is untouched",
+            "record that the final cycle was escalated and to what tier",
+        ):
+            self.assertIn(required, self.skill_compact)
+        # review-code-change's own cycle budget is a non-goal to touch.
+        review_code_change_skill = compact(
+            read(REPOSITORY_ROOT / "skills" / "review-code-change" / "SKILL.md")
+        )
+        self.assertIn(
+            "Use at most three full fix/re-review cycles by default",
+            review_code_change_skill,
+        )
+
+    def test_systematic_debugging_alignment_reflects_the_escalated_cycle(self):
+        # #126 wrote this sentence against the plain block-after-cycle-3
+        # behavior before #132 existed; it must now describe escalation.
+        self.assertIn(
+            "load it as the escalated implementer's recommended diagnosis method",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "is why the final cycle dispatches a fresh, differently-capable context",
+            self.skill_compact,
+        )
+        self.assertIn(
+            "the escalated implementer diagnoses from logs and evidence "
+            "without comment",
+            self.skill_compact,
+        )
+        self.assertNotIn("rather than continuing to patch", self.skill_compact)
+
+    def test_fix_loop_evidence_identifiers_appear_in_the_terminal_handoff(self):
+        for required in (
+            "the per-finding verdict ledger (`resolved`, `unresolved`, or `superseded`",
+            "the mapping rationale for every `superseded` entry",
+            "any quarantined out-of-scope observations",
+            "whether the final cycle was escalated to a fresh implementer "
+            "and at what capability tier",
+        ):
+            self.assertIn(required, self.result_compact)
+
+    def test_review_and_merge_gates_points_at_skillmd_for_escalation(self):
+        gates = compact(read(SKILL_ROOT / "references" / "review-and-merge-gates.md"))
+        self.assertIn(
+            "SKILL.md section 4 owns the per-finding verdict mapping, "
+            "quarantine, and final-cycle escalation mechanics",
+            gates,
+        )
+        # The mechanic itself is stated once, in SKILL.md, not restated here.
+        self.assertNotIn("capability tier above the incumbent", gates)
 
     def test_dependency_names_are_repository_owned_and_acyclic(self):
         self.assertIn("review-code-change", self.skill_compact)
@@ -488,6 +571,21 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertEqual(
             "merged", self.expectations["backend-only-acceptance"]["terminal_state"]
         )
+
+    def test_final_cycle_escalation_scenarios_route_correctly(self):
+        clean = self.expectations["final-cycle-escalation-then-clean"]
+        self.assertEqual("merged", clean["terminal_state"])
+        clean_actions = compact(" ".join(clean["required_actions"]))
+        self.assertIn("resolved, unresolved, or superseded", clean_actions)
+        self.assertIn("one capability tier above the incumbent", clean_actions)
+        self.assertIn("do not request a fourth cycle", clean_actions)
+
+        blocked = self.expectations["final-cycle-escalation-still-blocked"]
+        self.assertEqual("blocked", blocked["terminal_state"])
+        blocked_actions = compact(" ".join(blocked["required_actions"]))
+        self.assertIn("one capability tier above the incumbent", blocked_actions)
+        self.assertIn("record that the final cycle was escalated", blocked_actions)
+        self.assertIn("do not request a fourth cycle", blocked_actions)
 
     def test_review_result_contract_violations_block_publication(self):
         for case_id in (

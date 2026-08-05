@@ -5,7 +5,18 @@
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
     "runtime_profile": "Repository-owned review-code-change and babysit-pr plus named isolated contexts are available.",
-    "capabilities": ["stable_skill_loading", "review_code_change", "babysit_pr", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "capabilities": [
+      "stable_skill_loading",
+      "review_code_change",
+      "babysit_pr",
+      "structured_tracker_relationships",
+      "isolated_worktree",
+      "command_execution",
+      "github_pr",
+      "named_read_only_reviewer",
+      "asynchronous_wait",
+      "thread_aware_feedback"
+    ]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -68,13 +79,17 @@
     "id": "epic-with-children",
     "request": "Implement GitHub epic G-31.",
     "tracker_state": "G-31 has native epic type and three native subissues; the request means whole-epic delivery.",
-    "capabilities": ["implement-epic"]
+    "capabilities": [
+      "implement-epic"
+    ]
   },
   {
     "id": "undecomposed-epic",
     "request": "Implement GitHub epic G-32.",
     "tracker_state": "G-32 has native epic type but no children yet; the request means whole-epic delivery.",
-    "capabilities": ["implement-epic"]
+    "capabilities": [
+      "implement-epic"
+    ]
   },
   {
     "id": "explicit-child-not-redirected",
@@ -100,7 +115,16 @@
     "request": "Implement GitHub issue G-38 to a ready PR.",
     "tracker_state": "G-38 is a ready standalone ticket with no competing implementation.",
     "runtime_profile": "The runtime calls isolated units jobs rather than subagents, but provides an exclusive mutating job and a fresh read-only audit job with equivalent permissions and integrity checks.",
-    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "equivalent_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "capabilities": [
+      "stable_skill_loading",
+      "structured_tracker_relationships",
+      "isolated_worktree",
+      "command_execution",
+      "github_pr",
+      "equivalent_read_only_reviewer",
+      "asynchronous_wait",
+      "thread_aware_feedback"
+    ]
   },
   {
     "id": "missing-review-code-change",
@@ -246,5 +270,17 @@
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
     "candidate_state": "review-code-change already returned a schema-valid aggregate clean result bound to the exact current head and base, with complete freshly executed lens_executions for all three required lenses."
+  },
+  {
+    "id": "final-cycle-escalation-then-clean",
+    "request": "Implement and merge GitHub issue G-40.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2, each fixed and rerun by the incumbent; entering the third and final cycle with findings still outstanding, a fresh implementer at one capability tier above the incumbent is dispatched, briefed with the surviving findings and prior failed-fix summaries; its fix is committed, revalidated, and review-code-change returns clean on that head; CI passes and no other remote review is required."
+  },
+  {
+    "id": "final-cycle-escalation-still-blocked",
+    "request": "Implement GitHub issue G-41.",
+    "authority": "merge_after_gates",
+    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2; the escalated fresh implementer runs the third and final cycle at one tier above the incumbent; review-code-change still returns material findings on the escalated head; no fourth cycle is requested."
   }
 ]

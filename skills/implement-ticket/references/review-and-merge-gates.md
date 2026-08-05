@@ -85,7 +85,9 @@ commit the new head, rebuild the raw evidence packet, and follow the returned
 re-review instruction. Push only after the publication path is selected. Use at
 most three full fix/re-review cycles by default. A clean aggregate ends the
 initial loop. If material findings remain after the final cycle, preserve the
-candidate and return `blocked` with unresolved evidence.
+candidate and return `blocked` with unresolved evidence — SKILL.md section 4
+owns the per-finding verdict mapping, quarantine, and final-cycle escalation
+mechanics that apply before this point is reached.
 
 ## Publication and delegation gate
 

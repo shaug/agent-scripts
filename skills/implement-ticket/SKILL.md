@@ -526,13 +526,42 @@ invalidated, commit a new head, rebuild the evidence packet, and follow the
 suite's re-review instruction. Use at most three full fix/re-review cycles by
 default.
 
+After each re-review, map every finding from the prior cycle against the fresh
+aggregate result and record one verdict per prior finding: `resolved` (no longer
+present), `unresolved` (still present, matched by identifier or root cause), or
+`superseded` (the fresh result cannot account for it — record the mapping
+rationale rather than dropping it silently). Match by the prior finding's stable
+identifier first, then by root-cause description when the identifier does not
+recur.
+
+A fresh finding outside every prior finding's scope is quarantined as an
+out-of-scope observation: record it in the fix-loop evidence and surface it in
+the terminal result for the caller to disposition. Never fold a quarantined
+observation into the current cycle's required fixes — that would spend cycle
+budget on an issue the caller has not yet decided is real, ticket-scoped, or
+worth this candidate's time, and it never extends the loop.
+
+Entering the final permitted cycle with findings still outstanding replaces the
+incumbent implementer rather than continuing it: dispatch a fresh implementation
+context one capability tier above the incumbent's — the same
+escalate-on-repeated-failure rule stated above — or fresh context at the same
+tier when no higher tier is available in the session. Brief it with the
+surviving findings and a summary of what prior attempts tried and why they
+failed, not the full implementation transcript. This replaces the incumbent; it
+does not add a cycle — the count stays at three, and `review-code-change`'s own
+three-cycle budget for the lens sequence is untouched. If the escalated
+attempt's re-review still leaves material findings, block exactly as an ordinary
+final cycle would — preserve the candidate and return `blocked` with the
+unresolved evidence — and record that the final cycle was escalated and to what
+tier.
+
 When a fix fails repeatedly and `superpowers:systematic-debugging` is available
-in the session skill listing, load it as the recommended diagnosis method. Its
-architecture-escalation rule aligns with this section's final-cycle behavior:
-when material findings remain after the last cycle, preserve the candidate and
-return `blocked` with the unresolved evidence rather than continuing to patch.
-When the peer is not in the listing, diagnose from logs and evidence without
-comment.
+in the session skill listing, load it as the escalated implementer's recommended
+diagnosis method: its architecture-escalation rule — recognizing that repeated
+attempts along one approach may need a materially different one — is why the
+final cycle dispatches a fresh, differently-capable context rather than asking
+the same incumbent to try again. When the peer is not in the listing, the
+escalated implementer diagnoses from logs and evidence without comment.
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
 mutation, or unavailable required evidence as a failed local gate. The review
