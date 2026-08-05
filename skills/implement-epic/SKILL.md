@@ -351,15 +351,22 @@ Because `implement-ticket` owns terminal evidence, this report is never one of
 child was invoked this run. Adopting a single child's `ready_pr` or `merged` as
 this skill's own result misreports an epic-level run as ticket-level completion
 and erases the graph-refresh and requested-boundary work this skill still owes.
-Label the composite report with exactly one of:
 
-- `mixed_ticket_results`: every run that is not a `blocked` stop or an
+Check the stop conditions above first — a child's own terminal state
+(`ready_pr`, `merged`, even a routine `blocked`) does not by itself rule a stop
+condition out. A child recovered with required acceptance still missing, for
+example, leaves the epic `blocked` even when the child itself reports `ready_pr`
+or a `blocked` unrelated to that missing acceptance. Only after confirming no
+stop condition applies does the ordinary case below govern. Label the composite
+report with exactly one of:
+
+- `blocked`: one of the stop conditions above applies, with the exact reason and
+  partial artifacts;
+- `mixed_ticket_results`: no stop condition applies and this is not an
   authorized closeout, regardless of how many children this run invoked — covers
   a merged child, an open `ready_pr`/`ready_prs` child, a refreshed graph with
   nothing further ready, and a round that invoked no child because the requested
-  scope was already satisfied;
-- `blocked`: one of the stop conditions above, with the exact reason and partial
-  artifacts; or
+  scope was already satisfied; or
 - an authorized parent closeout, reported through the closeout evidence
   [epic closeout](references/closeout.md) requires rather than a separate
   single-word label.
