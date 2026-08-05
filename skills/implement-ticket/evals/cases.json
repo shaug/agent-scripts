@@ -5,18 +5,7 @@
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
     "runtime_profile": "Repository-owned review-code-change and babysit-pr plus named isolated contexts are available.",
-    "capabilities": [
-      "stable_skill_loading",
-      "review_code_change",
-      "babysit_pr",
-      "structured_tracker_relationships",
-      "isolated_worktree",
-      "command_execution",
-      "github_pr",
-      "named_read_only_reviewer",
-      "asynchronous_wait",
-      "thread_aware_feedback"
-    ]
+    "capabilities": ["stable_skill_loading", "review_code_change", "babysit_pr", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -79,17 +68,13 @@
     "id": "epic-with-children",
     "request": "Implement GitHub epic G-31.",
     "tracker_state": "G-31 has native epic type and three native subissues; the request means whole-epic delivery.",
-    "capabilities": [
-      "implement-epic"
-    ]
+    "capabilities": ["implement-epic"]
   },
   {
     "id": "undecomposed-epic",
     "request": "Implement GitHub epic G-32.",
     "tracker_state": "G-32 has native epic type but no children yet; the request means whole-epic delivery.",
-    "capabilities": [
-      "implement-epic"
-    ]
+    "capabilities": ["implement-epic"]
   },
   {
     "id": "explicit-child-not-redirected",
@@ -115,16 +100,7 @@
     "request": "Implement GitHub issue G-38 to a ready PR.",
     "tracker_state": "G-38 is a ready standalone ticket with no competing implementation.",
     "runtime_profile": "The runtime calls isolated units jobs rather than subagents, but provides an exclusive mutating job and a fresh read-only audit job with equivalent permissions and integrity checks.",
-    "capabilities": [
-      "stable_skill_loading",
-      "structured_tracker_relationships",
-      "isolated_worktree",
-      "command_execution",
-      "github_pr",
-      "equivalent_read_only_reviewer",
-      "asynchronous_wait",
-      "thread_aware_feedback"
-    ]
+    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "equivalent_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
   },
   {
     "id": "missing-review-code-change",

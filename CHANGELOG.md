@@ -43,16 +43,18 @@ summary: Chronological history of repository and skill changes.
   authority decisions and does not model fix-loop cycle internals, so an
   unchanged result is the correct signal for a change scoped entirely to those
   internals. The real-model tier's `before` attempt genuinely executed for the
-  first time in this repository's recorded history — every prior attempt against
-  this skill, including several during #131, returned `attempted` on the
-  `claude_executor.extract_json_object` parsing failure tracked as #154 — and
-  surfaced 26 of 58 forward cases failing against the unmodified base prose.
-  Those failures are pre-existing and unrelated to this ticket's
-  fix-loop-internals scope; they are flagged as a separate follow-up rather than
-  absorbed here. Both subsequent `after` attempts reverted to `attempted`, which
-  is itself the finding: the executor is intermittently, not durably,
-  functional. Model-behavior evidence for this specific prose change remains
-  unavailable.
+  first time recorded against `implement-ticket` specifically — every prior
+  attempt against this skill, including the one on #131's own branch, returned
+  `attempted` on the `claude_executor.extract_json_object` parsing failure
+  tracked as #154; `implement-epic`'s real-model tier had already executed
+  several times against that same executor during #131, so the failure is
+  skill-specific rather than universal. This run surfaced 26 of 58 forward cases
+  failing against the unmodified base prose. Those failures are pre-existing and
+  unrelated to this ticket's fix-loop-internals scope; they are flagged as a
+  separate follow-up rather than absorbed here. Both subsequent `after` attempts
+  reverted to `attempted`, which is itself the finding: the executor is
+  intermittently, not durably, functional. Model-behavior evidence for this
+  specific prose change remains unavailable.
 
 ## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
 
@@ -136,6 +138,7 @@ summary: Chronological history of repository and skill changes.
   the gain, as settled. That gap, the corpus's 7-of-15 baseline pass rate, and
   the eight summaries this branch recorded from unclean trees are recorded as
   follow-ups rather than absorbed here
+  (`bb31f34d3d311ca5b1fd44c09ba57826de36f91d`)
 
 - feat(ready-ticket): pressure-test from a real baseline and record the
   before/after (issue #137, epic #120, the epic's third and final leaf) — #124
