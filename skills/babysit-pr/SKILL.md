@@ -254,6 +254,16 @@ nothing about what this skill requires.
 Stop for user help after retry/review budgets are exhausted or when permission,
 infrastructure, product decisions, or ambiguous feedback prevent safe progress.
 
+## Resist known rationalizations
+
+Do not skip a required gate because the excuse sounds reasonable in the moment.
+Recognize it and answer it with the rule that already applies:
+
+| Rationalization                                     | Why it still applies                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "The fix was trivial, re-validation can be skipped" | A head change invalidates every head-bound gate by SHA, not by how small the diff looks — "Bind every gate to the candidate it evaluated ... invalidate and rebuild every affected head-bound gate."                                                                                      |
+| "This CI failure looks flaky"                       | Flaky classification requires log evidence, not appearance — [CI and feedback decisions](references/ci-and-feedback.md) already says "Do not call a failure flaky merely because a rerun might be convenient," and a retry consumes the tracked per-head budget regardless of confidence. |
+
 ## Delegate repository review and remediation
 
 After any head-changing fix — and for a standalone `ready_to_merge` or
