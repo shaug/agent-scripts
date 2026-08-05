@@ -9,14 +9,15 @@ instructions. Same request, same isolation, only the skill's presence differs.
 The `linear` skill is globally installed in the recording environment and is
 unrelated to ticket authoring; none of the failure shapes below depend on
 whether it was reachable or connected in a given run. Its *reported* state was
-not uniform across the four RED runs — `red-1` and `red-3` treat it as available
-to file into on request, `red-4` names it explicitly as available, and `red-2`
-reports it as disconnected and offers reconnection instructions (in a different
-CLI's command syntax than the one used to run these scenarios, which reads as a
-model artifact rather than a fact about this session). This is recorded as an
-open inconsistency in the evidence rather than smoothed over; it does not change
-any of the findings below, since each finding rests on a specific transcript's
-own text, not on tool availability.
+not uniform across the four RED runs that mention it at all — `red-1` and
+`red-4` treat it as available to file into on request, `red-2` reports it as
+disconnected and offers reconnection instructions (in a different CLI's command
+syntax than the one used to run these scenarios, which reads as a model artifact
+rather than a fact about this session), and `red-3` does not mention Linear, or
+any named tracker, at all. This is recorded as an open inconsistency in the
+evidence rather than smoothed over; it does not change any of the findings
+below, since each finding rests on a specific transcript's own text, not on tool
+availability.
 
 One RED scenario (`red-3`) was re-run once after the isolation approach was
 corrected — the run underlying `implementation-ready-framing`'s first attempt is
