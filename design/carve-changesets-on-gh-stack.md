@@ -266,13 +266,17 @@ solely for adoption.
 
 ## Capability contract
 
-Proposal-only work requires git and Python. Materialization and every later
-boundary require:
+Capabilities are checked at the boundary that first needs them. Proposal-only
+work requires git and Python. Local materialization requires:
+
+- a tested compatible `gh-stack` extension version;
+- `gh stack view --json`; and
+- non-interactive `gh stack init` for explicit branches.
+
+Publication, remote repair, recovery, and merge additionally require, as
+applicable:
 
 - an authenticated compatible GitHub CLI;
-- a tested compatible `gh-stack` extension version;
-- `gh stack view --json`;
-- non-interactive `gh stack init` for explicit branches;
 - `gh stack rebase`, `push`, `submit`, `sync`, and `merge`;
 - push, submit, and push-capable sync operations that accept the manifest's
   expected remote state for every branch—an exact SHA or absence—and reject each
@@ -281,6 +285,8 @@ boundary require:
   direct merge if any selected head differs; and
 - queue operations that durably fence the bottom pull request and every suffix
   head and base that its landing may rebase or retarget;
+- rebase and sync operations that either skip trunk with `--no-trunk` or bind
+  any fetched trunk/base state before rewriting candidates;
 - GitHub native stacks enabled for the repository; and
 - live read access to stack, pull-request, review, check, and merge state.
 
@@ -290,9 +296,11 @@ tool or enter the retired custom stack path.
 
 At the reviewed public-preview revision, the CLI does not expose the required
 expected-state preconditions for remote updates or durable full-mutation-set
-fencing for merges. Until a tested compatible version does, the skill may
-propose and materialize a local native stack, but must block before publication,
-remote repair, recovery, or merge. Post-command readback cannot substitute for a
+fencing for merges. It also does not provide a phased default rebase that can
+pause after fetch for approval of a changed trunk. Until a tested compatible
+version closes the relevant gap, the skill may propose and materialize a local
+native stack, but must block before publication, remote repair, recovery, merge,
+or a trunk-refreshing rewrite. Post-command readback cannot substitute for a
 precondition because it observes an unauthorized write only after it has
 occurred.
 
@@ -300,20 +308,27 @@ occurred.
 
 The adapter treats dependency commands by their real effects:
 
-| Command                | Material effects                                                                          | Required disclosure and authority                                                                                |
-| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch  | Preview config, branch, state, and checkout changes; require local materialization authority                     |
-| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                            | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged              |
-| `gh stack rebase`      | Rewrites local layer commits and records recovery state                                   | Preview the affected suffix; require stack mutation authority                                                    |
-| `gh stack push`        | Updates active remote branches and may partly succeed                                     | Bind each update to an expected SHA or absence; require publish or stack mutation authority                      |
-| `gh stack submit`      | Pushes branches, creates or updates pull requests, and updates the native stack           | Bind each push to an expected SHA or absence; preview PR and ready-state effects; require authority              |
-| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested | Preview every phase; bind each push to an expected SHA or absence; require authority for every mutation          |
-| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                 | Bind direct heads or durably fence the queued bottom and affected suffix; require authority for the mutation set |
+| Command                | Material effects                                                                          | Required disclosure and authority                                                                                      |
+| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch  | Preview config, branch, state, and checkout changes; require local materialization authority                           |
+| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                            | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged                    |
+| `gh stack rebase`      | By default fetches, may move trunk, rewrites layer commits, and records recovery state    | Use `--no-trunk` for a bounded suffix fix; otherwise preview the new base and complete affected set; require authority |
+| `gh stack push`        | Updates active remote branches and may partly succeed                                     | Bind each update to an expected SHA or absence; require publish or stack mutation authority                            |
+| `gh stack submit`      | Pushes branches, creates or updates pull requests, and updates the native stack           | Bind each push to an expected SHA or absence; preview PR and ready-state effects; require authority                    |
+| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested | Preview every phase; bind each push to an expected SHA or absence; require authority for every mutation                |
+| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                 | Bind direct heads or durably fence the queued bottom and affected suffix; require authority for the mutation set       |
 
 Status-only work must not hide the local refresh performed by
 `gh stack view --json`. If the caller has not authorized that bounded state
 write, the skill reports local stack state as unavailable and relies only on
 side-effect-free git and GitHub reads. It does not silently widen authority.
+
+A bounded repair or recovery always uses `rebase --no-trunk` so the dependency
+does not fetch or move the comparison base. A deliberate trunk refresh is a
+separate operation: the dependency must expose a fetch/read phase followed by a
+new manifest and an expected-base-bound rewrite phase. If it cannot pause before
+rewriting candidates against the newly observed trunk, that operation is
+blocked.
 
 ## Workflow
 
@@ -322,8 +337,9 @@ side-effect-free git and GitHub reads. It does not silently widen authority.
 Resolve the repository, checkout, worktree, source, base, approved validation,
 requested terminal boundary, and mutation authority.
 
-When the requested boundary is `chain_ready` or later, verify `gh stack`
-capability before materialization.
+Before each phase, verify every `gh stack` capability needed to reach the
+requested boundary. Missing later-phase capability does not block a verified
+local `chain_ready` result.
 
 ### 2. Propose
 
@@ -407,9 +423,9 @@ and current stack identity.
 1. Reclaims exclusive stack mutation ownership.
 2. Applies the fix to the layer that owns it.
 3. Creates or verifies a successor source when the accepted result has changed.
-4. Runs `gh stack rebase` across the affected upstack.
-5. Runs a compare-and-swap-capable `gh stack push` or `gh stack sync` as
-   appropriate.
+4. Runs `gh stack rebase --no-trunk --upstack <owning-layer>` across only the
+   affected upstack.
+5. Runs a compare-and-swap-capable `gh stack push`.
 6. Reads back local git, `gh stack`, remote refs, and GitHub pull requests.
 7. Rebuilds invalidated validation, review, CI, and feedback evidence.
 8. Returns each corrected pull request to its lifecycle owner.
@@ -482,8 +498,8 @@ readback verifies them again. A local-only source blocks recovery because a
 fresh clone could not reconstruct the published lineage.
 
 The skill applies the fix at the correct open layer and delegates suffix
-mechanics to `gh stack rebase`, `push`, and `sync`. It does not manually
-recreate propagation.
+mechanics to `gh stack rebase --no-trunk --upstack <owning-layer>` and `push`.
+It does not manually recreate propagation.
 
 Recovery preserves merged positions and pull-request identities. It rebuilds all
 evidence bound to changed candidates.
@@ -500,7 +516,7 @@ Retire or replace:
 | `create-chain`    | Materialize semantic layers, then adopt them with `gh stack init`           |
 | `push-chain`      | Preview and invoke `gh stack push`                                          |
 | `pr-create`       | Preview and invoke `gh stack submit`                                        |
-| `propagate`       | Remove; use verified `gh stack sync` or `rebase` plus `push`                |
+| `propagate`       | Remove; use `gh stack rebase --no-trunk` plus fenced `push`                 |
 | `merge-propagate` | Invoke a direct exact-prefix or one queued-bottom merge, then verified sync |
 | `recover-suffix`  | Retain semantic recovery, delegate mechanics to `gh stack`                  |
 | `status`          | Combine git, `gh stack view --json`, and live GitHub evidence               |
@@ -581,7 +597,8 @@ repair, propagation, or merge work. Adoption must:
    topology fields after native adoption.
 5. Prove the complete chain against the active source.
 6. Run non-interactive `gh stack init` over the unchanged open branches.
-7. Submit or link the native GitHub stack.
+7. Use the fenced non-interactive submit path to adopt the existing pull
+   requests into the native GitHub stack.
 8. Read back local and remote stack state.
 
 Merged legacy commits and pull-request blocks remain unchanged historical
@@ -589,6 +606,13 @@ evidence. Adoption does not rewrite an open head merely to change its metadata
 version. The native trailer version is added when a layer is newly materialized
 or its head legitimately changes. Native GitHub state controls the adopted open
 topology.
+
+The adoption path does not invoke `gh stack link`. That command can push branch
+arguments, create pull requests, retarget existing pull-request bases, and
+change native stack membership, but it is not covered by the required
+expected-state interface. If the tested `gh stack submit` version cannot adopt
+the existing pull requests non-interactively through the fenced submit path,
+adoption returns `blocked` rather than widening to `link`.
 
 If adoption cannot be proved safe, return `blocked` with one concrete action.
 The skill does not resume the retired custom stack manager.
@@ -647,6 +671,9 @@ Cover:
 - dry-run manifests;
 - exact argv construction;
 - command-effect and authority classification;
+- default-rebase fetch and trunk/base effect classification;
+- fix-only `rebase --no-trunk --upstack <branch>` construction;
+- phased trunk-refresh manifests and expected-base enforcement;
 - exact expected-SHA and expected-absence enforcement for push, submit, and
   push-capable sync;
 - exact expected-head enforcement for direct merge;
@@ -667,7 +694,11 @@ Use disposable repositories and controlled `gh stack` fixtures to cover:
 
 - materialization and adoption;
 - native submission;
+- legacy pull-request adoption through fenced submit, including a blocked case
+  when only unfenced link can represent the chain;
 - a lower-layer fix and cascading rebase;
+- base movement before a default rebase, requiring a new manifest before any
+  rewrite;
 - a rejected branch lease after earlier branches have updated;
 - a remote advance after manifest approval that rejects without overwriting it;
 - a same-named remote branch created after manifest approval that rejects
