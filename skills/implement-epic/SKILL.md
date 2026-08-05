@@ -352,13 +352,12 @@ child was invoked this run. Adopting a single child's `ready_pr` or `merged` as
 this skill's own result misreports an epic-level run as ticket-level completion
 and erases the graph-refresh and requested-boundary work this skill still owes.
 
-Check the stop conditions above first — a child's own terminal state
-(`ready_pr`, `merged`, even a routine `blocked`) does not by itself rule a stop
-condition out. A child recovered with required acceptance still missing, for
-example, leaves the epic `blocked` even when the child itself reports `ready_pr`
-or a `blocked` unrelated to that missing acceptance. Only after confirming no
-stop condition applies does the ordinary case below govern. Label the composite
-report with exactly one of:
+Check the stop conditions above first — a child's own terminal state does not by
+itself rule a stop condition out. A child recovered with required acceptance
+still missing, for example, leaves the epic `blocked` even when the child itself
+reports `ready_pr` or a `blocked` unrelated to that missing acceptance. Only
+after confirming no stop condition applies does the ordinary case below govern.
+Label the composite report with exactly one of:
 
 - `blocked`: one of the stop conditions above applies, with the exact reason and
   partial artifacts;
