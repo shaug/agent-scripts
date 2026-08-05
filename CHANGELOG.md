@@ -77,18 +77,27 @@ summary: Chronological history of repository and skill changes.
   review-fix-loop 20/20, each with an empty per-case diff); `babysit-pr` and
   `review-code-change` have no corpus, so `just eval-record` records nothing and
   that gap is stated rather than papered over with unit tests. The
-  `implement-epic` real-model tier ran four times and is reported as
-  inconclusive rather than as a result: two runs of byte-identical prose
-  disagreed by one case (`epic-incompatible-implement-ticket`), which puts the
-  tier's noise floor at roughly one case per run and leaves both the apparent
-  gain (`epic-unreadable-implement-ticket`, failing at base and passing in three
-  post-change runs) and the apparent regression
-  (`epic-refreshes-after-blocked-merged-delivery`, a 2–0 split aligned with the
-  attribution clause) underpowered at this sample size. No causal claim is made
-  in either direction. This surfaces a gap in the norm itself, which asks for "a
-  recorded run" and a per-case diff without saying how many runs separate signal
-  from variance on a stochastic tier; that, and the corpus's 7-of-15 baseline
-  pass rate, are recorded as follow-ups rather than absorbed here
+  `implement-epic` real-model tier ran six times and caught a real prose
+  regression this change introduced, which is the first time the norm has paid
+  for itself here. Review required the ported habit to record its source at the
+  seam; satisfying that with a four-line attribution paragraph placed beside the
+  verification obligation made `epic-refreshes-after-blocked-merged-delivery`
+  fail on `missing actions: verify_epic_acceptance` in 3 of 3 runs, against 2 of
+  2 passing without it. Compressing the same attribution to a one-clause
+  parenthetical on the operative sentence restored it, so the case tracks the
+  note's length rather than its presence — exactly the context-economy failure
+  this repository's authoring standard names, where `SKILL.md` is the recurring
+  per-run cost and non-operative prose beside a gate competes with it. Nothing
+  else in the suite noticed: every unit test and both simplicity lenses passed
+  the regressing version. `epic-unreadable-implement-ticket` fails at base and
+  passes in all four post-change runs, a durable gain. One case
+  (`epic-incompatible-implement-ticket`) flipped once across six runs of
+  byte-identical prose, putting the tier's noise floor near one case per run —
+  which is also this finding's limit, since the norm asks for "a recorded run"
+  and a per-case diff without saying how many runs separate signal from
+  variance, and a single run here would have reported either the regression or
+  the gain as settled fact. That gap, and the corpus's 7-of-15 baseline pass
+  rate, are recorded as follow-ups rather than absorbed here
 
 - feat(review-suite): establish house-owned review and PR-feedback consumption
   discipline (issue #127, epic #118) — add
