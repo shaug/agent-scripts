@@ -31,6 +31,16 @@ gates, merge, tracker transition, per-candidate cleanup, and terminal evidence.
 Do not invoke individual review lenses, `review-code-change`, `babysit-pr`, or
 `carve-changesets` directly from this skill.
 
+Because `implement-ticket` owns terminal evidence, this skill's own result is
+never one of `implement-ticket`'s terminal states in its own voice — not even
+when exactly one child was invoked this run. Adopting a single child's
+`ready_pr` or `merged` as this skill's own result misreports an epic-level run
+as ticket-level completion and erases the graph-refresh and requested-boundary
+work this skill still owes. Report `mixed_ticket_results` whenever this run
+invoked one or more children and the epic itself has not reached its own
+`blocked` stop or an authorized closeout; reserve `blocked` for this skill's own
+stop conditions.
+
 ## Require compatible runtime capabilities
 
 A compatible agentic runtime must be able to:
@@ -243,6 +253,10 @@ branch/worktree, candidate, PR, validation, review, remote-gate, merge,
 delivery, criterion-specific acceptance, transition, and cleanup evidence are
 internally consistent and match live state.
 
+Each bullet below verifies the *child's* terminal state as reported evidence
+feeding this skill's own graph-level report — it is not a menu of states this
+skill returns for itself. See `mixed_ticket_results` above.
+
 - `ready_pr`: verify the candidate is open, mergeable, at the complete
   current-candidate non-merge gate, and has every required pre-merge acceptance
   entry passing. Do not count the child complete or unblock dependents that
@@ -271,11 +285,15 @@ internally consistent and match live state.
 ### 5. Refresh or stop at the requested boundary
 
 After every verified merge, delivery, or tracker transition, reread the complete
-native graph regardless of the ticket terminal state. Then separately determine
-which edges are satisfied by delivery and which require complete acceptance. A
-merged delivery with pending acceptance remains incomplete, but its graph-state
-change must still inform the next ready set. Do not reuse an earlier ready set.
-Report newly unblocked work even when the requested boundary has been reached.
+native graph regardless of the ticket terminal state. A `ready_pr`, `ready_prs`,
+or `blocked` child result changes nothing the native graph exposes to other
+children, so it triggers no refresh by itself; refresh only after the merge,
+delivery, or transition that actually changed graph-visible state. Then
+separately determine which edges are satisfied by delivery and which require
+complete acceptance. A merged delivery with pending acceptance remains
+incomplete, but its graph-state change must still inform the next ready set. Do
+not reuse an earlier ready set. Report newly unblocked work even when the
+requested boundary has been reached.
 
 For one named child, stop after that child's completion policy. For a named
 subset, process only that subset in dependency order. Do not implement unnamed
@@ -336,4 +354,7 @@ and terminal state, merged and ready PRs or stacks, refreshed graph state,
 serial critical-path and parallel-ready work, child and parent acceptance
 ledgers, closeout evidence, intentionally deferred work, and one concrete next
 action. Never report a child or parent complete from tracker state, stale
-verification, or delivery evidence alone.
+verification, or delivery evidence alone. Label this composite report
+`mixed_ticket_results` per the terminal-state rule above whenever it is not a
+`blocked` stop or an authorized closeout, regardless of how many children this
+run invoked.

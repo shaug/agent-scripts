@@ -172,6 +172,29 @@ output do not satisfy an explicit visual-layout requirement without a screenshot
 or geometry/computed-layout observation. Reject stale candidate or deployment
 SHAs and wrong-environment evidence.
 
+`missing`, `fail`, and `pass` answer three different questions; do not collapse
+one into another for convenience:
+
+- `missing`: no evidence was gathered or observed for this criterion at all.
+- `fail`: evidence was gathered, but it does not conform to the authored
+  category or source — a delegate's summary offered in place of the authored
+  command's own output, for example — or the conforming evidence shows a genuine
+  failure. A non-conforming source never earns `pass` merely because it asserts
+  one.
+- `pass`: category- and source-conforming evidence shows a genuine pass for the
+  candidate, deployment, or environment it was gathered against, even when that
+  binding is stale or otherwise not current for this delivery. Record the
+  truthful result of what was observed; reject the evidence's *currency*
+  separately, through `reject_stale_acceptance_evidence` or equivalent, rather
+  than rewriting a truthful `pass` into `missing` or `fail`. Currency and
+  correctness are independent judgments — do not let a stale binding erase what
+  was actually measured.
+
+When the ticket has authored no acceptance criteria at all, the ledger is empty.
+Do not invent a placeholder entry — such as one describing the absent contract
+itself — to stand in for a criterion that was never authored. Report the missing
+acceptance contract as its own blocker, separate from the (empty) ledger.
+
 All required pre-merge entries must pass before `ready_pr`, `ready_prs`, or a
 merge. Required post-merge entries may remain `missing` through an authorized
 merge only when the PR used non-closing syntax; afterward report delivery as
