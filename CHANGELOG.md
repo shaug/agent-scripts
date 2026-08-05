@@ -4,7 +4,53 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence, verified with a fresh real-model run
+
+- chore(implement-ticket): record final real-model eval verification for the
+  adversarial review loop — commits the summary
+  (`2026-08-05T223453Z-0018-after.json`) recorded at the fully-consolidated
+  state after all 3 review rounds, compared against the immediately prior run.
+  Totals held flat at 34/58 (one case flipped each direction in untouched
+  sections, consistent with this executor's documented noise), but the
+  verification this run exists to provide held: zero `terminal_state` mismatches
+  remain across every `implement-epic`-target case.
+  `epic-auto-closed-child-incomplete` — round 3's specific target, previously
+  misreporting `mixed_ticket_results` instead of `blocked` when a recovered
+  child's required acceptance was still missing — now reports the correct
+  terminal state; its remaining failure is a narrower, pre-existing
+  ledger-completeness gap, not the terminal-state regression this loop fixed
+  (`c45921d9011b85591e9b7d21bce2d217df966578`).
+
+- fix(implement-epic): trim redundant parenthetical from round-3 fix — removes
+  "(`ready_pr`, `merged`, even a routine `blocked`)" from the
+  stop-conditions-first paragraph, since the same sentence already clarifies
+  this precisely two sentences later. Round 3's solution-simplicity reviewer
+  found this specific redundancy while confirming the rest of the round-3 fix
+  was evidence-backed and appropriately shaped
+  (`cb8dd094f8f2a90ed5ce6dbd0310ae2c10070fb1`).
+
+- fix(implement-epic): make stop-condition precedence explicit before
+  `mixed_ticket_results` — "Report the epic result" now states that the stop
+  conditions must be checked first, and that a child's own terminal state does
+  not by itself rule a stop condition out: a recovered auto-closed child with
+  required acceptance still missing leaves the epic `blocked` regardless of what
+  that child's own result reports. Round 3's correctness reviewer found real
+  evidence of exactly this failure shape in an already-committed eval run
+  predating this loop (`epic-auto-closed-child-incomplete` reporting
+  `mixed_ticket_results` instead of `blocked`) — not proof of a regression this
+  loop introduced, but a real, still-open gap worth tightening defensively
+  rather than left for another noisy sample to rediscover. A separate reviewer
+  claim in the same round — that `references/review-suite/CONTRACT.md`'s
+  `change_contract.acceptance_criteria` `minItems: 1` schema requirement
+  contradicts "a ticket can have zero acceptance criteria" — was investigated
+  and declined: the packet's `acceptance_criteria` is a goal-derived narrative
+  field for the reviewer, not the same concept as the ledger's
+  separately-authored, evidence-tracked criteria, confirmed by the eval corpus's
+  own criteria-free tickets already flowing through a clean initial review;
+  reconciling that schema (shared across five skills) would be a much larger,
+  unrelated change outside this loop's scope, and investigation didn't show a
+  real contradiction in the first place
+  (`ed3d4bfbecd4e54d54a07f5fa8875060edc28262`).
 
 - fix(implement-ticket): edit the readiness-gate bullet itself, not just
   adjacent prose — the prior commit reconciled the acceptance-ledger section's
