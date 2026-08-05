@@ -4,7 +4,36 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence, verified with a fresh real-model run
+## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence, verified with a fresh real-model run
+
+- docs(carve-changesets): add gh stack implementation plan
+
+- docs(carve-changesets): scope native fences and close publication gaps
+  (`9717064bf7edce07542a0aa40ab6120d12be4655`)
+
+- docs(carve-changesets): complete native state and equivalence fences
+  (`f215c2ce7adb19b4b0836adf1eb7c9fed0805202`)
+
+- docs(carve-changesets): close native adoption and rebase bypasses
+  (`ad035913ac83810913f0754b609b0f3d2b948f01`)
+
+- docs(carve-changesets): fence every native mutation state
+  (`827f7796ef5a0c40a38b89cee438f24f037daa1d`)
+
+- docs(carve-changesets): bind native mutations to exact heads
+  (`e955968bccce4b9c61500eaf3c98d6a96dfa98e6`)
+
+- docs(carve-changesets): simplify native metadata adoption
+  (`cd64000fee57641d482af34465049ba592880969`)
+
+- docs(carve-changesets): establish one native metadata authority
+  (`bc173a759e8bae16260cf4e7c51c5f5fa82b2f2b`)
+
+- docs(carve-changesets): correct native stack operation contracts
+  (`899f98656c9d6d0c3f1b8937455f1c577849b920`)
+
+- docs(carve-changesets): propose rebuilding on gh stack
+  (`6ed9b543e9230fd16916494c68d0226b05d7bdcc`)
 
 - chore(implement-ticket): record final real-model eval verification for the
   adversarial review loop — commits the summary
