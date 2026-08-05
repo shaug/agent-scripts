@@ -55,9 +55,9 @@ RED transcript in this directory:
 | Verbatim excuse                                                                                                                                   | Source                                    | Failure it precedes                                                                                                                                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                  | `red-3-implementation-ready-framing.json` | The async/sync choice, the delivery mechanism, the file format, the numeric retention and rate-limit defaults — invented and asserted as decided, in a run explicitly told no requester was reachable. |
-| "The edge-case list is a starting checklist, not an audit... I've marked them as candidates to trim rather than presenting them as findings."     | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize.              |
+| "I've marked them as candidates to trim rather than presenting them as findings."                                                                 | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize.              |
 | "Default limits — placeholder, needs real data" — immediately followed by a concrete per-tier numeric table presented as the acceptance criteria. | `red-4-autonomous-no-clarification.json`  | The placeholder label does not prevent the numbers from being read as decided; an implementer skimming the acceptance criteria sees a table, not a caveat two sections up.                             |
-| "Priority: TBD (see note on regulatory driver)"                                                                                                   | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                             |
+| "**Priority:** TBD (see note on regulatory driver)"                                                                                               | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                             |
 
 ## RED → GREEN, paired
 
@@ -109,10 +109,15 @@ can resolve these."*
 The ticket's scope names four candidate failure shapes: invented requirements,
 placeholder acceptance criteria, plan files instead of ticket bodies, and
 skipped non-goals. The first three are directly evidenced above. **Skipped
-non-goals was not observed** — every RED run that reached a full document
-included a non-goals or explicitly-out-of-scope section. This is recorded as a
-negative result rather than manufactured: the table above contains only what a
-real run produced.
+non-goals was not observed in the two RED runs whose full document is visible in
+the committed transcript** — `red-1` and `red-4` each include a non-goals or
+explicitly-out-of-scope section (`red-1`: "Out (call out explicitly so it
+doesn't creep)"; `red-4`: "## Non-goals"). `red-2` and `red-3` wrote their
+ticket to a file rather than returning it inline, and that file's content was
+never captured — only a summary of it is in the committed transcript — so this
+claim cannot be checked for those two. This is recorded as a negative result
+scoped to what the evidence actually supports, not extended to runs it cannot
+verify.
 
 ## Forward-eval cases
 

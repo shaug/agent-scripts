@@ -87,6 +87,7 @@ summary: Chronological history of repository and skill changes.
   records. `babysit-pr` has no registered eval corpus, so `just eval-record`
   records nothing for it and that gap is stated rather than papered over with
   its unit tests, which cannot observe `SKILL.md` prose
+  (`a1ee71cc43ab04af221667a184f7dbf3edac77f1`)
 
 - feat(evals): build the triggering-and-composition test corpus (issue #136,
   epic #120, the epic's second leaf) — forward evals ask whether a skill's prose
