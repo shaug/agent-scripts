@@ -1,0 +1,621 @@
+# Carve Changesets on GitHub Stacks
+
+Status: proposed\
+Date: 2026-08-05
+
+## Decision summary
+
+Rebuild `carve-changesets` around GitHub native stacked pull requests and the
+`gh stack` CLI.
+
+`carve-changesets` will decide how to divide one large, coherent source branch.
+It will identify reviewable seams, preserve indivisible work, construct safe
+intermediate states, materialize the layers, and prove that the complete stack
+reproduces the intended result.
+
+GitHub and `gh stack` will own the mechanics of maintaining that breakdown. The
+skill will no longer carry a parallel implementation for stack topology,
+cascading rebases, remote publication, pull-request retargeting, or downstream
+propagation.
+
+This design replaces the current dual role in which `carve-changesets` owns both
+semantic decomposition and stack management. Ticket planning follows approval of
+this document.
+
+## Context
+
+The current skill solves two different problems:
+
+1. It determines where a large candidate can be cut without making a layer
+   incoherent, unsafe, or impossible to review.
+2. It implements a stacked-pull-request manager with custom branch naming,
+   topology metadata, publication, rebasing, force-pushing, pull-request
+   retargeting, merge sequencing, and suffix propagation.
+
+The first problem is the reason for the skill. It requires knowledge of product
+intent, code structure, migration safety, review load, and final behavior.
+
+GitHub native stacks and `gh stack` now cover most of the second problem. The
+CLI can adopt existing branches, record stack order, expose machine-readable
+state, perform cascading rebases, push the stack atomically, submit native
+stacked pull requests, and synchronize local and remote state. GitHub owns the
+published stack object, trunk-relative protections, merge queues, and atomic
+prefix merges.
+
+Keeping both stack engines would preserve duplicated state and conflicting
+mutation paths. It would also force `carve-changesets` to understand every
+change in GitHub's stack behavior. A single stack engine gives each component a
+clearer purpose.
+
+References:
+
+- [GitHub stacked pull requests announcement](https://github.blog/changelog/2026-07-30-stacked-pull-requests-are-now-in-public-preview/)
+- [`gh-stack` repository](https://github.com/github/gh-stack)
+- [`gh stack` CLI reference](https://github.github.com/gh-stack/reference/cli/)
+
+## Goals
+
+The redesigned skill must:
+
+01. Analyze one immutable, review-ready source branch and its complete diff.
+02. Identify cohesive, independently reviewable changeset seams.
+03. Preserve work that cannot be divided safely.
+04. Order foundations, migrations, consumers, cutovers, and removals safely.
+05. Document intentional incompleteness in every intermediate layer.
+06. Materialize the approved layers without mutating the source branch.
+07. Adopt the materialized branches into one verified local `gh stack`.
+08. Use `gh stack` as the sole stack-management engine from materialization
+    onward.
+09. Publish every new chain as one native GitHub stack.
+10. Preserve exact candidate review, validation, and authority boundaries.
+11. Prove that the complete stack remains equivalent to the active immutable
+    source.
+12. Recover accepted post-publication corrections through successor-source
+    provenance and native stack mechanics.
+13. Resume from live git, `gh stack`, and GitHub state after interruption.
+14. Fail closed when the required stack capability or exact identity cannot be
+    verified.
+15. Retire the custom stack manager instead of preserving it as a fallback.
+
+## Non-goals
+
+The redesign does not:
+
+- ask `gh stack` to choose semantic seams;
+- use `gh stack modify` to split the source candidate;
+- weaken immutable-source or whole-chain equivalence requirements;
+- weaken per-layer validation or repository-owned review;
+- give a single pull-request watcher authority over the whole stack;
+- preserve custom stack propagation as a compatibility mode;
+- support pull-request hosts other than GitHub;
+- migrate review remediation to `review-fix-loop`; or
+- create or alter implementation tickets as part of this design.
+
+## Architectural position
+
+The target dependency structure is:
+
+```text
+carve-changesets
+├── semantic decomposition and materialization
+├── validation and whole-chain equivalence
+├── review-code-change
+├── babysit-pr
+└── gh stack
+    ├── local stack topology
+    ├── cascading rebase and push
+    ├── native stack submission and synchronization
+    └── GitHub native stack APIs
+```
+
+`carve-changesets` remains the coordinator. It grants bounded authority, selects
+the exact operation, and verifies the result. `gh stack` performs stack
+mechanics. GitHub provides published topology and merge behavior.
+
+## Responsibility boundary
+
+### `carve-changesets`
+
+`carve-changesets` owns:
+
+- source and base identity;
+- semantic seam selection;
+- indivisibility decisions;
+- safe intermediate-state design;
+- extraction of source work into layer commits;
+- layer descriptions, non-goals, and intentional incompleteness;
+- per-layer validation and review packets;
+- immutable-source and successor-source provenance;
+- whole-chain tree, schema, and behavioral equivalence;
+- mutation authority and exact target resolution;
+- evidence invalidation after candidate changes;
+- stack-level lifecycle coordination; and
+- independent readback after every mutation.
+
+### `gh stack`
+
+`gh stack` owns:
+
+- local stack membership and order;
+- adoption of materialized branches;
+- linear ancestry maintenance;
+- cascading rebases;
+- atomic stack pushes with leases;
+- native stacked-pull-request submission;
+- local and remote stack synchronization;
+- merged-layer reconciliation; and
+- navigation between stack layers.
+
+### GitHub
+
+GitHub owns:
+
+- the published native stack object;
+- stack trunk and ordered pull-request membership;
+- trunk-relative protection and check evaluation;
+- merge-queue integration;
+- native atomic prefix merges; and
+- automatic rebase and retarget behavior after a partial merge.
+
+### `review-code-change`
+
+`review-code-change` remains read-only. It reviews one exact layer against its
+exact predecessor and returns an evidence-bound verdict.
+
+### `babysit-pr`
+
+`babysit-pr` owns CI, published feedback, review threads, and readiness for one
+exact pull request. Stack mutation and native stack merge authority are
+withheld.
+
+When a fix would change a stack member, `babysit-pr` returns a stack-fix
+handback. It does not push the fix, cascade the upstack, or merge an implicit
+prefix.
+
+## Truth model
+
+Truth advances through four phases:
+
+```text
+proposed
+  plan and immutable source
+    ↓
+materialized
+  git commits, branches, and verified gh stack state
+    ↓
+published
+  native GitHub stack, pull requests, and remote git refs
+    ↓
+merged
+  GitHub merge state and mainline representation
+```
+
+Each phase supersedes weaker topology records.
+
+### Proposed truth
+
+The plan is authoritative only before materialization. It records semantic
+slugs, intent, order, selectors, intermediate-state constraints, and validation
+requirements.
+
+### Materialized truth
+
+Live git commits and branches establish layer contents. `gh stack view --json`
+establishes local stack membership and order. The skill cross-checks both
+sources before accepting the chain.
+
+The `.git/gh-stack` file is operational state owned by the dependency. The skill
+never parses that file directly. It consumes the documented CLI surface.
+
+### Published truth
+
+The native GitHub stack establishes trunk and ordered pull-request membership.
+Remote refs establish branch heads. Pull requests establish candidate heads,
+bases, checks, reviews, and mergeability.
+
+Local `gh stack` state remains useful for execution. It cannot override live
+GitHub state.
+
+### Merged truth
+
+GitHub merge state and live mainline establish merged truth. The skill must also
+prove that the represented result matches the active immutable source.
+
+## Layer identity and metadata
+
+A semantic slug identifies a changeset. Position comes from live stack order.
+Branch names and numeric positions do not establish durable semantic identity.
+
+Commit and pull-request metadata retain only information that GitHub stacks do
+not provide:
+
+- semantic slug;
+- immutable root source identity;
+- active successor source identity when recovery has occurred;
+- ordered source lineage; and
+- recovery provenance when a suffix has been corrected.
+
+Native stack number, position, predecessor, trunk, and size must not be copied
+into durable `carve-changesets` metadata. Those values come from GitHub and
+`gh stack` at read time.
+
+The redesign introduces a new metadata version for native stacks. Existing v1
+and v2 metadata remain evidence for legacy adoption. They do not establish the
+post-adoption topology.
+
+## Capability contract
+
+Proposal-only work requires git and Python. Materialization and every later
+boundary require:
+
+- an authenticated compatible GitHub CLI;
+- a tested compatible `gh-stack` extension version;
+- `gh stack view --json`;
+- non-interactive `gh stack init` for explicit branches;
+- `gh stack rebase`, `push`, `submit`, and `sync`;
+- GitHub native stacks enabled for the repository; and
+- live read access to stack, pull-request, review, check, and merge state.
+
+The skill checks capability before the affected mutation. Missing or
+incompatible capability returns `blocked`. It does not download a substitute
+tool or enter the retired custom stack path.
+
+## Workflow
+
+### 1. Resolve
+
+Resolve the repository, checkout, worktree, source, base, approved validation,
+requested terminal boundary, and mutation authority.
+
+When the requested boundary is `chain_ready` or later, verify `gh stack`
+capability before materialization.
+
+### 2. Propose
+
+Analyze the complete source diff. Produce ordered semantic layers with explicit
+intent, inclusions, exclusions, selectors, intermediate-state constraints, and
+validation.
+
+The proposal must explain why each seam is valid and why identified indivisible
+work remains together.
+
+### 3. Materialize
+
+Create the ordered layer commits and branches without mutating the immutable
+source.
+
+`gh stack modify` cannot split one source branch into semantic layers, so the
+existing extraction machinery remains responsible for this step.
+
+After creating the branches:
+
+1. Verify each branch tree and predecessor diff.
+2. Verify the reconstructed full chain against the immutable source.
+3. Run `gh stack init --base <base> <branch-1> ... <branch-n>`.
+4. Read `gh stack view --json`.
+5. Cross-check trunk, ordered branches, heads, and git ancestry.
+6. Run the required per-layer validation and review.
+
+`chain_ready` requires agreement among semantic plan, live git, and `gh stack`.
+The plan no longer controls materialized topology.
+
+### 4. Publish
+
+Require publish authority. Produce a dry-run manifest containing the exact
+repository, remote, trunk, ordered branches, branch heads, proposed pull
+requests, and expected native stack.
+
+Execution invokes `gh stack submit` through the skill's single command surface.
+The wrapper selects non-interactive flags and passes explicit remote identity.
+
+After submission:
+
+1. Read the native GitHub stack.
+2. Verify trunk and ordered pull-request membership.
+3. Verify every remote head and pull-request base.
+4. Verify every layer diff.
+5. Add semantic context and provenance to pull-request bodies.
+6. Read back the edited pull requests.
+
+An exit code alone never proves publication.
+
+### 5. Monitor
+
+Delegate each exact pull request to `babysit-pr` with stack mutation and merge
+authority withheld.
+
+Independent pull requests may be monitored in parallel. Their lifecycle owners
+must not run competing branch updates.
+
+Readiness remains candidate-bound. A stack-wide mutation invalidates every
+affected candidate and returns it to the required validation and review gates.
+
+### 6. Repair
+
+When feedback requires a head-changing fix, `babysit-pr` returns a stack-fix
+handback containing the exact pull request, old head, finding, accepted scope,
+and current stack identity.
+
+`carve-changesets` then:
+
+1. Reclaims exclusive stack mutation ownership.
+2. Applies the fix to the layer that owns it.
+3. Creates or verifies a successor source when the accepted result has changed.
+4. Runs `gh stack rebase` across the affected upstack.
+5. Runs `gh stack push` or `gh stack sync` as appropriate.
+6. Reads back local git, `gh stack`, remote refs, and GitHub pull requests.
+7. Rebuilds invalidated validation, review, CI, and feedback evidence.
+8. Returns each corrected pull request to its lifecycle owner.
+
+`gh stack` owns propagation. `carve-changesets` owns the fix placement,
+provenance, authority, and proof.
+
+### 7. Merge
+
+Collect verified readiness for the exact contiguous prefix selected for merge.
+
+Before mutation, resolve and report:
+
+- every pull request affected by the native merge;
+- exact candidate heads;
+- current stack and trunk identity;
+- applicable checks, reviews, and protection gates;
+- merge method and merge-queue behavior; and
+- authority covering the complete affected prefix.
+
+GitHub performs the native stack merge. The custom sequential merge and suffix
+propagation path is retired.
+
+After completion:
+
+1. Read the asynchronous merge result when applicable.
+2. Run `gh stack sync`.
+3. Verify every merged pull request on the trunk.
+4. Verify the remaining suffix's new heads and bases.
+5. Rebuild invalidated evidence.
+6. Verify the resulting mainline tree and behavior against the active source.
+
+### 8. Recover
+
+An accepted fix after a prefix merge may change the intended final result.
+`carve-changesets` still creates or verifies a distinct immutable successor
+source and continuous lineage.
+
+The skill applies the fix at the correct open layer and delegates suffix
+mechanics to `gh stack rebase`, `push`, and `sync`. It does not manually
+recreate propagation.
+
+Recovery preserves merged positions and pull-request identities. It rebuilds all
+evidence bound to changed candidates.
+
+## Command-surface changes
+
+The consolidated CLI remains the only `carve-changesets` command surface. It
+wraps exact `gh stack` argv and performs preflight and readback.
+
+Retire or replace:
+
+| Current command   | Target behavior                                                   |
+| ----------------- | ----------------------------------------------------------------- |
+| `create-chain`    | Materialize semantic layers, then adopt them with `gh stack init` |
+| `push-chain`      | Preview and invoke `gh stack push`                                |
+| `pr-create`       | Preview and invoke `gh stack submit`                              |
+| `propagate`       | Remove; use verified `gh stack sync` or `rebase` plus `push`      |
+| `merge-propagate` | Replace with native stack merge coordination and `gh stack sync`  |
+| `recover-suffix`  | Retain semantic recovery, delegate mechanics to `gh stack`        |
+| `status`          | Combine git, `gh stack view --json`, and live GitHub evidence     |
+
+The wrapper must never infer a mutation target from the checked-out branch
+alone. It resolves the exact stack and branches before invoking the dependency.
+
+## Mutation and readback contract
+
+Every remote-mutating operation has two phases.
+
+### Preview
+
+The skill prints a bounded manifest of exact targets and intended effects. It
+does not invoke the mutating `gh stack` command.
+
+### Execute
+
+The skill re-verifies the manifest, invokes the exact command, and reads back
+all affected state.
+
+A successful command followed by conflicting readback returns `blocked`. Partial
+mutations remain visible and are reported precisely.
+
+## Interruption and divergence
+
+The skill must account for `gh stack` rebase state, stack locks, merge queues,
+and local or remote divergence.
+
+In unattended execution:
+
+- any prompt requirement returns `blocked`;
+- a rebase conflict preserves the dependency's recovery state and reports the
+  exact continuation command;
+- a diverged local and remote stack performs no write;
+- an interrupted modify or rebase is never discarded automatically;
+- a stack lock identifies the owning process or last trustworthy state when
+  available; and
+- readback distinguishes no-op success from completed mutation.
+
+The skill never parses undocumented dependency files to manufacture recovery. It
+uses documented continuation, abort, checkout, view, and sync commands.
+
+## Legacy adoption
+
+The redesigned skill has one stack engine.
+
+An existing unlinked v1 or v2 chain must be adopted before further publication,
+repair, propagation, or merge work. Adoption must:
+
+1. Resolve every exact branch, head, pull request, and predecessor base.
+2. Verify same-repository ownership and linear ancestry.
+3. Verify semantic slugs and immutable source provenance.
+4. Prove the complete chain against the active source.
+5. Run non-interactive `gh stack init` over the existing branches.
+6. Submit or link the native GitHub stack.
+7. Read back local and remote stack state.
+8. Promote open-layer metadata to the native-stack version when required.
+
+Merged legacy metadata remains historical evidence. Native GitHub state controls
+the adopted open topology.
+
+If adoption cannot be proved safe, return `blocked` with one concrete action.
+The skill does not resume the retired custom stack manager.
+
+## Terminal states
+
+### `plan_ready`
+
+Requires a complete validated semantic plan and no materialized stack.
+
+### `chain_ready`
+
+Requires exact layer commits and branches, a verified local `gh stack`, current
+per-layer validation and review, and whole-chain equivalence.
+
+### `prs_open`
+
+Requires `chain_ready` evidence, one verified native GitHub stack, exact remote
+heads and pull-request bases, current semantic metadata, and every applicable
+non-merge gate.
+
+### `all_merged`
+
+Requires every selected pull request verified merged, native synchronization
+complete, final mainline equivalence proven, required validation passing, and
+authorized cleanup complete or precisely limited.
+
+### `blocked`
+
+Requires one concrete blocker, exact phase and identities reached, preserved
+partial artifacts, last trustworthy evidence, and one action needed to resume.
+
+## Validation strategy
+
+### Contract tests
+
+Verify:
+
+- responsibility and authority boundaries;
+- required `gh stack` capability;
+- semantic identity independent of stack position;
+- topology read through documented surfaces;
+- no legacy stack-manager fallback;
+- no single-PR implicit stack mutation; and
+- candidate-evidence invalidation after stack-wide changes.
+
+### Unit tests
+
+Cover:
+
+- version and capability parsing;
+- `gh stack view --json` decoding;
+- dry-run manifests;
+- exact argv construction;
+- post-command readback;
+- interrupted and divergent states;
+- native metadata decoding;
+- legacy adoption checks; and
+- terminal-state rendering.
+
+### Integration tests
+
+Use disposable repositories and controlled `gh stack` fixtures to cover:
+
+- materialization and adoption;
+- native submission;
+- a lower-layer fix and cascading rebase;
+- atomic push and remote-head verification;
+- local and remote divergence;
+- partial publication;
+- native prefix merge;
+- post-merge synchronization;
+- successor-source recovery; and
+- final source equivalence.
+
+### Evaluations
+
+Representative evaluations must distinguish:
+
+- a valid semantic carve from a merely even-sized split;
+- indivisible work from convenient but unsafe separation;
+- dependency failure from semantic decomposition failure;
+- stack command success from verified state transition;
+- single-PR authority from stack-prefix authority; and
+- native adoption from permanent dual-mode behavior.
+
+## Delivery strategy
+
+This design is too broad for one implementation changeset. After approval, the
+work should be decomposed into an epic with independently reviewable children:
+
+1. Revise the normative contract and add the `gh stack` capability adapter.
+2. Materialize semantic layers and adopt them into local stack tracking.
+3. Replace publication and status with native submission and readback.
+4. Add stack-fix handbacks and candidate-evidence rebuilding.
+5. Replace merge and recovery mechanics with native operations.
+6. Add legacy adoption and remove the custom stack manager.
+
+Caller migrations and ticket-graph changes follow proven capability. They are
+not part of the design-document changeset.
+
+## Trade-offs
+
+### Benefits
+
+- One stack engine controls topology and mutation.
+- The skill's purpose narrows to semantic decomposition and proof.
+- GitHub behavior is available without duplicating it locally.
+- Native stack UI, checks, queues, and merges become first-class.
+- Custom force-push and retarget code disappears.
+- Ownership boundaries become easier to audit.
+
+### Costs and accepted limitations
+
+- `carve-changesets` gains a hard dependency on a preview tool and API.
+- Compatible versions must be tested and bounded.
+- Dependency commands may require interactive recovery.
+- Native stack behavior may change during public preview.
+- Existing chains require adoption before continued operation.
+- Stack-wide rebases may invalidate evidence for several layers at once.
+
+These costs are accepted because duplicating the stack engine would preserve
+more code, more state, and more ways to corrupt a published chain.
+
+## Rejected alternatives
+
+### Native-aware dual mode
+
+Keep the custom stack manager and add native-stack detection and API support.
+
+Rejected because two engines would own the same branches, pull-request bases,
+and propagation behavior. Capability drift would multiply rather than shrink.
+
+### Publication-only integration
+
+Keep custom local topology and use `gh stack link` only when opening pull
+requests.
+
+Rejected because the skill would retain cascading rebase, push, synchronization,
+and post-merge propagation machinery. Most duplicated responsibility would
+remain.
+
+### Delegate semantic carving to `gh stack modify`
+
+Create one stack and use the interactive modifier to derive the layers.
+
+Rejected because `gh stack modify` cannot split one branch into semantic
+changesets. It also lacks the source-equivalence, migration-safety, and review
+reasoning required by this skill.
+
+### Trust dependency state without independent proof
+
+Treat successful `gh stack` commands as sufficient evidence.
+
+Rejected because command success does not prove the intended branches, pull
+requests, or mainline result. `carve-changesets` remains accountable for exact
+identity, authority, and equivalence.
