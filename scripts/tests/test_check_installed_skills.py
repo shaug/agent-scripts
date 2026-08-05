@@ -205,6 +205,35 @@ class CheckInstalledSkillsTests(unittest.TestCase):
         self.assertIn("drift  alpha", output)
         self.assertNotIn(str(installed_root / "beta"), output.split("Remove:")[-1])
 
+    def test_removal_advice_survives_a_case_insensitive_filesystem(self) -> None:
+        """The default skills root lives on one, where two names are one directory."""
+        installed = self.install(A_SKILL, as_directory=A_SKILL.title())
+        canonical = self.skills_root / A_SKILL
+        if not canonical.is_dir() or not installed.samefile(canonical):
+            self.skipTest("filesystem is case-sensitive")
+
+        status, output = self.run_check()
+
+        self.assertEqual(status, 1)
+        self.assertNotIn("Remove:", output)
+
+    def test_content_after_the_frontmatter_is_not_the_declared_name(self) -> None:
+        """Reading past the closing fence would let prose rename a copy."""
+        repository = self.skills_root / "repository"
+        self.write_skill(repository / "skills" / "alpha", "alpha")
+
+        installed_root = self.skills_root / "installed"
+        stray = installed_root / "zzz"
+        stray.mkdir(parents=True)
+        (stray / "SKILL.md").write_text(
+            "---\nname: unrelated\n---\n\nname: alpha\n", encoding="utf-8"
+        )
+
+        report = check_installed_skills.compare(repository, installed_root)
+
+        self.assertEqual(report.compared, [])
+        self.assertEqual(report.not_installed, ["alpha"])
+
     def test_a_duplicated_name_key_resolves_the_way_a_loader_resolves_it(self) -> None:
         """Last wins, so this check and the runtime agree on what is declared."""
         repository = self.skills_root / "repository"

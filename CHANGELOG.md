@@ -6,6 +6,24 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable so a stale skill snapshot can no longer run an out-of-date review rubric in silence, then closed the blind spots an adversarial review found in that very check
 
+- fix(scripts): compare install directories by filesystem identity, not by path
+  (fourth adversarial review round) — the guard round three added to keep the
+  removal advice off a skill's canonical install directory compared `Path`
+  objects, and the default skills root lives on macOS's case-insensitive APFS.
+  There `<root>/Review-Correctness` and `<root>/review-correctness` are one
+  directory with one inode and two unequal paths, so the guard passed and the
+  report said "re-install, then delete the directory you just installed into" —
+  the exact destructive advice that guard exists to prevent, reproduced
+  end-to-end with `ls -di` confirming a single inode. Identity is now decided by
+  `Path.samefile`, which case-folding cannot defeat and `Path.resolve` would not
+  have caught, since resolution preserves case. Adds a regression test observed
+  failing at base `7d752a1` and passing at head, which skips itself on a
+  case-sensitive filesystem rather than asserting a platform it cannot create,
+  and one coverage test pinning that frontmatter parsing stops at the closing
+  fence — that behavior is already correct and the test passes at base, but a
+  mutation run showed nothing asserted it, so prose after the fence could have
+  started renaming copies without the suite noticing.
+
 - fix(scripts): stop the drift check from recommending a destructive removal,
   and simplify (third adversarial review round) — the check emits exactly one
   destructive instruction, the "remove this stray directory" line round two
@@ -36,6 +54,7 @@ summary: Chronological history of repository and skill changes.
   fixture helper instead of calling `setUp` by hand. Three further behavioral
   tests plus one strengthened, each observed failing at base `45b1f6d` and
   passing at head, with no other test moving.
+  (7d752a1e34afd4a1844d77ddc20b40ff22a4200e)
 
 - fix(scripts): make the drift check's copy matching independent of frontmatter
   spelling (second adversarial review round) — round one closed the headline

@@ -108,11 +108,28 @@ class Report:
     # Where re-installing writes: `<root>/<skill>` for every skill this
     # repository ships. Removal advice must never name one of these.
     canonical_directories: set[Path] = field(default_factory=set)
+
     # Parts of this repository's own `skills/` tree that could not be read. A
     # comparison against a source that could not be enumerated says nothing
     # about the installed copy, so this invalidates the run rather than
     # contributing to it.
     unreadable_sources: list[str] = field(default_factory=list)
+
+    def is_canonical(self, directory: Path) -> bool:
+        """Whether `directory` is where re-installing some skill would write.
+
+        Compared by filesystem identity, not by path equality: the default
+        skills root lives on a case-insensitive filesystem, where
+        `Review-Correctness` and `review-correctness` are unequal paths naming
+        one directory. Getting that wrong turns the single destructive line this
+        command prints into "delete what you just installed".
+        """
+        if directory in self.canonical_directories:
+            return True
+        return any(
+            _same_directory(directory, canonical)
+            for canonical in self.canonical_directories
+        )
 
     @property
     def drifted(self) -> list[SkillComparison]:
@@ -125,6 +142,14 @@ class Report:
         # far more often than it is a deliberate empty install. `main` reports
         # that case as misconfiguration rather than as drift.
         return bool(self.compared) and not self.drifted and not self.unreadable_sources
+
+
+def _same_directory(one: Path, other: Path) -> bool:
+    """Whether two paths name the same directory on disk."""
+    try:
+        return one.samefile(other)
+    except OSError:
+        return False
 
 
 def _ignored_file(name: str) -> bool:
@@ -350,8 +375,7 @@ def render(report: Report) -> str:
             {
                 str(comparison.directory)
                 for comparison in report.drifted
-                if comparison.misnamed
-                and comparison.directory not in report.canonical_directories
+                if comparison.misnamed and not report.is_canonical(comparison.directory)
             }
         )
         if stray:
