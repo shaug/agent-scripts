@@ -243,6 +243,17 @@ proof. The skill must re-establish it after repair, recovery, every native
 landing, and synchronization, and before returning candidates to lifecycle
 owners or claiming a terminal state.
 
+A changed trunk is not merely a new comparison base for the same source. Before
+accepting it, the skill constructs and verifies a distinct immutable successor
+source: the exact new trunk plus the preserved intended effect of the prior
+active source. With separate source-publication authority, it publishes that
+source at an exact ref and SHA on the selected remote, appends it to the ordered
+lineage, and proves that the transition adds only the approved trunk change
+while preserving the intended effect. A conflict, missing authority, or
+unprovable transition blocks before any candidate rewrite. The ensuing rebase or
+synchronization invalidates candidate evidence and must re-establish the
+invariant against the successor source.
+
 ## Layer identity and metadata
 
 A semantic slug identifies a changeset. Position comes from live stack order.
@@ -292,12 +303,15 @@ applicable:
 
 - an authenticated compatible GitHub CLI;
 - `gh stack rebase`, `push`, `submit`, `sync`, and `merge`;
-- every remote-mutating command accepting the complete native mutation
-  precondition defined below and rejecting before any effect when it differs;
-- queue operations that keep that complete precondition fenced from admission
-  through landing;
+- every remote-mutating command accepting its operation mutation precondition as
+  defined below and rejecting before any effect when it differs;
+- queue operations that keep their operation mutation precondition fenced from
+  admission through landing;
 - rebase and sync operations that either skip trunk with `--no-trunk` or bind
   any fetched trunk/base state before rewriting candidates;
+- a non-interactive submit mode that accepts and preserves every explicit
+  per-layer pull-request title and body, even when the repository has a pull
+  request template;
 - GitHub native stacks enabled for the repository; and
 - live read access to stack, pull-request, review, check, and merge state.
 
@@ -305,28 +319,29 @@ The skill checks capability before the affected mutation. Missing or
 incompatible capability returns `blocked`. It does not download a substitute
 tool or enter the retired custom stack path.
 
-At the reviewed public-preview revision, the CLI does not expose the complete
-native mutation precondition or durable full-state fencing for merges. It also
-does not provide a phased default rebase that can pause after fetch for approval
-of a changed trunk. Until a tested compatible version closes the relevant gap,
-the skill may propose and materialize a local native stack, but must block
-before publication, remote repair, recovery, merge, or a trunk-refreshing
-rewrite. Post-command readback cannot substitute for a precondition because it
+At the reviewed public-preview revision, the CLI does not expose the required
+operation mutation preconditions or durable fencing for merges. Its automatic
+submit path also cannot be relied on to preserve explicit per-layer bodies in a
+repository with a pull-request template, and its default rebase cannot pause
+after fetch for approval of a changed trunk. Capabilities are assessed per
+operation: a future command may be usable without making every remote phase
+usable. Until a tested version closes a phase's relevant gaps, that phase is
+blocked. Post-command readback cannot substitute for a precondition because it
 observes an unauthorized write only after it has occurred.
 
 ### Command effects and authority
 
 The adapter treats dependency commands by their real effects:
 
-| Command                | Material effects                                                                          | Required disclosure and authority                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch  | Preview config, branch, state, and checkout changes; require local materialization authority                           |
-| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                            | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged                    |
-| `gh stack rebase`      | By default fetches, may move trunk, rewrites layer commits, and records recovery state    | Use `--no-trunk` for a bounded suffix fix; otherwise preview the new base and complete affected set; require authority |
-| `gh stack push`        | Updates active remote branches and may partly succeed                                     | Bind each ref update to the complete precondition; require publish or stack mutation authority                         |
-| `gh stack submit`      | Pushes branches, creates or updates pull requests, and updates the native stack           | Bind ref, PR, and stack effects to the complete precondition; require authority                                        |
-| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested | Bind every enabled phase to the complete precondition; require authority for every mutation                            |
-| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                 | Bind direct merge or queue residence to the complete precondition; require authority for the mutation set              |
+| Command                | Material effects                                                                                     | Required disclosure and authority                                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `gh stack init`        | Enables `rerere`, writes stack state, may create branches, and checks out the top branch             | Preview config, branch, state, and checkout changes; require local materialization authority                           |
+| `gh stack view --json` | Reads GitHub and may refresh saved stack state                                                       | Declare the refresh; require scoped local-state authority and verify that the checkout is unchanged                    |
+| `gh stack rebase`      | By default fetches, may move trunk, rewrites layer commits, and records recovery state               | Use `--no-trunk` for a bounded suffix fix; otherwise preview the new base and complete affected set; require authority |
+| `gh stack push`        | Updates active remote branches and may partly succeed                                                | Fence selected refs plus the topology and PR state that select them; require publish or stack mutation authority       |
+| `gh stack submit`      | Pushes branches, creates or updates pull requests, disables auto-merge, and updates the native stack | Fence refs, expected PR identity or absence, PR state, and topology; require separate authority for every transition   |
+| `gh stack sync`        | May fetch, fast-forward trunk, rebase, push, relink, save state, and prune when requested            | Fence every enabled phase's writes and all state that selects or authorizes them; require authority for every mutation |
+| `gh stack merge`       | Directly merges an exact prefix or enqueues one exact bottom pull request                            | Fence the prefix and every automatically affected suffix resource; require authority for the complete affected set     |
 
 Status-only work must not hide the local refresh performed by
 `gh stack view --json`. If the caller has not authorized that bounded state
@@ -335,10 +350,10 @@ side-effect-free git and GitHub reads. It does not silently widen authority.
 
 A bounded repair or recovery always uses `rebase --no-trunk` so the dependency
 does not fetch or move the comparison base. A deliberate trunk refresh is a
-separate operation: the dependency must expose a fetch/read phase followed by a
-new manifest and an expected-base-bound rewrite phase. If it cannot pause before
-rewriting candidates against the newly observed trunk, that operation is
-blocked.
+separate operation: the dependency must expose a fetch/read phase, successor-
+source construction and remote verification, a new manifest, and an expected-
+base-bound rewrite phase. If it cannot pause before rewriting candidates against
+the newly observed trunk, that operation is blocked.
 
 ## Workflow
 
@@ -382,29 +397,39 @@ The plan no longer controls materialized topology.
 
 ### 4. Publish
 
-Require publish authority. Produce a dry-run manifest containing the complete
-current native mutation precondition and the proposed repository, remote, trunk,
-ordered branches, branch heads, pull requests, native stack, and draft or ready
-state of every pull request.
+Require publish authority. Before initial publication, verify that every entry
+in the ordered source lineage resolves at its stamped SHA on the selected
+remote. A source branch is never pushed implicitly; a missing remote source
+blocks with the exact prerequisite and authority needed to publish it.
 
-Execution invokes `gh stack submit --auto --remote <remote>` through the skill's
-single command surface. New pull requests are drafts in this mode. The wrapper
-adds `--open` only when the manifest requests ready-for-review pull requests and
-the caller has separately granted authority for that state transition. Since
-`--open` also marks existing drafts ready, the preview lists every affected pull
-request. Layer commit messages already contain the human-readable intent,
-non-goals, and intentional incompleteness from which automatic pull-request text
-is derived. Submission is available only when the dependency binds every ref,
-pull-request, and native-stack effect to the manifest's complete precondition. A
-dependency that refreshes or accepts any expectation after manifest approval
-does not satisfy this contract.
+Produce a dry-run manifest containing the submit operation mutation
+precondition; the proposed repository, remote, trunk, ordered branches, branch
+heads, pull requests, native stack, and draft or ready state of every pull
+request; every lineage ref and SHA; and the exact title and human-readable body
+for every layer. Each body retains the layer's intent, non-goals, intentional
+incompleteness, and the later layer that resolves it.
+
+Execution invokes a tested non-interactive `gh stack submit` mode through the
+skill's single command surface. It is available only when the dependency accepts
+and preserves the manifest's exact per-layer titles and bodies despite
+repository templates, and binds every ref, pull-request, and native-stack effect
+to the submit operation precondition. New pull requests are drafts unless the
+manifest requests ready-for-review pull requests and the caller separately
+authorizes that transition. The preview includes every existing draft that would
+be opened and every existing pull request whose auto-merge setting would be
+disabled; those are separate authorities. A dependency that derives bodies from
+templates, requires an unfenced post-submit metadata edit, or refreshes an
+expectation after manifest approval does not satisfy this contract.
 
 After submission:
 
 1. Read the native GitHub stack.
 2. Verify trunk and ordered pull-request membership.
 3. Verify every remote head and pull-request base.
-4. Verify every layer diff.
+4. Verify every exact pull-request title and body and every intended state
+   transition.
+5. Verify every lineage ref and stamped SHA.
+6. Verify every layer diff.
 
 No post-submit pull-request metadata edit is required. Commit trailers are the
 sole new machine-readable semantic and provenance record.
@@ -455,23 +480,26 @@ Before mutation, resolve and report:
 - current stack and trunk identity;
 - applicable checks, reviews, and protection gates;
 - merge method and merge-queue behavior; and
-- authority covering the complete mutation set: the direct prefix, or the queued
-  bottom pull request plus every suffix branch and pull request that its landing
-  may rebase or retarget.
+- authority covering the complete mutation set: the direct prefix plus every
+  suffix branch and pull request the direct landing may rebase or retarget, or
+  the queued bottom pull request plus that same affected suffix.
 
 For a direct prefix merge, invoke
 `gh stack merge <boundary-pr-number> --yes [--merge-method <method>]`. The
 boundary pull request selects the contiguous prefix. A stack number may replace
 it only when authority covers the whole stack. The dependency must atomically
-reject the request unless the complete native mutation precondition still holds,
-including exact trunk, native membership, and every selected pull request's
-identity, head, base, and state. A direct merge is one all-or-nothing service
+reject the request unless the direct-merge operation precondition still holds,
+including exact trunk, native membership, and every prefix and automatically
+affected suffix pull request's identity, head, base, and state. Partial direct
+merge is blocked when the dependency cannot durably fence and authorize that
+complete affected set; whole-stack direct merge remains possible when its own
+precondition is supported. A direct merge is one all-or-nothing service
 operation.
 
 On merge-queue repositories, admit only the current bottom pull request with
 `gh stack merge <bottom-pr-number> --yes`. The queue chooses the merge method,
 so the wrapper omits method flags and records that they do not apply. The
-manifest includes the complete native mutation precondition. The dependency must
+manifest includes the queue-merge operation precondition. The dependency must
 fence it at admission and keep it effective until landing, rejecting or
 canceling the operation before native suffix mutation if any ref, pull request,
 trunk, or membership field changes.
@@ -483,7 +511,7 @@ After landing, the skill synchronizes, reads every new head, and rebuilds all
 candidate-bound validation, review, CI, and feedback evidence before separately
 authorizing and admitting the next bottom pull request. It never admits a prefix
 that GitHub may process in multiple autonomous groups. If the dependency cannot
-maintain the complete fence through landing, queue admission is blocked.
+maintain the operation fence through landing, queue admission is blocked.
 
 This one-at-a-time queue admission is lifecycle coordination through the native
 stack engine, not a return to custom propagation: GitHub and `gh stack` still
@@ -545,19 +573,38 @@ alone. It resolves the exact stack and branches before invoking the dependency.
 
 Every operation with local or remote side effects has two phases.
 
-The complete native mutation precondition contains:
+Each operation mutation precondition contains the exact repository and selected
+remote, plus:
 
-- exact repository and selected remote;
-- exact trunk identity, remote ref, and SHA;
-- every affected branch ref's expected SHA or expected absence;
-- every existing affected pull request's repository-scoped identity, head, base,
-  open or closed state, draft or ready state, and queue state; and
-- the native stack's identity, trunk, and complete ordered pull-request
-  membership, or its expected absence before creation.
+- every direct and automatic write the operation may perform;
+- every resource state that selects mutation targets or bounds authority, even
+  when the operation does not write that resource; and
+- expected absence for every ref, pull request, or native stack the operation
+  may create.
 
-The dependency must evaluate this precondition atomically with every ref,
-pull-request, topology, queue, or merge mutation. A preliminary read followed by
-an unfenced service request does not satisfy it.
+The concrete fence is operation-scoped:
+
+- push binds active native membership and order, the pull-request merged or
+  queued state that selects active branches, and every selected branch ref's
+  exact SHA or expected absence;
+- submit and legacy adoption bind every ref SHA or absence, per-branch expected
+  pull-request identity or absence, existing pull-request head, base, open or
+  closed, draft or ready, queue, and auto-merge state, exact native-stack
+  identity or absence, trunk and order, and every explicitly authorized
+  transition;
+- sync binds the exact enabled phases and every trunk, ref, pull request, and
+  topology field those phases read to select targets or may write;
+- direct merge binds the exact trunk and base, native membership and order, and
+  every prefix and automatically affected suffix ref and pull-request identity,
+  head, base, and state; and
+- queue merge binds the admitted bottom pull request plus the entire affected
+  suffix and keeps that fence effective through landing.
+
+The dependency must evaluate the applicable precondition atomically with every
+ref, pull-request, topology, queue, or merge mutation. A preliminary read
+followed by an unfenced service request does not satisfy it. An operation is
+blocked if the tested dependency cannot express its complete scoped fence;
+support for a different operation does not widen that capability.
 
 ### Preview
 
@@ -574,17 +621,17 @@ Readback always classifies every declared target as changed as expected,
 unchanged, or changed unexpectedly.
 
 For every push-capable `gh stack` operation, include the proposed head of every
-active branch and enforce the complete precondition. If any ref precondition
-fails, classify all declared targets before retry; never create or overwrite the
-unexpected ref. After any result, read every remote ref and report which leases
-advanced, which were rejected, and which heads are unexpected. A retry starts
-from that new snapshot; it never replays the stale manifest.
+active branch and enforce the applicable operation precondition. If any ref
+precondition fails, classify all declared targets before retry; never create or
+overwrite the unexpected ref. After any result, read every remote ref and report
+which leases advanced, which were rejected, and which heads are unexpected. A
+retry starts from that new snapshot; it never replays the stale manifest.
 
-For direct merge, enforce the complete precondition and verify that the complete
-prefix either merged or remained open. For queue-backed merge, durably fence the
-complete precondition through landing. Distinguish admission from landing, and
-do not admit another pull request until the rebased suffix has passed fresh
-candidate-bound gates.
+For direct merge, enforce its operation precondition and verify that the
+complete prefix either merged or remained open. For queue-backed merge, durably
+fence its operation precondition through landing. Distinguish admission from
+landing, and do not admit another pull request until the rebased suffix has
+passed fresh candidate-bound gates.
 
 ## Interruption and divergence
 
@@ -637,7 +684,7 @@ topology.
 
 The adoption path does not invoke `gh stack link`. That command can push branch
 arguments, create pull requests, retarget existing pull-request bases, and
-change native stack membership, but it is not covered by the complete native
+change native stack membership, but it is not covered by the required operation
 mutation precondition. If the tested `gh stack submit` version cannot adopt the
 existing pull requests non-interactively through the fenced submit path,
 adoption returns `blocked` rather than widening to `link`.
@@ -705,9 +752,13 @@ Cover:
 - default-rebase fetch and trunk/base effect classification;
 - fix-only `rebase --no-trunk --upstack <branch>` construction;
 - phased trunk-refresh manifests and expected-base enforcement;
-- complete ref, pull-request, trunk, and native-membership preconditions for
-  submit, sync, and merge;
-- durable complete-state fencing for queue admission through landing;
+- operation-scoped ref, pull-request, trunk, and native-membership
+  preconditions, including their target-selection and authority inputs;
+- expected pull-request absence and auto-merge-state fencing for submit;
+- durable affected-suffix fencing for direct and queue merge;
+- initial-publication source-lineage remote verification;
+- explicit per-layer body preservation with a repository pull-request template;
+- successor-source construction and equivalence proof after trunk drift;
 - post-command readback;
 - partial push and queued-merge state classification;
 - interrupted and divergent states;
@@ -728,16 +779,25 @@ Use disposable repositories and controlled `gh stack` fixtures to cover:
   when only unfenced link can represent the chain;
 - a lower-layer fix and cascading rebase;
 - base movement before a default rebase, requiring a new manifest before any
-  rewrite;
+  rewrite and a remotely stamped successor source before accepting the base;
 - a rejected branch lease after earlier branches have updated;
 - a remote advance after manifest approval that rejects without overwriting it;
 - a same-named remote branch created after manifest approval that rejects
   without mutation;
+- a pull request created after expected absence was approved that rejects submit
+  without mutation;
+- an auto-merge-state change after approval that rejects submit without
+  mutation;
+- initial publication blocked by a missing remote source-lineage ref;
+- explicit per-layer bodies preserved despite a repository pull-request
+  template;
 - pull-request base, draft state, or native membership changing after approval
   and rejecting before submit or sync mutation;
 - local and remote divergence;
 - partial publication;
 - an all-or-nothing direct prefix merge;
+- a partial direct merge blocked without authority and a fence for every
+  automatically affected suffix resource;
 - a selected pull-request head advance that rejects direct merge and queue
   admission;
 - trunk movement or native stack reordering that rejects direct merge before
