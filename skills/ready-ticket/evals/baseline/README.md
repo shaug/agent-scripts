@@ -6,14 +6,23 @@ or repo context, no CLAUDE.md), then three of them re-run GREEN with
 `skills/ready-ticket/SKILL.md`'s full prose supplied as the operating
 instructions. Same request, same isolation, only the skill's presence differs.
 
-The `linear` skill is globally installed in the recording environment and was
-reachable in every run (RED and GREEN alike); it is unrelated to ticket
-authoring and did not change either condition's baseline. One RED scenario
-(`red-3`) was re-run once after the isolation approach was corrected — the run
-underlying `implementation-ready-framing`'s first attempt is not included
-because a phrasing defect in that scenario let the `linear` skill interpret "the
-ticket" as a request to find an existing tracker item; `red-3` here is the
-corrected retry.
+The `linear` skill is globally installed in the recording environment and is
+unrelated to ticket authoring; none of the failure shapes below depend on
+whether it was reachable or connected in a given run. Its *reported* state was
+not uniform across the four RED runs — `red-1` and `red-3` treat it as available
+to file into on request, `red-4` names it explicitly as available, and `red-2`
+reports it as disconnected and offers reconnection instructions (in a different
+CLI's command syntax than the one used to run these scenarios, which reads as a
+model artifact rather than a fact about this session). This is recorded as an
+open inconsistency in the evidence rather than smoothed over; it does not change
+any of the findings below, since each finding rests on a specific transcript's
+own text, not on tool availability.
+
+One RED scenario (`red-3`) was re-run once after the isolation approach was
+corrected — the run underlying `implementation-ready-framing`'s first attempt is
+not included because a phrasing defect in that scenario let the `linear` skill
+interpret "the ticket" as a request to find an existing tracker item; `red-3`
+here is the corrected retry.
 
 ## What was found
 
@@ -42,12 +51,12 @@ below.
 wording pending this ticket. It now carries these, each a direct quote from a
 RED transcript in this directory:
 
-| Verbatim excuse                                                                                                                                   | Source                                    | Failure it precedes                                                                                                                                                                       |
-| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                  | `red-4-autonomous-no-clarification.json`  | Every numeric rate-limit tier, the storage choice, the enforcement architecture — invented and asserted as decided, in a run explicitly told no requester was reachable.                  |
-| "The edge-case list is a starting checklist, not an audit... I've marked them as candidates to trim rather than presenting them as findings."     | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize. |
-| "Default limits — placeholder, needs real data" — immediately followed by a concrete per-tier numeric table presented as the acceptance criteria. | `red-4-autonomous-no-clarification.json`  | The placeholder label does not prevent the numbers from being read as decided; an implementer skimming the acceptance criteria sees a table, not a caveat two sections up.                |
-| "Priority: TBD (see note on regulatory driver)"                                                                                                   | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                |
+| Verbatim excuse                                                                                                                                   | Source                                    | Failure it precedes                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "Since you won't be around to answer questions, I made every open call myself rather than leaving placeholders."                                  | `red-3-implementation-ready-framing.json` | The async/sync choice, the delivery mechanism, the file format, the numeric retention and rate-limit defaults — invented and asserted as decided, in a run explicitly told no requester was reachable. |
+| "The edge-case list is a starting checklist, not an audit... I've marked them as candidates to trim rather than presenting them as findings."     | `red-2-signup-validation-edge-cases.json` | Frames invented specifics as a hedged "checklist" rather than either confirming them against real code or eliciting them — a middle path the skill's readiness target does not recognize.              |
+| "Default limits — placeholder, needs real data" — immediately followed by a concrete per-tier numeric table presented as the acceptance criteria. | `red-4-autonomous-no-clarification.json`  | The placeholder label does not prevent the numbers from being read as decided; an implementer skimming the acceptance criteria sees a table, not a caveat two sections up.                             |
+| "Priority: TBD (see note on regulatory driver)"                                                                                                   | `red-1-vague-idea-interactive.json`       | The literal placeholder wording the table already anticipated, now confirmed observed rather than assumed.                                                                                             |
 
 ## RED → GREEN, paired
 
