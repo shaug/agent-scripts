@@ -237,14 +237,13 @@ Machine-readable trailers on each exact layer head commit retain only
 information that GitHub stacks do not provide:
 
 - semantic slug;
-- immutable root source identity;
-- active successor source identity when recovery has occurred;
-- ordered source lineage; and
+- non-empty ordered source lineage; and
 - recovery provenance when a suffix has been corrected.
 
-Every published lineage identity includes the selected remote plus an exact
-branch and stamped commit. Local-only reachability cannot establish durable
-source provenance.
+The immutable root source and active source are derived from the first and last
+lineage entries. They are not stored separately. Every published lineage
+identity includes the selected remote plus an exact branch and stamped commit.
+Local-only reachability cannot establish durable source provenance.
 
 Before reading a trailer, the skill verifies that the native pull-request head
 and remote branch head identify the same commit. GitHub's preserved pull-request
@@ -259,7 +258,10 @@ The redesign introduces a trailer-only metadata version for native stacks.
 Pull-request bodies remain human-readable and carry no new machine-readable
 `carve-changesets` block. Existing v1 and v2 commit trailers and pull-request
 blocks remain historical input for legacy adoption. They do not establish the
-post-adoption topology.
+post-adoption topology. The native trailer version is written only for a newly
+materialized layer or a layer whose head changes for a semantic or recovery
+reason. Legacy trailer fields are normalized when read rather than rewritten
+solely for adoption.
 
 ## Capability contract
 
@@ -529,17 +531,21 @@ repair, propagation, or merge work. Adoption must:
 
 1. Resolve every exact branch, head, pull request, and predecessor base.
 2. Verify same-repository ownership and linear ancestry.
-3. Verify semantic slugs and immutable source provenance, using v1 and v2
-   pull-request blocks only as adoption evidence.
-4. Prove the complete chain against the active source.
-5. Promote active open-layer commits to the native trailer version, then verify
-   the rewritten heads and reconstructed chain.
-6. Run non-interactive `gh stack init` over the rewritten open branches.
+3. Verify semantic slugs and source provenance from v1 and v2 commit trailers,
+   using legacy pull-request blocks only as adoption evidence.
+4. Normalize legacy metadata in memory to a semantic slug, non-empty source
+   lineage, and recovery provenance. Ignore legacy index, predecessor, and
+   topology fields after native adoption.
+5. Prove the complete chain against the active source.
+6. Run non-interactive `gh stack init` over the unchanged open branches.
 7. Submit or link the native GitHub stack.
 8. Read back local and remote stack state.
 
 Merged legacy commits and pull-request blocks remain unchanged historical
-evidence. Native GitHub state controls the adopted open topology.
+evidence. Adoption does not rewrite an open head merely to change its metadata
+version. The native trailer version is added when a layer is newly materialized
+or its head legitimately changes. Native GitHub state controls the adopted open
+topology.
 
 If adoption cannot be proved safe, return `blocked` with one concrete action.
 The skill does not resume the retired custom stack manager.
@@ -581,8 +587,10 @@ Verify:
 - responsibility and authority boundaries;
 - required `gh stack` capability;
 - semantic identity independent of stack position;
+- root and active source identity derived from ordered lineage;
 - topology read through documented surfaces;
 - one machine-readable semantic and provenance record for new native layers;
+- in-place legacy adoption without a metadata-only head rewrite;
 - no legacy stack-manager fallback;
 - no single-PR implicit stack mutation; and
 - candidate-evidence invalidation after stack-wide changes.
@@ -601,7 +609,9 @@ Cover:
 - interrupted and divergent states;
 - native commit-trailer decoding;
 - legacy pull-request blocks accepted only as adoption evidence;
-- legacy adoption checks; and
+- v1 and v2 trailer normalization with native topology superseding positional
+  fields;
+- in-place legacy adoption checks; and
 - terminal-state rendering.
 
 ### Integration tests
