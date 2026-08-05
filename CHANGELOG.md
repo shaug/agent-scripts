@@ -4,7 +4,176 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, then added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+## 2026-08-05 — Fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch
+
+- test(scripts): pin the install-directory identity guard where CI can see it
+  (fifth adversarial review round) — the regression test for the previous commit
+  reproduces its defect through case-folding, which only exists on a
+  case-insensitive filesystem. CI runs `ubuntu-latest` on ext4, so that test
+  skipped itself there, and no other test distinguished the two implementations:
+  the nearest one uses a directory that is *path-equal* to a canonical location,
+  which passes under path comparison too. Reverting the guard to path equality
+  would therefore have gone green in CI and restored the destructive
+  "re-install, then delete what you just installed" advice that four review
+  rounds converged on removing. A stray directory that is a symlink to the
+  canonical directory is path-unequal and inode-identical on every filesystem,
+  so it pins the same guard without a platform gate; the case-folding test stays
+  as documentation of the real-world trigger. Observed failing at base and
+  passing at head, with no skip on either platform.
+
+- fix(scripts): compare install directories by filesystem identity, not by path
+  (fourth adversarial review round) — the guard round three added to keep the
+  removal advice off a skill's canonical install directory compared `Path`
+  objects, and the default skills root lives on macOS's case-insensitive APFS.
+  There `<root>/Review-Correctness` and `<root>/review-correctness` are one
+  directory with one inode and two unequal paths, so the guard passed and the
+  report said "re-install, then delete the directory you just installed into" —
+  the exact destructive advice that guard exists to prevent, reproduced
+  end-to-end with `ls -di` confirming a single inode. Identity is now decided by
+  `Path.samefile`, which case-folding cannot defeat and `Path.resolve` would not
+  have caught, since resolution preserves case. Adds a regression test observed
+  failing at base `7d752a1` and passing at head, which skips itself on a
+  case-sensitive filesystem rather than asserting a platform it cannot create,
+  and one coverage test pinning that frontmatter parsing stops at the closing
+  fence — that behavior is already correct and the test passes at base, but a
+  mutation run showed nothing asserted it, so prose after the fence could have
+  started renaming copies without the suite noticing.
+  (3f446f61b0f0260f3d8165a8f727a5fe7db07fdf)
+
+- fix(scripts): stop the drift check from recommending a destructive removal,
+  and simplify (third adversarial review round) — the check emits exactly one
+  destructive instruction, the "remove this stray directory" line round two
+  added for a copy sitting under a name a re-install can never overwrite. Round
+  two also made one directory matchable as two skills, once by its declared name
+  and once by its own, and the removal list did not account for that: an
+  installed `beta/` whose frontmatter reads `alpha` was reported as a stray copy
+  of `alpha` and named for deletion, so an operator following the printed
+  remediation in order would `skills update` a correct `beta` into place and
+  then be told to delete it. Removal advice now excludes any directory that is
+  some skill's canonical install location, and the skills root is resolved so a
+  printed target is never a bare relative path. Two further correctness fixes:
+  the untrustworthy-source banner was appended *after* the per-skill blocks it
+  disclaims, so fabricated `missing`/`extra` entries computed from a source that
+  could not be enumerated were printed above the warning about them — those
+  blocks are now suppressed entirely rather than captioned; and a duplicated
+  `name:` key resolved first-wins where a YAML loader resolves last-wins, which
+  let a runtime and this check disagree about what a document declares. The
+  realpath guard that keeps a symlink cycle terminating was dropping files
+  rather than only pruning descent, so a second link to one directory
+  contributed nothing and its content went unreported; files are recorded before
+  the guard applies. Alongside these, local simplifications that preserve
+  behavior: the copy map is built as a dict of sets, stating its dedupe rule
+  once instead of three times; `render` ends in a single exit; `argparse`'s own
+  `sys.argv` fallback replaces a hand-written conditional; the exit mapping
+  moves into a named `exit_code` so the contract is assertable rather than
+  reachable only through `main`; and the frontmatter subtests use a named
+  fixture helper instead of calling `setUp` by hand. Three further behavioral
+  tests plus one strengthened, each observed failing at base `45b1f6d` and
+  passing at head, with no other test moving.
+  (7d752a1e34afd4a1844d77ddc20b40ff22a4200e)
+
+- fix(scripts): make the drift check's copy matching independent of frontmatter
+  spelling (second adversarial review round) — round one closed the headline
+  blind spot by matching an installed copy on the name its `SKILL.md` declares,
+  and a second review round showed that fix worked for exactly one spelling of
+  the field. The parser took the value as an opaque token, so
+  `name: "review-correctness"` yielded `'"review-correctness"'` — truthy, so the
+  directory-name fallback never ran, and not a known skill, so the copy was
+  dropped: a stale rubric on disk, "Installed skills match this repository",
+  exit 0, and the skill additionally asserted to be *not installed*. Not
+  hypothetical — `gh-fix-ci` in the live distribution already writes
+  `name: "gh-fix-ci"`, and every skill in this repository already quotes its
+  `description:` scalar. The structural fix is to stop treating the two matches
+  as alternatives: a directory now matches on its declared name **or** its own
+  name, so a frontmatter this check reads wrongly can no longer hide a copy that
+  the plain directory name would have found. The parser is hardened alongside it
+  (quoted values, inline comments, a BOM) and now reads only unindented keys, so
+  a `name:` inside a block scalar is no longer mistaken for the document's own.
+  Two further findings: a read failure in **this repository's** own `skills/`
+  tree was being merged into the installed copy's drift, which reported a
+  faithful copy as stale and printed remediation that would have overwritten its
+  good files with a truncated source — source-side failures now invalidate the
+  run instead of contributing to it; and a copy under a stray directory name was
+  told to re-install, which writes `<root>/<skill>` and therefore can never
+  clear it, so that case now prints the directory to remove. The exit contract
+  stops contradicting itself: nothing-to-compare is the operator's environment,
+  not drift, so it joins the misconfiguration code the comment already called
+  it. Five further behavioral tests, including the frontmatter input space whose
+  absence let the blocking defect through, each observed failing at base
+  `4b18269` and passing at head. (45b1f6d651f9748081ac4f7a502c5448e2ae3d69)
+
+- fix(scripts): close the drift check's own silent-success paths (adversarial
+  review of `3c18034`) — a check whose purpose is detecting a silent failure
+  must not have silent failures of its own, and the first cut had four. **A
+  stale copy under any other directory name was invisible.** The comparison loop
+  was source-driven — for each repository skill, look for a directory of that
+  name — so `review-correctness-old/`, whose `SKILL.md` still declares
+  `name: review-correctness` and which a runtime therefore still loads as that
+  skill, was never compared and never named; the command printed "Installed
+  skills match this repository" and exited 0 with a live stale rubric on disk.
+  Installed directories are now enumerated and matched by their **declared**
+  name, with the directory name itself reported as drift, because re-installing
+  will not replace a copy sitting under a different name. A directory named for
+  a repository skill is matched even when its `SKILL.md` is absent, so a gutted
+  install is reported rather than counted absent. **Comparing nothing rendered
+  as a match**: a skills root holding no copy of anything this repository ships
+  returned the same affirmative sentence and exit 0, which is the misconfigured
+  path case and now reports what it found and exits non-zero. **An explicitly
+  named root that did not exist exited 0**, so one typo in `--skills-root` or a
+  stale `$AGENTS_SKILLS_DIR` bought a check that could never fail; naming a root
+  is now an assertion that it exists, and only the built-in default may be
+  absent — that is the continuous-integration case and the only one that still
+  exits zero with a note. **A directory that could not be read was skipped
+  silently** by `os.walk`, so an unreadable subtree on both sides read as in
+  sync; walk errors are now collected and reported. Two robustness defects
+  alongside them: a dangling symlink where a distributed file belongs raised
+  `FileNotFoundError` out of `filecmp` and aborted every skill sorting after it,
+  and a symlinked interior directory reported its entire byte-identical contents
+  as `missing`. Both are fixed, the latter by following links with a realpath
+  cycle guard. Finally, `evals/results/` is excluded: `just eval-record` appends
+  a summary there on every recorded run, so those receipts re-dirtied every
+  installed copy without changing what any installed skill does — on the live
+  distribution they were three of the eight skills' only reported drift, and a
+  check that is never green is a check operators stop reading. The
+  `.<skill-name>` record-keeping exclusion is now anchored to the skill root
+  rather than matching that name at any depth. Twelve further behavioral tests
+  cover the fixed paths, including the byte-comparison path a same-length edit
+  exercises and `--skills-root` precedence over the environment, each observed
+  failing at base `3c18034` and passing at head.
+  (4b182690ef0cd67c77f390b892606174fccd61c3)
+
+- feat(scripts): detect drift between installed skill copies and this repository
+  — add `scripts/check_installed_skills.py` and the `just check-installed`
+  recipe, which compare an installed skills directory (`~/.agents/skills` by
+  default, overridable with `--skills-root` or `$AGENTS_SKILLS_DIR`) against the
+  working tree, name every differing, absent, and leftover file per skill, and
+  exit non-zero on drift. A skill is distributed by copying its folder out of
+  this repository, so an installed copy is a snapshot that never learns about
+  later commits, and `just sync-contracts` does not reach it: that recipe
+  refreshes only the bundles inside this repository. The resulting failure is
+  silent in the worst place. A stale review skill still runs, validates its own
+  result against the stale schema it bundles, and returns a verdict, because the
+  snapshot is internally consistent — old prose, old schema, and old validator
+  all agree with each other, so no check confined to the snapshot can detect the
+  problem. Detection therefore has to compare against a source of truth outside
+  it. Observed in the field before this change: an installed distribution pinned
+  at `schema_version` 1.0 accepted an aggregate `clean` review result carrying
+  no `lens_executions` evidence at all, which the canonical 1.4 contract
+  rejects, while its `review-correctness/SKILL.md` was missing the entire
+  required consumer/impact traversal pass. Runtime byproducts are excluded from
+  the comparison — `__pycache__`, `*.pyc`, `.DS_Store`, and the skill-local
+  record-keeping directories `AGENTS.md` prescribes — because they are written
+  after installation rather than distributed. A repository skill that is simply
+  not installed is named but does not fail the check: declining to install a
+  skill is a choice, not staleness in the ones that are installed. Deliberately
+  kept out of `lint` and `check`, whose gates must stay reproducible in
+  continuous integration where no installed distribution exists; the command
+  exits zero with a note when the directory is absent. Not a skill-prose change,
+  so the eval-evidence norm's recorded-run requirement does not apply. Nine
+  behavioral tests bound to the criteria above assert at the command's public
+  surface — its exit status and its printed report — and were each observed
+  failing at base `1001595` and passing at head.
+  (3c18034f16bcfd9b03b90043b6a68750363e043c)
 
 - fix(implement-ticket): retry `claude_executor.py`'s real-model call on
   malformed JSON instead of aborting the whole forward-eval run (issue #154) —
@@ -31,6 +200,7 @@ summary: Chronological history of repository and skill changes.
   retry-then-succeed, exhausting all attempts, and no retry on a CLI exit
   failure. Not a skill-prose change, so the eval-evidence norm's recorded-run
   requirement does not apply; the diagnostic evidence above is the record.
+  (1001595a0c06c604bd1e02ea9b6c73bba881d0ed)
 
 - feat(implement-ticket): add scoped per-finding re-review and escalated
   final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop

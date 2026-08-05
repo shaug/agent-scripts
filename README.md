@@ -147,6 +147,38 @@ files and refresh the copies with:
 just sync-contracts
 ```
 
+That recipe refreshes only the copies bundled inside this repository. Skills
+installed elsewhere — under `~/.agents/skills`, a plugin directory, or any other
+distribution — are snapshots taken at install time, and they keep running the
+prose and contracts they shipped with until they are re-installed. The failure
+is silent by construction: a stale review skill validates its own result against
+the stale schema it bundles, so every part of the snapshot agrees with every
+other part and a weakened review still reports a verdict. Compare an installed
+distribution against this repository with:
+
+```bash
+just check-installed
+```
+
+It exits non-zero when an installed copy has drifted and names the differing
+files. Because the failure it detects is a silent success, it refuses to succeed
+silently itself: comparing nothing, being pointed at a directory that does not
+exist, and failing to read part of a tree are all reported rather than passed
+over. Only the built-in default location may be absent — that is the continuous
+integration case, and it is the one case that exits zero with a note. A root
+named explicitly through `--skills-root` or `$AGENTS_SKILLS_DIR` is an assertion
+that it exists, so a typo is an error rather than a check that can never fail.
+
+An installed copy is matched by the name its `SKILL.md` declares as well as by
+its directory name, since the declared name is what a runtime loads: a stale
+copy left under `review-correctness-old` is still a live review skill, and is
+reported as drift rather than passed over as an unrelated directory. Either
+match is enough, so a frontmatter this check reads wrongly cannot hide a copy
+the plain directory name would have found. Runtime byproducts and the eval
+summaries `just eval-record` appends are excluded, because neither changes what
+an installed skill does. The comparison is against the working tree, so update
+the checkout first if it may be behind.
+
 ## Quick Start
 
 Run the core checks:
