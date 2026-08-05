@@ -4,6 +4,56 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
+## 2026-08-05 — Added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop
+
+- feat(implement-ticket): add scoped per-finding re-review and escalated
+  final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop
+  previously re-reviewed on a fresh aggregate without accounting for which prior
+  findings that aggregate resolved, and its final cycle simply asked the same
+  incumbent implementer to try again. It now maps every prior finding to one of
+  three verdicts after each re-review — `resolved` (no longer present),
+  `unresolved` (still present, matched by identifier or root cause), or
+  `superseded` (the fresh result cannot account for it, recorded with the
+  mapping rationale rather than dropped silently) — and quarantines any fresh
+  out-of-scope finding as an observation surfaced for the caller to disposition,
+  never folded into the current cycle's required fixes. Entering the final
+  permitted cycle with findings still outstanding now dispatches a fresh
+  implementer one capability tier above the incumbent's (or fresh context at the
+  same tier when none is available), briefed with the surviving findings and
+  prior failed-fix summaries, instead of the incumbent continuing — the same
+  escalate-on-repeated- failure rule #131 established for dispatch generally.
+  This replaces the incumbent; it does not add a cycle, and
+  `review-code-change`'s own three-cycle lens-sequence budget is untouched. If
+  the escalated attempt's re-review still leaves material findings, it blocks
+  exactly as an ordinary final cycle would, with the escalation recorded.
+  Reconciles #126's systematic-debugging peer-slot sentence, written before #132
+  existed against the old plain block-after-cycle-3 text, to describe the
+  escalated cycle instead. The mechanic is stated once, in `SKILL.md` section 4;
+  `references/review-and-merge-gates.md` gets a one-sentence cross-reference
+  rather than a restatement. The per-finding verdict ledger, quarantined
+  observations, and escalation record ride in the existing prose terminal
+  handoff (`references/cleanup-and-result.md`) — no schema or terminal-state
+  change. Seven prose-contract assertions (six new, one pre-existing assertion
+  updated for the wording this change touched), each observed failing at base
+  `bb31f34` and passing at head, plus two deterministic eval scenarios covering
+  both escalation outcomes.
+
+  Eval evidence: the deterministic forward-eval tier is unchanged before and
+  after (58/58, empty per-case diff) — it simulates routing, readiness, and
+  authority decisions and does not model fix-loop cycle internals, so an
+  unchanged result is the correct signal for a change scoped entirely to those
+  internals. The real-model tier's `before` attempt genuinely executed for the
+  first time in this repository's recorded history — every prior attempt against
+  this skill, including several during #131, returned `attempted` on the
+  `claude_executor.extract_json_object` parsing failure tracked as #154 — and
+  surfaced 26 of 58 forward cases failing against the unmodified base prose.
+  Those failures are pre-existing and unrelated to this ticket's
+  fix-loop-internals scope; they are flagged as a separate follow-up rather than
+  absorbed here. Both subsequent `after` attempts reverted to `attempted`, which
+  is itself the finding: the executor is intermittently, not durably,
+  functional. Model-behavior evidence for this specific prose change remains
+  unavailable.
+
 ## 2026-08-04 — Authored `ready-ticket` and wired `implement-ticket`'s not-ready dead end into it, moved review-packet and dispatch context onto files, instituted the eval-evidence norm, then gave the implementation phase a peer-independent change-demonstrating-test evidence contract with availability-conditioned peer methodology slots, and established the house-owned consumption disciplines for review findings and PR feedback, bundled into `implement-ticket`, `babysit-pr`, and `carve-changesets`, then built the triggering-and-composition corpus that asks the prior question of which skill loads at all, then pressure-tested `ready-ticket` from a real recorded baseline, then sized and de-steered every dispatch the pipeline composes
 
 - feat(skills): add tier, turn-count, reviewer-integrity, and post-parallel
