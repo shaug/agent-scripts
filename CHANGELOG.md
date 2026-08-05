@@ -42,11 +42,19 @@ summary: Chronological history of repository and skill changes.
   real-model tier for `implement-ticket` remains intermittent (#154; a follow-up
   is filed to diagnose it properly rather than work around it again): two
   `before` attempts at this ticket's own base both returned `attempted`, so no
-  before-comparison unique to this change exists. One `after` attempt did
-  execute and reproduced #132's already-recorded 26-failure baseline almost
-  exactly; its one delta is the specific case #132's own investigation already
-  established as flipping independently of prose changes, so no causal claim is
-  made about this ticket's prose from that single data point.
+  before-comparison unique to this change exists. `implement-ticket`'s own two
+  `after` attempts on #132 also both returned `attempted`, with no totals
+  recorded at all, so this ticket's real-model `before`/`after` pair is the
+  first to grade the shared 58-case corpus successfully on both sides; its
+  `after` attempt reproduced the `before` run's 26-failure baseline almost
+  exactly, with one delta (`epic-incompatible-implement-ticket`, whose
+  `target_skill` is `implement-epic` and whose prompt is therefore
+  `implement-epic`'s `SKILL.md`, not this ticket's own). That specific case's
+  volatility was independently established by #131's own five-run
+  `implement-epic` real-model investigation (three status changes across those
+  five runs, all against `implement-epic`'s prose, untouched by this ticket),
+  not by anything #132 recorded. No causal claim is made about this ticket's own
+  prose from that single delta.
 
 - feat(implement-ticket): add scoped per-finding re-review and escalated
   final-cycle execution to the fix loop (issue #132, epic #119) — the fix loop
