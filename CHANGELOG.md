@@ -32,11 +32,12 @@ summary: Chronological history of repository and skill changes.
   description misroutes the requests the skill was built for. The seam table
   maps all ten seams to their tickets with landed/planned markers, including the
   registry's plural `load-bearing` entry (ticket authoring and
-  pre-implementation) as two rows rather than one — the epic's own six landed
-  seams (including #131, whose port already shipped in `implement-epic`'s
-  dispatch prose two commits before this one) plus this one are Landed, while
-  #134 carries the sole remaining Planned marker, each checked against live
-  tracker state rather than the ticket narrative. Rule 5 cites #136's landed
+  pre-implementation) as two rows rather than one: nine rows are Landed and #134
+  carries the table's sole Planned marker, each checked against live tracker
+  state rather than the ticket narrative. That nine includes #131, owned by
+  sibling epic #119 rather than this one — its port already shipped in
+  `implement-epic`'s dispatch prose (`bb31f34`, six commits below this
+  candidate's base) before this ticket's work began. Rule 5 cites #136's landed
   description-tier corpus (35 result-blind cases, five repetitions each,
   majority wins) rather than describing it as pending: its one recorded
   candidate overlap did not reproduce on retest, and the two tiers that remain
