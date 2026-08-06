@@ -145,7 +145,7 @@ said. Neither satisfies the other.
 
   ```bash
   cat >/tmp/commit-msg.md <<'EOF'
-  chore: initialize agent-scripts monorepo
+  chore: initialize compris monorepo
 
   ## Summary
   - Add monorepo structure and CI

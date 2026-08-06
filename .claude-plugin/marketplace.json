@@ -1,14 +1,14 @@
 {
-  "name": "agent-scripts",
+  "name": "compris",
   "owner": {
     "name": "shaug"
   },
   "metadata": {
-    "description": "Install the complete agent-scripts skill suite as one dependency-closed plugin."
+    "description": "For when the planning is done, and the work begins. Installs the complete compris skill suite as one dependency-closed plugin."
   },
   "plugins": [
     {
-      "name": "agent-scripts",
+      "name": "compris",
       "source": "./",
       "description": "Implementation, code-review, PR-lifecycle, and changeset workflows that install and run together."
     }

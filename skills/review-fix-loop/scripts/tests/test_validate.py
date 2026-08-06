@@ -220,7 +220,7 @@ class InvocationRejectionTests(unittest.TestCase):
             {
                 "mechanism_id": "external-linter",
                 "kind": "hosted_check",
-                "repository": "shaug/agent-scripts",
+                "repository": "shaug/compris",
                 "ref": "refs/heads/fix/96-example",
                 "origin_only_evidence": "the checker only reads the origin ref",
             }

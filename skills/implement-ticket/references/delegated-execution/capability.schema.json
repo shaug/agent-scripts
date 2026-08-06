@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Agent Scripts delegated implement-ticket capability manifest",
+  "title": "Compris delegated implement-ticket capability manifest",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,10 +17,10 @@
   ],
   "properties": {
     "schema": {
-      "const": "agent-scripts.implement-ticket/capability-manifest/v2"
+      "const": "compris.implement-ticket/capability-manifest/v2"
     },
     "id": {
-      "const": "agent-scripts.implement-ticket/delegated-execution/v2"
+      "const": "compris.implement-ticket/delegated-execution/v2"
     },
     "contract": {
       "const": "CONTRACT.md"

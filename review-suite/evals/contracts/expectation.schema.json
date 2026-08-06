@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/expectation.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/expectation.schema.json",
   "title": "Private review replay expectation",
   "description": "Private grading evidence for one case. This file never enters an executor request. `requirement` and `surface` may legitimately restate reviewer-visible packet content; every other field is blind and must be absent from the request payload.",
   "type": "object",

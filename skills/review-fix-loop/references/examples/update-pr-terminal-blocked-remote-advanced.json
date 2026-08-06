@@ -53,12 +53,12 @@
   },
   "pull_request": {
     "number": 456,
-    "repository": "shaug/agent-scripts"
+    "repository": "shaug/compris"
   },
   "reason": "remote_advanced",
   "repository": {
-    "git_common_directory": "/work/agent-scripts/.git",
-    "identity": "shaug/agent-scripts"
+    "git_common_directory": "/work/compris/.git",
+    "identity": "shaug/compris"
   },
   "resume_status": "not_resumed",
   "review_records": [

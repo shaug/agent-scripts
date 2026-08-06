@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/executor-request.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/executor-request.schema.json",
   "title": "Review replay executor request",
   "description": "The complete result-blind payload written to one fresh executor process on stdin. Every property is reviewer-visible by contract; nothing here may reveal an expected outcome.",
   "type": "object",

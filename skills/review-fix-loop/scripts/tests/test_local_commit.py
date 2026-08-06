@@ -121,7 +121,7 @@ def make_invocation(
         "schema_version": "1.0",
         "invocation_id": invocation_id,
         "repository": {
-            "identity": "shaug/agent-scripts",
+            "identity": "shaug/compris",
             "git_common_directory": str(common_dir),
         },
         "candidate": {
@@ -563,8 +563,8 @@ class SourceBindingTests(LocalCommitRepoTestCase):
             self.repo, branch="fix/99-example", base_sha=base_sha, head_sha=head_sha
         )
         invocation["candidate"]["source_binding"] = {
-            "repository": "shaug/agent-scripts",
-            "remote_url": "git@github.com:shaug/agent-scripts.git",
+            "repository": "shaug/compris",
+            "remote_url": "git@github.com:shaug/compris.git",
             "ref": "refs/heads/fix/99-example",
             "observed_object_id": base_sha,
         }
@@ -877,7 +877,7 @@ class InputValidationTests(LocalCommitRepoTestCase):
         invocation["publication"] = {
             "policy": "update_pr",
             "pull_request": {
-                "head_repository": "shaug/agent-scripts",
+                "head_repository": "shaug/compris",
                 "head_ref": "refs/heads/fix/99-example",
                 "expected_old_head_sha": head_sha,
                 "base_ref": "main",
@@ -885,8 +885,8 @@ class InputValidationTests(LocalCommitRepoTestCase):
             },
         }
         invocation["candidate"]["source_binding"] = {
-            "repository": "shaug/agent-scripts",
-            "remote_url": "git@github.com:shaug/agent-scripts.git",
+            "repository": "shaug/compris",
+            "remote_url": "git@github.com:shaug/compris.git",
             "ref": "refs/heads/fix/99-example",
             "observed_object_id": head_sha,
         }

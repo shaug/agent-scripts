@@ -2,11 +2,10 @@
 
 This optional contract lets an external coordinator invoke `implement-ticket`
 while retaining authority over consequential external mutations. It is generic:
-the coordinator is opaque to Agent Scripts, and no Atelier concept appears in
-the protocol.
+the coordinator is opaque to Compris, and no Atelier concept appears in the
+protocol.
 
-The capability identifier is
-`agent-scripts.implement-ticket/delegated-execution/v2`.
+The capability identifier is `compris.implement-ticket/delegated-execution/v2`.
 
 ## Contract ownership
 

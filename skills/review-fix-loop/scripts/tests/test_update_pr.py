@@ -101,7 +101,7 @@ def make_invocation(
     max_fix_cycles: int = 3,
     validation: list[dict[str, str]] | None = None,
     grants: list[dict[str, str]] | None = None,
-    head_repository: str = "shaug/agent-scripts",
+    head_repository: str = "shaug/compris",
     source_repository: str | None = None,
     remote_url: str | None = None,
 ) -> dict[str, Any]:
@@ -125,7 +125,7 @@ def make_invocation(
         "schema_version": "1.0",
         "invocation_id": invocation_id,
         "repository": {
-            "identity": "shaug/agent-scripts",
+            "identity": "shaug/compris",
             "git_common_directory": str(common_dir),
         },
         "candidate": {
@@ -135,7 +135,7 @@ def make_invocation(
             "diff": {"format": "unified_diff", "complete": True, "content": diff},
             "worktree": worktree,
             "all_changes_committed": True,
-            "pull_request": {"repository": "shaug/agent-scripts", "number": 123},
+            "pull_request": {"repository": "shaug/compris", "number": 123},
             "source_binding": {
                 "repository": source_repository or head_repository,
                 "remote_url": remote_url or str(bare),
@@ -244,7 +244,7 @@ class SuccessTests(UpdatePrRepoTestCase):
                 {
                     "mechanism_id": "ci-check",
                     "kind": "external_ci",
-                    "repository": "shaug/agent-scripts",
+                    "repository": "shaug/compris",
                     "ref": "refs/heads/fix/100-example",
                     "origin_only_evidence": "CI only evaluates the pushed remote ref",
                 }
@@ -402,7 +402,7 @@ class WrongTargetTests(UpdatePrRepoTestCase):
             branch="fix/100-example",
             base_sha=base_sha,
             head_sha=head_sha,
-            head_repository="shaug/agent-scripts",
+            head_repository="shaug/compris",
             source_repository="someone-else/a-fork",
         )
         result = UP.run_update_pr(
@@ -440,8 +440,8 @@ class WrongTargetTests(UpdatePrRepoTestCase):
             branch="fix/100-fork-example",
             base_sha=base_sha,
             head_sha=head_sha,
-            head_repository="contributor/agent-scripts-fork",
-            source_repository="contributor/agent-scripts-fork",
+            head_repository="contributor/compris-fork",
+            source_repository="contributor/compris-fork",
         )
         result = UP.run_update_pr(
             invocation,
@@ -488,7 +488,7 @@ class MismatchedGrantTests(UpdatePrRepoTestCase):
                 {
                     "mechanism_id": "ci-check",
                     "kind": "external_ci",
-                    "repository": "shaug/agent-scripts",
+                    "repository": "shaug/compris",
                     "ref": "refs/heads/some-other-branch",
                     "origin_only_evidence": "CI only evaluates the pushed remote ref",
                 }
@@ -567,7 +567,7 @@ class LockingTests(UpdatePrRepoTestCase):
         with LE.acquire_candidate_locks(
             common_dir,
             "refs/heads/fix/100-example",
-            remote_target=("shaug/agent-scripts", "refs/heads/fix/100-example"),
+            remote_target=("shaug/compris", "refs/heads/fix/100-example"),
         ):
             result = UP.run_update_pr(
                 invocation,

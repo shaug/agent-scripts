@@ -136,7 +136,7 @@ def make_invocation(
     validation: list[dict[str, str]] | None = None,
     grants: list[dict[str, str]] | None = None,
     review_execution: dict[str, str] | None = None,
-    head_repository: str = "shaug/agent-scripts",
+    head_repository: str = "shaug/compris",
     source_repository: str | None = None,
     remote_url: str | None = None,
     expected_old_head_sha: str | None = None,
@@ -153,7 +153,7 @@ def make_invocation(
         "schema_version": "1.0",
         "invocation_id": invocation_id,
         "repository": {
-            "identity": "shaug/agent-scripts",
+            "identity": "shaug/compris",
             "git_common_directory": str(common_dir),
         },
         "candidate": {
@@ -194,7 +194,7 @@ def make_invocation(
     assert bare is not None, "update_pr scenarios require a bare remote"
     head_ref = f"refs/heads/{branch}"
     document["candidate"]["pull_request"] = {
-        "repository": "shaug/agent-scripts",
+        "repository": "shaug/compris",
         "number": 123,
     }
     document["candidate"]["source_binding"] = {

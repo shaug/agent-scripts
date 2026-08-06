@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/calibration.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/calibration.schema.json",
   "title": "Grader calibration set for one corpus case",
   "description": "Probe reviews graded against one case's private expectation, with the classification each probe must receive. Calibration proves the shipped formulations recognise a real reviewer's prose and its paraphrases while still refusing overlapping symptoms, partial claims, duplicate reports, and plausible false positives. Calibration is private grading evidence: it never enters an executor request.",
   "type": "object",

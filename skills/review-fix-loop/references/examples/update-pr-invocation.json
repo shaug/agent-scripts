@@ -14,13 +14,13 @@
     "head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
     "pull_request": {
       "number": 123,
-      "repository": "shaug/agent-scripts"
+      "repository": "shaug/compris"
     },
     "source_binding": {
       "observed_object_id": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
       "ref": "refs/heads/fix/100-example",
-      "remote_url": "https://github.com/shaug/agent-scripts.git",
-      "repository": "shaug/agent-scripts"
+      "remote_url": "https://github.com/shaug/compris.git",
+      "repository": "shaug/compris"
     },
     "worktree": {
       "ignored": [],
@@ -61,13 +61,13 @@
       "base_sha": "f8943028b30c974048d55ced0d55368b1781d91b",
       "expected_old_head_sha": "d2ecc3a15ad743b8361f465097dfe1dfbb39f895",
       "head_ref": "refs/heads/fix/100-example",
-      "head_repository": "shaug/agent-scripts"
+      "head_repository": "shaug/compris"
     },
     "remote_iteration_grants": []
   },
   "repository": {
-    "git_common_directory": "/work/agent-scripts/.git",
-    "identity": "shaug/agent-scripts"
+    "git_common_directory": "/work/compris/.git",
+    "identity": "shaug/compris"
   },
   "review_execution": {
     "mode": "fresh_subagent"

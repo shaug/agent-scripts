@@ -75,7 +75,7 @@ def _finding(finding_id: str, lens: str, severity: str) -> dict:
 
 VALID_PACKET = {
     "schema_version": "1.0",
-    "repository": {"identity": "shaug/agent-scripts", "base_branch": "main"},
+    "repository": {"identity": "shaug/compris", "base_branch": "main"},
     "candidate": {
         "head_sha": HEAD,
         "comparison_base_sha": BASE,
@@ -534,7 +534,7 @@ class BuildReviewRecordTests(unittest.TestCase):
             },
             "resume_status": "not_resumed",
             "repository": {
-                "identity": "shaug/agent-scripts",
+                "identity": "shaug/compris",
                 "git_common_directory": "/x/.git",
             },
             "branch": "fix/example",

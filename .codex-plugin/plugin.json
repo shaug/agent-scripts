@@ -1,13 +1,13 @@
 {
-  "name": "agent-scripts",
+  "name": "compris",
   "version": "0.1.0",
-  "description": "Install the complete agent-scripts implementation, review, PR-lifecycle, and changeset skill suite.",
+  "description": "For when the planning is done, and the work begins. Installs the complete compris implementation, review, PR-lifecycle, and changeset skill suite.",
   "author": {
     "name": "shaug",
     "url": "https://github.com/shaug"
   },
-  "homepage": "https://github.com/shaug/agent-scripts",
-  "repository": "https://github.com/shaug/agent-scripts",
+  "homepage": "https://github.com/shaug/compris",
+  "repository": "https://github.com/shaug/compris",
   "keywords": [
     "agent-skills",
     "code-review",
@@ -16,8 +16,8 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Agent Scripts",
-    "shortDescription": "Implementation and review workflows",
+    "displayName": "Compris",
+    "shortDescription": "For when the planning is done, and the work begins",
     "longDescription": "Install the dependency-closed suite for ticket and epic implementation, code review, PR babysitting, and changeset carving.",
     "developerName": "shaug",
     "category": "Developer Tools",
@@ -25,7 +25,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/shaug/agent-scripts",
+    "websiteURL": "https://github.com/shaug/compris",
     "defaultPrompt": [
       "Implement one ticket through review and merge.",
       "Review this code change with the full suite.",

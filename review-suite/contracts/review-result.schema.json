@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/contracts/review-result.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/contracts/review-result.schema.json",
   "title": "Review result",
   "type": "object",
   "additionalProperties": false,

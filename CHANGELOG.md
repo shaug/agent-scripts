@@ -4,7 +4,36 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, ran a 3-round adversarial read-only review loop against those two fixes to convergence verified with a fresh real-model run, and closed epic #118 by documenting how the two peer libraries compose end to end
+## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, ran a 3-round adversarial read-only review loop against those two fixes to convergence verified with a fresh real-model run, and closed epic #118 by documenting how the two peer libraries compose end to end, then renamed the project from agent-scripts to compris across every identity it publishes while leaving its recorded history and eval provenance intact
+
+- chore: rename agent-scripts to compris — rename the project across every
+  identity it publishes. The plugin and marketplace name, display name, and
+  repository URLs become `compris` / `Compris` / `shaug/compris` in the four
+  manifests under `.claude-plugin/`, `.codex-plugin/`, and `.agents/plugins/`,
+  with `PLUGIN_NAME` in `scripts/validate_plugins.py` following so the packaging
+  test keeps asserting against the real name. The documented install string
+  becomes `compris@shaug` rather than repeating the plugin name as its own
+  marketplace. Thirteen canonical schema `$id` URLs change host path only —
+  under `review-suite/contracts/`, `review-suite/evals/contracts/`, and
+  `skills/review-fix-loop/references/` — with path and version segments
+  untouched, and `just sync-contracts` regenerates all fourteen vendored copies
+  from them. The delegated-execution contract namespaces become
+  `compris.implement-ticket/<contract>/v2`, holding at `v2` deliberately: with
+  no external consumers this is a rename rather than a wire-format break, and
+  bumping would falsely signal one. The `review-fix-loop` example payloads and
+  their two tests move off `/work/agent-scripts/` and
+  `contributor/agent-scripts-fork`, which are illustrative fixture paths rather
+  than recorded measurements. Twenty-two files are deliberately left alone:
+  historical commit titles in this changelog, the issue-comment citations in
+  `review-suite/evals/baseline/v1/`, the eight strata provenance records, and
+  the eleven eval reports whose absolute worktree paths record where a real run
+  actually happened — rewriting those would falsify provenance to cosmetic
+  benefit. *Why:* `agent-scripts` described the repository as a folder of
+  scripts, which stopped being true once the skills composed into one
+  dependency-closed pipeline that takes a ticket to a merged pull request and
+  reviews its own work on the way. `compris` — understood — states what the
+  suite claims at the moment work changes hands, and joins the French naming
+  convention shared with `atelier` and `savoir`
 
 - docs: document peer composition rules and the coexistence README section
   (issue #128, epic #118, the epic's final child) — add a "Using beside peer
@@ -48,6 +77,7 @@ summary: Chronological history of repository and skill changes.
   row-driven as well as ticket-driven so a row citing an undeclared ticket is
   caught too — moving a ticket between the two tuples is the edit that keeps the
   table enforceable, since nothing in the suite observes GitHub directly
+  (`8f11ad584c7591a21f5d4d561ba9c10f6fd309bb`)
 
 - docs(carve-changesets): add gh stack implementation plan
   (`0aa07474344e7deb4d150cf602eeb924816c8836`)

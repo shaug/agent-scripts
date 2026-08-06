@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Agent Scripts delegated implement-ticket invocation",
+  "title": "Compris delegated implement-ticket invocation",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -21,10 +21,10 @@
   ],
   "properties": {
     "schema": {
-      "const": "agent-scripts.implement-ticket/delegated-invocation/v2"
+      "const": "compris.implement-ticket/delegated-invocation/v2"
     },
     "capability": {
-      "const": "agent-scripts.implement-ticket/delegated-execution/v2"
+      "const": "compris.implement-ticket/delegated-execution/v2"
     },
     "invocation_id": {
       "type": "string",

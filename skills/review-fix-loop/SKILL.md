@@ -14,45 +14,45 @@ converges or a bounded stop condition is reached. The full design is
 
 Six of its children are implemented so far:
 
-- [Issue #96](https://github.com/shaug/agent-scripts/issues/96) (the first of
-  epic [#95](https://github.com/shaug/agent-scripts/issues/95)) defines and
-  validates the contracts every later child builds on:
+- [Issue #96](https://github.com/shaug/compris/issues/96) (the first of epic
+  [#95](https://github.com/shaug/compris/issues/95)) defines and validates the
+  contracts every later child builds on:
   - the **invocation** a caller or standalone operator supplies to start or
     resume a loop;
   - the **durable checkpoint** the loop would record between phases; and
   - the **terminal result** the loop returns.
-- [Issue #98](https://github.com/shaug/agent-scripts/issues/98) implements
-  **reviewer isolation and complete-review orchestration**: resolving the fixed
-  lens set a complete review must cover, running that review in a fresh
-  read-only subagent by default (or, only through an explicit invocation
-  override, in-agent), detecting an attempted reviewer mutation and failing that
-  cycle closed, and normalizing findings into one deterministic order. See
+- [Issue #98](https://github.com/shaug/compris/issues/98) implements **reviewer
+  isolation and complete-review orchestration**: resolving the fixed lens set a
+  complete review must cover, running that review in a fresh read-only subagent
+  by default (or, only through an explicit invocation override, in-agent),
+  detecting an attempted reviewer mutation and failing that cycle closed, and
+  normalizing findings into one deterministic order. See
   [`references/reviewer-orchestration.md`](references/reviewer-orchestration.md)
   and [`scripts/reviewer_orchestration.py`](scripts/reviewer_orchestration.py).
-- [Issue #97](https://github.com/shaug/agent-scripts/issues/97) adds the local
+- [Issue #97](https://github.com/shaug/compris/issues/97) adds the local
   execution substrate those contracts describe: common-Git-common-directory
   locking, isolated attempt worktrees, durable checkpoint persistence and resume
   reconciliation, verified fast-forward-only canonical promotion, and recovery
   of an interrupted attempt. See [Local execution](#local-execution) below.
-- [Issue #99](https://github.com/shaug/agent-scripts/issues/99) composes all
-  three of the above into the actual standalone `local_commit` workflow: the
-  full Resolve/Establish evidence/Review/Decide/Fix/Validate and
-  commit/Invalidate and repeat/Publish/Return loop, fix-cycle budget
-  enforcement, the automatic non-convergence stops, and terminal-result assembly
-  — with no remote write in any path. See
+- [Issue #99](https://github.com/shaug/compris/issues/99) composes all three of
+  the above into the actual standalone `local_commit` workflow: the full
+  Resolve/Establish evidence/Review/Decide/Fix/Validate and commit/Invalidate
+  and repeat/Publish/Return loop, fix-cycle budget enforcement, the automatic
+  non-convergence stops, and terminal-result assembly — with no remote write in
+  any path. See
   [Run the standalone `local_commit` workflow](#run-the-standalone-local_commit-workflow)
   below.
-- [Issue #100](https://github.com/shaug/agent-scripts/issues/100) adds and
-  evaluates `update_pr`: the same review/fix/converge machinery as
-  `local_commit` — every intermediate fix commit stays local — plus one
-  expected-old, fast-forward-only Git publish immediately after convergence.
-  Resolves and cross-validates the fork/remote publication target (never
-  assuming "origin" ownership), validates `remote_iteration_grants`, and
-  preserves the converged local commit with an actionable recovery path when the
-  publication race is lost or the remote is unavailable. See
+- [Issue #100](https://github.com/shaug/compris/issues/100) adds and evaluates
+  `update_pr`: the same review/fix/converge machinery as `local_commit` — every
+  intermediate fix commit stays local — plus one expected-old, fast-forward-only
+  Git publish immediately after convergence. Resolves and cross-validates the
+  fork/remote publication target (never assuming "origin" ownership), validates
+  `remote_iteration_grants`, and preserves the converged local commit with an
+  actionable recovery path when the publication race is lost or the remote is
+  unavailable. See
   [Run the standalone `update_pr` workflow](#run-the-standalone-update_pr-workflow)
   below.
-- [Issue #101](https://github.com/shaug/agent-scripts/issues/101) adds the
+- [Issue #101](https://github.com/shaug/compris/issues/101) adds the
   cross-cutting, result-blind evaluation corpus that establishes this skill's
   behavioral contract across both execution modes from externally observable Git
   evidence, not the returned terminal-result document's own claims. See

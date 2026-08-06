@@ -35,16 +35,16 @@
     "pull_request": {
       "base_ref": "refs/heads/main",
       "head_ref": "refs/heads/fix/100-example",
-      "head_repository": "shaug/agent-scripts"
+      "head_repository": "shaug/compris"
     }
   },
   "pull_request": {
     "number": 123,
-    "repository": "shaug/agent-scripts"
+    "repository": "shaug/compris"
   },
   "repository": {
-    "git_common_directory": "/work/agent-scripts/.git",
-    "identity": "shaug/agent-scripts"
+    "git_common_directory": "/work/compris/.git",
+    "identity": "shaug/compris"
   },
   "review_records": [
     {

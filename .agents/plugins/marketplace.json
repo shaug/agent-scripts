@@ -1,11 +1,11 @@
 {
-  "name": "agent-scripts",
+  "name": "compris",
   "interface": {
-    "displayName": "Agent Scripts"
+    "displayName": "Compris"
   },
   "plugins": [
     {
-      "name": "agent-scripts",
+      "name": "compris",
       "source": {
         "source": "local",
         "path": "./"

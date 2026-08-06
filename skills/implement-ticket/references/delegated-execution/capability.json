@@ -1,6 +1,6 @@
 {
-  "schema": "agent-scripts.implement-ticket/capability-manifest/v2",
-  "id": "agent-scripts.implement-ticket/delegated-execution/v2",
+  "schema": "compris.implement-ticket/capability-manifest/v2",
+  "id": "compris.implement-ticket/delegated-execution/v2",
   "contract": "CONTRACT.md",
   "invocation_schema": "invocation.schema.json",
   "checkpoint_request_schema": "checkpoint-request.schema.json",

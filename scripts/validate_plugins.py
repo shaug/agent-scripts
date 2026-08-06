@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-PLUGIN_NAME = "agent-scripts"
+PLUGIN_NAME = "compris"
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 REQUIRED_SKILLS = {
     "babysit-pr",
@@ -168,7 +168,7 @@ def main() -> int:
     except PluginValidationError as error:
         print(f"plugin validation failed: {error}", file=sys.stderr)
         return 1
-    print("Validated Claude and Codex plugin packaging for agent-scripts")
+    print("Validated Claude and Codex plugin packaging for compris")
     return 0
 
 

@@ -30,8 +30,8 @@ def load_validator() -> ModuleType:
 
 def invocation() -> dict[str, object]:
     return {
-        "schema": "agent-scripts.implement-ticket/delegated-invocation/v2",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
+        "schema": "compris.implement-ticket/delegated-invocation/v2",
+        "capability": "compris.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "ticket": {
             "provider": "github",
@@ -124,8 +124,8 @@ def candidate(kind: str = "ordinary") -> dict[str, object]:
 def result() -> dict[str, object]:
     source = invocation()
     return {
-        "schema": "agent-scripts.implement-ticket/delegated-result/v2",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
+        "schema": "compris.implement-ticket/delegated-result/v2",
+        "capability": "compris.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "terminal_state": "ready_pr",
         "ticket": source["ticket"],
@@ -217,8 +217,8 @@ def checkpoint_request(phase: str = "pre_external_mutation") -> dict[str, object
     published_candidate = candidate()
     published_candidate.pop("publication")
     return {
-        "schema": "agent-scripts.implement-ticket/checkpoint-request/v2",
-        "capability": "agent-scripts.implement-ticket/delegated-execution/v2",
+        "schema": "compris.implement-ticket/checkpoint-request/v2",
+        "capability": "compris.implement-ticket/delegated-execution/v2",
         "invocation_id": "run-123",
         "continuation_token": "token-1",
         "sequence": 2,
@@ -233,7 +233,7 @@ def checkpoint_request(phase: str = "pre_external_mutation") -> dict[str, object
 
 def checkpoint_response() -> dict[str, object]:
     return {
-        "schema": "agent-scripts.implement-ticket/checkpoint-response/v2",
+        "schema": "compris.implement-ticket/checkpoint-response/v2",
         "invocation_id": "run-123",
         "request_sequence": 2,
         "prior_continuation_token": "token-1",
@@ -256,7 +256,7 @@ class DelegatedExecutionContractTest(unittest.TestCase):
         manifest = json.loads((CONTRACT_ROOT / "capability.json").read_text())
         self.assertEqual([], self.validator.validate("capability", manifest))
         self.assertIn(
-            "agent-scripts.implement-ticket/delegated-execution/v2",
+            "compris.implement-ticket/delegated-execution/v2",
             (CONTRACT_ROOT / "CONTRACT.md").read_text(),
         )
 
