@@ -1,11 +1,33 @@
-# shaug/compris
+# compris
 
-A personal monorepo for agent skills and supporting scripts.
+*For when the planning is done, and the work begins.*
+
+Agent skills that take one ticket and return a merged pull request.
+`implement-ticket` resolves the ticket's live context, implements the change in
+an isolated worktree, reviews the candidate through the repository's own review
+suite, publishes a pull request, and delegates its lifecycle to `babysit-pr`,
+which watches CI and re-reviews after every head change. `implement-epic`
+traverses a live epic graph and drives the same path for each ready child.
+
+`compris` is French for *understood* — what the suite claims at the moment work
+changes hands.
+
+**Where it starts.** Not at the idea. Peer methodology libraries own the
+thinking-it-through phase, and `ready-ticket` stops at an implementation-ready
+ticket body without crossing into implementation. Compris begins once the ticket
+is a contract.
+
+**What holds it together.** Every candidate is reviewed before publication by
+independent lenses — correctness, whole-solution simplicity, and local
+implementation simplicity — reconciled into one verdict against a typed schema
+its caller can validate. They fail closed: a review that cannot bind its
+evidence to the candidate says so rather than returning a clean verdict it did
+not earn.
 
 ## Installation
 
-Install the plugin when you need any composed workflow. It packages all ten
-skills together so stable-name dependencies such as `implement-ticket`,
+Install the plugin when you need any composed workflow. It packages every skill
+together so stable-name dependencies such as `implement-ticket`,
 `review-code-change`, and `babysit-pr` are available in the same fresh session.
 
 ### Claude Code
@@ -59,7 +81,7 @@ causes the workflow to fail closed.
   review skills
 - `justfile` — common tasks for testing, validation, and formatting
 
-Current reusable agent skills:
+The skills:
 
 - `skills/ready-ticket` — turn a vague idea or an unready GitHub or Linear
   ticket into an implementation-ready ticket body: elicit the open product
@@ -249,14 +271,14 @@ routing is winner-takes-attention, and a contorted description misroutes the
 requests the skill was built for while still losing the contested ones.
 [Issue #136](https://github.com/shaug/compris/issues/136) landed the
 description-tier corpus that empirically exercises the audit's dispositions: 35
-result-blind cases across all ten skills, five repetitions each, majority wins.
-Its one recorded candidate overlap did not reproduce on retest — see
-`triggering/known-overlaps.json` for the observation and its refutation. Two
-tiers of that corpus remain unmeasured and are recorded as gaps rather than
-claimed: the headless tier, whose ability to observe which skill actually loaded
-is itself unverified, and the peer-installed composition cases in
-`triggering/composition-cases.json`, which need a harness that does not exist
-yet.
+result-blind cases covering every skill in the suite at the time, five
+repetitions each, majority wins. Its one recorded candidate overlap did not
+reproduce on retest — see `triggering/known-overlaps.json` for the observation
+and its refutation. Two tiers of that corpus remain unmeasured and are recorded
+as gaps rather than claimed: the headless tier, whose ability to observe which
+skill actually loaded is itself unverified, and the peer-installed composition
+cases in `triggering/composition-cases.json`, which need a harness that does not
+exist yet.
 
 ### Seam table
 
