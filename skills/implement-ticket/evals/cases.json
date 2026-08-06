@@ -288,7 +288,7 @@
     "request": "Implement GitHub issue G-89.",
     "tracker_state": "G-89 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "A prior implement-ticket run started a review-fix-loop local_commit invocation, committed one accepted fix, and was interrupted before the next review pass. A durable checkpoint for that exact invocation ID, repository, branch, and candidate identity exists under .review-fix-loop/, no lock is currently held, and the worktree is clean at the committed fixed head."
+    "candidate_state": "A prior implement-ticket run started a review-fix-loop local_commit invocation, committed one accepted fix, and was interrupted before the next review pass. A durable checkpoint for that exact invocation ID, repository, branch, and candidate identity exists under <git-common-directory>/review-fix-loop/checkpoints/, no lock is currently held, and the worktree is clean at the committed fixed head."
   },
   {
     "id": "piecemeal-implementation-starts-fresh-review-fix-loop-from-live-state",

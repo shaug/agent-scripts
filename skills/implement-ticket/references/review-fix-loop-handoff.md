@@ -143,8 +143,10 @@ boundary: the three ports" section describes:
 
 `review-fix-loop` resumes from live repository and checkpoint state without
 requiring an uninterrupted implementation transcript. Before constructing a new
-invocation, check for an existing durable checkpoint under this candidate's
-`.review-fix-loop/` directory:
+invocation, check for an existing durable checkpoint under
+`<git-common-directory>/review-fix-loop/checkpoints/` — keyed by Git common
+directory rather than by worktree, exactly as the local candidate lock is, so
+the checkpoint survives independently of any one worktree's lifetime:
 
 - If one exists for this exact repository, branch, and candidate identity,
   reconcile and resume it rather than starting a fresh invocation. A resumed
@@ -179,8 +181,11 @@ reread live Git state before mapping:
 - `changes_remaining` maps to `blocked`. Preserve the local candidate — every
   commit `review-fix-loop` made remains locally committed and is reported in
   `unpushed_commits` — and report the exact `reason` (`cycle_budget_exhausted`,
-  `repeated_finding`, `oscillation`, `expanding_findings`,
-  `repeated_failed_attempt`, or `current_candidate_validation_failure`),
+  `oscillation`, `expanding_findings`, `repeated_failed_attempt`, or
+  `current_candidate_validation_failure` — `repeated_finding` is in
+  `review-fix-loop`'s general schema but is deliberately never one of
+  `local_commit`'s own automatic stop reasons, per its own
+  [`local-commit.md`](../../review-fix-loop/references/local-commit.md)),
   `unresolved_or_deferred_findings`, and `operator_action` as the blocking
   evidence and next action.
 - `blocked` maps to `blocked` with the exact reason, current candidate, and

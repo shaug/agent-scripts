@@ -2,8 +2,9 @@
 
 Use repository-owned `carve-changesets` as the sole owner of decomposing and
 publishing an oversized ticket candidate. This path is selected only after the
-complete candidate is validated, committed, worktree-clean, and clean under the
-initial repository-owned `review-code-change` pass.
+complete candidate is validated, committed, worktree-clean, and the initial
+[review-fix-loop delegation](review-fix-loop-handoff.md) has returned
+`converged`.
 
 Read the live `carve-changesets` skill, its
 [normative contract](../../carve-changesets/references/SPEC.md), and its

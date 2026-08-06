@@ -64,7 +64,33 @@ summary: Chronological history of repository and skill changes.
   `implement-epic`/`carve-changesets` scenarios this diff does not touch,
   consistent with this suite's known single-sample real-model sampling variance
   rather than a regression this change caused. 54 of 58 cases are unchanged
-  between the two runs.
+  between the two runs. (24311be1f4659fa4a34b00b9c5804252a9790bb7)
+
+- fix(implement-ticket): correct three findings a fresh review-code-change pass
+  raised against the review-fix-loop delegation (issue #103) — the sibling
+  `babysit-pr-handoff.md` and `carve-changesets-handoff.md` still described
+  implement-ticket as retaining "the initial `review-code-change` loop/pass" and
+  linked to `references/review-suite/CONTRACT.md`, which this migration deletes;
+  both now describe the initial `review-fix-loop` terminal result instead, and
+  `babysit-pr-handoff.md`'s independent requirement to verify
+  `review-code-change` up front (for `babysit-pr`'s own later post-fix
+  re-review, unrelated to the initial loop) is now stated as independent rather
+  than reading as a contradiction of `SKILL.md`'s new `review-fix-loop`
+  dependency check. `review-fix-loop-handoff.md` and the new
+  `interrupted-review-fix-loop-resumes-from-checkpoint` eval case wrongly placed
+  the durable checkpoint under a worktree-relative `.review-fix-loop/`
+  directory, copying `design/review-fix-loop.md`'s illustrative example rather
+  than the actual implementation
+  (`skills/review-fix-loop/scripts/local_execution.py`'s `checkpoint_path`),
+  which keys it to `<git-common-directory>/review-fix-loop/checkpoints/` so it
+  survives independently of any one worktree; both now cite the real location.
+  The handoff's `changes_remaining` reason list also dropped `repeated_finding`
+  — present in `review-fix-loop`'s general schema but, per its own
+  `local-commit.md`, deliberately never emitted under the `local_commit` policy
+  this handoff is scoped to. *Why:* a fresh isolated review agent, given only
+  raw candidate evidence, verified all three against the live dependency's
+  actual code and prose rather than accepting the design doc's example or this
+  candidate's own prior assumptions.
 
 - docs(evals): point provenance citations at the renamed repository — rewrite
   the ten `github.com/shaug/agent-scripts/issues/58` comment citations in
