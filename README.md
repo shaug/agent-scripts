@@ -248,9 +248,9 @@ rather than worked around by contorting a description. *Why:* description-based
 routing is winner-takes-attention, and a contorted description misroutes the
 requests the skill was built for while still losing the contested ones.
 [Issue #136](https://github.com/shaug/agent-scripts/issues/136) landed the
-description-tier corpus that empirically exercises the audit's dispositions: 34
-result-blind prompts across all ten skills, five repetitions each, majority
-wins. Its one recorded candidate overlap did not reproduce on retest — see
+description-tier corpus that empirically exercises the audit's dispositions: 35
+result-blind cases across all ten skills, five repetitions each, majority wins.
+Its one recorded candidate overlap did not reproduce on retest — see
 `triggering/known-overlaps.json` for the observation and its refutation. Two
 tiers of that corpus remain unmeasured and are recorded as gaps rather than
 claimed: the headless tier, whose ability to observe which skill actually loaded
@@ -274,7 +274,7 @@ seams land.
 | CI diagnosis                           | `superpowers:systematic-debugging`           | Recommended in `babysit-pr`'s CI-diagnosis loop after repeated failed fixes; its architecture escalation maps to the skill's blocked-with-evidence terminal                                    | [#127](https://github.com/shaug/agent-scripts/issues/127) | Landed  |
 | Merge boundary                         | `superpowers:finishing-a-development-branch` | House territory. Composition rule 4 above records which of its three options composes                                                                                                          | [#128](https://github.com/shaug/agent-scripts/issues/128) | Landed  |
 | Worktree isolation                     | `superpowers:using-git-worktrees`            | The isolated-workspace pattern, ported into `implement-ticket`'s one-ticket-one-worktree rule                                                                                                  | [#134](https://github.com/shaug/agent-scripts/issues/134) | Planned |
-| Parallel dispatch                      | `superpowers:dispatching-parallel-agents`    | The post-parallel verification habit is ported; the dispatch mechanics are not                                                                                                                 | [#131](https://github.com/shaug/agent-scripts/issues/131) | Planned |
+| Parallel dispatch                      | `superpowers:dispatching-parallel-agents`    | The post-parallel verification habit is ported; the dispatch mechanics are not                                                                                                                 | [#131](https://github.com/shaug/agent-scripts/issues/131) | Landed  |
 
 The registry in [`docs/skill-authoring.md`](docs/skill-authoring.md) classifies
 every peer skill into one of four forms — referenced peer, ported with

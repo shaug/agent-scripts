@@ -22,8 +22,8 @@ README = REPOSITORY_ROOT / "README.md"
 
 # Seams whose ticket has merged, and seams that have not. A seam moving between
 # these tuples is the edit this module exists to force.
-LANDED_SEAM_TICKETS = ("#124", "#125", "#126", "#127", "#128")
-PLANNED_SEAM_TICKETS = ("#131", "#134")
+LANDED_SEAM_TICKETS = ("#124", "#125", "#126", "#127", "#128", "#131")
+PLANNED_SEAM_TICKETS = ("#134",)
 
 # One ticket-to-status lookup, so the two directional tests below share it
 # rather than each re-deriving their own view of the same two tuples.
