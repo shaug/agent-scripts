@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_clean",
       "reasoning": "Owner confirmed: preferring strong types, edge validation into strong types, and domain-modeling types over a loose seam is the standard applied throughout, not a stylistic preference for this case alone.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

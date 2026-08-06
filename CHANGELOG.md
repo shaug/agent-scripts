@@ -4,7 +4,23 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, ran a 3-round adversarial read-only review loop against those two fixes to convergence verified with a fresh real-model run, and closed epic #118 by documenting how the two peer libraries compose end to end, then renamed the project from agent-scripts to compris across every identity it publishes while leaving its recorded history and eval provenance intact
+## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, then pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched
+
+- docs(evals): point provenance citations at the renamed repository — rewrite
+  the ten `github.com/shaug/agent-scripts/issues/58` comment citations in
+  `review-suite/evals/baseline/v1/LIMITATIONS.md` and the eight strata
+  provenance records to `github.com/shaug/compris`, and rename the corpus source
+  in `SOURCING.md` while noting that the material was sourced under the old
+  name. Deliberately unchanged: the thirty-seven absolute worktree and
+  scratchpad paths embedded in `review-suite/evals/v2/*.report.json` and
+  `skills/implement-ticket/evals/results/*.json`, and the historical commit
+  title `chore: initialize agent-scripts monorepo`. *Why:* a URL naming an issue
+  in this repository is a live reference to a resource that moved, and leaving
+  it to a GitHub redirect makes the corpus look like it cites a repository that
+  no longer exists. A path recording where a run executed is a measurement, and
+  rewriting it would assert that a run happened somewhere it did not — the same
+  distinction the rename commit drew, applied to what it deliberately left
+  behind
 
 - chore: rename agent-scripts to compris — rename the project across every
   identity it publishes. The plugin and marketplace name, display name, and
@@ -34,6 +50,9 @@ summary: Chronological history of repository and skill changes.
   reviews its own work on the way. `compris` — understood — states what the
   suite claims at the moment work changes hands, and joins the French naming
   convention shared with `atelier` and `savoir`
+  (`d12fc1cd6d65c0c3f0c81be83fb33d47933b1fc8`)
+
+## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, ran a 3-round adversarial read-only review loop against those two fixes to convergence verified with a fresh real-model run, and closed epic #118 by documenting how the two peer libraries compose end to end
 
 - docs: document peer composition rules and the coexistence README section
   (issue #128, epic #118, the epic's final child) — add a "Using beside peer
