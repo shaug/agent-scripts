@@ -90,7 +90,15 @@ summary: Chronological history of repository and skill changes.
   this handoff is scoped to. *Why:* a fresh isolated review agent, given only
   raw candidate evidence, verified all three against the live dependency's
   actual code and prose rather than accepting the design doc's example or this
-  candidate's own prior assumptions.
+  candidate's own prior assumptions. (daba6433dc8ae74c493b55ddaa4fbea54c119e1c)
+
+- fix(implement-ticket): fix the second stale review-code-change mention a
+  cycle-2 review found in `carve-changesets-handoff.md` (issue #103) — its
+  "Verified handoff" checklist still asked to capture "clean initial
+  `review-code-change` result bound to the exact source and base," missed by the
+  prior fix commit because it only touched that file's opening paragraph; now
+  reads "a `converged` initial `review-fix-loop` result." *Why:* the same defect
+  class recurring in a second spot the first fix pass didn't reach.
 
 - docs(evals): point provenance citations at the renamed repository — rewrite
   the ten `github.com/shaug/agent-scripts/issues/58` comment citations in

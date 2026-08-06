@@ -67,8 +67,8 @@ Immediately before transfer, capture and verify:
   base, complete effective diff, resulting tree, and commit history;
 - tracked, staged, unstaged, untracked, and ignored worktree state;
 - focused and full validation commands and exact outcomes;
-- clean initial `review-code-change` result bound to the exact source and base,
-  plus reviewer-integrity evidence;
+- a `converged` initial `review-fix-loop` result bound to the exact source and
+  base, plus reviewer-integrity evidence;
 - guardrail evidence, the operator's branch-carving decision, and the explicit
   decomposition grant;
 - requested terminal boundary, completion policy, retry and review-cycle
