@@ -247,9 +247,16 @@ the named-peer registry's trigger-collision audit in
 rather than worked around by contorting a description. *Why:* description-based
 routing is winner-takes-attention, and a contorted description misroutes the
 requests the skill was built for while still losing the contested ones.
-Empirical confirmation of the audit's dispositions is planned in
-[issue #136](https://github.com/shaug/agent-scripts/issues/136); until it lands,
-the audit records reasoning rather than measurement.
+[Issue #136](https://github.com/shaug/agent-scripts/issues/136) landed the
+description-tier corpus that empirically exercises the audit's dispositions: 34
+result-blind prompts across all ten skills, five repetitions each, majority
+wins. Its one recorded candidate overlap did not reproduce on retest — see
+`triggering/known-overlaps.json` for the observation and its refutation. Two
+tiers of that corpus remain unmeasured and are recorded as gaps rather than
+claimed: the headless tier, whose ability to observe which skill actually loaded
+is itself unverified, and the peer-installed composition cases in
+`triggering/composition-cases.json`, which need a harness that does not exist
+yet.
 
 ### Seam table
 

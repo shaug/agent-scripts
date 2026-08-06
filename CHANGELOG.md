@@ -31,21 +31,21 @@ summary: Chronological history of repository and skill changes.
   description-based routing is winner-takes-attention and a contorted
   description misroutes the requests the skill was built for. The seam table
   maps all ten seams to their tickets with landed/planned markers, including the
-  registry's plural `load-bearing` entry (ticket authoring and pre-implementation)
-  as two rows rather than one — the epic's own five landed seams plus this one
-  are Landed, while #131 and #134 carry Planned markers, each checked against
-  live tracker state rather than the ticket narrative. Rule 5 cites #136's landed
-  description-tier corpus (34 result-blind prompts, five repetitions each,
-  majority wins) rather than describing it as pending: its one recorded candidate
-  overlap did not reproduce on retest, and the two tiers that remain genuinely
-  unmeasured — the headless tier and the peer-installed composition cases — are
-  named as gaps instead of glossed over. A contract test asserts the five rules,
-  their rationales, the peer's actual three-option menu, and the seam table's
-  status column in both directions against a declared ticket tuple, row-driven
-  as well as ticket-driven so a row citing an undeclared ticket is caught too —
-  moving a ticket between the two tuples is the edit that keeps the table
-  enforceable, since nothing in the suite observes GitHub directly
-  (`0aa07474344e7deb4d150cf602eeb924816c8836`)
+  registry's plural `load-bearing` entry (ticket authoring and
+  pre-implementation) as two rows rather than one — the epic's own five landed
+  seams plus this one are Landed, while #131 and #134 carry Planned markers,
+  each checked against live tracker state rather than the ticket narrative. Rule
+  5 cites #136's landed description-tier corpus (34 result-blind prompts, five
+  repetitions each, majority wins) rather than describing it as pending: its one
+  recorded candidate overlap did not reproduce on retest, and the two tiers that
+  remain genuinely unmeasured — the headless tier and the peer-installed
+  composition cases — are named as gaps instead of glossed over. A contract test
+  asserts the five rules, their rationales, the peer's actual three-option menu,
+  and the seam table's status column in both directions against a declared
+  ticket tuple, row-driven as well as ticket-driven so a row citing an
+  undeclared ticket is caught too — moving a ticket between the two tuples is
+  the edit that keeps the table enforceable, since nothing in the suite observes
+  GitHub directly (`0aa07474344e7deb4d150cf602eeb924816c8836`)
 
 - docs(carve-changesets): add gh stack implementation plan
 

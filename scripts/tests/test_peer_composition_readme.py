@@ -121,10 +121,14 @@ class PeerCompositionSectionTests(unittest.TestCase):
                         f"{ticket} is {status.lower()} and its row must say so",
                     )
 
-    def test_the_unmeasured_overlap_audit_carries_its_planned_marker(self):
-        self.assertIn("planned in", self.compact)
+    def test_the_landed_overlap_audit_cites_its_actual_evidence(self):
+        self.assertIn("landed the", self.compact)
         self.assertIn("issues/136", self.section)
-        self.assertIn("records reasoning rather than measurement", self.compact)
+        self.assertIn("did not reproduce on retest", self.compact)
+        self.assertIn("triggering/known-overlaps.json", self.compact)
+        # The two genuinely unmeasured tiers are named as gaps, not glossed over.
+        self.assertIn("headless tier", self.compact)
+        self.assertIn("triggering/composition-cases.json", self.compact)
 
     def test_the_registry_is_named_as_the_authority(self):
         self.assertIn("docs/skill-authoring.md", self.section)
