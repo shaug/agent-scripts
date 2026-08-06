@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_clean",
       "reasoning": "Owner confirmed: protecting against or recovering from an error case that falls within the scope of the stated requirements is good engineering, not over-engineering. Confirms the recommended CLEAN / NOT MATERIAL disposition.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

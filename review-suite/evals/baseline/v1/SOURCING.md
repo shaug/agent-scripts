@@ -7,10 +7,10 @@ then miscalibrate every gate that reads the baseline.
 
 ## Sources used
 
-| source                | visibility | what it supplies                                                                                                                   |
-| --------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `shaug/atelier`       | **public** | 899 pull-request review comments, all authored by the repository owner, across ~354 pull requests.                                 |
-| `shaug/agent-scripts` | **public** | This suite's own delivery history, including a defect that survived an aggregate `clean` review verdict and was then caught by CI. |
+| source          | visibility | what it supplies                                                                                                                                                                                       |
+| --------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `shaug/atelier` | **public** | 899 pull-request review comments, all authored by the repository owner, across ~354 pull requests.                                                                                                     |
+| `shaug/compris` | **public** | This suite's own delivery history, including a defect that survived an aggregate `clean` review verdict and was then caught by CI. Sourced while the repository was still named `shaug/agent-scripts`. |
 
 In `shaug/atelier` the reviewer is the repository owner and the candidates are
 in their own repository. This is human review of a real candidate with a real

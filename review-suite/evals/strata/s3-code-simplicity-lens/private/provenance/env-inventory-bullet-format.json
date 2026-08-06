@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_clean",
       "reasoning": "Owner confirmed: Markdown must stay readable in its raw form - that is the actual reason for the simplified syntax over a full markup language, and the same reason prose is wrapped and tables are formatted rather than left to a renderer.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

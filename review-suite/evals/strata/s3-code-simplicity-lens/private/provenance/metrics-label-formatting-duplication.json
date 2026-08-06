@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_material",
       "reasoning": "Owner confirmed from direct recollection of the real PR, independent of the recommendation offered - including the difficulty at the time of getting the implementing agent to understand the point of the abstraction barrier. Resolved as case 3's downstream symptom, not a double-count of the same finding: deliberate dual-level coverage of one causal chain. See LIMITATIONS.md for the correlated-recall caveat this creates for any aggregate figure over the pair.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

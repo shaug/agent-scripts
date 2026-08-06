@@ -820,9 +820,9 @@ are satisfied, and all three strata now declare `scored: true`.
 The full record of each owner disposition, including the standing
 over-engineering standard applied across all 8 cases, is in the tracker rather
 than duplicated here: see
-[the audit-trail comment](https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609)
+[the audit-trail comment](https://github.com/shaug/compris/issues/58#issuecomment-5099314609)
 and
-[its follow-up](https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357).
+[its follow-up](https://github.com/shaug/compris/issues/58#issuecomment-5099339357).
 Each case's provenance carries a concise summary and links back to these two
 comments rather than re-deriving the reasoning.
 

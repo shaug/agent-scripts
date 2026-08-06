@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_clean",
       "reasoning": "Owner confirmed: over-engineering is rarely a boolean-vs-enum question. Booleans-as-state are often the real code smell; an enum is typed, self-descriptive, expandable, and boolean fields becoming boolean parameters is its own anti-pattern. Confirms the recommended CLEAN / NOT MATERIAL disposition.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

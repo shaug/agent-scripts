@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_material",
       "reasoning": "Owner confirmed: the mirror case of `registry-client-layering` - an abstraction that provides no obvious value and only obfuscates the implementation is the failure mode, not abstraction itself. Good engineering is designing good abstractions, not adding more of them.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }

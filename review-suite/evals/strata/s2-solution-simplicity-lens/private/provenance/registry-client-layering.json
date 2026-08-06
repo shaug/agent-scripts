@@ -12,7 +12,7 @@
     "owner_disposition": {
       "outcome": "confirmed_material",
       "reasoning": "Owner confirmed, and reframed the standard rather than accepting it as given: the defect is not reaching through an abstraction barrier per se, it is failing to question and re-justify the barrier itself. A barrier that holds up under scrutiny should be maintained, not locally worked around. See the case 3/case 7 note for the shared-source resolution: case 7's local duplication is this case's downstream symptom, confirmed as deliberate dual-level coverage rather than a double-count.",
-      "source": "https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/agent-scripts/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
+      "source": "https://github.com/shaug/compris/issues/58#issuecomment-5099314609 (owner adjudication, 8 of 8); https://github.com/shaug/compris/issues/58#issuecomment-5099339357 (case 3/7 cross-reference resolution)"
     }
   }
 }
