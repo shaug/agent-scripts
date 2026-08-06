@@ -5,10 +5,12 @@ ticket references, and the landed/planned markers — not phrasing.
 
 The seam table's status column is declared in the two tuples below and asserted
 against the table in both directions, so the table and the tuples must be edited
-together: marking an open-ticket seam Landed fails, and leaving a landed seam's
-row marked Planned fails too. Nothing here observes GitHub, so a seam landing
-without any edit to this file is not detected — moving its ticket between the
-tuples is the step that makes the suite hold the table to it.
+together: a row whose marker disagrees with the tuple its ticket is declared in
+fails, in either direction. Nothing here reads tracker state — a ticket belongs
+in LANDED_SEAM_TICKETS once the row's claimed seam is true as of the commit that
+edits this file (its own merge commit, for a ticket landing alongside its row),
+not once GitHub shows the issue closed. Moving a ticket between the tuples is
+the edit this module exists to force when that commit lands.
 """
 
 from __future__ import annotations
@@ -20,8 +22,9 @@ from pathlib import Path
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 README = REPOSITORY_ROOT / "README.md"
 
-# Seams whose ticket has merged, and seams that have not. A seam moving between
-# these tuples is the edit this module exists to force.
+# Seams the row claims are landed as of this file's own edit, and seams it
+# claims are still planned. #128 belongs here because this commit is the one
+# that makes its row's claim true, not because the tracker shows it closed.
 LANDED_SEAM_TICKETS = ("#124", "#125", "#126", "#127", "#128", "#131")
 PLANNED_SEAM_TICKETS = ("#134",)
 
