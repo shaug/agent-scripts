@@ -100,6 +100,27 @@ summary: Chronological history of repository and skill changes.
   reads "a `converged` initial `review-fix-loop` result." *Why:* the same defect
   class recurring in a second spot the first fix pass didn't reach.
 
+- docs: state what compris does before explaining how to install it — replace
+  the opening line, "A personal monorepo for agent skills and supporting
+  scripts", with what the suite actually does: takes one ticket and returns a
+  merged pull request, `implement-ticket` into `babysit-pr`, with
+  `implement-epic` driving the same path per epic child. Two short sections
+  follow — where the pipeline starts, so the boundary with peer methodology
+  libraries is visible before the composition rules explain it in detail, and
+  what holds it together, namely pre-publication review by independent lenses
+  reconciled against a typed schema its caller can validate, failing closed when
+  evidence cannot be bound. Hardcoded skill counts leave the prose: "all ten
+  skills" and "Current reusable agent skills" carried no information their
+  sentences needed, and the description-tier corpus figure is scoped to the
+  suite as it stood when the corpus ran rather than asserting a current total.
+  `review-fix-loop` is deliberately absent from the opening — it is standalone
+  today with no caller invoking it, so describing convergence-until-clean as
+  part of the pipeline would overstate what runs. *Why:* the old opening
+  described a directory rather than a purpose, so a reader met installation
+  instructions before learning what they would be installing — the genericness
+  the rename set out to retire, left sitting in the first line anyone reads.
+  Counts in prose go stale the moment a skill is added
+
 - docs(evals): point provenance citations at the renamed repository — rewrite
   the ten `github.com/shaug/agent-scripts/issues/58` comment citations in
   `review-suite/evals/baseline/v1/LIMITATIONS.md` and the eight strata
