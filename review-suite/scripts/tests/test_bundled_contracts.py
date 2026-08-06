@@ -24,7 +24,6 @@ BUNDLING_SKILLS = (
     "review-correctness",
     "review-code-simplicity",
     "review-solution-simplicity",
-    "implement-ticket",
     "babysit-pr",
     "review-fix-loop",
 )
@@ -43,7 +42,11 @@ CANONICAL_FILES = {
 # packet/result contract itself, so only skills that consume a
 # `review-code-change` result bundle it (under `scripts/`, not
 # `references/review-suite/`) — unlike CANONICAL_FILES above, which every
-# review lens skill also bundles.
+# review lens skill also bundles. `implement-ticket` is deliberately absent
+# from both this and BUNDLING_SKILLS above: it delegates its initial
+# candidate's review entirely to `review-fix-loop`, which owns the raw
+# `review-code-change` packet/result binding on its behalf. See
+# test_implement_ticket_does_not_bundle_review_code_change_validation below.
 # The consumption disciplines are caller-side too, but their bundling set is
 # different again: they govern how a skill metabolizes a finding, so the three
 # skills that consume findings bundle them. `review-fix-loop` is deliberately
@@ -51,7 +54,7 @@ CANONICAL_FILES = {
 DISCIPLINE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr", "carve-changesets")
 DISCIPLINE_CANONICAL = REVIEW_SUITE / "consumption-disciplines.md"
 
-GATE_BUNDLING_SKILLS = ("implement-ticket", "babysit-pr", "review-fix-loop")
+GATE_BUNDLING_SKILLS = ("babysit-pr", "review-fix-loop")
 GATE_CANONICAL_FILES = {
     "scripts/review_gate.py": REVIEW_SUITE / "scripts" / "review_gate.py",
     "scripts/tests/test_review_gate.py": REVIEW_SUITE
@@ -159,6 +162,25 @@ class BundledContractTests(unittest.TestCase):
                         (bundle / target).exists(),
                         f"{skill} bundles a link to {target}, which it does not ship",
                     )
+
+    def test_implement_ticket_does_not_bundle_review_code_change_validation(self):
+        """It delegates the initial candidate's review-code-change binding to
+        review-fix-loop entirely; recorded disposition, see #103."""
+        self.assertNotIn("implement-ticket", BUNDLING_SKILLS)
+        self.assertNotIn("implement-ticket", GATE_BUNDLING_SKILLS)
+        review_suite = (
+            REPOSITORY_ROOT
+            / "skills"
+            / "implement-ticket"
+            / "references"
+            / "review-suite"
+        )
+        for name in CANONICAL_FILES:
+            self.assertFalse((review_suite / name).exists())
+        for relative in GATE_CANONICAL_FILES:
+            self.assertFalse(
+                (REPOSITORY_ROOT / "skills" / "implement-ticket" / relative).exists()
+            )
 
     def test_every_consuming_skill_bundles_an_identical_review_gate(self):
         for skill in GATE_BUNDLING_SKILLS:

@@ -7,94 +7,65 @@ continuing lifecycle to repository-owned `babysit-pr`, or delegate an oversized
 candidate's entire stacked lifecycle to repository-owned `carve-changesets`. Do
 not duplicate either delegate's mechanics here.
 
-## Initial bounded review loop
+## Delegate the initial review and fix loop
 
-Require repository-owned `review-code-change` before the publication size gate.
+Require repository-owned `review-fix-loop` before the publication size gate.
 Fail closed when it is missing or unreadable. Do not substitute another skill, a
-generic self-review, or an unreviewed path.
+generic self-review, an inlined ad hoc fix loop, or an unreviewed path.
 
-Read the bundled review-result contract at
-[references/review-suite/CONTRACT.md](review-suite/CONTRACT.md) and the schema
-beside it. Before consuming any returned result, validate it with
-`references/review-suite/validate.py` or the stricter bundled
-`scripts/review_gate.py`, which also binds the result to this run's exact
-current head and comparison-base SHA. Reject a result that fails schema
-validation, carries a `schema_version` other than the bundled contract's current
-version (`1.4`; a stale version such as `1.0`, `1.1`, `1.2`, or `1.3` fails with
-its own migration message and is never accepted as current evidence), is not an
-`aggregate` result, has a `verdict` other than `clean`, or is missing a
-complete, current, freshly executed `lens_executions` entry for every required
-lens. Treat any such rejection, exactly like a missing dependency or a `blocked`
-verdict, as a failed initial review; never publish or advance the publication
-gate on that evidence. A schema-valid `clean` aggregate already bound to the
-current head and base with complete fresh lens executions needs no additional
-invented review cycle.
+Read [the review-fix-loop handoff](review-fix-loop-handoff.md) for exactly how
+to construct the invocation, supply its `reviewer`/`decide`/`apply_fix`/
+validation ports, and map its terminal result. Do not duplicate that mechanic
+here: `review-fix-loop` owns raw `review-code-change` packet construction and
+binding, schema and head/base validation of the resulting aggregate, and
+per-cycle finding history. A schema-valid `converged` result already bound to
+the current head and base needs no additional invented review-fix-loop
+invocation.
 
 Require every intended ticket change to be committed and the implementation
-worktree to be clean before review. If unrelated user artifacts prevent a clean
-state, classify and preserve them and prove they are irrelevant to the
-candidate.
+worktree to be clean before invoking `review-fix-loop` — its own invocation
+schema requires the same. If unrelated user artifacts prevent a clean state,
+classify and preserve them and prove they are irrelevant to the candidate.
 
-Before delegation, capture HEAD, comparison base, commit history, and tracked,
-staged, unstaged, untracked, and ignored state. Invoke `review-code-change` in a
-fresh or minimally inherited read-only context with:
-
-- the live ticket, every acceptance criterion, and every required verification
-  item classified as pre-merge or post-merge;
-- the criterion-specific acceptance ledger with required evidence category,
-  current SHA/environment, source, and status;
-- every named architecture, design, contract, migration, and rollout document;
-- repository instructions and representative nearby code and tests;
-- the exact captured head and comparison-base SHAs plus the location of a file
-  holding the complete `base...HEAD` diff; and
-- exact focused and full validation evidence, including unavailable checks.
-
-Reviewers receive evidence and contracts, never conclusions. If the invocation
-being written steers the answer — "do not flag", "this is fine", a pre-judged
-severity, or the verdict expected back — stop and rewrite it. A steered reviewer
+Reviewers receive evidence and contracts, never conclusions. Author the
+invocation's change contract — the live ticket's goal, every acceptance
+criterion and required verification item classified as pre-merge or post-merge,
+the criterion-specific acceptance ledger, every named architecture, design,
+contract, migration, and rollout document, repository instructions, and
+representative nearby code and tests — as neutral evidence, never as a
+pre-judged verdict. If what is being authored steers the answer — "do not flag",
+"this is fine", a pre-judged severity, or the verdict expected back — stop and
+rewrite it. It steers the `reviewer` port's own `review-code-change` packet
+exactly as it would have steered a directly authored one; a steered reviewer
 returns confirmation, not review, and confirmation is indistinguishable from a
 clean result at the point it is consumed.
 
-Give the review a capability tier adequate for judgment: reviewing is judgment
-work, so it inherits the session's tier by default rather than the cheapest one,
-and a review that missed a defect the fix loop later surfaces escalates one tier
-instead of rerunning identically. Prefer one well-briefed review to several thin
-ones; each rerun costs a full three-lens sequence.
+Give the `reviewer` port a capability tier adequate for judgment: reviewing is
+judgment work, so it inherits the session's tier by default rather than the
+cheapest one, and a review that missed a defect the fix loop later surfaces
+escalates one tier instead of rerunning identically. Prefer one well-briefed
+review-fix-loop invocation to several thin ones; each fresh review pass costs a
+full three-lens sequence.
 
-Write that diff file to a temporary directory outside the ticket worktree and
-hand over its path, not the diff text. Writing it inside the worktree would show
-up as a candidate mutation in the integrity check below, and inlining it spends
-the reviewer's context on an artifact it can read for itself.
+Consume `review-fix-loop`'s validated terminal result without restating or
+overriding its lens order, severity, deduplication, or
+correctness-versus-simplicity rules — those remain `review-code-change`'s own,
+unchanged by delegation. Apply only material findings the `decide` port accepted
+within `change_contract.allowed_remediation_scope`. Preserve deferred findings
+without expanding the PR. Reply with evidence when a finding no longer applies.
 
-Exclude the implementation transcript, intended solution, prior conclusions,
-suspected findings, and fixture expected outputs. After review, verify that
-HEAD, history, and every captured worktree-state category remain unchanged.
-Treat any mutation as an integrity failure; inspect and preserve it rather than
-resetting or deleting user work.
-
-Consume the suite's validated aggregate result without restating or overriding
-lens order, severity, deduplication, or correctness-versus-simplicity rules.
-Metabolize the suite's findings through
-[the consumption disciplines](review-suite/consumption-disciplines.md) before
-changing a line. Apply only blocking and strong-recommendation findings that are
-material, tractable, and ticket-scoped. Preserve deferred findings without
-expanding the PR. Reply with evidence when a finding no longer applies.
-
-After a material initial-review fix, run affected and required validation,
-commit the new head, rebuild the raw evidence packet, and follow the returned
-re-review instruction. Push only after the publication path is selected. Use at
-most three full fix/re-review cycles by default. A clean aggregate ends the
-initial loop. If material findings remain after the final cycle, preserve the
-candidate and return `blocked` with unresolved evidence — SKILL.md section 4
-owns the per-finding verdict mapping, quarantine, and final-cycle escalation
-mechanics that apply before this point is reached.
+A `converged` terminal result ends the initial loop. A `changes_remaining` or
+`blocked` result maps to `blocked` with the unresolved evidence — see
+[the handoff's terminal-result mapping](review-fix-loop-handoff.md#terminal-result-mapping)
+for the exact reasons and the caller-owned escalation-on-final-cycle policy that
+apply before this point is reached.
 
 ## Publication and delegation gate
 
 Before invoking either delegate:
 
-- verify the initial review is clean for the exact live head and applicable
-  base;
+- verify the initial `review-fix-loop` result is `converged` for the exact live
+  head and applicable base;
 - verify every required pre-merge acceptance entry passes and choose closing or
   non-closing tracker syntax from whether post-merge entries exist;
 - evaluate the exact candidate against the live `carve-changesets` guardrails
@@ -111,8 +82,8 @@ Before invoking either delegate:
 
 Treat a missing dependency, malformed result, `blocked` verdict, reviewer
 mutation, stale identity, or unavailable required evidence as a failed gate. Do
-not claim `ready_pr` or `ready_prs` merely because a PR or stack exists or an
-initial review is clean.
+not claim `ready_pr` or `ready_prs` merely because a PR or stack exists or the
+initial `review-fix-loop` result is `converged`.
 
 ## Caller-side completion verification
 

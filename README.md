@@ -96,19 +96,21 @@ Current reusable agent skills:
   and repeat until review converges or a bounded stop condition is reached;
   supports a `local_commit` policy (every fix stays local — the operator
   publishes them separately) and an `update_pr` policy (one expected-old,
-  fast-forward-only Git push immediately after convergence). Standalone today:
-  no existing caller skill invokes it yet — see
-  [issues #103](https://github.com/shaug/compris/issues/103),
-  [#104](https://github.com/shaug/compris/issues/104), and
-  [#105](https://github.com/shaug/compris/issues/105) for the tracked
-  `implement-ticket`/`babysit-pr`/`carve-changesets` migration follow-ups.
+  fast-forward-only Git push immediately after convergence). `implement-ticket`
+  delegates its initial candidate's review and fix loop to it under
+  `local_commit`; `babysit-pr` and `carve-changesets` still run their own
+  post-publication review loops directly against `review-code-change` — see
+  [issues #104](https://github.com/shaug/compris/issues/104) and
+  [#105](https://github.com/shaug/compris/issues/105) for those tracked
+  migration follow-ups.
 
 The composed implementation dependency chain is:
 
 ```text
 implement-epic
 └── implement-ticket
-    ├── review-code-change          # initial candidate review
+    ├── review-fix-loop             # initial candidate review/fix/converge loop
+    │   └── review-code-change      # each review pass inside the loop
     ├── babysit-pr                  # ordinary single-PR lifecycle
     │   └── review-code-change      # after a head-changing fix
     ├── carve-changesets            # authority-gated oversized path

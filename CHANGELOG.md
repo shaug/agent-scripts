@@ -4,7 +4,55 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, then pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched
+## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched, and migrated implement-ticket's initial candidate review/fix loop to delegate to the now-complete review-fix-loop skill
+
+- feat(implement-ticket): delegate the initial review and fix loop to
+  review-fix-loop (issue #103) — replace SKILL.md section 4's inlined
+  review-code-change dispatch, consumption-discipline application, per-cycle
+  resolved/unresolved/superseded ledger, out-of-scope quarantine, and
+  final-cycle implementer escalation with delegation to repository-owned
+  `review-fix-loop` under its `local_commit` publication policy, so
+  `implement-ticket` supplies review-fix-loop's `reviewer`/`decide`/`apply_fix`/
+  validation ports instead of running the loop itself. A new
+  `references/review-fix-loop-handoff.md` (mirroring the existing
+  babysit-pr/carve-changesets handoff pattern) owns invocation construction, the
+  caller-owned port policies — including the final-cycle escalation, which
+  `review-fix-loop`'s own engine has no mechanic for and does not need one for,
+  since the caller still authors each fix — and the
+  `converged`/`changes_remaining`/`blocked` terminal-result mapping, including
+  resuming an interrupted invocation from its own durable checkpoint and
+  starting a fresh one from live state alone for a piecemeal implementation with
+  no checkpoint at all. `review-and-merge-gates.md`, `cleanup-and-result.md`,
+  and the Claude Code adapter follow the same delegation; `babysit-pr` and
+  `carve-changesets` keep their own unmigrated post-publication review loops
+  against `review-code-change` directly, per the design's fast-follow sequencing
+  (tracked separately as issues #104 and #105). `implement-ticket` no longer
+  bundles its own copy of the review-suite contract, schemas, `validate.py`,
+  `review_gate.py`, or `test_review_gate.py` — `review-fix-loop` already binds
+  and validates the raw `review-code-change` result on its behalf using its own
+  bundled copies — so `justfile`'s `sync-contracts` and
+  `review-suite/scripts/tests/test_bundled_contracts.py` drop it from the skills
+  that bundle those files while keeping it in the three that still bundle
+  `consumption-disciplines.md` (it now governs the `decide` port rather than an
+  inline loop). The four `cases.json`/`expectations.json` scenarios that
+  exercised raw review-code-change result validation (stale `schema_version`, a
+  malformed shape, an exhausted-budget `changes_required` verdict, incomplete
+  `lens_executions`) are retired in favor of four `review-fix-loop`
+  terminal-result equivalents, since that validation is now `review-fix-loop`'s
+  own tested responsibility; two new scenarios
+  (`interrupted-review-fix-loop-resumes-from-checkpoint` and
+  `piecemeal-implementation-starts-fresh-review-fix-loop-from-live-state`) give
+  the ticket's explicit interrupted/piecemeal scope bullet its own regression
+  coverage. `scripts/tests/test_implement_ticket_contract.py`'s affected
+  data-contract assertions move with the prose they were checking. *Why:* the
+  review/fix/converge loop `implement-ticket` hand-rolled is the exact
+  responsibility `review-fix-loop`'s epic (#95) built and evaluated as a
+  standalone skill, and the design's own migration ticket for this caller names
+  cooperative ownership transfer, one shared cycle budget, current-head review
+  equivalence, caller-owned acceptance reconciliation, and interruption handling
+  as what the migration must prove before the duplicated mechanics come out —
+  recorded real-model forward-eval evidence for this exact candidate is under
+  `skills/implement-ticket/evals/results/`.
 
 - docs(evals): point provenance citations at the renamed repository — rewrite
   the ten `github.com/shaug/agent-scripts/issues/58` comment citations in
@@ -20,7 +68,7 @@ summary: Chronological history of repository and skill changes.
   no longer exists. A path recording where a run executed is a measurement, and
   rewriting it would assert that a run happened somewhere it did not — the same
   distinction the rename commit drew, applied to what it deliberately left
-  behind
+  behind (8566327841d7d9d4b481367d4da6316ff2120ba0)
 
 - chore: rename agent-scripts to compris — rename the project across every
   identity it publishes. The plugin and marketplace name, display name, and

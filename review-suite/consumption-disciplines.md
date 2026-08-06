@@ -1,9 +1,10 @@
 # Consumption disciplines
 
 How a skill metabolizes a review finding or a piece of pull-request feedback,
-before it changes a line. These four disciplines govern the fix loop in
-`implement-ticket`, the feedback and CI loops in `babysit-pr`, and review
-communication in `carve-changesets`.
+before it changes a line. These four disciplines govern the fix loop
+`implement-ticket` drives through `review-fix-loop`'s `decide` port, the
+feedback and CI loops in `babysit-pr`, and review communication in
+`carve-changesets`.
 
 They are house-owned, ported with attribution from superpowers'
 `receiving-code-review`. The port is deliberate rather than a delegation: that

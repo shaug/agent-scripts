@@ -43,9 +43,13 @@ class ImplementTicketContractTests(unittest.TestCase):
         cls.carve_handoff = read(
             SKILL_ROOT / "references" / "carve-changesets-handoff.md"
         )
+        cls.review_fix_loop_handoff = read(
+            SKILL_ROOT / "references" / "review-fix-loop-handoff.md"
+        )
         cls.result = read(SKILL_ROOT / "references" / "cleanup-and-result.md")
         cls.skill_compact = compact(cls.skill)
         cls.handoff_compact = compact(cls.handoff)
+        cls.review_fix_loop_handoff_compact = compact(cls.review_fix_loop_handoff)
         cls.result_compact = compact(cls.result)
         cls.eval_contract = compact(
             read(SKILL_ROOT / "evals" / "cases.json")
@@ -58,6 +62,7 @@ class ImplementTicketContractTests(unittest.TestCase):
             + cls.gates
             + cls.handoff
             + cls.carve_handoff
+            + cls.review_fix_loop_handoff
             + cls.result
         )
         cls.cases = {
@@ -346,8 +351,7 @@ class ImplementTicketContractTests(unittest.TestCase):
         )
 
     def test_fix_loop_consumes_findings_through_the_bundled_disciplines(self):
-        gates = compact(read(SKILL_ROOT / "references" / "review-and-merge-gates.md"))
-        for surface in (self.skill_compact, gates):
+        for surface in (self.skill_compact, self.review_fix_loop_handoff_compact):
             self.assertIn("consumption-disciplines.md", surface)
         self.assertIn(
             "verify it against the codebase before implementing it", self.skill_compact
@@ -364,35 +368,39 @@ class ImplementTicketContractTests(unittest.TestCase):
         )
         self.assertTrue(bundled.is_file())
 
-    def test_fix_loop_maps_prior_findings_to_one_of_three_verdicts(self):
+    def test_fix_loop_reads_review_fix_loops_own_finding_history(self):
+        """Delegation drops the old ledger in favor of review-fix-loop's own
+        review_records/unresolved_or_deferred_findings, per #103."""
         for required in (
-            "`resolved` (no longer present)",
-            "`unresolved` (still present, matched by identifier or root cause)",
-            "`superseded`",
-            "record the mapping rationale rather than dropping it silently",
-            "Match by the prior finding's stable identifier first, then by "
-            "root-cause description",
+            "Read `review-fix-loop`'s own `review_records` and "
+            "`unresolved_or_deferred_findings` for the per-cycle finding "
+            "history",
+            "do not reconstruct a separate resolved/unresolved/superseded "
+            "ledger on top of it",
         ):
             self.assertIn(required, self.skill_compact)
 
-    def test_fix_loop_quarantines_out_of_scope_findings_without_extending_it(self):
+    def test_fix_loop_surfaces_scope_expansion_via_review_fix_loop(self):
+        """An out-of-scope finding is now surfaced immediately through
+        review-fix-loop's own scope_decision_required block, not a
+        quarantine-and-continue list, per #103."""
         for required in (
-            "quarantined as an out-of-scope observation",
-            "surface it in the terminal result for the caller to disposition",
-            "Never fold a quarantined observation into the current cycle's "
-            "required fixes",
-            "it never extends the loop",
+            "not implement-ticket's to quarantine and defer inline anymore",
+            "return `expands_scope` and let `review-fix-loop` stop as "
+            "`blocked/scope_decision_required`",
+            "surfacing it for the caller to disposition immediately",
         ):
-            self.assertIn(required, self.skill_compact)
+            self.assertIn(required, self.review_fix_loop_handoff_compact)
 
     def test_final_cycle_escalates_the_implementer_without_adding_a_cycle(self):
         for required in (
-            "Entering the final permitted cycle with findings still "
-            "outstanding replaces the incumbent implementer",
+            "When it is about to consume the invocation's final remaining "
+            "cycle, replace the incumbent implementer rather than continuing "
+            "it",
             "one capability tier above the incumbent's",
             "fresh context at the same tier when no higher tier is available",
-            "This replaces the incumbent; it does not add a cycle — the "
-            "count stays at three",
+            "This replaces the incumbent implementer; it does not add a "
+            "cycle — the count stays at three",
             "`review-code-change`'s own three-cycle budget for the lens "
             "sequence is untouched",
             "record that the final cycle was escalated and to what tier",
@@ -427,29 +435,33 @@ class ImplementTicketContractTests(unittest.TestCase):
 
     def test_fix_loop_evidence_identifiers_appear_in_the_terminal_handoff(self):
         for required in (
-            "the per-finding verdict ledger (`resolved`, `unresolved`, or `superseded`",
-            "the mapping rationale for every `superseded` entry",
-            "any quarantined out-of-scope observations",
-            "whether the final cycle was escalated to a fresh implementer "
-            "and at what capability tier",
+            "its `review_records` and `unresolved_or_deferred_findings`",
+            "`review-fix-loop`'s consumed/remaining cycle accounting",
+            "each cycle's `finding_dispositions`",
+            "any `scope_decision_required` block surfaced for caller disposition",
+            "whether the final cycle's `apply_fix` port was escalated to a "
+            "fresh implementer and at what capability tier",
         ):
             self.assertIn(required, self.result_compact)
 
-    def test_review_and_merge_gates_points_at_skillmd_for_escalation(self):
+    def test_review_and_merge_gates_points_at_handoff_for_escalation(self):
         gates = compact(read(SKILL_ROOT / "references" / "review-and-merge-gates.md"))
         self.assertIn(
-            "SKILL.md section 4 owns the per-finding verdict mapping, "
-            "quarantine, and final-cycle escalation mechanics",
+            "the caller-owned escalation-on-final-cycle policy that apply "
+            "before this point is reached",
             gates,
         )
-        # The mechanic itself is stated once, in SKILL.md, not restated here.
+        # The mechanic itself is stated once, in SKILL.md/the handoff, not
+        # restated here.
         self.assertNotIn("capability tier above the incumbent", gates)
 
     def test_dependency_names_are_repository_owned_and_acyclic(self):
         self.assertIn("review-code-change", self.skill_compact)
+        self.assertIn("review-fix-loop", self.skill_compact)
         self.assertIn("babysit-pr", self.skill_compact)
         self.assertIn(
-            "`babysit-pr` and `carve-changesets` must never invoke `implement-ticket`",
+            "`review-fix-loop`, `babysit-pr`, and `carve-changesets` must "
+            "never invoke `implement-ticket`",
             self.skill_compact,
         )
         self.assertIn("carve-changesets", self.skill_compact)
@@ -545,7 +557,7 @@ class ImplementTicketContractTests(unittest.TestCase):
             "blocked", self.expectations["repeated-epic-handoff"]["terminal_state"]
         )
         for case_id in (
-            "missing-review-code-change",
+            "missing-review-fix-loop",
             "missing-isolation-capability",
             "missing-asynchronous-wait",
         ):
@@ -576,7 +588,7 @@ class ImplementTicketContractTests(unittest.TestCase):
         clean = self.expectations["final-cycle-escalation-then-clean"]
         self.assertEqual("merged", clean["terminal_state"])
         clean_actions = compact(" ".join(clean["required_actions"]))
-        self.assertIn("resolved, unresolved, or superseded", clean_actions)
+        self.assertIn("review-fix-loop's own review_records", clean_actions)
         self.assertIn("one capability tier above the incumbent", clean_actions)
         self.assertIn("do not request a fourth cycle", clean_actions)
 
@@ -588,32 +600,71 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("do not request a fourth cycle", blocked_actions)
 
     def test_review_result_contract_violations_block_publication(self):
+        """review-fix-loop now owns raw review-code-change result validation
+        (schema version, malformed shape, incomplete lens_executions); its own
+        eval corpus under skills/review-fix-loop/evals/ covers that directly.
+        implement-ticket only needs to treat any review-fix-loop `blocked` or
+        `changes_remaining` result as a failed local gate, per #103."""
         for case_id in (
-            "stale-review-schema-version-blocks-publication",
-            "malformed-review-result-blocks-publication",
-            "changes-required-review-result-blocks-publication",
-            "incomplete-lens-executions-blocks-publication",
+            "review-fix-loop-reviewer-integrity-failure-blocks-publication",
+            "review-fix-loop-missing-capability-blocks-publication",
+            "review-fix-loop-changes-remaining-blocks-publication",
+            "review-fix-loop-scope-decision-required-blocks-publication",
         ):
             self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
         self.assertEqual(
             "ready_pr",
             self.expectations[
-                "stable-clean-current-head-progresses-without-extra-cycle"
+                "review-fix-loop-converged-progresses-without-extra-cycle"
             ]["terminal_state"],
         )
         no_extra_cycle_actions = " ".join(
             self.expectations[
-                "stable-clean-current-head-progresses-without-extra-cycle"
+                "review-fix-loop-converged-progresses-without-extra-cycle"
             ]["required_actions"]
         )
         self.assertIn(
-            "do not invoke an additional invented review cycle", no_extra_cycle_actions
+            "do not invoke an additional invented review-fix-loop invocation",
+            no_extra_cycle_actions,
         )
-        self.assertIn("references/review-suite/validate.py", self.gates)
-        self.assertIn("scripts/review_gate.py", self.gates)
-        self.assertIn("schema_version", self.gates)
-        self.assertIn("1.4", self.gates)
-        self.assertIn("lens_executions", self.gates)
+        self.assertIn("review-fix-loop-handoff.md", self.gates)
+        self.assertIn("review-code-change", self.gates)
+
+    def test_interrupted_and_piecemeal_implementation_are_covered(self):
+        """Explicit #103 scope bullet: compatibility and regression coverage
+        for interrupted and piecemeal implementation."""
+        interrupted = self.expectations[
+            "interrupted-review-fix-loop-resumes-from-checkpoint"
+        ]
+        self.assertEqual("ready_pr", interrupted["terminal_state"])
+        interrupted_actions = compact(" ".join(interrupted["required_actions"]))
+        self.assertIn(
+            "resume the existing review-fix-loop checkpoint", interrupted_actions
+        )
+        self.assertIn("do not duplicate the already-committed fix", interrupted_actions)
+
+        piecemeal = self.expectations[
+            "piecemeal-implementation-starts-fresh-review-fix-loop-from-live-state"
+        ]
+        self.assertEqual("ready_pr", piecemeal["terminal_state"])
+        piecemeal_actions = compact(" ".join(piecemeal["required_actions"]))
+        self.assertIn(
+            "construct a fresh review-fix-loop invocation from live "
+            "repository state alone",
+            piecemeal_actions,
+        )
+        self.assertIn(
+            "do not require an uninterrupted implementation transcript",
+            piecemeal_actions,
+        )
+
+        for required in (
+            "resumes from live repository and checkpoint state without "
+            "requiring an uninterrupted implementation transcript",
+            "reconcile and resume it rather than starting a fresh invocation",
+            "construct a fresh invocation from live repository state alone",
+        ):
+            self.assertIn(required, self.review_fix_loop_handoff_compact)
 
     def test_acceptance_evidence_is_criterion_specific_and_fail_closed(self):
         for field in (
@@ -632,12 +683,13 @@ class ImplementTicketContractTests(unittest.TestCase):
         self.assertIn("return `blocked`", self.skill_compact)
 
     def test_review_dispatch_hands_the_diff_by_path_outside_the_worktree(self):
-        gates = compact(self.gates)
+        handoff = self.review_fix_loop_handoff_compact
+        self.assertIn("write it outside the ticket worktree", handoff)
         self.assertIn(
-            "the location of a file holding the complete `base...HEAD` diff", gates
+            "would appear as a candidate mutation to `review-fix-loop`'s own "
+            "before/after integrity checks",
+            handoff,
         )
-        self.assertIn("outside the ticket worktree", gates)
-        self.assertIn("hand over its path, not the diff text", gates)
 
     def test_delegated_dispatch_recommends_paths_over_pasted_history(self):
         self.assertIn("prefer handing it file paths", self.skill_compact)

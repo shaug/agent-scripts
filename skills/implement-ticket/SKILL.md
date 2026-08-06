@@ -24,11 +24,13 @@ create a third shared workflow abstraction.
   state or hosts the repository and pull request.
 - Read [the Linear adapter](references/linear.md) whenever Linear owns ticket,
   parent, dependency, or status state.
+- Always read
+  [the review-fix-loop handoff](references/review-fix-loop-handoff.md) before
+  creating implementation state and again before delegating the initial review
+  and fix loop. It requires validating every `review-fix-loop` terminal result
+  against its own bundled contract and schemas before consuming it.
 - Always read [review and merge gates](references/review-and-merge-gates.md)
-  before publishing the candidate. It requires validating every
-  `review-code-change` result against the bundled
-  [review-result contract](references/review-suite/CONTRACT.md) and the stricter
-  bundled `scripts/review_gate.py` before consuming it.
+  before publishing the candidate.
 - Always read [the babysit-pr handoff](references/babysit-pr-handoff.md) before
   creating implementation state and again before transferring PR ownership.
 - Read [the carve-changesets handoff](references/carve-changesets-handoff.md)
@@ -48,7 +50,7 @@ same-numbered issue from the PR host for the real tracker ticket.
 
 A compatible agentic runtime must be able to:
 
-- load `implement-ticket`, repository-owned `review-code-change`, and
+- load `implement-ticket`, repository-owned `review-fix-loop`, and
   repository-owned `babysit-pr` by stable skill name or an equivalent
   repository-owned dependency mechanism;
 - load repository-owned `carve-changesets` by stable name at the publication
@@ -252,12 +254,14 @@ contact a server on its behalf, or add coordinator-specific behavior.
 
 After applying the whole-epic scope guard, and before creating a branch,
 worktree, or other implementation state for a ticket, verify that both
-`review-code-change` and `babysit-pr` are available and readable by stable name
-or an equivalent repository-owned dependency mechanism. Return `blocked` before
-mutation when either is unavailable. Do not substitute a third-party reviewer,
-generic self-review, private PR loop, runtime download, or stranded unmonitored
-PR path. A whole-epic `requires_epic` result occurs before these ticket-only
-dependencies are invoked.
+`review-fix-loop` and `babysit-pr` are available and readable by stable name or
+an equivalent repository-owned dependency mechanism. Return `blocked` before
+mutation when either is unavailable. `review-fix-loop`'s own dependency gate
+covers `review-code-change` and its lenses; do not additionally require or
+substitute a direct `review-code-change` binding here. Do not substitute a
+third-party reviewer, generic self-review, an inlined ad hoc fix loop, a private
+PR loop, runtime download, or stranded unmonitored PR path. A whole-epic
+`requires_epic` result occurs before these ticket-only dependencies are invoked.
 
 The dependency graph is deliberately acyclic. The two publication paths are
 mutually exclusive:
@@ -265,7 +269,8 @@ mutually exclusive:
 ```text
 implement-epic
 └── implement-ticket
-    ├── review-code-change          # initial candidate review
+    ├── review-fix-loop             # initial candidate review/fix/converge loop
+    │   └── review-code-change      # each review pass inside the loop
     ├── babysit-pr                  # ordinary single-PR lifecycle
     │   └── review-code-change      # after a head-changing fix
     ├── carve-changesets            # authority-gated oversized path
@@ -279,9 +284,9 @@ implement-epic
 Solid edges are invocation. The dashed edge is a recommendation, governed by
 [Route a not-ready ticket to `ready-ticket`](#route-a-not-ready-ticket-to-ready-ticket).
 
-`babysit-pr` and `carve-changesets` must never invoke `implement-ticket`.
-`carve-changesets` must never invoke `implement-epic`. Do not re-enter this
-skill while consuming either delegated result.
+`review-fix-loop`, `babysit-pr`, and `carve-changesets` must never invoke
+`implement-ticket`. `carve-changesets` must never invoke `implement-epic`. Do
+not re-enter this skill while consuming any delegated result.
 
 ## Establish source-of-truth precedence
 
@@ -533,70 +538,77 @@ loaded peer. Three conflicts are resolved here rather than per run:
 A peer instruction to consult a human maps to the typed `blocked` result in an
 autonomous or delegated run rather than stalling.
 
-### 4. Run bounded repository-owned review
+### 4. Delegate the repository review and fix loop
 
-Follow [review and merge gates](references/review-and-merge-gates.md). Keep
-every mutation in the implementation context. Give `review-code-change` only raw
-live ticket, repository, full diff, candidate identity, validation, and worktree
-evidence in a fresh read-only context. Exclude the implementation transcript,
-intended solution, prior conclusions, and suspected findings.
+Follow [the review-fix-loop handoff](references/review-fix-loop-handoff.md) and
+[review and merge gates](references/review-and-merge-gates.md). Keep every
+mutation this run authorizes inside the implementation context; delegation
+transfers judgment about findings and fix authorship for the remediation
+interval, not exclusive ownership of the worktree.
 
-Consume each finding through
-[the consumption disciplines](references/review-suite/consumption-disciplines.md):
-verify it against the codebase before implementing it, clarify every unclear
-finding before implementing any, never perform agreement, and implement blocking
-before simple before complex, validating each on its own.
+Construct one `review-fix-loop` invocation bound to the exact committed head,
+comparison base, and complete `base...HEAD` diff, with
+`publication.policy: local_commit` — this delegation never pushes; this skill
+still withholds the first remote push until the publication path is selected in
+step 5. Load `review-fix-loop` by stable repository-owned name and act as its
+host for the `reviewer`, `decide`, `apply_fix`, and validation ports its own
+local-commit workflow defines:
 
-Apply only material ticket-scoped blocking and strong-recommendation findings.
-Preserve deferred findings without expanding scope. After a fix, rerun affected
-and required validation, rebuild the change-demonstrating-test evidence the fix
-invalidated, commit a new head, rebuild the evidence packet, and follow the
-suite's re-review instruction. Use at most three full fix/re-review cycles by
-default.
+- the `reviewer` port spawns a fresh read-only context restricted to
+  `Read, Grep, Glob, Bash, Agent, Task, Skill` that invokes repository-owned
+  `review-code-change` with raw candidate evidence only — excluding the
+  implementation transcript, intended solution, prior conclusions, and suspected
+  findings — exactly as this skill has always required;
+- the `decide` port applies
+  [the consumption disciplines](references/review-suite/consumption-disciplines.md)
+  to every finding `review-fix-loop` selects: verify it against the codebase
+  before implementing it, clarify every unclear finding before implementing any,
+  never perform agreement, and accept only a material finding within
+  `change_contract.allowed_remediation_scope`. `review-fix-loop`'s own finding
+  selection and validate-and-commit sequence already implement blocking before
+  simple before complex, validating each fix on its own before the next review —
+  the `decide` port does not reorder or re-validate on its own;
+- the `apply_fix` port implements the smallest coherent accepted remediation.
+  When it is about to consume the invocation's final remaining cycle, replace
+  the incumbent implementer rather than continuing it: dispatch a fresh
+  implementation context one capability tier above the incumbent's, or a fresh
+  context at the same tier when no higher tier is available in the session,
+  briefed with the surviving finding and a summary of what prior attempts tried
+  and why they failed, not the full implementation transcript. This is a
+  caller-supplied policy layered onto the port; `review-fix-loop`'s own engine
+  has no escalation mechanic and needs none for this to work. When a fix fails
+  repeatedly and `superpowers:systematic-debugging` is available in the session
+  skill listing, load it as the escalated implementer's recommended diagnosis
+  method: its architecture-escalation rule — recognizing that repeated attempts
+  along one approach may need a materially different one — is why the final
+  cycle dispatches a fresh, differently-capable context rather than asking the
+  same incumbent to try again. When the peer is not in the listing, the
+  escalated implementer diagnoses from logs and evidence without comment; and
+- the validation ports run this ticket's separately approved focused and full
+  validation commands and classify a candidate-attributable failure as tractable
+  remediation input exactly as [step 3](#3-validate-in-layers) already requires.
 
-After each re-review, map every finding from the prior cycle against the fresh
-aggregate result and record one verdict per prior finding: `resolved` (no longer
-present), `unresolved` (still present, matched by identifier or root cause), or
-`superseded` (the fresh result cannot account for it — record the mapping
-rationale rather than dropping it silently). Match by the prior finding's stable
-identifier first, then by root-cause description when the identifier does not
-recur.
+This replaces the incumbent implementer; it does not add a cycle — the count
+stays at three (`fix_cycle_budget.max_fix_cycles: 3`), and
+`review-code-change`'s own three-cycle budget for the lens sequence is
+untouched. If the escalated attempt's re-review still leaves a material finding,
+`review-fix-loop` returns `changes_remaining/cycle_budget_exhausted`; block
+exactly as an ordinary final cycle would — preserve the candidate and return
+`blocked` with the unresolved evidence — and record that the final cycle was
+escalated and to what tier.
 
-A fresh finding outside every prior finding's scope is quarantined as an
-out-of-scope observation: record it in the fix-loop evidence and surface it in
-the terminal result for the caller to disposition. Never fold a quarantined
-observation into the current cycle's required fixes — that would spend cycle
-budget on an issue the caller has not yet decided is real, ticket-scoped, or
-worth this candidate's time, and it never extends the loop.
+Treat any `review-fix-loop` dependency failure, invocation or terminal-result
+validation failure, or `blocked` result as a failed local gate exactly as a
+missing dependency or a `blocked` verdict was always treated. A `converged`
+terminal result ends this step; map every other terminal state through
+[the handoff's terminal-result mapping](references/review-fix-loop-handoff.md#terminal-result-mapping)
+before deciding whether to continue, escalate, or stop. Read `review-fix-loop`'s
+own `review_records` and `unresolved_or_deferred_findings` for the per-cycle
+finding history; do not reconstruct a separate resolved/unresolved/superseded
+ledger on top of it.
 
-Entering the final permitted cycle with findings still outstanding replaces the
-incumbent implementer rather than continuing it: dispatch a fresh implementation
-context one capability tier above the incumbent's — the same
-escalate-on-repeated-failure rule stated above — or fresh context at the same
-tier when no higher tier is available in the session. Brief it with the
-surviving findings and a summary of what prior attempts tried and why they
-failed, not the full implementation transcript. This replaces the incumbent; it
-does not add a cycle — the count stays at three, and `review-code-change`'s own
-three-cycle budget for the lens sequence is untouched. If the escalated
-attempt's re-review still leaves material findings, block exactly as an ordinary
-final cycle would — preserve the candidate and return `blocked` with the
-unresolved evidence — and record that the final cycle was escalated and to what
-tier.
-
-When a fix fails repeatedly and `superpowers:systematic-debugging` is available
-in the session skill listing, load it as the escalated implementer's recommended
-diagnosis method: its architecture-escalation rule — recognizing that repeated
-attempts along one approach may need a materially different one — is why the
-final cycle dispatches a fresh, differently-capable context rather than asking
-the same incumbent to try again. When the peer is not in the listing, the
-escalated implementer diagnoses from logs and evidence without comment.
-
-Treat a missing dependency, malformed result, `blocked` verdict, reviewer
-mutation, or unavailable required evidence as a failed local gate. The review
-suite stays read-only. This skill owns accepted fixes and commits during the
-initial review loop, but withholds the first remote push until the publication
-path is selected. Finish with every intended change committed, a clean worktree,
-and a clean review bound to the exact candidate and base.
+Finish with every intended change committed, a clean worktree, and a `converged`
+`review-fix-loop` result bound to the exact candidate and base.
 
 ### 5. Choose exactly one publication path
 
