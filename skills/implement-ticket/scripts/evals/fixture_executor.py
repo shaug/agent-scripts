@@ -359,7 +359,7 @@ def action_result(payload: dict) -> dict:
     prompt = compact(payload["skill_prompt"])
     required_contract = {
         "implement-ticket": (
-            "`review-code-change` and `babysit-pr` are available",
+            "`review-fix-loop` and `babysit-pr` are available",
             "Map `ready PR only` to `ready_to_merge`",
             "`prs_open`",
             "`ready_prs`",

@@ -71,12 +71,13 @@ before return. Otherwise include every applicable field:
   category, pre/post-merge stage, candidate/deployed SHA, environment/URL,
   source, and `pass`/`fail`/`missing` status;
 - focused and full validation commands, outcomes, and limitations;
-- initial `review-code-change` verdict and reviewed candidate identity;
-- when a fix cycle ran: the per-finding verdict ledger (`resolved`,
-  `unresolved`, or `superseded`, with the mapping rationale for every
-  `superseded` entry), any quarantined out-of-scope observations, and whether
-  the final cycle was escalated to a fresh implementer and at what capability
-  tier;
+- the initial `review-fix-loop` terminal state (`converged`,
+  `changes_remaining`, or `blocked`), its `review_records` and
+  `unresolved_or_deferred_findings`, and the reviewed candidate identity;
+- when a fix cycle ran: `review-fix-loop`'s consumed/remaining cycle accounting,
+  each cycle's `finding_dispositions`, any `scope_decision_required` block
+  surfaced for caller disposition, and whether the final cycle's `apply_fix`
+  port was escalated to a fresh implementer and at what capability tier;
 - `babysit-pr` policy, terminal state, returned candidate identity, authority
   used, mutation ownership, and independently verified live-state match;
 - for a stack, `carve-changesets` source identity, guardrail and operator
@@ -99,7 +100,8 @@ completion_policy: ready PR only   authority_used: implement + push + PR create
 acceptance: API regression test (required, pre-merge, automated-test) pass;
   head 4f2c…9a1d; source `just test`; no post-merge items
 validation: `just test` pass @ head; `just check` full gate pass @ head
-initial_review: review-code-change clean @ head 4f2c…9a1d vs base 7be0…44c2
+initial_review: review-fix-loop converged @ head 4f2c…9a1d vs base 7be0…44c2
+  (1/3 fix cycles consumed)
 babysit_pr: ready_to_merge @ head, verified against live GitHub state;
   CI 6/6 pass, human review approved, 0 unresolved threads
 merge: withheld (not authorized)   tracker: LIN-482 still In Progress

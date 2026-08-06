@@ -4,7 +4,101 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, then pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched
+## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched, and migrated implement-ticket's initial candidate review/fix loop to delegate to the now-complete review-fix-loop skill
+
+- feat(implement-ticket): delegate the initial review and fix loop to
+  review-fix-loop (issue #103) — replace SKILL.md section 4's inlined
+  review-code-change dispatch, consumption-discipline application, per-cycle
+  resolved/unresolved/superseded ledger, out-of-scope quarantine, and
+  final-cycle implementer escalation with delegation to repository-owned
+  `review-fix-loop` under its `local_commit` publication policy, so
+  `implement-ticket` supplies review-fix-loop's `reviewer`/`decide`/`apply_fix`/
+  validation ports instead of running the loop itself. A new
+  `references/review-fix-loop-handoff.md` (mirroring the existing
+  babysit-pr/carve-changesets handoff pattern) owns invocation construction, the
+  caller-owned port policies — including the final-cycle escalation, which
+  `review-fix-loop`'s own engine has no mechanic for and does not need one for,
+  since the caller still authors each fix — and the
+  `converged`/`changes_remaining`/`blocked` terminal-result mapping, including
+  resuming an interrupted invocation from its own durable checkpoint and
+  starting a fresh one from live state alone for a piecemeal implementation with
+  no checkpoint at all. `review-and-merge-gates.md`, `cleanup-and-result.md`,
+  and the Claude Code adapter follow the same delegation; `babysit-pr` and
+  `carve-changesets` keep their own unmigrated post-publication review loops
+  against `review-code-change` directly, per the design's fast-follow sequencing
+  (tracked separately as issues #104 and #105). `implement-ticket` no longer
+  bundles its own copy of the review-suite contract, schemas, `validate.py`,
+  `review_gate.py`, or `test_review_gate.py` — `review-fix-loop` already binds
+  and validates the raw `review-code-change` result on its behalf using its own
+  bundled copies — so `justfile`'s `sync-contracts` and
+  `review-suite/scripts/tests/test_bundled_contracts.py` drop it from the skills
+  that bundle those files while keeping it in the three that still bundle
+  `consumption-disciplines.md` (it now governs the `decide` port rather than an
+  inline loop). The four `cases.json`/`expectations.json` scenarios that
+  exercised raw review-code-change result validation (stale `schema_version`, a
+  malformed shape, an exhausted-budget `changes_required` verdict, incomplete
+  `lens_executions`) are retired in favor of four `review-fix-loop`
+  terminal-result equivalents, since that validation is now `review-fix-loop`'s
+  own tested responsibility; two new scenarios
+  (`interrupted-review-fix-loop-resumes-from-checkpoint` and
+  `piecemeal-implementation-starts-fresh-review-fix-loop-from-live-state`) give
+  the ticket's explicit interrupted/piecemeal scope bullet its own regression
+  coverage. `scripts/tests/test_implement_ticket_contract.py`'s affected
+  data-contract assertions move with the prose they were checking. *Why:* the
+  review/fix/converge loop `implement-ticket` hand-rolled is the exact
+  responsibility `review-fix-loop`'s epic (#95) built and evaluated as a
+  standalone skill, and the design's own migration ticket for this caller names
+  cooperative ownership transfer, one shared cycle budget, current-head review
+  equivalence, caller-owned acceptance reconciliation, and interruption handling
+  as what the migration must prove before the duplicated mechanics come out —
+  recorded real-model forward-eval evidence for this exact candidate is under
+  `skills/implement-ticket/evals/results/`
+  (bf9314b547948a19e6f03112214803921098fc88)
+
+- docs(evals): record the implement-ticket real-model "after" forward-eval run
+  for the review-fix-loop delegation (issue #103) — 31/58 cases pass at head
+  `bf9314b5`, against 33/58 at base `02fd9ff8`. Three cases newly fail
+  (`implement-epic-consumes-ticket-results`,
+  `oversized-authorized-carved-stack`, `stale-carved-result`) and one newly
+  passes (`published-feedback-fix`); all four exercise
+  `implement-epic`/`carve-changesets` scenarios this diff does not touch,
+  consistent with this suite's known single-sample real-model sampling variance
+  rather than a regression this change caused. 54 of 58 cases are unchanged
+  between the two runs. (24311be1f4659fa4a34b00b9c5804252a9790bb7)
+
+- fix(implement-ticket): correct three findings a fresh review-code-change pass
+  raised against the review-fix-loop delegation (issue #103) — the sibling
+  `babysit-pr-handoff.md` and `carve-changesets-handoff.md` still described
+  implement-ticket as retaining "the initial `review-code-change` loop/pass" and
+  linked to `references/review-suite/CONTRACT.md`, which this migration deletes;
+  both now describe the initial `review-fix-loop` terminal result instead, and
+  `babysit-pr-handoff.md`'s independent requirement to verify
+  `review-code-change` up front (for `babysit-pr`'s own later post-fix
+  re-review, unrelated to the initial loop) is now stated as independent rather
+  than reading as a contradiction of `SKILL.md`'s new `review-fix-loop`
+  dependency check. `review-fix-loop-handoff.md` and the new
+  `interrupted-review-fix-loop-resumes-from-checkpoint` eval case wrongly placed
+  the durable checkpoint under a worktree-relative `.review-fix-loop/`
+  directory, copying `design/review-fix-loop.md`'s illustrative example rather
+  than the actual implementation
+  (`skills/review-fix-loop/scripts/local_execution.py`'s `checkpoint_path`),
+  which keys it to `<git-common-directory>/review-fix-loop/checkpoints/` so it
+  survives independently of any one worktree; both now cite the real location.
+  The handoff's `changes_remaining` reason list also dropped `repeated_finding`
+  — present in `review-fix-loop`'s general schema but, per its own
+  `local-commit.md`, deliberately never emitted under the `local_commit` policy
+  this handoff is scoped to. *Why:* a fresh isolated review agent, given only
+  raw candidate evidence, verified all three against the live dependency's
+  actual code and prose rather than accepting the design doc's example or this
+  candidate's own prior assumptions. (daba6433dc8ae74c493b55ddaa4fbea54c119e1c)
+
+- fix(implement-ticket): fix the second stale review-code-change mention a
+  cycle-2 review found in `carve-changesets-handoff.md` (issue #103) — its
+  "Verified handoff" checklist still asked to capture "clean initial
+  `review-code-change` result bound to the exact source and base," missed by the
+  prior fix commit because it only touched that file's opening paragraph; now
+  reads "a `converged` initial `review-fix-loop` result." *Why:* the same defect
+  class recurring in a second spot the first fix pass didn't reach.
 
 - docs: state what compris does before explaining how to install it — replace
   the opening line, "A personal monorepo for agent skills and supporting
@@ -41,7 +135,7 @@ summary: Chronological history of repository and skill changes.
   no longer exists. A path recording where a run executed is a measurement, and
   rewriting it would assert that a run happened somewhere it did not — the same
   distinction the rename commit drew, applied to what it deliberately left
-  behind (`8566327841d7d9d4b481367d4da6316ff2120ba0`)
+  behind (8566327841d7d9d4b481367d4da6316ff2120ba0)
 
 - chore: rename agent-scripts to compris — rename the project across every
   identity it publishes. The plugin and marketplace name, display name, and

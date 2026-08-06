@@ -15,7 +15,7 @@ direct `babysit-pr` handoff from `implement-ticket`.
 
 `implement-ticket` retains ticket resolution and readiness, epic routing,
 exclusive implementation state, the initial implementation and validation, PR
-publication, the initial `review-code-change` loop, handoff verification,
+publication, the initial `review-fix-loop` delegation, handoff verification,
 terminal-result validation, post-merge mainline and tracker verification,
 dependency refresh, cleanup, and final reporting.
 
@@ -33,9 +33,13 @@ handoff construction, result validation, and post-merge work.
 
 Every successful ticket run publishes at least one PR that must be reconciled.
 Verify `babysit-pr` and `review-code-change` by stable repository-owned name
-before creating a branch or worktree. Missing `babysit-pr` returns `blocked`
-before mutation; never download an external implementation at runtime, restore a
-private copy of the old PR loop, or publish a PR that no owner will monitor.
+before creating a branch or worktree. `review-code-change` is required here for
+`babysit-pr`'s own later post-fix re-review, independently of the
+`review-fix-loop` dependency the initial candidate review already requires — see
+[the review-fix-loop handoff](review-fix-loop-handoff.md). Missing `babysit-pr`
+returns `blocked` before mutation; never download an external implementation at
+runtime, restore a private copy of the old PR loop, or publish a PR that no
+owner will monitor.
 
 Whole-epic routing still happens before dependency invocation and returns
 `requires_epic` without creating implementation state.
@@ -70,10 +74,11 @@ Immediately before delegation, reread the live PR and verify all of:
   effective diff, resulting tree, and commit history;
 - tracked, staged, unstaged, untracked, and ignored worktree state;
 - focused and full validation commands, outcomes, and limitations;
-- initial `review-code-change` verdict, reviewed head/base, and integrity
-  evidence, validated against the bundled
-  [review-result contract](review-suite/CONTRACT.md) at its current schema
-  version and bound to the exact handed-off head and base;
+- the initial `review-fix-loop` terminal result — its `converged` state, exact
+  reviewed head/base, `review_records`, and write-isolation evidence, validated
+  against the bundled
+  [review-fix-loop contract](../../review-fix-loop/references/CONTRACT.md) at
+  its current schema version and bound to the exact handed-off head and base;
 - required CI, human, connector, comment, formal-review, reaction, and thread
   gates, including documented absence;
 - connector identity, initiation procedure, accepted clean signal, candidate

