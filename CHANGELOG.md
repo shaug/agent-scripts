@@ -52,7 +52,19 @@ summary: Chronological history of repository and skill changes.
   equivalence, caller-owned acceptance reconciliation, and interruption handling
   as what the migration must prove before the duplicated mechanics come out —
   recorded real-model forward-eval evidence for this exact candidate is under
-  `skills/implement-ticket/evals/results/`.
+  `skills/implement-ticket/evals/results/`
+  (bf9314b547948a19e6f03112214803921098fc88)
+
+- docs(evals): record the implement-ticket real-model "after" forward-eval run
+  for the review-fix-loop delegation (issue #103) — 31/58 cases pass at head
+  `bf9314b5`, against 33/58 at base `02fd9ff8`. Three cases newly fail
+  (`implement-epic-consumes-ticket-results`,
+  `oversized-authorized-carved-stack`, `stale-carved-result`) and one newly
+  passes (`published-feedback-fix`); all four exercise
+  `implement-epic`/`carve-changesets` scenarios this diff does not touch,
+  consistent with this suite's known single-sample real-model sampling variance
+  rather than a regression this change caused. 54 of 58 cases are unchanged
+  between the two runs.
 
 - docs(evals): point provenance citations at the renamed repository — rewrite
   the ten `github.com/shaug/agent-scripts/issues/58` comment citations in
