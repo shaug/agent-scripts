@@ -4,9 +4,53 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, and ran a 3-round adversarial read-only review loop against those two fixes to convergence, verified with a fresh real-model run
+## 2026-08-05 — Proposed, hardened, and planned rebuilding carve-changesets on GitHub's native stacked pull request engine, fixed the intermittent claude_executor real-model parsing failure blocking implement-ticket eval evidence, added scoped per-finding re-review and escalated final-cycle execution to implement-ticket's fix loop, then made installed-distribution drift detectable and drove that check through five adversarial review rounds until it no longer had the silent successes it exists to catch, then separately triaged the real-model forward-eval failures that run surfaced, fixed implement-epic's terminal-state passthrough and implement-ticket's acceptance-ledger currency/correctness conflation, ran a 3-round adversarial read-only review loop against those two fixes to convergence verified with a fresh real-model run, and closed epic #118 by documenting how the two peer libraries compose end to end
+
+- docs: document peer composition rules and the coexistence README section
+  (issue #128, epic #118, the epic's final child) — add a "Using beside peer
+  skills" section to `README.md` stating the division of labor (peers own
+  in-phase methodology; this repository owns ticket readiness, authority grades,
+  evidence contracts, review production, and the post-publication PR lifecycle),
+  the prose-only awareness mechanism, and the guarantee that nothing degrades
+  when a peer is absent. Five composition rules resolve the co-installation
+  collisions that no single-sided edit can fix, each with its rationale: a ready
+  ticket *satisfies* brainstorming's design-approval gate, because elicitation
+  and body approval already happened at authoring time and reopening design
+  against an approved contract reverses a decision the requester made, invisibly
+  — brainstorming applies pre-ticket, never mid-pipeline; exactly one executor
+  owns a unit of work, so `writing-plans`' emitted executor mandate does not
+  bind ticket-driven work, because two executors on one unit produce two
+  candidates and neither can be verified canonical; review production is
+  house-owned inside the pipeline, because a verdict whose shape a caller cannot
+  validate is indistinguishable from no review; only the pull-request option of
+  `finishing-a-development-branch`'s three-option menu (merge locally, push and
+  create a PR, or keep the branch) composes for tracked work, because a local
+  merge yields delivery with no reviewed candidate, no remote gate, and no
+  tracker record; and known overlaps are documented in the registry's
+  trigger-collision audit rather than dodged by contorting a description, since
+  description-based routing is winner-takes-attention and a contorted
+  description misroutes the requests the skill was built for. The seam table
+  maps all ten seams to their tickets with landed/planned markers, including the
+  registry's plural `load-bearing` entry (ticket authoring and
+  pre-implementation) as two rows rather than one: nine rows are Landed and #134
+  carries the table's sole Planned marker, each checked against live tracker
+  state rather than the ticket narrative. That nine includes #131, owned by
+  sibling epic #119 rather than this one — its port already shipped in
+  `implement-epic`'s dispatch prose (`bb31f34`, six commits below this
+  candidate's base) before this ticket's work began. Rule 5 cites #136's landed
+  description-tier corpus (35 result-blind cases, five repetitions each,
+  majority wins) rather than describing it as pending: its one recorded
+  candidate overlap did not reproduce on retest, and the two tiers that remain
+  genuinely unmeasured — the headless tier and the peer-installed composition
+  cases — are named as gaps instead of glossed over. A contract test asserts the
+  five rules, their rationales, the peer's actual three-option menu, and the
+  seam table's status column in both directions against a declared ticket tuple,
+  row-driven as well as ticket-driven so a row citing an undeclared ticket is
+  caught too — moving a ticket between the two tuples is the edit that keeps the
+  table enforceable, since nothing in the suite observes GitHub directly
 
 - docs(carve-changesets): add gh stack implementation plan
+  (`0aa07474344e7deb4d150cf602eeb924816c8836`)
 
 - docs(carve-changesets): scope native fences and close publication gaps
   (`9717064bf7edce07542a0aa40ab6120d12be4655`)
