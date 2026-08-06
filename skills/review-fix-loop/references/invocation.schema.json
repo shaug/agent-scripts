@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-fix-loop/invocation.schema.json",
+  "$id": "https://github.com/shaug/compris/review-fix-loop/invocation.schema.json",
   "title": "Review-fix-loop invocation",
   "type": "object",
   "additionalProperties": false,

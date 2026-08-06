@@ -1,4 +1,4 @@
-# shaug/agent-scripts
+# shaug/compris
 
 A personal monorepo for agent skills and supporting scripts.
 
@@ -13,15 +13,15 @@ skills together so stable-name dependencies such as `implement-ticket`,
 Add the repository marketplace, install the plugin, and start a fresh session:
 
 ```text
-/plugin marketplace add shaug/agent-scripts
-/plugin install agent-scripts@agent-scripts
+/plugin marketplace add shaug/compris
+/plugin install compris@shaug
 ```
 
 The equivalent non-interactive commands are:
 
 ```bash
-claude plugin marketplace add shaug/agent-scripts
-claude plugin install agent-scripts@agent-scripts
+claude plugin marketplace add shaug/compris
+claude plugin install compris@shaug
 ```
 
 ### Codex
@@ -30,8 +30,8 @@ Codex CLI 0.117 or newer can add the repository marketplace and install the same
 plugin:
 
 ```bash
-codex plugin marketplace add shaug/agent-scripts
-codex plugin add agent-scripts@agent-scripts
+codex plugin marketplace add shaug/compris
+codex plugin add compris@shaug
 ```
 
 The repository marketplace also appears in the Codex plugin browser. Start a
@@ -42,7 +42,7 @@ fresh Codex task after installation so the complete skill set is loaded.
 Standalone-capable skills can still be installed independently:
 
 ```bash
-npx skills add shaug/agent-scripts
+npx skills add shaug/compris
 ```
 
 Codex users can also invoke `$skill-installer` with this repository. Prefer the
@@ -98,9 +98,9 @@ Current reusable agent skills:
   publishes them separately) and an `update_pr` policy (one expected-old,
   fast-forward-only Git push immediately after convergence). Standalone today:
   no existing caller skill invokes it yet — see
-  [issues #103](https://github.com/shaug/agent-scripts/issues/103),
-  [#104](https://github.com/shaug/agent-scripts/issues/104), and
-  [#105](https://github.com/shaug/agent-scripts/issues/105) for the tracked
+  [issues #103](https://github.com/shaug/compris/issues/103),
+  [#104](https://github.com/shaug/compris/issues/104), and
+  [#105](https://github.com/shaug/compris/issues/105) for the tracked
   `implement-ticket`/`babysit-pr`/`carve-changesets` migration follow-ups.
 
 The composed implementation dependency chain is:
@@ -247,7 +247,7 @@ the named-peer registry's trigger-collision audit in
 rather than worked around by contorting a description. *Why:* description-based
 routing is winner-takes-attention, and a contorted description misroutes the
 requests the skill was built for while still losing the contested ones.
-[Issue #136](https://github.com/shaug/agent-scripts/issues/136) landed the
+[Issue #136](https://github.com/shaug/compris/issues/136) landed the
 description-tier corpus that empirically exercises the audit's dispositions: 35
 result-blind cases across all ten skills, five repetitions each, majority wins.
 Its one recorded candidate overlap did not reproduce on retest — see
@@ -263,18 +263,18 @@ yet.
 Where the two libraries meet, and what each seam does. Update this table as
 seams land.
 
-| Seam                                   | Peer                                         | What composes                                                                                                                                                                                  | Ticket                                                    | Status  |
-| -------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------- |
-| Ticket authoring                       | `superpowers:brainstorming`                  | `ready-ticket` borrows the questioning discipline — one question at a time, intent before construction — and stops at design approval; it never creates a spec or plan file                    | [#124](https://github.com/shaug/agent-scripts/issues/124) | Landed  |
-| Authoring-time assumption verification | `load-bearing`                               | Offered once in an interactive `ready-ticket` run when the drafted body rests on costly-to-falsify assumptions; the recommendation is recorded and passed over in an autonomous one            | [#124](https://github.com/shaug/agent-scripts/issues/124) | Landed  |
-| Not-ready routing                      | —                                            | `implement-ticket`'s not-ready `blocked` result names `ready-ticket` as the remediation path; a recommendation, never a dispatch                                                               | [#125](https://github.com/shaug/agent-scripts/issues/125) | Landed  |
-| Pre-implementation verification        | `load-bearing`                               | Offered once in an interactive run when the ticket rests on costly-to-falsify assumptions; recorded and passed over in an autonomous one. Skips assumptions already verified at authoring time | [#126](https://github.com/shaug/agent-scripts/issues/126) | Landed  |
-| Implementation method                  | `superpowers:test-driven-development`        | Supplies the method for producing the house's change-demonstrating-test evidence; the evidence contract and its exemptions govern                                                              | [#126](https://github.com/shaug/agent-scripts/issues/126) | Landed  |
-| Finding and feedback consumption       | `superpowers:receiving-code-review`          | Ported with attribution into `review-suite/consumption-disciplines.md`, bundled into the three skills that consume findings                                                                    | [#127](https://github.com/shaug/agent-scripts/issues/127) | Landed  |
-| CI diagnosis                           | `superpowers:systematic-debugging`           | Recommended in `babysit-pr`'s CI-diagnosis loop after repeated failed fixes; its architecture escalation maps to the skill's blocked-with-evidence terminal                                    | [#127](https://github.com/shaug/agent-scripts/issues/127) | Landed  |
-| Merge boundary                         | `superpowers:finishing-a-development-branch` | House territory. Composition rule 4 above records which of its three options composes                                                                                                          | [#128](https://github.com/shaug/agent-scripts/issues/128) | Landed  |
-| Worktree isolation                     | `superpowers:using-git-worktrees`            | The isolated-workspace pattern, ported into `implement-ticket`'s one-ticket-one-worktree rule                                                                                                  | [#134](https://github.com/shaug/agent-scripts/issues/134) | Planned |
-| Parallel dispatch                      | `superpowers:dispatching-parallel-agents`    | The post-parallel verification habit is ported; the dispatch mechanics are not                                                                                                                 | [#131](https://github.com/shaug/agent-scripts/issues/131) | Landed  |
+| Seam                                   | Peer                                         | What composes                                                                                                                                                                                  | Ticket                                              | Status  |
+| -------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------- |
+| Ticket authoring                       | `superpowers:brainstorming`                  | `ready-ticket` borrows the questioning discipline — one question at a time, intent before construction — and stops at design approval; it never creates a spec or plan file                    | [#124](https://github.com/shaug/compris/issues/124) | Landed  |
+| Authoring-time assumption verification | `load-bearing`                               | Offered once in an interactive `ready-ticket` run when the drafted body rests on costly-to-falsify assumptions; the recommendation is recorded and passed over in an autonomous one            | [#124](https://github.com/shaug/compris/issues/124) | Landed  |
+| Not-ready routing                      | —                                            | `implement-ticket`'s not-ready `blocked` result names `ready-ticket` as the remediation path; a recommendation, never a dispatch                                                               | [#125](https://github.com/shaug/compris/issues/125) | Landed  |
+| Pre-implementation verification        | `load-bearing`                               | Offered once in an interactive run when the ticket rests on costly-to-falsify assumptions; recorded and passed over in an autonomous one. Skips assumptions already verified at authoring time | [#126](https://github.com/shaug/compris/issues/126) | Landed  |
+| Implementation method                  | `superpowers:test-driven-development`        | Supplies the method for producing the house's change-demonstrating-test evidence; the evidence contract and its exemptions govern                                                              | [#126](https://github.com/shaug/compris/issues/126) | Landed  |
+| Finding and feedback consumption       | `superpowers:receiving-code-review`          | Ported with attribution into `review-suite/consumption-disciplines.md`, bundled into the three skills that consume findings                                                                    | [#127](https://github.com/shaug/compris/issues/127) | Landed  |
+| CI diagnosis                           | `superpowers:systematic-debugging`           | Recommended in `babysit-pr`'s CI-diagnosis loop after repeated failed fixes; its architecture escalation maps to the skill's blocked-with-evidence terminal                                    | [#127](https://github.com/shaug/compris/issues/127) | Landed  |
+| Merge boundary                         | `superpowers:finishing-a-development-branch` | House territory. Composition rule 4 above records which of its three options composes                                                                                                          | [#128](https://github.com/shaug/compris/issues/128) | Landed  |
+| Worktree isolation                     | `superpowers:using-git-worktrees`            | The isolated-workspace pattern, ported into `implement-ticket`'s one-ticket-one-worktree rule                                                                                                  | [#134](https://github.com/shaug/compris/issues/134) | Planned |
+| Parallel dispatch                      | `superpowers:dispatching-parallel-agents`    | The post-parallel verification habit is ported; the dispatch mechanics are not                                                                                                                 | [#131](https://github.com/shaug/compris/issues/131) | Landed  |
 
 The registry in [`docs/skill-authoring.md`](docs/skill-authoring.md) classifies
 every peer skill into one of four forms — referenced peer, ported with

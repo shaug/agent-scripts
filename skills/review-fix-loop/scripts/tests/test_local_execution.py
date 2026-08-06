@@ -118,7 +118,7 @@ class LockingTests(unittest.TestCase):
             pass  # re-acquiring after a clean exit must succeed
 
     def test_remote_target_lock_contention(self):
-        target = ("shaug/agent-scripts", "refs/heads/pr-branch")
+        target = ("shaug/compris", "refs/heads/pr-branch")
         with LE.acquire_candidate_locks(
             self.common, "refs/heads/fix/a", remote_target=target
         ):
@@ -136,12 +136,12 @@ class LockingTests(unittest.TestCase):
                 with LE.acquire_candidate_locks(
                     self.common,
                     "refs/heads/fix/97",
-                    remote_target=("shaug/agent-scripts", "refs/heads/pr-branch"),
+                    remote_target=("shaug/compris", "refs/heads/pr-branch"),
                 ):
                     pass
 
     def test_remote_lock_busy_releases_already_acquired_local_lock(self):
-        target = ("shaug/agent-scripts", "refs/heads/pr-branch")
+        target = ("shaug/compris", "refs/heads/pr-branch")
         with LE.acquire_candidate_locks(
             self.common, "refs/heads/fix/a", remote_target=target
         ):
@@ -157,7 +157,7 @@ class LockingTests(unittest.TestCase):
             pass
 
     def test_two_local_branches_targeting_same_pr_ref_contend(self):
-        target = ("shaug/agent-scripts", "refs/pull/42/head")
+        target = ("shaug/compris", "refs/pull/42/head")
         with LE.acquire_candidate_locks(
             self.common, "refs/heads/branch-one", remote_target=target
         ):
@@ -198,8 +198,8 @@ def make_checkpoint(**overrides) -> dict:
         "schema_version": "1.0",
         "invocation_id": "inv-1",
         "repository": {
-            "identity": "shaug/agent-scripts",
-            "git_common_directory": "/work/agent-scripts/.git",
+            "identity": "shaug/compris",
+            "git_common_directory": "/work/compris/.git",
         },
         "branch": "fix/97-example",
         "worktree": {

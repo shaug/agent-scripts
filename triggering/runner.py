@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the result-blind triggering corpus through a fresh-process executor.
 
-Each case asks one question: given a prompt, which agent-scripts skill (if any)
+Each case asks one question: given a prompt, which compris skill (if any)
 should trigger? The executor never sees the expected answer, the case's `kind`,
 or which skill the case was filed under — only the prompt and the catalog of
 skill descriptions a router would actually have.

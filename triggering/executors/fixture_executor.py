@@ -24,7 +24,7 @@ import sys
 # one prompt legitimately contains another's vocabulary — "before merging, give
 # this a proper review" carries merge language but is a review request.
 RULES: tuple[tuple[str, str | None], ...] = (
-    # Peer-owned language: no agent-scripts skill may claim these.
+    # Peer-owned language: no compris skill may claim these.
     (r"\bbrainstorm\b", None),
     (r"red-green-refactor|test-driven development|failing test first", None),
     (r"\bdebug\b|diagnos|why (it|this) fails|work out why", None),

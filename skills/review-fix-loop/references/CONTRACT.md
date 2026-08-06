@@ -7,10 +7,10 @@ express. `scripts/validate.py` enforces both the schemas and these rules without
 third-party dependencies, matching the dependency-free convention used by
 `review-code-change`'s bundled review-suite contract.
 
-This child ([issue #96](https://github.com/shaug/agent-scripts/issues/96)) adds
-only the schemas and their validator. It does not run reviewers, apply fixes,
-acquire locks, manage worktrees, recover from interruption, or publish anything
-— those behaviors belong to the later children described in
+This child ([issue #96](https://github.com/shaug/compris/issues/96)) adds only
+the schemas and their validator. It does not run reviewers, apply fixes, acquire
+locks, manage worktrees, recover from interruption, or publish anything — those
+behaviors belong to the later children described in
 [`design/review-fix-loop.md`](../../../design/review-fix-loop.md).
 
 ## Contract ownership

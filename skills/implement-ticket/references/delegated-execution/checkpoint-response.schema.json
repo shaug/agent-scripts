@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Agent Scripts delegated implement-ticket checkpoint response",
+  "title": "Compris delegated implement-ticket checkpoint response",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,7 +16,7 @@
   ],
   "properties": {
     "schema": {
-      "const": "agent-scripts.implement-ticket/checkpoint-response/v2"
+      "const": "compris.implement-ticket/checkpoint-response/v2"
     },
     "invocation_id": {
       "type": "string",

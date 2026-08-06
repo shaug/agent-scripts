@@ -1105,7 +1105,7 @@ def up_mismatched_grant_blocked(tmp_dir: Path) -> dict[str, Any]:
             {
                 "mechanism_id": "ci-check",
                 "kind": "external_ci",
-                "repository": "shaug/agent-scripts",
+                "repository": "shaug/compris",
                 "ref": "refs/heads/some-other-branch",
                 "origin_only_evidence": "CI only evaluates the pushed remote ref",
             }

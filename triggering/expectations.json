@@ -19,12 +19,12 @@
     {
       "case_id": "babysit-pr-negative-plan",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "babysit-pr-negative-debug",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "carve-changesets-positive-split",
@@ -39,12 +39,12 @@
     {
       "case_id": "carve-changesets-negative-brainstorm",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "carve-changesets-negative-tdd",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "implement-epic-positive-epic",
@@ -64,7 +64,7 @@
     {
       "case_id": "implement-epic-negative-plan",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "implement-ticket-positive-numbered",
@@ -84,12 +84,12 @@
     {
       "case_id": "implement-ticket-negative-tdd",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "implement-ticket-negative-debug",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "ready-ticket-positive-vague",
@@ -109,7 +109,7 @@
     {
       "case_id": "ready-ticket-negative-brainstorm",
       "expected_skill": null,
-      "rationale": "Pure ideation: no agent-scripts skill may claim it. With superpowers installed the expected pick becomes superpowers:brainstorming, which is why that assertion lives in the peer-installed composition tier rather than here \u2014 this tier's catalog contains only what is actually installed."
+      "rationale": "Pure ideation: no compris skill may claim it. With superpowers installed the expected pick becomes superpowers:brainstorming, which is why that assertion lives in the peer-installed composition tier rather than here \u2014 this tier's catalog contains only what is actually installed."
     },
     {
       "case_id": "review-code-change-positive-review",
@@ -129,7 +129,7 @@
     {
       "case_id": "review-code-change-negative-plan",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "review-code-simplicity-positive",
@@ -149,7 +149,7 @@
     {
       "case_id": "review-correctness-negative-debug",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "review-fix-loop-positive",
@@ -169,7 +169,7 @@
     {
       "case_id": "review-solution-simplicity-negative-plan",
       "expected_skill": null,
-      "rationale": "Peer-shaped language; no agent-scripts skill may claim it."
+      "rationale": "Peer-shaped language; no compris skill may claim it."
     },
     {
       "case_id": "babysit-pr-collision-before-merging",

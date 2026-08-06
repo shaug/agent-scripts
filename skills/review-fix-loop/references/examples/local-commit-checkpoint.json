@@ -34,8 +34,8 @@
     "policy": "local_commit"
   },
   "repository": {
-    "git_common_directory": "/work/agent-scripts/.git",
-    "identity": "shaug/agent-scripts"
+    "git_common_directory": "/work/compris/.git",
+    "identity": "shaug/compris"
   },
   "review_records": [
     {

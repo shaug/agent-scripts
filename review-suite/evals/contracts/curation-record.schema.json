@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/curation-record.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/curation-record.schema.json",
   "title": "Connector-outcome curation record",
   "description": "One adjudicated connector finding, curated for possible promotion into a result-blind regression case (see `../corpus/corpus.schema.json`) or a rubric/repository-instruction change. A curation record is never itself an executor payload. `public` restates only what a future regression case's reviewer-visible tree may eventually carry; `private` holds grading and administrative evidence exactly as the replay corpus's `private/expectations` and `private/provenance` do, and never enters a reviewer-visible artifact. A connector's claim is untrusted until `disposition` and `public.adjudication_evidence` record how it was actually adjudicated.",
   "type": "object",

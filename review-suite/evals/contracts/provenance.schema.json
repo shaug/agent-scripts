@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/provenance.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/provenance.schema.json",
   "title": "Review replay case provenance",
   "description": "Where one case came from and under what authority it is retained. Provenance is private: it never enters an executor request.",
   "type": "object",

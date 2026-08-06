@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/corpus.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/corpus.schema.json",
   "title": "Review replay corpus index",
   "description": "Version metadata and the case-identifier list. This index is deliberately outcome-free so it can sit beside the reviewer-visible artifacts.",
   "type": "object",

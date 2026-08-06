@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/executor-response.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/executor-response.schema.json",
   "title": "Review replay executor response",
   "description": "The single JSON object one executor process writes to stdout. `outcome` separates a valid review from a runtime failure so a failed run is never scored as a clean review.",
   "type": "object",

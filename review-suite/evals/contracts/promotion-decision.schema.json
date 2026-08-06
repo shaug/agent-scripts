@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/shaug/agent-scripts/review-suite/evals/contracts/promotion-decision.schema.json",
+  "$id": "https://github.com/shaug/compris/review-suite/evals/contracts/promotion-decision.schema.json",
   "title": "Connector-outcome promotion decision",
   "description": "Records the narrowest-owner decision the promotion workflow makes for one or more curation records: keep as a corpus case only, update the global correctness rubric, update a repository-owned instruction file, or promote nothing. `curation.py` enforces every cross-record rule this schema cannot express: which dispositions may support a positive or negative case, representativeness for a rubric change, and that a repository-instruction change only ever targets an existing repository-owned instruction mechanism.",
   "type": "object",
