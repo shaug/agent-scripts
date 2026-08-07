@@ -70,8 +70,8 @@ monitoring, resolve and verify:
 - local branch and worktree when diagnosis or mutation may occur;
 - live ticket goal, acceptance criteria, non-goals, allowed fix scope, and named
   specifications when the caller supplies them;
-- current focused/full validation and `review-code-change` evidence, including
-  the exact head and base to which each applies;
+- current focused/full validation and `review-fix-loop` evidence, including the
+  exact head and base to which each applies;
 - required CI, human, connector, comment, formal-review, reaction, and thread
   gates, including how absence of a category is established;
 - completion policy, retry budget, and review-cycle budget;

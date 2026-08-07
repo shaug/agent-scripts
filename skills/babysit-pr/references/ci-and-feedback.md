@@ -64,8 +64,10 @@ connector finding, and unresolved thread:
    named specifications, and validation evidence.
 3. Mark it accepted, rejected with evidence, deferred as explicitly out of
    scope, or blocked for clarification.
-4. For an accepted code change, revalidate, commit, push, and run fresh
-   repository-owned review on the new candidate.
+4. For an accepted code change, revalidate, commit it without pushing, and
+   delegate repository review and remediation to
+   [`review-fix-loop`](review-fix-loop-handoff.md), which owns the eventual push
+   once its review converges.
 5. Reply on the originating surface only when authorized.
 6. Resolve only after the concern is fully fixed or validly rejected and
    repository policy permits resolution.
