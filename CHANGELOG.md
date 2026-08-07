@@ -45,7 +45,16 @@ summary: Chronological history of repository and skill changes.
   rationalization table's content. `babysit-pr` has no registered forward
   corpus; `just eval-record babysit-pr` reports that gap directly rather than
   recording something in its place. The real-model tier for `implement-ticket`
-  ran both before and after this change at its actual rebased base and head.
+  ran both before and after this change at its actual rebased base
+  (`20d05b0`) and this candidate's own head: 31/58 before, 34/58 after. Four
+  cases move to newly passing (`external-head-change`,
+  `legitimate-ticket-body-remains-scope`, `repository-command-remains-proposal`,
+  `resumed-pr-deduplication`) and one to newly failing
+  (`implement-epic-consumes-ticket-results`, whose `target_skill` is
+  `implement-epic` — a skill this diff does not touch at all, and which #129
+  explicitly excludes — so the flip is this suite's already-documented
+  single-sample real-model variance, not a regression this change caused); the
+  other 53 of 58 cases are unchanged.
 
 - feat(carve-changesets): delegate the per-changeset review and fix loop to
   review-fix-loop (issue #105) — replace phase 2's inlined "construct and run
