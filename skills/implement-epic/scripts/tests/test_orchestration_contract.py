@@ -67,12 +67,12 @@ class ImplementEpicContractTests(unittest.TestCase):
     def test_dependency_chain_is_stable_and_acyclic(self):
         self.assertIn(
             "`implement-epic` → `implement-ticket` → "
-            "(`review-code-change`, `babysit-pr`, `carve-changesets`)",
+            "(`review-fix-loop`, `babysit-pr`, `carve-changesets`)",
             self.contract,
         )
         self.assertIn(
-            "Do not make this skill invoke `review-code-change`, `babysit-pr`, or "
-            "`carve-changesets` itself",
+            "Do not make this skill invoke `review-fix-loop`, "
+            "`review-code-change`, `babysit-pr`, or `carve-changesets` itself",
             self.contract,
         )
         self.assertIn("never recursively invoke this skill", self.contract)

@@ -272,11 +272,14 @@ implement-epic
     ├── review-fix-loop             # initial candidate review/fix/converge loop
     │   └── review-code-change      # each review pass inside the loop
     ├── babysit-pr                  # ordinary single-PR lifecycle
-    │   └── review-code-change      # after a head-changing fix
+    │   └── review-fix-loop         # after a head-changing fix (update_pr)
+    │       └── review-code-change  # each review pass inside the loop
     ├── carve-changesets            # authority-gated oversized path
-    │   ├── review-code-change      # each exact changeset
+    │   ├── review-fix-loop         # each changeset's review/fix/converge loop
+    │   │   └── review-code-change  # each review pass inside the loop
     │   └── babysit-pr              # each changeset PR lifecycle
-    │       └── review-code-change  # after a head-changing fix
+    │       └── review-fix-loop     # after a head-changing fix (update_pr)
+    │           └── review-code-change
     ┊
     ┈▷ ready-ticket                 # recommendation only, never invoked
 ```

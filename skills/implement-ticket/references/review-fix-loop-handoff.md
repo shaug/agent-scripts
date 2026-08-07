@@ -12,9 +12,11 @@ into `implement-ticket`.
 This reference applies only to the initial candidate, before any publication
 path is selected, and always under `publication.policy: local_commit` —
 `review-fix-loop` never pushes on this skill's behalf. `babysit-pr`'s
-post-publication remediation loop and `carve-changesets`'s per-changeset review
-are separate, unmigrated consumers of repository-owned `review-code-change`;
-this handoff does not apply to either.
+post-publication remediation loop (under `update_pr`, per issue #104) and
+`carve-changesets`'s per-changeset review (under `local_commit`, one invocation
+per changeset, per issue #105) are separate, differently-scoped
+`review-fix-loop` consumers with their own handoffs; this handoff does not apply
+to either.
 
 ## Responsibility boundary
 

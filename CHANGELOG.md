@@ -4,7 +4,44 @@ summary: Chronological history of repository and skill changes.
 
 # Changelog
 
-## 2026-08-07 — Migrated babysit-pr's post-publication repository review/fix loop to delegate to review-fix-loop under its update_pr publication policy
+## 2026-08-07 — Migrated carve-changesets' per-changeset review/fix loop and babysit-pr's post-publication review/fix loop to delegate to review-fix-loop, completing the design's caller-migration sequence
+
+- feat(carve-changesets): delegate the per-changeset review and fix loop to
+  review-fix-loop (issue #105) — replace phase 2's inlined "construct and run
+  the required `review-code-change` packet" step, and the successor-source
+  recovery procedure's "build fresh per-changeset review packets" step, with
+  delegation to repository-owned `review-fix-loop` under its `local_commit`
+  publication policy: one independent invocation per changeset, constructed and
+  resolved in chain order because changeset *i*'s comparison base is changeset
+  *i - 1*'s finalized branch. A new `references/review-fix-loop-handoff.md`
+  (mirroring the `implement-ticket`/ `babysit-pr` handoff pattern, adapted for a
+  chain) owns invocation construction —
+  `change_contract.allowed_remediation_scope` bounded to each changeset's own
+  extraction selectors so a fix cannot spill into a sibling changeset — the
+  caller-owned `reviewer`/`decide`/`apply_fix`/validation port policies
+  (including the chain-specific steered-reviewer risk: an earlier changeset
+  reviewing clean tempts a caller to tell the next reviewer the design is
+  already settled), and the `converged`/`changes_remaining`/`blocked`
+  terminal-result mapping. The published PR lifecycle keeps its existing
+  `babysit-pr` delegation unchanged: it already delegates its own post-fix
+  review to `review-fix-loop` under `update_pr` per #104, so no second migration
+  was needed there — the ticket's "each current remediation path has an explicit
+  delegate-or-retain decision" criterion is satisfied by documenting that
+  retention alongside the per-changeset delegation, in both `SPEC.md`'s
+  suite-seams section and the narrowed `references/suite-handoffs.md` (now
+  scoped to the PR-lifecycle and successor-recovery handoffs it retains).
+  `README.md`'s composed dependency diagram and `implement-ticket`'s own inline
+  copy of it are updated to match, the inline copy also picking up a stale line
+  PR #177 missed (`babysit-pr`'s post-fix step still named `review-code-change`
+  directly instead of the `review-fix-loop` delegation #104 actually shipped).
+  *Why:* the design's own migration ticket for this caller names an explicit
+  delegate-or-retain decision per remediation path, safe terminal-state mapping,
+  an unchanged PR watcher integration, no intermediate push before convergence,
+  and continued final-tree/ordered-stack equivalence as what the migration must
+  prove; `carve-changesets` has a deterministic forward-eval corpus but no
+  registered real-model executor, so both a `before` and an `after` summary are
+  recorded under `skills/carve-changesets/evals/results/` per `AGENTS.md`'s
+  eval-backed change norm.
 
 - feat(babysit-pr): delegate repository review and remediation to
   review-fix-loop (issue #104) — replace the inline "Revalidate and review every
@@ -48,7 +85,7 @@ summary: Chronological history of repository and skill changes.
   before the duplicated post-publication loop comes out; `babysit-pr` has no
   registered real-model or deterministic forward-eval corpus, so this evidence
   is recorded as an `attempted` gap per `AGENTS.md`'s eval-backed change norm
-  rather than a before/after run.
+  rather than a before/after run (da26dc3d9d90274890f86019dadff1010dfefe61)
 
 ## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched, and migrated implement-ticket's initial candidate review/fix loop to delegate to the now-complete review-fix-loop skill
 
