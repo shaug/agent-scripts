@@ -32,8 +32,10 @@ class BabysitPrContractTests(unittest.TestCase):
         cls.github = read("references/github.md")
         cls.decisions = read("references/ci-and-feedback.md")
         cls.upstream = read("references/upstream.md")
+        cls.handoff = read("references/review-fix-loop-handoff.md")
         cls.watcher = read("scripts/gh_pr_watch.py")
-        cls.contract = compact(cls.skill + cls.github + cls.decisions)
+        cls.contract = compact(cls.skill + cls.github + cls.decisions + cls.handoff)
+        cls.handoff_compact = compact(cls.handoff)
         cls.cases = {item["id"]: item for item in json.loads(read("evals/cases.json"))}
         cls.expectations = {
             item["case_id"]: item
@@ -47,18 +49,19 @@ class BabysitPrContractTests(unittest.TestCase):
         self.assertNotIn("/tmp/codex", self.watcher)
 
     def test_re_review_dispatch_carries_integrity_tier_and_turn_count(self):
-        skill = compact(self.skill)
+        surface = compact(self.skill + self.handoff)
         self.assertIn(
-            "The reviewer receives evidence and contracts, never conclusions", skill
+            "The reviewer receives evidence and contracts, never conclusions",
+            surface,
         )
-        self.assertIn("stop and rewrite it", skill)
-        self.assertIn("returns confirmation, not review", skill)
-        self.assertIn("capability tier adequate for judgment", skill)
-        self.assertIn("Prefer one well-briefed re-review", skill)
+        self.assertIn("stop and rewrite it", surface)
+        self.assertIn("returns confirmation, not review", surface)
+        self.assertIn("capability tier adequate for judgment", surface)
+        self.assertIn("Prefer one well-briefed re-review", surface)
 
     def test_tier_guidance_names_no_product_or_model(self):
         for banned in ("gpt", "claude-", "opus", "sonnet", "haiku", "gemini"):
-            self.assertNotIn(banned, compact(self.skill).lower())
+            self.assertNotIn(banned, compact(self.skill + self.handoff).lower())
 
     def test_completion_policies_and_terminal_states_are_stable(self):
         for policy in (
@@ -72,6 +75,7 @@ class BabysitPrContractTests(unittest.TestCase):
             self.assertIn(state, self.skill)
 
     def test_review_dependency_is_repository_owned(self):
+        self.assertIn("review-fix-loop", self.contract)
         self.assertIn("review-code-change", self.contract)
 
     def test_watcher_paths_are_skill_relative(self):
@@ -105,18 +109,66 @@ class BabysitPrContractTests(unittest.TestCase):
         )
 
     def test_review_result_contract_violations_block_the_final_gate(self):
+        """review-fix-loop now owns raw review-code-change result validation
+        (schema version, malformed shape); babysit-pr only needs to treat any
+        review-fix-loop `blocked` or `changes_remaining` result as a failed
+        local gate, per #104."""
         for case_id in (
-            "stale-review-schema-version-blocks-final-gate",
-            "malformed-review-result-blocks-final-gate",
-            "green-ci-alone-insufficient-without-valid-review",
+            "review-fix-loop-missing-capability-blocks-final-gate",
+            "review-fix-loop-reviewer-integrity-failure-blocks-final-gate",
+            "review-fix-loop-changes-remaining-surfaces-unpushed-commits",
         ):
             self.assertEqual("blocked", self.expectations[case_id]["terminal_state"])
-        self.assertIn("references/review-suite/CONTRACT.md", self.contract)
-        self.assertIn("scripts/review_gate.py", self.contract)
-        self.assertIn("schema_version", self.decisions + self.skill)
+        self.assertEqual(
+            "ready_to_merge",
+            self.expectations["review-fix-loop-converged-publishes-and-restarts-gates"][
+                "terminal_state"
+            ],
+        )
+        self.assertNotIn("references/review-suite/CONTRACT.md", self.contract)
+        self.assertNotIn("scripts/review_gate.py", self.contract)
+        self.assertFalse((SKILL_ROOT / "scripts" / "review_gate.py").exists())
+        self.assertFalse(
+            (SKILL_ROOT / "references" / "review-suite" / "CONTRACT.md").exists()
+        )
+        self.assertIn("review-fix-loop-handoff.md", self.skill)
         self.assertIn(
             "never satisfied by green CI or connector approval alone", self.contract
         )
+
+    def test_publication_race_and_unpushed_commits_are_covered(self):
+        """Explicit #104 scope: safe watcher transitions on a PR-head/publication
+        race, and prominent surfacing of non-converged retained unpushed
+        commits."""
+        race = self.expectations[
+            "review-fix-loop-remote-advanced-produces-safe-watcher-transition"
+        ]
+        self.assertEqual("blocked", race["terminal_state"])
+        race_actions = compact(" ".join(race["required_actions"]))
+        self.assertIn("reread the live pr head independently", race_actions.lower())
+        self.assertIn("do not force a competing push", race_actions.lower())
+
+        for required in (
+            "Reread the live PR head independently of the stale invocation state",
+            "stop for operator reconciliation rather than forcing",
+            "a competing push",
+        ):
+            self.assertIn(required, self.handoff)
+
+        unpushed = self.expectations[
+            "review-fix-loop-changes-remaining-surfaces-unpushed-commits"
+        ]
+        unpushed_actions = compact(" ".join(unpushed["required_actions"]))
+        self.assertIn(
+            "surface the exact retained head and unpushed commits", unpushed_actions
+        )
+
+        for required in (
+            "remote_advanced",
+            "unpushed_commits",
+            "Surface the retained unpushed commits prominently",
+        ):
+            self.assertIn(required, self.handoff_compact)
 
     def test_runtime_adapters_exist_for_both_products(self):
         self.assertIn('display_name: "Babysit PR"', read("agents/openai.yaml"))

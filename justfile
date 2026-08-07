@@ -12,7 +12,7 @@ list-skills:
 # each caller that consumes a review-code-change result, so every skill stays
 # self-contained when installed outside this repository.
 sync-contracts:
-  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity babysit-pr review-fix-loop; do \
+  @for skill in review-code-change review-correctness review-code-simplicity review-solution-simplicity review-fix-loop; do \
     dest="{{skills_dir}}/$skill/references/review-suite"; \
     mkdir -p "$dest"; \
     cp review-suite/CONTRACT.md "$dest/CONTRACT.md"; \
@@ -27,7 +27,7 @@ sync-contracts:
     cp review-suite/consumption-disciplines.md "$dest/consumption-disciplines.md"; \
     echo "Synced $dest/consumption-disciplines.md"; \
   done
-  @for skill in babysit-pr review-fix-loop; do \
+  @for skill in review-fix-loop; do \
     scripts_dest="{{skills_dir}}/$skill/scripts"; \
     tests_dest="$scripts_dest/tests"; \
     mkdir -p "$tests_dest"; \

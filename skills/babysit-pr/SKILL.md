@@ -21,11 +21,10 @@ tracker, close a parent, deploy, or delete branches and worktrees.
   retrying a check, changing code, replying, or resolving a thread.
 - Read [the upstream source record](references/upstream.md) before changing the
   watcher or evaluating a new upstream version.
-- Read the bundled [review-result contract](references/review-suite/CONTRACT.md)
-  and the schema beside it before validating any `review-code-change` result;
-  use `scripts/review_gate.py` (or `references/review-suite/validate.py`
-  directly) to reject a stale, malformed, unsupported-version, non-`clean`, or
-  wrongly-bound result before treating it as evidence.
+- Always read
+  [the review-fix-loop handoff](references/review-fix-loop-handoff.md) before
+  delegating repository review and remediation for any head-changing PR fix, and
+  again before mapping its terminal result back onto the watcher.
 
 Use `scripts/gh_pr_watch.py` for deterministic snapshots, JSONL monitoring, and
 bounded failed-run retries. All watcher paths below are relative to this skill's
@@ -37,8 +36,10 @@ repository-specific gates passed.
 
 Require a runtime that can:
 
-- load this skill and repository-owned `review-code-change` by stable name or an
-  equivalent repository-owned mechanism;
+- load this skill and repository-owned `review-fix-loop` by stable name or an
+  equivalent repository-owned mechanism; `review-fix-loop`'s own dependency gate
+  covers `review-code-change` and its three lenses, so this skill does not
+  additionally require or substitute a direct `review-code-change` binding;
 - read GitHub PR metadata, Actions state and logs, reviews, comments, reactions,
   and resolved-thread state;
 - wait for asynchronous checks and reviews while retaining task ownership;
@@ -51,6 +52,14 @@ Fail explicitly when an applicable capability is missing. Optional product
 metadata under `agents/` does not constrain the core contract. A worker or
 subagent is one possible isolated context, not a required product API.
 
+## Pre-mutation dependency gate
+
+Verify `review-fix-loop` by stable repository-owned name before starting any
+watch that may own mutation. Missing `review-fix-loop` returns `blocked` before
+any code change; read-only monitoring may continue. Never download an external
+implementation at runtime, restore a private inlined review/fix loop, or accept
+a head-changing fix as ready without delegating its review to `review-fix-loop`.
+
 ## Resolve the operating contract
 
 Accept a PR number, PR URL, or an unambiguous current-branch PR. Before
@@ -61,8 +70,8 @@ monitoring, resolve and verify:
 - local branch and worktree when diagnosis or mutation may occur;
 - live ticket goal, acceptance criteria, non-goals, allowed fix scope, and named
   specifications when the caller supplies them;
-- current focused/full validation and `review-code-change` evidence, including
-  the exact head and base to which each applies;
+- current focused/full validation and `review-fix-loop` evidence, including the
+  exact head and base to which each applies;
 - required CI, human, connector, comment, formal-review, reaction, and thread
   gates, including how absence of a category is established;
 - completion policy, retry budget, and review-cycle budget;
@@ -245,50 +254,42 @@ nothing about what this skill requires.
 Stop for user help after retry/review budgets are exhausted or when permission,
 infrastructure, product decisions, or ambiguous feedback prevent safe progress.
 
-## Revalidate and review every fix
+## Delegate repository review and remediation
 
-After any head-changing fix:
+After any head-changing fix — and for a standalone `ready_to_merge` or
+`merge_when_ready` invocation whose caller did not already supply valid review
+evidence for the current candidate — delegate repository review and further
+remediation to repository-owned `review-fix-loop` rather than invoking
+`review-code-change` or an inline fix loop directly. Follow
+[the review-fix-loop handoff](references/review-fix-loop-handoff.md) for exactly
+how to construct the invocation, host its `reviewer`/`decide`/`apply_fix`/
+validation ports, and map its terminal result; do not reproduce those mechanics
+here.
 
-1. Run affected focused tests and the repository-required full gate.
-2. Commit every intended change and confirm a clean candidate worktree.
-3. Push the verified PR branch.
-4. Capture the new head/base and rebuild the raw evidence packet.
-5. Invoke repository-owned `review-code-change` in a fresh read-only context.
-6. Validate the returned result with `scripts/review_gate.py` (or the bundled
-   `references/review-suite/validate.py` directly) before treating it as
-   evidence: reject a schema-invalid, stale-`schema_version`, non-`aggregate`,
-   non-`clean`, or wrongly-bound result and rebuild it instead of consuming it.
-7. Apply only material, ticket-scoped blocking and strong-recommendation
-   findings within the bounded review cycle.
-8. Restart all invalidated remote gates on the new candidate.
+1. Run affected focused tests and the repository-required full gate for the
+   authored fix.
+2. Commit every intended change and confirm a globally clean candidate worktree.
+   Do not push — `review-fix-loop` owns publication under
+   `publication.policy: update_pr`, and pushing here would race its own
+   expected-old publish.
+3. Capture the exact new local head, comparison base, complete diff, and
+   worktree state, and construct one `review-fix-loop` invocation per the
+   handoff.
+4. Delegate. `review-fix-loop` owns any further material findings, revalidation,
+   commits, and the final expected-old fast-forward publish once its review
+   converges.
+5. Map the returned terminal result per
+   [the handoff's terminal-result mapping](references/review-fix-loop-handoff.md#terminal-result-mapping)
+   before deciding whether to restart the watcher, stop for user help, or
+   reconcile a publication race.
 
 Exclude implementation transcripts, intended fixes, prior conclusions, suspected
-findings, and expected evaluation outputs from review evidence.
+findings, and expected evaluation outputs from the evidence the `reviewer` port
+supplies.
 
-The reviewer receives evidence and contracts, never conclusions. If the
-invocation being written steers the answer — "do not flag", "this is fine", a
-pre-judged severity, or the verdict expected back — stop and rewrite it. The
-pressure is sharpest here: the fix was just written to satisfy a prior finding,
-so it is tempting to dispatch the re-review already knowing what it should say.
-A steered reviewer returns confirmation, not review.
-
-Give the re-review a capability tier adequate for judgment: it inherits the
-session's tier by default rather than the cheapest one, and a review that missed
-a defect a later cycle surfaces escalates one tier instead of rerunning
-identically. Prefer one well-briefed re-review to several thin ones; each one
-spends a cycle from the bounded budget.
-
-For a standalone `ready_to_merge` or `merge_when_ready` invocation, establish
-valid `review-code-change` evidence for the current candidate when the caller
-did not supply it. This does not transfer ownership of the ticket's initial
-implementation; it prevents a standalone watcher from declaring an unreviewed
-candidate ready.
-
-Return `blocked` when the review dependency is missing, the result fails the
-bundled schema or candidate-binding gate, the result is stale, malformed, an
-unsupported `schema_version`, `blocked`, or `changes_required`, reviewer
-integrity fails, or material findings remain after the cycle budget. Green CI or
-clean connector state never substitutes for this validated result.
+This does not transfer ownership of CI diagnosis, external feedback disposition,
+mergeability, or merge; it replaces only the mechanism this skill uses to obtain
+repository-owned review and apply its fixes.
 
 ## Apply the final gate
 
@@ -297,10 +298,10 @@ Before `ready_to_merge` or merge, require:
 - current head/base/effective-candidate identity;
 - intended changes committed with unrelated artifacts proven irrelevant;
 - focused and full validation passing for the current candidate;
-- clean repository-owned review for the current candidate, validated against the
-  bundled review-result contract's current schema version and bound to the exact
-  current head and base — never satisfied by green CI or connector approval
-  alone;
+- a `converged` `review-fix-loop` result for the current candidate, validated
+  against its own bundled schema and bound to the exact current head and base
+  per [the handoff](references/review-fix-loop-handoff.md) — never satisfied by
+  green CI or connector approval alone;
 - required CI passing;
 - current human and connector review under repository policy;
 - zero undispositioned actionable conversation comments, formal reviews,
@@ -324,13 +325,19 @@ Return exactly one terminal state:
   gate;
 - `merged`: GitHub confirms the reported candidate merged;
 - `closed`: PR closed without merge; or
-- `blocked`: one concrete user-help-required condition prevents safe progress.
+- `blocked`: one concrete user-help-required condition prevents safe progress —
+  including a `review-fix-loop` `changes_remaining` or `blocked` result mapped
+  per
+  [the handoff](references/review-fix-loop-handoff.md#terminal-result-mapping).
 
 Include repository, PR, head, base, branch/worktree, policy, authority used,
 validation, repository-owned review, CI, retry, human/connector/comment/review/
 thread state, fixes and pushed heads, mergeability, merged/closed identity,
 deferred findings, mutation ownership, caller-owned follow-up, and one next
-action or blocker. For example:
+action or blocker. When the most recent `review-fix-loop` delegation did not
+converge, report its exact retained local head and every unpushed commit
+prominently rather than folding them into a generic blocker line — the fix
+exists and is locally committed; it is simply not yet published. For example:
 
 ```text
 terminal_state: ready_to_merge
@@ -339,7 +346,8 @@ head: 4f2c…9a1d (branch fix/issue-77, worktree ../wt-issue-77)
 base: main @ 7be0…44c2
 completion_policy: ready_to_merge  authority_used: read + ticket-scoped fix + push
 validation: `just test` pass @ head; full gate pass @ head
-repository_review: review-code-change clean @ head 4f2c…9a1d vs base 7be0…44c2
+repository_review: review-fix-loop converged (update_pr, published) @ head
+  4f2c…9a1d vs base 7be0…44c2
 ci: 6/6 checks pass @ head        retries_used: 1/3 (run 8123, infrastructure)
 feedback: 3 comments dispositioned (2 fixed, 1 rejected with evidence);
   0 unresolved threads; human review approved @ head; connector clean @ head
@@ -347,6 +355,22 @@ fixes_pushed: 1 (commit 4f2c…9a1d, review-requested null check)
 mergeability: MERGEABLE / CLEAN    mutation_ownership: this task, released
 caller_owned_follow_up: merge, tracker transition, branch/worktree cleanup
 next_action: caller may merge via repository-approved squash method
+```
+
+A non-converged example instead reports the retained candidate:
+
+```text
+terminal_state: blocked
+repository: example/project        pr: #482
+reason: review-fix-loop changes_remaining/cycle_budget_exhausted
+head: 91ac…2f0d (branch fix/issue-77, worktree ../wt-issue-77) — LOCAL ONLY,
+  not pushed; PR still shows 7be0…44c2
+unpushed_commits: 3 (91ac…2f0d, 88d1…c3aa, 7cf0…11ee)
+unresolved_or_deferred_findings: 1 (review-correctness: unchecked nil
+  dereference in handler.go:42)
+next_action: operator review of the retained local candidate before
+  reconciliation; do not silently re-delegate without inspecting why
+  remediation stalled
 ```
 
 Under `watch_until_closed`, a ready snapshot is progress rather than terminal.

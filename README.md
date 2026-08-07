@@ -120,11 +120,11 @@ The skills:
   publishes them separately) and an `update_pr` policy (one expected-old,
   fast-forward-only Git push immediately after convergence). `implement-ticket`
   delegates its initial candidate's review and fix loop to it under
-  `local_commit`; `babysit-pr` and `carve-changesets` still run their own
-  post-publication review loops directly against `review-code-change` — see
-  [issues #104](https://github.com/shaug/compris/issues/104) and
-  [#105](https://github.com/shaug/compris/issues/105) for those tracked
-  migration follow-ups.
+  `local_commit`; `babysit-pr` delegates its post-publication review and fix
+  loop to it under `update_pr`. `carve-changesets` still runs its own
+  per-changeset review loop directly against `review-code-change` — see
+  [issue #105](https://github.com/shaug/compris/issues/105) for that tracked
+  migration follow-up.
 
 The composed implementation dependency chain is:
 
@@ -134,18 +134,21 @@ implement-epic
     ├── review-fix-loop             # initial candidate review/fix/converge loop
     │   └── review-code-change      # each review pass inside the loop
     ├── babysit-pr                  # ordinary single-PR lifecycle
-    │   └── review-code-change      # after a head-changing fix
+    │   └── review-fix-loop         # after a head-changing fix (update_pr)
+    │       └── review-code-change  # each review pass inside the loop
     ├── carve-changesets            # authority-gated oversized path
     │   ├── review-code-change      # each exact changeset
     │   └── babysit-pr              # each changeset PR lifecycle
-    │       └── review-code-change  # after a head-changing fix
+    │       └── review-fix-loop     # after a head-changing fix (update_pr)
+    │           └── review-code-change
     ┊
     ┈▷ ready-ticket                 # recommendation only, never invoked
 
 carve-changesets
 ├── review-code-change              # direct per-changeset review
 └── babysit-pr                      # each published PR lifecycle
-    └── review-code-change          # after a head-changing fix
+    └── review-fix-loop             # after a head-changing fix (update_pr)
+        └── review-code-change      # each review pass inside the loop
 ```
 
 Solid edges are invocation. The single dashed edge is a recommendation:

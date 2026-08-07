@@ -21,10 +21,11 @@ dependency refresh, cleanup, and final reporting.
 
 After handoff, `babysit-pr` owns current PR head/base resolution, CI and failed
 job diagnosis, bounded eligible retries, all published feedback surfaces,
-ticket-scoped PR fixes, post-fix validation and fresh `review-code-change`,
-external head changes, base drift, current-candidate human and connector gates,
-mergeability, and optional merge. It returns responsibility before tracker
-transition, mainline behavior verification, dependency refresh, or cleanup.
+ticket-scoped PR fixes, post-fix validation and repository review delegated to
+its own `review-fix-loop` invocation under `update_pr`, external head changes,
+base drift, current-candidate human and connector gates, mergeability, and
+optional merge. It returns responsibility before tracker transition, mainline
+behavior verification, dependency refresh, or cleanup.
 
 Do not reproduce those mechanics in this skill. Retain only caller-side policy,
 handoff construction, result validation, and post-merge work.
@@ -32,14 +33,16 @@ handoff construction, result validation, and post-merge work.
 ## Pre-mutation dependency gate
 
 Every successful ticket run publishes at least one PR that must be reconciled.
-Verify `babysit-pr` and `review-code-change` by stable repository-owned name
-before creating a branch or worktree. `review-code-change` is required here for
-`babysit-pr`'s own later post-fix re-review, independently of the
-`review-fix-loop` dependency the initial candidate review already requires — see
-[the review-fix-loop handoff](review-fix-loop-handoff.md). Missing `babysit-pr`
-returns `blocked` before mutation; never download an external implementation at
-runtime, restore a private copy of the old PR loop, or publish a PR that no
-owner will monitor.
+Verify `babysit-pr` by stable repository-owned name before creating a branch or
+worktree. `babysit-pr`'s own dependency gate covers `review-fix-loop` (and
+transitively `review-code-change`) for its post-fix re-review, independently of
+the `review-fix-loop` dependency this skill's own initial candidate review
+already requires — see
+[the review-fix-loop handoff](review-fix-loop-handoff.md). Do not additionally
+require or substitute a direct `review-code-change` binding here. Missing
+`babysit-pr` returns `blocked` before mutation; never download an external
+implementation at runtime, restore a private copy of the old PR loop, or publish
+a PR that no owner will monitor.
 
 Whole-epic routing still happens before dependency invocation and returns
 `requires_epic` without creating implementation state.
@@ -117,17 +120,20 @@ rules.
 The supplied initial review and pre-merge acceptance evidence are reusable only
 for their exact head and applicable base. A babysitter-authored or external head
 change invalidates affected head-bound entries. `babysit-pr` must then run
-affected and required validation, commit and push any authorized fix, invoke
-fresh repository-owned `review-code-change` with raw current evidence, and
-rebuild invalidated pre-merge and remote gates. It reports post-merge acceptance
-as caller-owned work rather than attempting it.
+affected and required validation, commit any authorized fix without pushing it,
+and delegate repository review and remediation to its own `review-fix-loop`
+invocation under `update_pr` — which owns the eventual push once its review
+converges — then rebuild invalidated pre-merge and remote gates on the published
+head. It reports post-merge acceptance as caller-owned work rather than
+attempting it.
 
 Never pass expected findings, implementation transcripts, or prior reviewer
 conclusions into a fresh review. A missing, malformed, stale (including a result
 carrying a superseded `schema_version`), blocked, `changes_required`, or
-materially unresolved review cannot satisfy readiness. Validate every fresh
-result against the bundled schema and require it to bind the exact new head and
-base before treating it as clean evidence.
+materially unresolved review cannot satisfy readiness — `babysit-pr`'s own
+`review-fix-loop` delegation already enforces this. Validate every fresh result
+against the bundled schema and require it to bind the exact new head and base
+before treating it as clean evidence.
 
 ## Terminal result mapping
 
