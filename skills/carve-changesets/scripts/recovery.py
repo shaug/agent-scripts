@@ -456,7 +456,7 @@ def recover_suffix_from_live(
         detail = "; ".join(f"{item.code}: {item.message}" for item in validation.errors)
         raise CommandError(f"Recovered live chain validation failed: {detail}")
     print(
-        "[EVIDENCE-INVALIDATED] Rebuild validation, review-code-change, CI, "
+        "[EVIDENCE-INVALIDATED] Rebuild validation, review-fix-loop, CI, "
         "connector, feedback, and thread evidence for every recovered head."
     )
     print("[OK] Suffix recovery completed and matches the immutable successor source.")
