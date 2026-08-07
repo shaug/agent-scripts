@@ -48,12 +48,14 @@ A compatible agentic runtime must be able to:
   taking ownership of local review.
 
 The portable dependency chain is `implement-epic` → `implement-ticket` →
-(`review-code-change`, `babysit-pr`, `carve-changesets`), with
-`carve-changesets` → `babysit-pr` per changeset and `babysit-pr` →
-`review-code-change` after a head-changing fix. Verify `implement-ticket`
-directly and require its result to prove that its own dependencies and
-applicable capabilities were available. Do not make this skill invoke
-`review-code-change`, `babysit-pr`, or `carve-changesets` itself.
+(`review-fix-loop`, `babysit-pr`, `carve-changesets`), with `carve-changesets` →
+(`review-fix-loop` per changeset, `babysit-pr` per changeset PR) and
+`babysit-pr` → `review-fix-loop` after a head-changing fix; `review-fix-loop`
+and `review-code-change` sit underneath every one of those edges. Verify
+`implement-ticket` directly and require its result to prove that its own
+dependencies and applicable capabilities were available. Do not make this skill
+invoke `review-fix-loop`, `review-code-change`, `babysit-pr`, or
+`carve-changesets` itself.
 
 Stop before child mutation with an explicit limitation when an applicable
 capability or dependency is unavailable. Product-specific discovery metadata

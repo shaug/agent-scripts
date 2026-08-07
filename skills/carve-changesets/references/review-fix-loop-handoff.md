@@ -76,13 +76,20 @@ invocation schema rejects anything else.
 
 Map that evidence onto one `review-fix-loop` invocation:
 
-- `repository`: exact repository identity and the stacked base branch — the
-  chain's base branch for changeset 1, otherwise changeset *i - 1*'s branch.
+- `repository`: `identity` and `git_common_directory` only — `review-fix-loop`'s
+  invocation-level `repository` has no field for a base branch. The stacked base
+  (changeset *i - 1*'s branch, or the chain base for changeset 1) is carried by
+  `candidate.comparison_base` below, and separately by the `reviewer` port's own
+  `review-code-change` packet, whose own `repository.base_branch` field is
+  exactly
+  [the suite handoffs' per-changeset review packet](suite-handoffs.md#per-changeset-review-packet)
+  table's `repository` row — a different schema than this invocation's.
 - `candidate`: changeset *i*'s exact branch, head SHA, the stacked base as
-  `comparison_base`, the complete unified diff from that base to the head, and
-  the worktree state above, with `all_changes_committed: true`. No PR exists yet
-  at this point in the workflow, so record `source_unavailable_reason` rather
-  than a `source_binding` — this delegation never needs publication authority.
+  `comparison_base` (`{ref, sha}`), the complete unified diff from that base to
+  the head, and the worktree state above, with `all_changes_committed: true`. No
+  PR exists yet at this point in the workflow, so record
+  `source_unavailable_reason` rather than a `source_binding` — this delegation
+  never needs publication authority.
 - `change_contract`: goal and acceptance criteria derived from the changeset's
   slug and description, with `pr_notes` preserving scaffolding, flags, and
   intentional incompleteness, exactly as
