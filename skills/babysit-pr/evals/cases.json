@@ -100,7 +100,7 @@
   {
     "id": "missing-capability",
     "request": "Take PR 119 to readiness.",
-    "runtime_profile": "The runtime cannot load review-code-change or read resolved review-thread state."
+    "runtime_profile": "The runtime cannot load review-fix-loop or read resolved review-thread state."
   },
   {
     "id": "untrusted-content",
@@ -113,24 +113,38 @@
     "candidate_state": "Repository policy explicitly documents that CI, connector, and human approval are not configured; local validation/review and remaining GitHub gates pass."
   },
   {
-    "id": "stale-review-schema-version-blocks-final-gate",
+    "id": "review-fix-loop-missing-capability-blocks-final-gate",
     "request": "Watch PR 205 until it is ready to merge.",
     "policy": "ready_to_merge",
     "authority": "read_and_ticket_scoped_fix_only",
-    "candidate_state": "CI and connector review are clean, but the supplied review-code-change result carries schema_version 1.1 instead of the bundled contract's current version 1.4."
+    "runtime_profile": "CI and connector review are clean, but review-fix-loop is not loadable by stable name."
   },
   {
-    "id": "malformed-review-result-blocks-final-gate",
+    "id": "review-fix-loop-reviewer-integrity-failure-blocks-final-gate",
     "request": "Watch PR 205 until it is ready to merge.",
     "policy": "ready_to_merge",
     "authority": "read_and_ticket_scoped_fix_only",
-    "candidate_state": "CI and connector review are clean, but the supplied review-code-change result fails the bundled review-result schema (a required field is missing)."
+    "candidate_state": "A head-changing fix is authored and delegated to review-fix-loop; its returned terminal result reports reviewer_integrity_failure (an attempted reviewer mutation)."
   },
   {
-    "id": "green-ci-alone-insufficient-without-valid-review",
-    "request": "Watch PR 205 until it is ready to merge.",
+    "id": "review-fix-loop-converged-publishes-and-restarts-gates",
+    "request": "Fix PR 206 if CI shows a candidate regression, then take it to readiness.",
     "policy": "ready_to_merge",
-    "authority": "read_and_ticket_scoped_fix_only",
-    "candidate_state": "CI is green and connector review is clean, but no valid schema-conformant review-code-change result exists yet for the current head."
+    "authority": "exclusive_mutation_and_push",
+    "candidate_state": "Failed-job logs demonstrate a deterministic regression; the fix is committed locally (not pushed) and delegated to review-fix-loop under update_pr, which converges and publishes the exact expected-old fast-forward."
+  },
+  {
+    "id": "review-fix-loop-changes-remaining-surfaces-unpushed-commits",
+    "request": "Fix PR 207 if CI shows a candidate regression.",
+    "policy": "ready_to_merge",
+    "authority": "exclusive_mutation_and_push",
+    "candidate_state": "The fix is committed locally and delegated to review-fix-loop under update_pr; it exhausts its fix-cycle budget without converging, so nothing is pushed and the PR still shows its prior head."
+  },
+  {
+    "id": "review-fix-loop-remote-advanced-produces-safe-watcher-transition",
+    "request": "Fix PR 208 if CI shows a candidate regression.",
+    "policy": "ready_to_merge",
+    "authority": "exclusive_mutation_and_push",
+    "candidate_state": "While review-fix-loop's update_pr delegation is remediating a locally committed fix, another process pushes a competing commit to the same PR head; review-fix-loop's expected-old publish is rejected and it returns blocked/remote_advanced."
   }
 ]

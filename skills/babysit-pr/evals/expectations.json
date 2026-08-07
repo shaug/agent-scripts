@@ -27,7 +27,7 @@
   {
     "case_id": "branch-caused-ci-fix",
     "terminal_state": "ready_to_merge",
-    "required_actions": ["fix only the demonstrated regression", "run focused and full validation", "commit and push", "invoke fresh review-code-change", "restart current-head gates"]
+    "required_actions": ["fix only the demonstrated regression", "run focused and full validation", "commit without pushing", "delegate to review-fix-loop under update_pr", "restart current-head gates on the published candidate"]
   },
   {
     "case_id": "infrastructure-retry",
@@ -57,7 +57,7 @@
   {
     "case_id": "authorized-reply-resolution",
     "terminal_state": "ready_to_merge",
-    "required_actions": ["fix and revalidate", "run fresh repository-owned review", "reply with evidence", "resolve only after disposition"]
+    "required_actions": ["fix and revalidate", "delegate to review-fix-loop for fresh repository-owned review", "reply with evidence", "resolve only after disposition"]
   },
   {
     "case_id": "unauthorized-human-response",
@@ -92,7 +92,7 @@
   {
     "case_id": "missing-capability",
     "terminal_state": "blocked",
-    "required_actions": ["name review-code-change and thread-aware feedback as missing", "do not substitute generic review", "do not claim readiness"]
+    "required_actions": ["name review-fix-loop and thread-aware feedback as missing", "do not substitute generic review", "do not claim readiness"]
   },
   {
     "case_id": "untrusted-content",
@@ -105,18 +105,28 @@
     "required_actions": ["record documented absence", "apply every remaining gate", "do not invent or silently skip a requirement"]
   },
   {
-    "case_id": "stale-review-schema-version-blocks-final-gate",
+    "case_id": "review-fix-loop-missing-capability-blocks-final-gate",
     "terminal_state": "blocked",
-    "required_actions": ["reject the stale schema_version result", "rebuild a fresh review-code-change result before treating the candidate as ready"]
+    "required_actions": ["verify review-fix-loop by stable name before mutation", "treat the missing dependency as a failed local gate", "do not substitute a direct review-code-change call or a private inlined loop"]
   },
   {
-    "case_id": "malformed-review-result-blocks-final-gate",
+    "case_id": "review-fix-loop-reviewer-integrity-failure-blocks-final-gate",
     "terminal_state": "blocked",
-    "required_actions": ["reject the schema-invalid review result", "rebuild a fresh review-code-change result before treating the candidate as ready"]
+    "required_actions": ["treat reviewer_integrity_failure as a failed local gate", "preserve unexpected state for operator inspection", "do not claim readiness"]
   },
   {
-    "case_id": "green-ci-alone-insufficient-without-valid-review",
+    "case_id": "review-fix-loop-converged-publishes-and-restarts-gates",
+    "terminal_state": "ready_to_merge",
+    "required_actions": ["commit the fix without pushing it", "delegate to review-fix-loop under publication.policy update_pr", "consume the converged result's published head rather than pushing separately", "restart every remote gate invalidated by the new head"]
+  },
+  {
+    "case_id": "review-fix-loop-changes-remaining-surfaces-unpushed-commits",
     "terminal_state": "blocked",
-    "required_actions": ["establish valid review-code-change evidence for the current candidate", "do not treat green CI or connector state as a substitute for review evidence"]
+    "required_actions": ["preserve every retained local commit", "surface the exact retained head and unpushed commits prominently", "report the PR still shows its prior head", "stop for user help rather than silently re-delegating"]
+  },
+  {
+    "case_id": "review-fix-loop-remote-advanced-produces-safe-watcher-transition",
+    "terminal_state": "blocked",
+    "required_actions": ["reread the live PR head independently of the stale invocation state", "determine whether the competing head already carries an equivalent or superseding fix", "restart ordinary watching from the true live head rather than assuming the stale local candidate is current", "do not force a competing push"]
   }
 ]

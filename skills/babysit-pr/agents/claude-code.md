@@ -14,6 +14,7 @@ does not constrain the skill's portable contract.
   detach and declare monitoring complete.
 - Locking: stop the background watcher before `--once` or `--retry-failed-now`;
   all modes share one exclusive state lock per repository/PR.
-- Fresh read-only review context: invoke repository-owned `review-code-change`
-  in a subagent (Agent tool) restricted to read-only tools, giving it only raw
+- Fresh read-only review context: delegate to repository-owned `review-fix-loop`
+  and, as its `reviewer` port, invoke repository-owned `review-code-change` in a
+  subagent (Agent tool) restricted to read-only tools, giving it only raw
   candidate evidence.
