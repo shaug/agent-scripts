@@ -7,48 +7,47 @@ summary: Chronological history of repository and skill changes.
 ## 2026-08-07 — Migrated babysit-pr's post-publication repository review/fix loop to delegate to review-fix-loop under its update_pr publication policy
 
 - feat(babysit-pr): delegate repository review and remediation to
-  review-fix-loop (issue #104) — replace the inline "Revalidate and review
-  every fix" loop (push, direct `review-code-change` invocation,
-  `scripts/review_gate.py` validation, ad hoc finding application, gate
-  restart) with delegation to repository-owned `review-fix-loop` under its
-  `update_pr` publication policy, so `babysit-pr` commits an authored fix
-  locally without pushing it and supplies review-fix-loop's
+  review-fix-loop (issue #104) — replace the inline "Revalidate and review every
+  fix" loop (push, direct `review-code-change` invocation,
+  `scripts/review_gate.py` validation, ad hoc finding application, gate restart)
+  with delegation to repository-owned `review-fix-loop` under its `update_pr`
+  publication policy, so `babysit-pr` commits an authored fix locally without
+  pushing it and supplies review-fix-loop's
   `reviewer`/`decide`/`apply_fix`/validation ports while `review-fix-loop` owns
   further remediation, convergence detection, and the exact expected-old
   fast-forward publish back to the PR. A new
   `references/review-fix-loop-handoff.md` (mirroring implement-ticket's
-  `local_commit` handoff, adapted for `update_pr`) owns invocation
-  construction — including `source_binding`/`publication.pull_request` — the
-  host-port policies, and the `converged`/`changes_remaining`/`blocked`
-  terminal-result mapping, including two `update_pr`-specific transitions the
-  ticket's explicit scope named: a `remote_advanced` publication race resolves
-  by rereading the live PR head and restarting the watcher from true state
-  rather than forcing a competing push, and a non-converged `changes_remaining`
-  result reports its retained local head and every unpushed commit
-  prominently, since the PR itself still shows its prior head. Merge
-  authority, mergeability, CI diagnosis, and external-feedback disposition are
-  unchanged. `babysit-pr` no longer bundles its own copy of the review-suite
-  contract, schemas, `validate.py`, `review_gate.py`, or `test_review_gate.py`
-  — `review-fix-loop` already binds and validates the raw `review-code-change`
-  result on its behalf using its own bundled copies — so `justfile`'s
-  `sync-contracts` and `review-suite/scripts/tests/test_bundled_contracts.py`
-  drop it from the skills that bundle those files while keeping it in the
-  three that still bundle `consumption-disciplines.md`. The three
-  `cases.json`/`expectations.json` scenarios that exercised `babysit-pr`'s own
-  raw review-code-change validation are retired in favor of five
-  `review-fix-loop` terminal-result equivalents covering convergence,
-  cycle-budget exhaustion, a missing dependency, a reviewer-integrity failure,
-  and the publication race. `implement-ticket`'s `babysit-pr-handoff.md` and
-  the README's composed dependency diagram are updated to route `babysit-pr`'s
-  post-fix review through `review-fix-loop` rather than directly against
-  `review-code-change`. *Why:* the design's own migration ticket for this
-  caller names local-until-convergence fixes, exact expected-old publication
-  and remote-head reconciliation, watcher/remote-gate restart after a returned
-  head, one shared repository-review cycle budget, and non-converged
-  unpushed-commit reporting as what the migration must prove before the
-  duplicated post-publication loop comes out; `babysit-pr` has no registered
-  real-model or deterministic forward-eval corpus, so this evidence is
-  recorded as an `attempted` gap per `AGENTS.md`'s eval-backed change norm
+  `local_commit` handoff, adapted for `update_pr`) owns invocation construction
+  — including `source_binding`/`publication.pull_request` — the host-port
+  policies, and the `converged`/`changes_remaining`/`blocked` terminal-result
+  mapping, including two `update_pr`-specific transitions the ticket's explicit
+  scope named: a `remote_advanced` publication race resolves by rereading the
+  live PR head and restarting the watcher from true state rather than forcing a
+  competing push, and a non-converged `changes_remaining` result reports its
+  retained local head and every unpushed commit prominently, since the PR itself
+  still shows its prior head. Merge authority, mergeability, CI diagnosis, and
+  external-feedback disposition are unchanged. `babysit-pr` no longer bundles
+  its own copy of the review-suite contract, schemas, `validate.py`,
+  `review_gate.py`, or `test_review_gate.py` — `review-fix-loop` already binds
+  and validates the raw `review-code-change` result on its behalf using its own
+  bundled copies — so `justfile`'s `sync-contracts` and
+  `review-suite/scripts/tests/test_bundled_contracts.py` drop it from the skills
+  that bundle those files while keeping it in the three that still bundle
+  `consumption-disciplines.md`. The three `cases.json`/`expectations.json`
+  scenarios that exercised `babysit-pr`'s own raw review-code-change validation
+  are retired in favor of five `review-fix-loop` terminal-result equivalents
+  covering convergence, cycle-budget exhaustion, a missing dependency, a
+  reviewer-integrity failure, and the publication race. `implement-ticket`'s
+  `babysit-pr-handoff.md` and the README's composed dependency diagram are
+  updated to route `babysit-pr`'s post-fix review through `review-fix-loop`
+  rather than directly against `review-code-change`. *Why:* the design's own
+  migration ticket for this caller names local-until-convergence fixes, exact
+  expected-old publication and remote-head reconciliation, watcher/remote-gate
+  restart after a returned head, one shared repository-review cycle budget, and
+  non-converged unpushed-commit reporting as what the migration must prove
+  before the duplicated post-publication loop comes out; `babysit-pr` has no
+  registered real-model or deterministic forward-eval corpus, so this evidence
+  is recorded as an `attempted` gap per `AGENTS.md`'s eval-backed change norm
   rather than a before/after run.
 
 ## 2026-08-06 — Renamed the project from agent-scripts to compris across every identity it publishes, pointed the eval corpus's own citations at the renamed repository while leaving the absolute paths that record where each run actually happened untouched, and migrated implement-ticket's initial candidate review/fix loop to delegate to the now-complete review-fix-loop skill

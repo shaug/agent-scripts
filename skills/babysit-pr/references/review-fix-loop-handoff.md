@@ -64,8 +64,13 @@ Map that evidence onto one `review-fix-loop` invocation:
   worktree state above, with `all_changes_committed: true`. Populate
   `source_binding` with the authenticated head repository, remote URL, fully
   qualified head ref, and the exact remote object ID this skill most recently
-  observed for it (the PR's current head before this fix) — this is the
-  `expected_old_head_sha` publication uses to detect a race.
+  observed for it (the PR's current head before this fix). This is the same
+  pre-fix PR head value `publication.pull_request.expected_old_head_sha` below
+  also carries, but the two fields serve independently required purposes:
+  `source_binding.observed_object_id` only supports `review-fix-loop`'s own
+  ahead/behind reporting, while `expected_old_head_sha` is the actual
+  compare-and-swap value its expected-old fast-forward publish reads at push
+  time — populate both from the same observed SHA.
 - `change_contract`: the ticket's observable goal, acceptance criteria,
   non-goals, behavior to preserve, named architecture/design/contract documents,
   and representative nearby code and tests, reconstructed from live ticket or PR
@@ -87,7 +92,12 @@ Map that evidence onto one `review-fix-loop` invocation:
 - `validation`: this skill's separately approved focused and full commands.
 - `publication.policy`: always `update_pr`.
 - `publication.pull_request`: the PR's own head repository, fully qualified head
-  ref, base ref, and this skill's most recently observed base SHA.
+  ref, base ref, this skill's most recently observed base SHA, and
+  `expected_old_head_sha` — the same pre-fix PR head SHA recorded in
+  `candidate.source_binding.observed_object_id` above. This field, not
+  `source_binding`, is what `review-fix-loop`'s expected-old fast-forward
+  publish actually compares against at push time; the invocation schema requires
+  it here.
 - `publication.remote_iteration_grants`: omit unless a specific,
   invocation-authorized mechanism demonstrably requires an origin-visible head
   mid-loop. Nothing in this skill's ordinary CI/feedback/review flow requires
