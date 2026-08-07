@@ -13,9 +13,9 @@ fix changes an unmerged suffix after a prefix has merged, recover that suffix
 onto a distinct immutable successor source without rewriting the prefix.
 
 This skill owns decomposition, truth promotion, chain mechanics, whole-chain
-equivalence, and downstream propagation. It delegates per-changeset review to
-`review-code-change` and a published PR's lifecycle to `babysit-pr` without
-copying either skill's workflow.
+equivalence, and downstream propagation. It delegates each changeset's review
+and fix loop to `review-fix-loop` and a published PR's lifecycle to `babysit-pr`
+without copying either skill's workflow.
 
 ## Load the references
 
@@ -25,8 +25,12 @@ copying either skill's workflow.
   `.carve-changesets/plan.json`.
 - Read [the CLI reference](references/cli.md) before invoking a subcommand or
   selecting flags.
-- Read [the suite handoffs](references/suite-handoffs.md) before reviewing a
-  changeset, publishing PRs, or delegating a PR lifecycle.
+- Always read
+  [the review-fix-loop handoff](references/review-fix-loop-handoff.md) before
+  reviewing a changeset. It requires validating every `review-fix-loop` terminal
+  result against its own bundled contract and schemas before consuming it.
+- Read [the suite handoffs](references/suite-handoffs.md) before publishing PRs,
+  delegating a PR lifecycle, or recovering a successor suffix.
 
 Use `scripts/cli.py` as the single command surface. Resolve script and reference
 paths from this skill's root, not from a repository-relative installation
@@ -41,7 +45,9 @@ Require a runtime that can:
 - run Python 3 and separately approved repository validation commands;
 - reach GitHub over the network and use an authenticated `gh` session whenever
   publication, live PR state, review, merge, or propagation is in scope;
-- load repository-owned `review-code-change` for required per-changeset review;
+- load repository-owned `review-fix-loop` for required per-changeset review and
+  fix; its own dependency gate covers `review-code-change` and its lenses, so
+  this skill does not separately require it;
 - load repository-owned `babysit-pr` and retain task ownership while waiting
   whenever a published PR lifecycle is delegated; and
 - read current checks, reviews, comments, reactions, and resolved-thread state
@@ -127,25 +133,20 @@ commits. Run `validate-chain` with approved validation, `compare` for the
 reconstructed tree, and the applicable `squash-check` or `db-compare` evidence.
 Use `status --local-only` to inspect live local truth without GitHub.
 
-Construct and run the required `review-code-change` packet for every exact
-changeset candidate. The review suite is read-only; this skill applies accepted
-fixes and rebuilds invalidated validation and review evidence. Return
-`chain_ready` only after every local candidate and the full chain satisfy the
-contract.
-
-Each changeset's reviewer receives evidence and contracts, never conclusions. If
-the invocation being written steers the answer — "do not flag", "this is fine",
-a pre-judged severity, or the verdict expected back — stop and rewrite it. The
-pressure is specific to a chain: an earlier changeset reviewed clean, so it is
-tempting to tell the next reviewer the design is already settled. A steered
-reviewer returns confirmation, not review, and a chain compounds one such result
-across every changeset that follows.
-
-Give each changeset review a capability tier adequate for judgment: it inherits
-the session's tier by default rather than the cheapest one, and a review that
-missed a defect a later changeset surfaces escalates one tier instead of
-rerunning identically. Prefer one well-briefed review per changeset to several
-thin ones — a chain multiplies the cost of a rerun by its remaining length.
+Delegate each exact changeset candidate's review and fix loop to
+repository-owned `review-fix-loop` under `publication.policy: local_commit`,
+following [the review-fix-loop handoff](references/review-fix-loop-handoff.md).
+Review changesets in chain order: changeset *i*'s invocation is not constructed
+until changeset *i - 1*'s is `converged`, since *i*'s comparison base is *i -
+1*'s finalized branch. This skill still owns and constructs the `reviewer`,
+`decide`, `apply_fix`, and validation ports the handoff describes; delegation
+transfers judgment about findings and fix authorship for the remediation
+interval, not exclusive ownership of the branch. Treat any `review-fix-loop`
+dependency failure, invocation or terminal-result validation failure, or
+`blocked` result as a failed local gate exactly as a missing dependency or a
+`blocked` verdict was always treated. Return `chain_ready` only after every
+local candidate has a `converged` `review-fix-loop` result bound to its exact
+head and stacked base, and the full chain satisfies the contract.
 
 ### 3. Publish
 

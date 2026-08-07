@@ -401,7 +401,9 @@ The base branch must never be force-pushed under any authority.
 
 ### Suite seams
 
-The candidate packet, authority mapping, ownership transfer, and terminal-result
+The per-changeset review-fix-loop invocation is defined in
+[review-fix-loop-handoff.md](review-fix-loop-handoff.md). The PR-lifecycle
+candidate packet, authority mapping, ownership transfer, and terminal-result
 protocol are defined in [suite-handoffs.md](suite-handoffs.md).
 
 `carve-changesets` uniquely owns:
@@ -414,17 +416,21 @@ protocol are defined in [suite-handoffs.md](suite-handoffs.md).
 - downstream base updates and branch propagation after an upstream merge; and
 - successor-source lineage and corrected unmerged-suffix recovery.
 
-`review-code-change` is the repository-owned per-changeset review mechanism.
-Each invocation receives a raw candidate-bound packet for exactly one changeset,
-including its goal, non-goals, exact head and base, complete diff, repository
-instructions, named specifications, and validation evidence. `carve-changesets`
-consumes the returned verdict and applies accepted changes; the review suite
-remains read-only.
+`review-fix-loop` is the repository-owned per-changeset review-and-fix
+mechanism. Each invocation receives a raw candidate-bound change contract for
+exactly one changeset — its goal, non-goals, exact head and stacked base,
+complete diff, repository instructions, named specifications, and validation
+evidence — and owns that changeset's raw `review-code-change` packet
+construction, finding disposition, fix authorship, re-review, and convergence
+under `carve-changesets`'s caller-owned `reviewer`/`decide`/`apply_fix`/
+validation ports. `carve-changesets` consumes the returned terminal result; the
+underlying review suite remains read-only throughout.
 
 `babysit-pr` owns a published changeset PR's post-publication lifecycle when
 delegated. Its ownership includes current-head CI, published feedback,
-ticket-scoped fixes, post-fix repository review, base drift, mergeability, and
-optional merge under passed-through authority. `carve-changesets` must not run a
+ticket-scoped fixes, post-fix repository review (itself delegated to
+`review-fix-loop` under `update_pr`), base drift, mergeability, and optional
+merge under passed-through authority. `carve-changesets` must not run a
 competing watcher or feedback loop during that delegation. After a verified
 merge result returns, `carve-changesets` resumes ownership for chain rehydration
 and downstream propagation. When a ticket-scoped fix changes the head after an

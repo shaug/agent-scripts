@@ -102,8 +102,8 @@ The skills:
   delegate each selected child to `implement-ticket`, then refresh graph state
   and verify separately authorized epic closeout
 - `skills/carve-changesets` — recompose a review-ready source branch into a
-  stateless chain, review each changeset through `review-code-change`, and
-  delegate each published PR lifecycle to `babysit-pr`
+  stateless chain, delegate each changeset's review and fix loop to
+  `review-fix-loop`, and delegate each published PR lifecycle to `babysit-pr`
 - `skills/review-code-change` — orchestrate the repository-owned review lenses
   into one evidence-bound, deduplicated verdict
 - `skills/review-correctness` — find material behavioral, security,
@@ -121,10 +121,9 @@ The skills:
   fast-forward-only Git push immediately after convergence). `implement-ticket`
   delegates its initial candidate's review and fix loop to it under
   `local_commit`; `babysit-pr` delegates its post-publication review and fix
-  loop to it under `update_pr`. `carve-changesets` still runs its own
-  per-changeset review loop directly against `review-code-change` — see
-  [issue #105](https://github.com/shaug/compris/issues/105) for that tracked
-  migration follow-up.
+  loop to it under `update_pr`; `carve-changesets` delegates each changeset's
+  local review and fix loop to it under `local_commit`, one invocation per
+  changeset in chain order.
 
 The composed implementation dependency chain is:
 
@@ -137,7 +136,8 @@ implement-epic
     │   └── review-fix-loop         # after a head-changing fix (update_pr)
     │       └── review-code-change  # each review pass inside the loop
     ├── carve-changesets            # authority-gated oversized path
-    │   ├── review-code-change      # each exact changeset
+    │   ├── review-fix-loop         # each changeset's review/fix/converge loop
+    │   │   └── review-code-change  # each review pass inside the loop
     │   └── babysit-pr              # each changeset PR lifecycle
     │       └── review-fix-loop     # after a head-changing fix (update_pr)
     │           └── review-code-change
@@ -145,7 +145,8 @@ implement-epic
     ┈▷ ready-ticket                 # recommendation only, never invoked
 
 carve-changesets
-├── review-code-change              # direct per-changeset review
+├── review-fix-loop                 # each changeset's review/fix/converge loop
+│   └── review-code-change          # each review pass inside the loop
 └── babysit-pr                      # each published PR lifecycle
     └── review-fix-loop             # after a head-changing fix (update_pr)
         └── review-code-change      # each review pass inside the loop

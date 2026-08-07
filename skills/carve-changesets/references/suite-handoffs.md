@@ -1,22 +1,28 @@
-# Per-changeset review and PR lifecycle handoffs
+# PR lifecycle and successor-source recovery handoffs
 
 This reference defines how `carve-changesets` composes with the repository-owned
-`review-code-change` and `babysit-pr` skills. The normative changeset state,
-authority, and safety rules remain in [SPEC.md](SPEC.md). The delegated skills'
-live contracts remain authoritative for their internal behavior.
+`babysit-pr` skill for a published PR's lifecycle, and the successor-source
+recovery procedure that follows a returned handback. The normative changeset
+state, authority, and safety rules remain in [SPEC.md](SPEC.md). Each
+changeset's own local review and fix loop is delegated to `review-fix-loop`
+instead — see [the review-fix-loop handoff](review-fix-loop-handoff.md) for that
+composition, including the per-changeset review packet fields it feeds into
+`review-fix-loop`'s `reviewer` port. The delegated skills' live contracts remain
+authoritative for their internal behavior.
 
 ## Ownership boundaries
 
 `carve-changesets` owns changeset boundaries, materialization, chain ordering,
 metadata, whole-chain equivalence, and downstream propagation. It constructs
-review and PR-lifecycle handoffs, applies accepted review fixes, and verifies
-returned identities before promoting chain state.
+each changeset's `review-fix-loop` invocation and the published PR-lifecycle
+handoff, and verifies returned identities before promoting chain state.
 
-`review-code-change` is read-only. It reviews one exact changeset candidate and
-returns an evidence-bound verdict; it does not edit a changeset, choose a new
-boundary, mutate the plan, or push a branch. `carve-changesets` owns any
-accepted fix and must rebuild invalidated validation and review evidence
-afterward.
+`review-code-change` remains read-only underneath `review-fix-loop`: it reviews
+one exact changeset candidate and returns an evidence-bound verdict; it does not
+edit a changeset, choose a new boundary, mutate the plan, or push a branch.
+`review-fix-loop` owns applying an accepted fix and rebuilding invalidated
+validation and review evidence within one changeset's local review loop;
+`carve-changesets` never reproduces that mechanic itself.
 
 Once ownership of a published PR is delegated, `babysit-pr` exclusively owns
 that PR's current-head CI, failed-check diagnosis and eligible retries,
@@ -33,9 +39,11 @@ again.
 
 ## Per-changeset review packet
 
-Construct a fresh `review-code-change` packet for changeset *i* from raw,
-current evidence. Never add the implementation transcript, expected findings,
-prior conclusions, or fixture answers.
+[The review-fix-loop handoff](review-fix-loop-handoff.md)'s `reviewer` port
+constructs a fresh `review-code-change` packet for changeset *i* from raw,
+current evidence for every review pass that invocation runs. Never add the
+implementation transcript, expected findings, prior conclusions, or fixture
+answers.
 
 | Packet section    | Changeset evidence                                                                                                                                                                                                                                                                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -51,11 +59,12 @@ particular, the diff is complete and candidate-bound, acceptance criteria are
 non-empty, and every required validation command has an exact result or an
 explicit unavailable reason.
 
-Review is required before claiming `chain_ready` or `prs_open`, and the result
-must be clean for every exact changeset candidate represented by that terminal
-state. It is also required before a published candidate is handed to
-`babysit-pr` when no current clean result exists. Any changeset head change
-invalidates its packet, validation, and verdict; rebuild all three before
+Review is required before claiming `chain_ready` or `prs_open`, and the
+`review-fix-loop` result must be `converged` for every exact changeset candidate
+represented by that terminal state. It is also required before a published
+candidate is handed to `babysit-pr` when no current `converged` result exists.
+Any changeset head change invalidates its packet, validation, and verdict;
+rebuild all three through a fresh `review-fix-loop` invocation before
 continuing.
 
 For base-only drift, retain review evidence only when the review-suite contract
@@ -124,8 +133,9 @@ successor source containing all accepted fixes, then:
 4. prove current base plus the recovered suffix equals the successor source;
 5. invalidate every candidate-bound validation, review, CI, connector, feedback,
    and mergeability result for each changed head;
-6. build fresh per-changeset review packets and obtain clean exact-head review;
-   and
+6. delegate a fresh `review-fix-loop` invocation for each recovered changeset,
+   per [the review-fix-loop handoff](review-fix-loop-handoff.md), and obtain a
+   `converged` result bound to the exact recovered head; and
 7. hand the corrected exact PR back to `babysit-pr` under the original bounded
    authority.
 
@@ -150,6 +160,6 @@ evidence must match the handoff. A stale or conflicting result maps to
 
 When propagation changes a downstream head or effective candidate, prior review,
 validation, CI, and feedback evidence is invalid. Rebuild the per-changeset
-packet before the next lifecycle handoff. When only the stacked base identity
-changes, apply the review-suite base-drift rules rather than assuming evidence
-survives.
+review through a fresh `review-fix-loop` invocation before the next lifecycle
+handoff. When only the stacked base identity changes, apply the review-suite
+base-drift rules rather than assuming evidence survives.
