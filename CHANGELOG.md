@@ -6,7 +6,43 @@ summary: Chronological history of repository and skill changes.
 
 ## 2026-08-07 — Migrated carve-changesets' per-changeset review/fix loop and babysit-pr's post-publication review/fix loop to delegate to review-fix-loop, completing the design's caller-migration sequence, then added rationalization tables to babysit-pr, implement-ticket, and carve-changesets
 
-- PLACEHOLDER-129-ENTRY
+- feat(skills): add rationalization tables to babysit-pr, implement-ticket, and
+  carve-changesets (issue #129, epic #119) — a bare prohibition leaves an agent
+  free to construct an exception, and it almost always can; a rationalization
+  table answers the specific excuse instead. Each of the three named skills gets
+  a table containing the seed entries #129's own body certified from each
+  skill's contract-emphasis points: a "trivial" fix does not exempt a candidate
+  from re-validation, because a head change invalidates every head-bound gate by
+  SHA rather than by how small the diff looks (`babysit-pr`); a CI failure
+  "looking" flaky is not a diagnosis, because flaky classification requires log
+  evidence and consumes the tracked retry budget (`babysit-pr`); completion
+  language such as "finish it" does not independently grant merge,
+  decomposition, deployment, or transition authority (`implement-ticket`); and
+  one propagation's equivalence proof does not cover the next one, because each
+  step rewrites a different downstream suffix against a different current base
+  (`carve-changesets`). Ported with attribution from the superpowers pattern via
+  the named-peer registry (#123). `implement-epic` is deliberately excluded per
+  the ticket's own recorded rejection — its contract prose already covers the
+  graph-refresh and trust-but-verify drift modes a table would otherwise defend.
+  The admissible-evidence rule for future entries — an in-repo retrievable
+  source only: a baseline transcript, an eval fixture failure, a GitHub PR
+  review history entry, or a recorded eval-results observation, with review
+  excluding a speculative one — lives once in `docs/skill-authoring.md` beside
+  the taxonomy's existing rationalization-table guidance, since it governs how a
+  contributor extends a table later rather than something an agent executing the
+  skill reads on every run, and folds in `skills/ready-ticket/SKILL.md`'s
+  pre-existing table (sourced from a baseline transcript) as the in-repo
+  exemplar. Seven prose-contract assertions (four pinning the three tables, one
+  pinning the seed entry's own citation for each of the three), each observed
+  failing at base `20d05b0` and passing at head.
+
+  Eval evidence: the deterministic tier for `carve-changesets` is unchanged
+  before and after (12/12, empty per-case diff) — the corpus reads only the
+  skill's `SKILL.md` and exercises routing/readiness/authority scenarios, not a
+  rationalization table's content. `babysit-pr` has no registered forward
+  corpus; `just eval-record babysit-pr` reports that gap directly rather than
+  recording something in its place. The real-model tier for `implement-ticket`
+  ran both before and after this change at its actual rebased base and head.
 
 - feat(carve-changesets): delegate the per-changeset review and fix loop to
   review-fix-loop (issue #105) — replace phase 2's inlined "construct and run
