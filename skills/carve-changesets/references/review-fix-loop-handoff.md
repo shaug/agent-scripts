@@ -90,14 +90,18 @@ Map that evidence onto one `review-fix-loop` invocation:
   PR exists yet at this point in the workflow, so record
   `source_unavailable_reason` rather than a `source_binding` — this delegation
   never needs publication authority.
-- `change_contract`: goal and acceptance criteria derived from the changeset's
-  slug and description, with `pr_notes` preserving scaffolding, flags, and
-  intentional incompleteness, exactly as
+- `change_contract`: `goal` and `acceptance_criteria` derived from the
+  changeset's slug, description, and plan `pr_notes` (scaffolding, flags, and
+  intentional incompleteness); `non_goals` naming work reserved for later
+  changesets; `preserved_behaviors` naming the applicable invariants from
+  `SPEC.md`; `sources` naming applicable repository instructions, `SPEC.md`,
+  named architecture or design documents, and representative nearby patterns for
+  the files this changeset touches. Set `allowed_remediation_scope` to this
+  changeset's own extraction selectors and boundary — a fix cycle may not spill
+  into a sibling changeset's territory. This mirrors
   [the suite handoffs' per-changeset review packet](suite-handoffs.md#per-changeset-review-packet)
-  has always required; non-goals naming work reserved for later changesets;
-  preserved behaviors naming the applicable invariants from `SPEC.md`. Set
-  `allowed_remediation_scope` to this changeset's own extraction selectors and
-  boundary — a fix cycle may not spill into a sibling changeset's territory.
+  table's `change_contract` and `sources` rows, which describe the same content
+  for the `reviewer` port's own `review-code-change` packet.
 - `review_execution.mode`: `fresh_subagent` by default, matching this skill's
   existing fresh read-only review requirement. Use `in_agent_override` only
   through an explicit current-user or caller-authorized override recorded before
@@ -106,10 +110,15 @@ Map that evidence onto one `review-fix-loop` invocation:
   three-cycle norm used elsewhere in this suite. This is a distinct budget from
   `review-code-change`'s own three-cycle lens-sequence retry budget; neither
   touches the other.
-- `validation`: at least one focused and one full entry with exact commands and
-  results — focused evidence covers the chain prefix through changeset *i*; full
-  evidence records the approved repository or whole-chain validation applicable
-  at this boundary, exactly as the per-changeset review packet already required.
+- `validation`: at least one focused and one full `{name, command, scope}` entry
+  — commands only, matching `review-fix-loop`'s own invocation schema;
+  `review-fix-loop` itself runs them and produces the results. Focused evidence
+  covers the chain prefix through changeset *i*; full evidence names the
+  approved repository or whole-chain validation applicable at this boundary.
+  This is distinct from the `reviewer` port's own `review-code-change` packet,
+  whose `validation` row does carry exact commands and results, per
+  [the suite handoffs' per-changeset review packet](suite-handoffs.md#per-changeset-review-packet)
+  table.
 - `publication.policy`: always `local_commit`. Never supply
   `publication.pull_request` or `remote_iteration_grants` here — no PR exists
   yet, and this skill withholds every changeset's first remote push until
