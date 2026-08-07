@@ -32,9 +32,12 @@ summary: Chronological history of repository and skill changes.
   contributor extends a table later rather than something an agent executing the
   skill reads on every run, and folds in `skills/ready-ticket/SKILL.md`'s
   pre-existing table (sourced from a baseline transcript) as the in-repo
-  exemplar. Seven prose-contract assertions (four pinning the three tables, one
-  pinning the seed entry's own citation for each of the three), each observed
-  failing at base `20d05b0` and passing at head.
+  exemplar. Six new prose-contract test methods across four files — one per
+  skill pinning that skill's table content and its seed entry's own citation,
+  plus three in `docs/skill-authoring.md`'s own new test file pinning the
+  admissible-evidence rule's wording, placement, and reconciliation with the
+  baseline exemplar — each independently observed failing when run against the
+  unmodified base `20d05b0` and passing at head.
 
   Eval evidence: the deterministic tier for `carve-changesets` is unchanged
   before and after (12/12, empty per-case diff) — the corpus reads only the
