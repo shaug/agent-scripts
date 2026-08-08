@@ -98,6 +98,14 @@ class CarveChangesetsContractTests(unittest.TestCase):
             ).is_file()
         )
 
+    def test_rationalization_table_covers_the_certified_seed_entry(self):
+        self.assertIn("The equivalence check passed last time", self.skill)
+        self.assertIn(
+            "Each propagation step rewrites a different downstream suffix "
+            "against a different current base",
+            self.skill,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

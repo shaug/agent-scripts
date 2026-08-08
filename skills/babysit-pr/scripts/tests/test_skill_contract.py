@@ -232,6 +232,20 @@ class ConsumptionDisciplineTests(unittest.TestCase):
         capabilities = capabilities.split("##", 1)[0]
         self.assertNotIn("systematic-debugging", capabilities)
 
+    def test_rationalization_table_covers_the_certified_seed_entries(self):
+        for rationalization in (
+            "The fix was trivial, re-validation can be skipped",
+            "This CI failure looks flaky",
+        ):
+            self.assertIn(rationalization, self.skill)
+        self.assertIn(
+            "invalidate and rebuild every affected head-bound gate", self.skill
+        )
+        self.assertIn(
+            "Do not call a failure flaky merely because a rerun might be convenient",
+            compact(read("references/ci-and-feedback.md")),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

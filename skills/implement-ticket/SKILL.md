@@ -140,6 +140,13 @@ production authority from words such as `implement`, `finish`, `complete`, or
 stack. When decomposition authority is absent, never silently publish an
 oversized monolith or silently carve it.
 
+Do not treat the request's own urgency as authority. Recognize the excuse and
+answer it with the rule that already applies:
+
+| Rationalization           | Why it still applies                                                                                                                                                                                                               |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "The user said finish it" | Completion language does not independently grant merge, decomposition, deployment, or transition authority — only an explicit grant in the authority matrix above does, and its absence is not implied by any word in the request. |
+
 Treat an automatic ticket transition caused by closing syntax as a disclosed
 consequence only when explicit tracker-transition authority exists and every
 required acceptance item can pass before merge. Without tracker-transition
